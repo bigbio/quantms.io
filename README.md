@@ -1,4 +1,4 @@
-# proteomics-quant-format
+# proteomics-results-format
 
 The proteomics quantification formats, is a Github repository that aims to formalize some existing proteomics quantification formats for large scale quantification experiments. Different from previous efforts like (mzTab, quantML, etc), the present representation aims to reuse existing popular formats and work in the following use cases: 
 
