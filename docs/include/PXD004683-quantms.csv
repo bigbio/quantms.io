@@ -3,6 +3,7 @@
 #project_description=The goal of this project is to compare label free quantification, chemical labeling with tandem mass tags, and data independent acquisition discovery proteomics approaches using lung squamous cell carcinomas and adjacent lung tissues.
 #quanmts_version=1.1
 #factor_value=phenotype
+#fdr_threshold=0.05
 #INFO=<ID=Protein, Number=1, Type=String, Description="Protein Accession">
 #INFO=<ID=Label, Number=1, Type=String, Description="Label for the Conditions combination">
 #INFO=<ID=log2FC, Number=1, Type=Float, Description="Log2 Fold Change">

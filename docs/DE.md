@@ -45,6 +45,7 @@ We suggest including the following properties in the header:
 - project_description: The project description in PRIDE Archive
 - quanmts_version: The version of the quantms workflow used to generate the file
 - factor_value: The factor values used in the analysis (e.g. `phenotype`)
+- fdr_threshold: The FDR threshold used to filter the protein lists (e.g. `adj.pvalue < 0.05`)
 
 
 A complete example of a quantms output file can be seen [here](include/PXD004683-quantms.csv).
