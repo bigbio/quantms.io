@@ -28,7 +28,7 @@ The project file is a json file that contains the following fields:
 Example of `acquisition_properties`:
 
 ```json
-"acquisition_properties":[
+"acquisition_properties": [
      {"precursor tolerance": "0.05 Da"},
      {"dissociation method": "HCD"}
 ]
