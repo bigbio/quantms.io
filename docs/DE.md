@@ -26,7 +26,7 @@ By default, the MSstats format does not have any header of metadata. We suggest 
 In addition, for each `Default` column of the matrix the following information should be added: 
 
 ```
-#INFO=<ID=Protein, Number=1, Type=String, Description="Protein Accession">
+#INFO=<ID=Protein, Number=inf, Type=String, Description="Protein Accession">
 #INFO=<ID=Label, Number=1, Type=String, Description="Label for the Conditions combination">
 #INFO=<ID=log2FC, Number=1, Type=Float, Description="Log2 Fold Change">
 #INFO=<ID=SE, Number=1, Type=Float, Description="Standard error of the log2 fold change">
@@ -36,7 +36,8 @@ In addition, for each `Default` column of the matrix the following information s
 #INFO=<ID=issue, Number=1, Type=String, Description="Issue column shows if there is any issue for inference in corresponding protein and comparison">
 ```
 
-The `ID` is the column name in the matrix, the `Number` is the number of values in the column (separated by `;`), the `Type` is the type of the values in the column and the `Description` is a description of the column.
+- The `ID` is the column name in the matrix, the `Number` is the number of values in the column (separated by `;`), the `Type` is the type of the values in the column and the `Description` is a description of the column. The number of values in the column can go from 1 to `inf` (infinity).
+- Protein groups are written as a list of protein accessions separated by `;` (e.g. `P12345;P12346`) 
 
 We suggest including the following properties in the header: 
 
