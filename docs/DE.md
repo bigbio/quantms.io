@@ -17,7 +17,7 @@ Example:
 | ---------  |--------------------------------| ------ | -- | -- | ------ | ---------- |-------|
 |LV861_HUMAN | normal-squamous cell carcinoma | 0.60   | 0.87 | 8  | 0.51   | 0.62       | NA  |
 
-## MSstats Header 
+## DE Header 
 
 By default, the MSstats format does not have any header of metadata. We suggest adding a header to the output for better understanding of the file. By default, MSstats allows comments in the file if the line starts with `#`. The quantms output will start with some key value pairs that describe the project, the workflow and also the columns in the file. For example: 
 
