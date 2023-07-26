@@ -3,7 +3,7 @@
 The differential expression format by quantms is based on the [MSstats](https://msstats.org/wp-content/uploads/2017/01/MSstats_v3.7.3_manual.pdf) output. The MSstats format is a tab-delimited file that contains the following fields - see example [file](include/PXD004683.csv):
 
 - `Protein` -> Protein Accession
-- `Label` -> Label for the contrast combination.	
+- `Label` -> Label for the contrast on which the fold changes and p-values are based on
 - `log2FC` -> Log2 Fold Change	
 - `SE` -> Standard error of the log2 fold change 	
 - `DF` -> Degree of freedom of the Student test	
