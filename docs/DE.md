@@ -3,13 +3,13 @@
 The differential expression format by quantms is based on the [MSstats](https://msstats.org/wp-content/uploads/2017/01/MSstats_v3.7.3_manual.pdf) output. The MSstats format is a tab-delimited file that contains the following fields - see example [file](include/PXD004683.csv):
 
 - `Protein` -> Protein Accession
-- `Label` -> Label for the Conditions combination.	
+- `Label` -> Label for the contrast combination.	
 - `log2FC` -> Log2 Fold Change	
 - `SE` -> Standard error of the log2 fold change 	
 - `DF` -> Degree of freedom of the Student test	
 - `pvalue`	-> Raw p-values
 - `adj.pvalue`	->  P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg
-- `issue` -> Issue column shows if there is any issue for inference in corresponding protein and comparison,  for example, OneConditionMissing or CompleteMissing. 
+- `issue` -> Issue column shows if there is any issue for inference in corresponding protein and comparison, for example, OneConditionMissing or CompleteMissing. 
 
 Example: 
 
