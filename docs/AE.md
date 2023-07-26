@@ -3,7 +3,7 @@
 The absolute expression format by quantms is a tab-delimited file format that contains the following fields:
 
 - `Protein` -> Protein Accession
-- `SampleID` -> Label for the Conditions combination.
+- `SampleID` -> Sample accession in the SDRF.
 - `Condition` -> Condition name
 - `iBAQ` -> iBAQ value
 - `riBAQ` -> Relative iBAQ value
