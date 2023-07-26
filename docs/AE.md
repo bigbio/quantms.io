@@ -3,16 +3,16 @@
 The absolute expression format by quantms is a tab-delimited file format that contains the following fields:
 
 - `Protein` -> Protein Accession
-- `Sample_ID` -> Label for the Conditions combination.
+- `SampleID` -> Label for the Conditions combination.
 - `Condition` -> Condition name
 - `iBAQ` -> iBAQ value
 - `riBAQ` -> Relative iBAQ value
 
 Example: 
 
-| Protein    | Sample_ID     | Condition | iBAQ   | riBAQ  |
-| ---------  |---------------|-----------|--------| -------|
-|LV861_HUMAN | Sample-1      | heart     | 1234.1 | 12.34  |
+| Protein    | SampleID     | Condition | iBAQ   | riBAQ  |
+| ---------  |--------------|-----------|--------| -------|
+|LV861_HUMAN | Sample-1     | heart     | 1234.1 | 12.34  |
 
 ## AE Header 
 
@@ -24,7 +24,7 @@ In addition, for each `Default` column of the matrix the following information s
 
 ```
 #INFO=<ID=Protein, Number=1, Type=String, Description="Protein Accession">
-#INFO=<ID=Sample_ID, Number=1, Type=String, Description="Sample Accession in the SDRF">
+#INFO=<ID=SampleID, Number=1, Type=String, Description="Sample Accession in the SDRF">
 #INFO=<ID=Condition, Number=1, Type=String, Description="Value of the factor value">
 #INFO=<ID=iBAQ, Number=1, Type=Float, Description="Intensity based absolute quantification">
 #INFO=<ID=riBAQ, Number=1, Type=Float, Description="relative iBAQ">
