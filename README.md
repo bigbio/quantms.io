@@ -1,33 +1,22 @@
 # quantms.io
 
-The proteomics quantification formats, is a Github repository that aims to formalize some existing proteomics quantification formats for large scale quantification experiments. Different from previous efforts like (mzTab, quantML, etc), the present representation aims to reuse existing popular formats and work in the following use cases: 
+[quantms](https://docs.quantms.org) is a nf-core pipeline for the analysis of quantitative proteomics data. The pipeline is based on the [OpenMS](https://www.openms.de/) framework and [DIA-NN](https://github.com/vdemichev/DiaNN); and it is designed to analyze large scale experiments. the main outputs of quantms tools are the following: 
 
-**Note**: Before starting, for a more generic/extended MS format for quantitative proteomics please check the [mzTab](https://github.com/HUPO-PSI/mzTab) format. mzTab is a generic format for MS data, including quantification data for proteomics and metabolomics experiments. Aim to capture not only the quantitative information but also, the identification information, including the peptide spectrum matches (psms), post-translational modifications, etc.   
+- [mzTab](https://github.com/HUPO-PSI/mzTab) files with the identification and quantification information.
+- [MSstats](https://msstats.org/wp-content/uploads/2017/01/MSstats_v3.7.3_manual.pdf) input file with the peptide quantification values needed for the MSstats analysis.
+- [MSstats](https://msstats.org/wp-content/uploads/2017/01/MSstats_v3.7.3_manual.pdf) output file with the differential expression values for each protein. 
+- The input [SDRF](https://github.com/bigbio/proteomics-sample-metadata) of the pipeline if available. 
 
-## Why a new format?
+Here, we aim to formalize and develop a more standardized format that enables better representation of the identification and quantification results but also enables new and novel use cases for proteomics data analysis: 
 
-Why other efforts like mzTab, quantML, have been developed to represent quantitative proteomics data, we believe those formats are not enough to represent the following information, and also fails to handle the following cases: 
+- Fast and easy visualization of the identification and quantification results.
+- Easy integration with other omics data.
+- Easy integration with sample metadata.
+- AI/ML model development based on identification and quantification results.
 
-- QuantML and mzTab are design for DDA experiments, with lower number of ms_runs.  
-   - In mzTab, when the number of ms_runs increases, the number of columns in the peptide table with null values increases making difficult the reliability of the format.
-   - In mzTab, when the number of ms_runs and samples increases, the metadata section increases making difficult the reliability of the format. for each ms_run, at least 5 sections are needed, in an experiment with 1000 ms_runs, 5000 sections are needed. 
-   - QuantML was never designed to handle large scale experiments, and the format is not flexible enough to handle large scale experiments.
-- mzTab is a large format making difficult to handle and visualize quantitative information as simple as: 
-   - Different expression results tables. 
-   - Raw intensities tables at peptide/protein information.
-- Sample metadata integration with [SDRF-Proteomics](https://github.com/bigbio/proteomics-sample-metadata) format is not possible.
+**Note**: We are not trying to replace the mzTab format, but to provide a new format that enables AI-related use cases. Most of the features of the mzTab format will be included in the new format.  
 
-More important, both formats and previous efforts do not provide enough tooling framework to enable bioinformatic software packages, main reason why the formats are yet popular within the bioinformatics community. 
-
-## Gols and Use cases
-
-The main goals of this repository are:
-
-- Provide a data model to represent quantitative proteomics data for absolute quantification and differential expression experiments.
-- Provide a data model to represent quantitative proteomics data for DIA and DDA experiments.
-- Provide a data model to represent quantitative proteomics data for large scale experiments.
-- Provide a data model that enable integration with the Sample to Data Relationship Format (SDRF-Proteomics) for proteomics experiments.
-- Provide a data model to represent protein and peptide quantification data.
+## Data model
 
 The GitHub repository aims to provide multiple formats for serialization of the data model, including:
 
