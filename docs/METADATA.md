@@ -1,6 +1,5 @@
 # Metadata Files
 
-The `.qms` folder will contain multiple metadata files that will be used to describe the project, the samples, the data acquisition and the data processing. 
 
 ## Project file
 

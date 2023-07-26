@@ -1,5 +1,13 @@
 # Absolute expression format
 
+The absolute expression format aims to cover the following use cases:
+
+- Fast and easy visualization absolute expression (AE) results using iBAQ values. 
+- Store the AE results of each protein on each sample.
+- Provide information about the condition (factor value) of each sample for easy integration.
+- Store metadata information about the project, the workflow and the columns in the file.
+
+## Format 
 The absolute expression format by quantms is a tab-delimited file format that contains the following fields:
 
 - `Protein` -> Protein accession or semicolon-separated list of accessions for indistinguishable groups

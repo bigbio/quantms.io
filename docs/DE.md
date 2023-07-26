@@ -1,5 +1,14 @@
 # Differential expression format
 
+## Use cases
+
+- Store the differential express proteins between two contrasts,  with the corresponding fold changes and p-values. 
+- Enable easy visualization using tools like [Volcano Plot](https://en.wikipedia.org/wiki/Volcano_plot_(statistics)).
+- Enable easy integration with other omics data resources. 
+- Store metadata information about the project, the workflow and the columns in the file.
+
+## Format
+
 The differential expression format by quantms is based on the [MSstats](https://msstats.org/wp-content/uploads/2017/01/MSstats_v3.7.3_manual.pdf) output. The MSstats format is a tab-delimited file that contains the following fields - see example [file](include/PXD004683.csv):
 
 - `Protein` -> Protein Accession
