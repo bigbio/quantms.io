@@ -1,0 +1,23 @@
+#project_accession=PXD004683
+#project_title=Comparison of Lung Cancer Proteome Profiles 2: TMT
+#project_description=The goal of this project is to compare label free quantification, chemical labeling with tandem mass tags, and data independent acquisition discovery proteomics approaches using lung squamous cell carcinomas and adjacent lung tissues.
+#quanmts_version=1.1
+#factor_value=phenotype
+#fdr_threshold=0.05
+#INFO=<ID=Protein, Number=1, Type=String, Description="Protein Accession">
+#INFO=<ID=Label, Number=1, Type=String, Description="Label for the Conditions combination">
+#INFO=<ID=log2FC, Number=1, Type=Float, Description="Log2 Fold Change">
+#INFO=<ID=SE, Number=1, Type=Float, Description="Standard error of the log2 fold change">
+#INFO=<ID=DF, Number=1, Type=Integer, Description="Degree of freedom of the Student test">
+#INFO=<ID=pvalue, Number=1, Type=Float, Description="Raw p-values">
+#INFO=<ID=adj.pvalue, Number=1, Type=Float, Description="P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg">
+#INFO=<ID=issue, Number=1, Type=String, Description="Issue column shows if there is any issue for inference in corresponding protein and comparison">
+Protein	Label	log2FC	SE	DF	pvalue	adj.pvalue	issue
+sp|A0A075B6I0|LV861_HUMAN	normal-squamous cell carcinoma	-0.608881401746116	0.874698505540308	7.98511941081737	0.506115855701404	0.617123653183989	NA
+sp|A0A075B6I9|LV746_HUMAN;sp|P04211|LV743_HUMAN	normal-squamous cell carcinoma	0.0829439874291534	0.443186083429313	3	0.863481956217341	0.906074074166224	NA
+sp|A0A075B6K5|LV39_HUMAN;sp|P80748|LV321_HUMAN	normal-squamous cell carcinoma	0.351641705304375	0.627271406995195	3	0.614219027352121	0.715426380410605	NA
+sp|A0A075B6P5|KV228_HUMAN;sp|A0A087WW87|KV240_HUMAN;sp|P01614|KVD40_HUMAN;sp|P01615|KVD28_HUMAN	normal-squamous cell carcinoma	0.623701373790229	0.439899830677411	7.81685717215862	0.194849139992051	0.301042531561804	NA
+sp|A0A075B6R9|KVD24_HUMAN;sp|A0A0C4DH68|KV224_HUMAN	normal-squamous cell carcinoma	0.816912144580217	0.662487816084451	2.99999865855028	0.305351471232629	0.425359338806872	NA
+sp|A0A0A0MS14|HV145_HUMAN	normal-squamous cell carcinoma	0.463815419660831	0.35065539946005	7.00000073730547	0.227505049749684	0.339501300487503	NA
+sp|A0A0B4J1V2|HV226_HUMAN	normal-squamous cell carcinoma	0.330528524034208	0.563852807731553	8.00000000152193	0.573906234550985	0.679287242071378	NA
+sp|A0A0B4J1Y9|HV372_HUMAN	normal-squamous cell carcinoma	0.17575018697919	0.453684944610657	7.94865778157153	0.708638428068355	0.790767482120683	NA
