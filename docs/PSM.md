@@ -2,7 +2,7 @@
 
 ## Use cases
 
-The PSM table aims to cover detail on PSM level for AI/ML training and other use-cases. The most of content are similar to mzTab. [Parquet](https://github.com/apache/parquet-format) file is a columnar storage format that supports nested data. For these large-scale analysis, Parquet has helped its users reduce storage requirements by at least one-third on large datasets, in addition, it greatly improved scan and deserialization time (web use-cases), hence the overall costs. The following table compares the savings as well as the speedup obtained by converting data into Parquet from CSV.
+The PSM table aims to cover detail on PSM level for AI/ML training and other use-cases. Most of the content is similar to mzTab. [Parquet](https://github.com/apache/parquet-format) file is a columnar storage format that supports nested data. For these large-scale analyses, Parquet has helped its users reduce storage requirements by at least one-third on large datasets, in addition, it greatly improved scan and deserialization time (web use-cases), hence the overall costs. The following table compares the savings as well as the speedup obtained by converting data into Parquet from CSV.
 
 - Store details on PSM level including spectrum mz/intensity for specific use-cases such as AI/ML training.
 - Fast and easy visualization and scanning on PSM level.
@@ -15,8 +15,8 @@ The PSM table aims to cover detail on PSM level for AI/ML training and other use
 ## Format
 
 - `sequence`: The peptide's sequence corresponding to the PSM -> `string`
-- `PSM_ID`: A unique identifier for a PSM within the file -> `integer`
-- `accession`: The protein's accession the corresponding peptide sequence -> `string`
+- `psm_id`: A unique identifier for a PSM within the file -> `integer`
+- `accession`: A list protein's accession the corresponding peptide sequence -> `string`
 - `unique`: Indicates whether the peptide sequence (coming from the PSM) is unique for this protein in respect to the searched database -> `boolean (0/1)`
 - `database`: The protein database used for the search and the peptide sequence comes from -> `string`
 - `search_engines`: A `,` delimited list of search engine(s) that identified the PSM -> `list[string]`
