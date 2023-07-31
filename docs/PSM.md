@@ -35,5 +35,4 @@ The [Avro PSM schema](psm.avsc) is used to define the PSM table format. The foll
 - `global_qvalue`: Global q-value from quantms -> `double`
 - `consensus_support`: Global consensus support scores for multiple search engines -> `double`
 - `isdecoy`: Indicates whether the peptide sequence (coming from the PSM) is decoy -> `boolean (0/1)`
-- `peptidoform_sequence`: Peptidoform sequence-> `string`
 - `spectrum`: A record with two array list mz and intensity ->  `{[double], [double]}`

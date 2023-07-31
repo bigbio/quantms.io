@@ -39,7 +39,6 @@
     {"name": "global_qvalue", "type":  "double"},
     {"name": "isdecoy",  "type":  "int"}, // Is a decoy peptide -> 0 (target) / 1 (decoy)
     {"name": "consensus_support", "type": "double"}, // Global consensus support scores for multiple search engines -> `float`
-    {"name": "peptidoform", type:  "string"}, // Peptidoform containing peptide + modification notation.
     {"name":  "search_engine_scores", "type":  { // List of modifications on the peptide (coming from the PSM) -> array of records with fields: modification, position, localization_probability
       "type": "array",
       "items": {
