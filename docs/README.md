@@ -7,3 +7,9 @@ Each of these files will be described in the following sections:
 
 - [METADATA.md](METADATA.md): A json file for metadata about the analyzed project
 - [AE.md](AE.md) or [DE.md](DE.md): A csv file based on the MSstats (TODO link) format for either absolute expression or differential expression.
+
+
+Some general rules for all the files: 
+
+- The files are tab-delimited, json or parquet files
+- Parquet files are compressed and can be read with pandas

@@ -25,12 +25,13 @@ The [Avro PSM schema](psm.avsc) is used to define the PSM table format. The foll
 - `accessions`: A list protein's accessions with the start and end position for peptide: `[{accession:string, start:int, end:int}, ...]`}] 
 - `unique`: Indicates whether the peptide sequence (coming from the PSM) is unique for this protein in respect to the searched database -> `boolean (0/1)`
 - `search_engine_scores`: A list search engine score for the given PSM -> `[{name:string, score:double}, ...]`
-- `modifications`: A list of modifications for a give peptide -> `[{modification:string, position:int, localization_probability:double}, ...]`
+- `modifications`: A list of modifications for a give peptide -> `[{name:string, position:int, localization_score:double}, ...]`
 - `retention_time`: The retention time of the spectrum -> `double`
 - `charge`: The charge assigned by the search engine/software -> `integer`
 - `exp_mass_to_charge`: The PSM’s experimental mass to charge (m/z) -> `double`
 - `calc_mass_to_charge`: The PSM’s calculated (theoretical) mass to charge (m/z) -> `double`
-- `psm_usi`: USI of the PSM `mzspec:PXD000561:Adult_Frontalcortex_bRP_Elite_85_f09:scan:17555` -> `string`
+- `spectra_usi`: USI of the PSM `mzspec:PXD000561:Adult_Frontalcortex_bRP_Elite_85_f09:scan:17555` -> `string`
+- `peptifoform`: Peptiform of the PSM `PEPTIDE[+80.0]FORM` -> `string`
 - `posterior_error_probability`: Posterior Error Probability score from quantms -> `double`
 - `global_qvalue`: Global q-value from quantms -> `double`
 - `consensus_support`: Global consensus support scores for multiple search engines -> `double`

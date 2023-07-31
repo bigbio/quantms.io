@@ -1,70 +1,70 @@
 {
-  "type": "record",
-  "name": "psm", // name of the schema
-  "namespace": "io.quantms", // optional namespace
-  "fields": [
-    {"name":"sequence", "type":"string"}, // sequence with no modifications
-    {"name":"psm_id", "type": "int"}, // psm accession
-    {"name":"accessions", "type": {   // protein accessions
-      "type": "array",
-      "items": {
-        "type": "record",
-        "name": "accession",
-        "fields": [
-          {"name": "accession", "type": "string"}, // protein accession
-          {"name": "start", "type": "int"}, // start position of the peptide in the protein
-          {"name": "end", "type": "int"}  // end position of the peptide in the protein
-        ]
-      }
-    }},
-    {"name": "unique", "type": "int"}, // Indicates whether the peptide sequence (coming from the PSM) is unique for this protein in respect to the searched database -> 0 (non unique)/1 (unique)
-    {"name":  "modifications", "type":  { // List of modifications on the peptide (coming from the PSM) -> array of records with fields: modification, position, localization_probability
-      "type": "array",
-      "items": {
-        "type": "record",
-        "name": "modification",
-        "fields": [
-          {"name":  "modification", "type": "string"},
-          {"name":  "position", "type": "int"},
-          {"name":  "localization_probability", "type": "double"}
-        ]
-      }
-    }},
-    {"name": "retention_time", "type":  "double"}, // retention time of PSM
-    {"name": "charge", "type": "int"}, // charge state of PSM
-    {"name": "exp_mass_to_charge", "type": "double"}, // The PSM’s experimental mass to charge (m/z) -> `double`,,
-    {"name": "calc_mass_to_charge", "type": "double"}, // The PSM’s calculated (theoretical) mass to charge (m/z) -> `double`
-    {"name": "psm_usi", "type":  "string"}, // PSM USI containing the ref file and the peptidoform
-    {"name": "posterior_error_probability", "type":"double"},
-    {"name": "global_qvalue", "type":  "double"},
-    {"name": "isdecoy",  "type":  "int"}, // Is a decoy peptide -> 0 (target) / 1 (decoy)
-    {"name": "consensus_support", "type": "double"}, // Global consensus support scores for multiple search engines -> `float`
-    {"name":  "search_engine_scores", "type":  { // List of modifications on the peptide (coming from the PSM) -> array of records with fields: modification, position, localization_probability
-      "type": "array",
-      "items": {
-        "type": "record",
-        "name": "search_engine_score",
-        "fields": [
-          {"name":  "name", "type": "string"},
-          {"name":  "score", "type": "double"},
-        ]
-      }
-    }},
-    {"name": "spectrum",
-      "type": "record",
-      "fields": [
-        {"name":  "mz", "type":  {
-          "type": "array",
-            "items": "double",
-            "default": []
-        }},
-        {"name": "intensity", "type": {
-          "type": "array",
-            "items": "double",
-            "default": []
-        }}
-      ]
-
-    },
-   ]
+	"name": "psm",
+	"type": "record",
+	"fields": [
+		{ "name": "sequence", "type": "string"},
+		{"name": "psm_id","type": "int"},
+		{"name": "accessions","type": {
+				"type": "array",
+				"items": {
+					"type": "record",
+					"name": "accession",
+					"fields": [{"name": "accession","type": "string"},
+						       {"name": "start","type": "int"},
+						       {"name": "end","type": "int"}
+					]
+				}
+		}
+		},
+		{"name": "unique","type": "int"},
+		{"name": "modifications","type": {
+				"type": "array",
+				"items": {
+					"type": "record",
+					"name": "modification",
+					"fields": [{"name": "name","type": "string"
+						},
+						{"name": "position","type": "int"},
+						{"name": "localization_score","type": "double"
+						}
+					]
+				}
+			}
+		},
+		{"name": "retention_time","type": "double"},
+		{"name": "charge","type": "int"},
+		{"name": "exp_mass_to_charge","type": "double"},
+		{"name": "calc_mass_to_charge","type": "double"},
+		{"name": "spectra_usi","type": "string"},
+		{"name": "peptidofom","type": "string"},
+		{"name": "posterior_error_probability","type": "double"},
+		{"name": "global_qvalue","type": "double"},
+		{"name": "isdecoy","type": "int"},
+		{"name": "consensus_support","type": "double"},
+		{"name": "search_engine_scores",
+			"type": {
+				"type": "array",
+				"items": {
+					"type": "record",
+					"name": "search_engine_score",
+					"fields": [{"name": "name","type": "string"},
+						       {"name": "score","type": "double"}
+					]}
+			}
+		},
+		{"name": "mz",
+		 "type": {
+				"type": "array",
+				"items": "double",
+				"default": []
+			}
+		},
+		{"name": "intensity",
+		 "type": {
+			 "type": "array",
+			 "items": "double",
+			 "default": []
+		 }
+		}
+	]
 }
