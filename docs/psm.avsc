@@ -15,7 +15,7 @@
 		{"name": "calc_mass_to_charge","type": "double"},
 		{"name": "reference_file_name","type": "string"},
 		{"name": "scan_number", "type":  "string"},
-		{"name": "peptidofom","type": "string"},
+		{"name": "peptidoform","type": "string"},
 		{"name": "posterior_error_probability","type": "double"},
 		{"name": "global_qvalue","type": "double"},
 		{"name": "is_decoy","type": "int"},

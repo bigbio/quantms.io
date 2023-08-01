@@ -34,7 +34,7 @@ The [Avro PSM schema](psm.avsc) is used to define the PSM table format. The foll
 - `calc_mass_to_charge`: The PSM’s calculated (theoretical) mass to charge (m/z) -> `double`
 - `reference_file_name`: The reference file name that contains the spectrum. -> `string` `e.g. Adult_Frontalcortex_bRP_Elite_85_f09.mzML`
 - `scan_number`: The scan number of the spectrum. The scan number or index of the spectrum in the file -> `string` `e.g. 1`
-- `peptifoform`: Peptiform of the PSM `PEPTIDE[+80.0]FORM` -> `string`
+- `peptidoform`: Peptidoform of the PSM `PEPTIDE[+80.0]FORM` -> `string`
 - `posterior_error_probability`: Posterior Error Probability score from quantms -> `double`
 - `global_qvalue`: Global q-value from quantms -> `double`
 - `is_decoy`: Indicates whether the peptide sequence (coming from the PSM) is decoy -> `boolean (0/1)`
