@@ -18,7 +18,7 @@
 		{"name": "peptidofom","type": "string"},
 		{"name": "posterior_error_probability","type": "double"},
 		{"name": "global_qvalue","type": "double"},
-		{"name": "isdecoy","type": "int"},
+		{"name": "is_decoy","type": "int"},
 		{"name": "consensus_support","type": "double"},
 		{"name": "mz","type": {"type": "array","items": "double","default": []}},
 		{"name": "intensity","type": {"type": "array","items": "double","default": []}},
