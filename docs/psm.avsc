@@ -2,69 +2,26 @@
 	"name": "psm",
 	"type": "record",
 	"fields": [
-		{ "name": "sequence", "type": "string"},
+		{"name": "sequence", "type": "string"},
 		{"name": "psm_id","type": "int"},
-		{"name": "accessions","type": {
-				"type": "array",
-				"items": {
-					"type": "record",
-					"name": "accession",
-					"fields": [{"name": "accession","type": "string"},
-						       {"name": "start","type": "int"},
-						       {"name": "end","type": "int"}
-					]
-				}
-		}
-		},
+		{"name": "protein_accessions", "type": {"type": "array","items": "string"}},
+		{"name": "protein_start_positions", "type": {"type": "array","items": "int"}},
+		{"name": "protein_end_positions", "type": {"type": "array","items": "int"}},
 		{"name": "unique","type": "int"},
-		{"name": "modifications","type": {
-				"type": "array",
-				"items": {
-					"type": "record",
-					"name": "modification",
-					"fields": [{"name": "name","type": "string"
-						},
-						{"name": "position","type": "int"},
-						{"name": "localization_score","type": "double"
-						}
-					]
-				}
-			}
-		},
+		{"name": "modifications","type": {"type": "array", "items": "string"}},
 		{"name": "retention_time","type": "double"},
 		{"name": "charge","type": "int"},
 		{"name": "exp_mass_to_charge","type": "double"},
 		{"name": "calc_mass_to_charge","type": "double"},
-		{"name": "spectra_usi","type": "string"},
+		{"name": "reference_file_name","type": "string"},
+		{"name": "scan_number", "type":  "string"},
 		{"name": "peptidofom","type": "string"},
 		{"name": "posterior_error_probability","type": "double"},
 		{"name": "global_qvalue","type": "double"},
 		{"name": "isdecoy","type": "int"},
 		{"name": "consensus_support","type": "double"},
-		{"name": "search_engine_scores",
-			"type": {
-				"type": "array",
-				"items": {
-					"type": "record",
-					"name": "search_engine_score",
-					"fields": [{"name": "name","type": "string"},
-						       {"name": "score","type": "double"}
-					]}
-			}
-		},
-		{"name": "mz",
-		 "type": {
-				"type": "array",
-				"items": "double",
-				"default": []
-			}
-		},
-		{"name": "intensity",
-		 "type": {
-			 "type": "array",
-			 "items": "double",
-			 "default": []
-		 }
-		}
+		{"name": "mz","type": {"type": "array","items": "double","default": []}},
+		{"name": "intensity","type": {"type": "array","items": "double","default": []}},
+		{"name": "num_peaks","type": "int"},
 	]
 }
