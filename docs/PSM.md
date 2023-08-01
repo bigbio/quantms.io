@@ -22,7 +22,7 @@ The [Avro PSM schema](psm.avsc) is used to define the PSM table format. The foll
 
 - `sequence`: The peptide's sequence corresponding to the PSM -> `string`
 - `psm_id`: A unique identifier for a PSM within the file -> `integer`
-- `protein_accessions`: A list protein's accessions -> `list[string] (e.g. [P02768, P02769])`])` 
+- `protein_accessions`: A list protein's accessions -> `list[string] (e.g. [P02768, P02769]`)` 
 - `protein_start_positions`: A list of protein's start positions -> `list[int] (e.g. [1, 2])`
 - `protein_end_positions`: A list of protein's end positions -> `list[int] (e.g. [10, 20])`
 - `unique`: Indicates whether the peptide sequence (coming from the PSM) is unique for this protein in respect to the searched database -> `boolean (0/1)`
