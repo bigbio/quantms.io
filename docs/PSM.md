@@ -37,8 +37,11 @@ The [Avro PSM schema](psm.avsc) is used to define the PSM table format. The foll
 - `peptifoform`: Peptiform of the PSM `PEPTIDE[+80.0]FORM` -> `string`
 - `posterior_error_probability`: Posterior Error Probability score from quantms -> `double`
 - `global_qvalue`: Global q-value from quantms -> `double`
-- `consensus_support`: Global consensus support scores for multiple search engines -> `double`
 - `is_decoy`: Indicates whether the peptide sequence (coming from the PSM) is decoy -> `boolean (0/1)`
+
+Optional fields:
+
+- `consensus_support`: Global consensus support scores for multiple search engines -> `double`
 - `mz`: A list of mz values for the spectrum -> `list[double]`
 - `intesity`: A list of intensity values for the spectrum ->  `list[double]`
 - `num_peaks`: The number of peaks in the spectrum, this is the size of previous lists intensity and mz -> `integer`
