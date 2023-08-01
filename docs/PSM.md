@@ -41,6 +41,8 @@ The [Avro PSM schema](psm.avsc) is used to define the PSM table format. The foll
 
 Optional fields:
 
+- `gene_accessions`: A list of gene accessions -> `list[string] (e.g. [ENSG00000139618, ENSG00000139618])`
+- `gene_names`: A list of gene names -> `list[string] (e.g. [APOA1, APOA1])`
 - `consensus_support`: Global consensus support scores for multiple search engines -> `double`
 - `mz`: A list of mz values for the spectrum -> `list[double]`
 - `intesity`: A list of intensity values for the spectrum ->  `list[double]`
