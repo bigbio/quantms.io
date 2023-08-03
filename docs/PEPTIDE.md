@@ -14,7 +14,7 @@ For large-scale datasets, peptide section would be very large. Therefore, Parque
 - `sequence`: Peptide sequence -> `string`
 - `protein_accessions`: A list protein's accessions -> `list[string] (e.g. [P02768, P02769])`
 - `unique`: Indicates whether the peptide is unique for this protein in respect to the searched database -> `boolean (0/1)`
-- `best_search_engine_score`: The best search engine score for the given peptide -> `double`
+- `best_search_engine_score_{}`: The best search engine score for the given peptide -> `double`
 - `reference_file_name`: The reference file name that contains the spectrum. -> `string` `e.g. Adult_Frontalcortex_bRP_Elite_85_f09.mzML`
 - `modifications`: A list of modifications for a give peptide -> `[modification1, modification2, ...]`. A modification should be recorded as string similarly to mztab like:
   - `{position}({Probabilistic Score:0.9})|{position2}|..-{modification accession or name}` -> e.g `1(Probabilistic Score:0.9)|2|3-UNIMOD:35`
