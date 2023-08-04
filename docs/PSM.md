@@ -22,27 +22,26 @@ The [Avro PSM schema](psm.avsc) is used to define the PSM table format. The foll
 
 - `sequence`: The peptide's sequence corresponding to the PSM -> `string`
 - `psm_id`: A unique identifier for a PSM within the file -> `integer`
-- `protein_accessions`: A list protein's accessions -> `list[string] (e.g. [P02768, P02769])` 
-- `protein_start_positions`: A list of protein's start positions -> `list[int] (e.g. [1, 2])`
-- `protein_end_positions`: A list of protein's end positions -> `list[int] (e.g. [10, 20])`
+- `protein_accessions`: A list protein's accessions -> `list[string]` 
+- `protein_start_positions`: A list of protein's start positions -> `list[int]`
+- `protein_end_positions`: A list of protein's end positions -> `list[int]`
 - `unique`: Indicates whether the peptide sequence (coming from the PSM) is unique for this protein in respect to the searched database -> `boolean (0/1)`
-- `modifications`: A list of modifications for a give peptide -> `[modification1, modification2, ...]`. A modification should be recorded as string similarly to mztab like:
-  - `{position}({Probabilistic Score:0.9})|{position2}|..-{modification accession or name}` -> e.g `1(Probabilistic Score:0.9)|2|3-UNIMOD:35`
+- `modifications`: A list of modifications for a give peptide `[modification1, modification2, ...]`. A modification should be recorded as string like [modification definition](README.md#modifications)-> `list[string]`
 - `retention_time`: The retention time of the spectrum -> `double`
 - `charge`: The charge assigned by the search engine/software -> `integer`
 - `exp_mass_to_charge`: The PSM’s experimental mass to charge (m/z) -> `double`
 - `calc_mass_to_charge`: The PSM’s calculated (theoretical) mass to charge (m/z) -> `double`
-- `reference_file_name`: The reference file name that contains the spectrum. -> `string` `e.g. Adult_Frontalcortex_bRP_Elite_85_f09.mzML`
-- `scan_number`: The scan number of the spectrum. The scan number or index of the spectrum in the file -> `string` `e.g. 1`
-- `peptidoform`: Peptidoform of the PSM `PEPTIDE[+80.0]FORM` -> `string`
+- `reference_file_name`: The reference file name that contains the spectrum. -> `string` 
+- `scan_number`: The scan number of the spectrum. The scan number or index of the spectrum in the file -> `string` 
+- `peptidoform`: Peptidoform of the PSM. See more [documentation here](README.md#peptidoform). -> `string`
 - `posterior_error_probability`: Posterior Error Probability score from quantms -> `double`
 - `global_qvalue`: Global q-value from quantms -> `double`
 - `is_decoy`: Indicates whether the peptide sequence (coming from the PSM) is decoy -> `boolean (0/1)`
 
 Optional fields:
 
-- `gene_accessions`: A list of gene accessions -> `list[string] (e.g. [ENSG00000139618, ENSG00000139618])`
-- `gene_names`: A list of gene names -> `list[string] (e.g. [APOA1, APOA1])`
+- `gene_accessions`: A list of gene accessions -> `list[string]`
+- `gene_names`: A list of gene names -> `list[string]`
 - `consensus_support`: Global consensus support scores for multiple search engines -> `double`
 - `mz`: A list of mz values for the spectrum -> `list[double]`
 - `intesity`: A list of intensity values for the spectrum ->  `list[double]`
