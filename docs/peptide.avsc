@@ -12,13 +12,12 @@
 		{"name": "charge","type": "int"},
 		{"name": "exp_mass_to_charge","type": "double"},
 		{"name": "scan_number", "type":  "string"},
-		{"name": "abundance","type": "double"},
+		{"name": "abundance_{}","type": "double"},
 		{"name": "peptidoform","type": "string"},
 		{"name": "is_decoy","type": "int"},
 		{"name": "posterior_error_probability","type": "double"},
 		{"name": "consensus_support","type": "double"},
 		{"name": "search_engine_score_{}", "type": "double"},
-		{"name": "label", "type": "string"},
 		{"name": "gene_accessions", "type": {"type": "array","items": "string"}},
 		{"name": "gene_names", "type": {"type": "array","items": "string"}
 		}
