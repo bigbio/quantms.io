@@ -27,11 +27,11 @@
 		{"name": "isotope_label_type", "type":  "string"},
 		{"name": "run", "type": "string"},
 		{"name": "channel", "type":  "string"},
-		{"name": "reference_file_name","type": "string"},
-		{"name": "scan_number", "type":  "string"},
 
 		{"name": "search_engine_score_{}", "type": "string"},
 		{"name": "consensus_support","type": "double"},
+		{"name": "reference_file_name","type": "string"},
+		{"name": "scan_number", "type":  "string"},
 		{"name": "mz","type": {"type": "array","items": "double","default": []}},
 		{"name": "intensity","type": {"type": "array","items": "double","default": []}},
 		{"name": "num_peaks","type": "int"},
