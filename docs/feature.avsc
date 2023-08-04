@@ -1,0 +1,29 @@
+{
+	"name": "feature",
+	"type": "record",
+	"fields": [
+		{"name": "sequence", "type": "string"},
+		{"name": "protein_accessions", "type": {"type": "array","items": "string"}},
+		{"name": "protein_start_positions", "type": {"type": "array","items": "int"}},
+		{"name": "protein_end_positions", "type": {"type": "array","items": "int"}},
+		{"name": "unique","type": "int"},
+		{"name": "modifications","type": {"type": "array", "items": "string"}},
+		{"name": "retention_time","type": "double"},
+		{"name": "charge","type": "int"},
+		{"name": "exp_mass_to_charge","type": "double"},
+		{"name": "calc_mass_to_charge","type": "double"},
+		{"name": "reference_file_name","type": "string"},
+		{"name": "scan_number", "type":  "string"},
+		{"name": "peptidoform","type": "string"},
+		{"name": "posterior_error_probability","type": "double"},
+		{"name": "global_qvalue","type": "double"},
+		{"name": "is_decoy","type": "int"},
+		{"name": "consensus_support","type": "double"},
+		{"name": "mz","type": {"type": "array","items": "double","default": []}},
+		{"name": "intensity","type": {"type": "array","items": "double","default": []}},
+		{"name": "num_peaks","type": "int"},
+		{"name": "gene_accessions", "type": {"type": "array","items": "string"}},
+		{"name": "gene_names", "type": {"type": "array","items": "string"}
+		}
+	]
+}
