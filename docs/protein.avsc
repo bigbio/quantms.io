@@ -3,8 +3,6 @@
 	"type": "record",
 	"fields": [
         {"name": "protein_accessions", "type": {"type": "array","items": "string"}},
-		{"name": "sample_identifier","type": "string"},
-		{"name": "reference_file_name","type": "string"},
 		{"name": "abundance_{}","type": "double"},
 		{"name": "global_qvalue","type": "double"},
 		{"name": "is_decoy","type": "int"},
