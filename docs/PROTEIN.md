@@ -13,12 +13,11 @@ The Protein table is a [Parquet](https://github.com/apache/parquet-format) file 
 - `best_search_engine_score_{}`: The best search engine score for the given protein -> `double`
 - `sample_identifier`: The sample identifier -> `string`
 - `reference_file_name`: The reference file name that contains the spectrum. -> `string` `e.g. Adult_Frontalcortex_bRP_Elite_85_f09.mzML`
-- `abundance`: The protein's abundance as measured in the given samples in LFQ experiments or in defined spectrum file name combined with channel in TMT tag experiments, which usually consistent with `study variable` column from mzTab -> `double`
+- `abundance_{label}`: The protein's abundance as measured in the given samples in LFQ experiments or in defined spectrum file name combined with channel in TMT tag experiments. `{}` can be omitted in LFQ `(e.g. abundance_TMT126)` -> `double`
 - `global_qvalue`: Global q-value from quantms -> `double`
 - `is_decoy`: Indicates whether the protein is decoy -> `boolean (0/1)`
 
 Optional fields:
 
-- `label`: The label tag -> `string e.g.  TMT126)`
 - `gene_accessions`: A list of gene accessions -> `list[string] (e.g. [ENSG00000139618, ENSG00000139618])`
 - `gene_names`: A list of gene names -> `list[string] (e.g. [APOA1, APOA1])`

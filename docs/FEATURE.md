@@ -37,9 +37,9 @@ Properties and columns from sample:
 - `condition`: The value for the factor value column in the sdrf, for example, the tissue name for the given sample in the column `factor value[organism part]` -> `string`
 - `fraction`: The index value in the SDRF for the fraction column -> `string`
 - `biological_replicate`: The value of the biological replicate column in the SDRF in relation with the condition -> `string`
-- `fragment_ion`: 
-- `isotope_label_type`:
-- `run`:
+- `fragment_ion`: The column defines a spectral feature: fragment ions `e.g. y7`. If information for the column is not available or not applicable, it should be set to a constant value `NA` -> `string`
+- `isotope_label_type`: The column indicates whether the measurement is based on an endogenous peptide (indicated by value `L` or `light`) or reference peptide (indicated by value `H` or `heavy`) -> `string`
+- `run`: The column stores IDs of mass spectrometry runs for LFQ experiments `e.g. 1`. For TMT/iTRAQ experiments, it is a identifier of mixture combined with technical replicate and fractions `{mixture}_{technical_replicate}_{fraction}` `e.g. 1_2_3` -> `string`
 - `channel`: The channel used to label the sample (e.g. TMT115)-> `string`
 
 Optional fields:

@@ -5,11 +5,10 @@
         {"name": "protein_accessions", "type": {"type": "array","items": "string"}},
 		{"name": "sample_identifier","type": "string"},
 		{"name": "reference_file_name","type": "string"},
-		{"name": "abundance","type": "double"},
+		{"name": "abundance_{}","type": "double"},
 		{"name": "global_qvalue","type": "double"},
 		{"name": "is_decoy","type": "int"},
 		{"name": "best_search_engine_score_{}", "type": "double"},
-		{"name": "label", "type": "string"},
 		{"name": "gene_accessions", "type": {"type": "array","items": "string"}},
 		{"name": "gene_names", "type": {"type": "array","items": "string"}
 		}
