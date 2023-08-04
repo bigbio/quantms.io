@@ -8,7 +8,7 @@
 		{"name": "abundance_{}","type": "double"},
 		{"name": "global_qvalue","type": "double"},
 		{"name": "is_decoy","type": "int"},
-		{"name": "best_search_engine_score_{}", "type": "double"},
+		{"name": "best_id_score_{}", "type": "double"},
 		{"name": "gene_accessions", "type": {"type": "array","items": "string"}},
 		{"name": "gene_names", "type": {"type": "array","items": "string"}
 		}

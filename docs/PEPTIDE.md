@@ -14,7 +14,7 @@ For large-scale datasets, a peptide section would be very large. Therefore, Parq
 - `sequence`: Peptide sequence -> `string`
 - `protein_accessions`: A list protein's accessions -> `list[string] (e.g. [P02768, P02769])`
 - `unique`: Indicates whether the peptide is unique for this protein in respect to the searched database -> `boolean (0/1)`
-- `best_search_engine_score_{}`: The best search engine score for the given peptide. Each search engine best score will be an column with the prefix `best_search_engine_score_` and the value of the column is the corresponding value of the `(e.g. MS-GF:RawScore -> best_search_engine_score_MS-GF:RawScore)` -> `double`
+- `best_id_score_{}`: The best search engine score for the given peptide. Each search engine best score will be an column with the prefix `best_id_score_` and the value of the column is the corresponding value of the `(e.g. MS-GF:RawScore -> best_id_score_MS-GF:RawScore)` -> `double`
 - `modifications`: A list of modifications for a give peptide -> `[modification1, modification2, ...]`. A modification should be recorded as string similarly to mztab like:
   - `{position}({Probabilistic Score:0.9})|{position2}|..-{modification accession or name}` -> e.g `1(Probabilistic Score:0.9)|2|3-UNIMOD:35`
 - `charge`: Precursor charge -> `int`
@@ -31,4 +31,4 @@ Optional fields:
 - `gene_names`: A list of gene names -> `list[string] (e.g. [APOA1, APOA1])`
 - `consensus_support`: Global consensus support scores for multiple search engines -> `double`
 - `posterior_error_probability`: Posterior Error Probability scores -> `double`
-- `search_engine_score_{}`: The search engine scores are the only fields that are not defined in the schema. Each search engine score will be an optional column with the prefix `search_engine_score_` and the value of the column is the corresponding value of the `(e.g. MS-GF:RawScore -> search_engine_score_MS-GF:RawScore)` -> `double`
+- `id_score_{}`: The search engine scores are the only fields that are not defined in the schema. Each search engine score will be an optional column with the prefix `id_score_` and the value of the column is the corresponding value of the `(e.g. MS-GF:RawScore -> id_score_MS-GF:RawScore)` -> `double`

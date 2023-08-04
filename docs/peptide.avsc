@@ -5,7 +5,7 @@
 		{"name": "sequence", "type": "string"},
 		{"name": "protein_accessions", "type": {"type": "array","items": "string"}},
 		{"name": "unique","type": "int"},
-    	{"name": "best_search_engine_score","type": "double"},
+    	{"name": "best_id_score","type": "double"},
 		{"name": "reference_file_name","type": "string"},
 		{"name": "modifications","type": {"type": "array", "items": "string"}},
 		{"name": "retention_time","type": "double"},
@@ -17,7 +17,7 @@
 		{"name": "is_decoy","type": "int"},
 		{"name": "posterior_error_probability","type": "double"},
 		{"name": "consensus_support","type": "double"},
-		{"name": "search_engine_score_{}", "type": "double"},
+		{"name": "id_score_{}", "type": "double"},
 		{"name": "gene_accessions", "type": {"type": "array","items": "string"}},
 		{"name": "gene_names", "type": {"type": "array","items": "string"}
 		}

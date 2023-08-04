@@ -16,7 +16,7 @@
 		{"name": "posterior_error_probability","type": "double"},
 		{"name": "global_qvalue","type": "double"},
 		{"name": "is_decoy","type": "int"},
-		{"name": "best_search_engine_score_{}", "type": "double"},
+		{"name": "best_id_score_{}", "type": "double"},
 		{"name": "intensity", "type":  "double"},
 		{"name": "spectral_count", "type":  "int"},
 		{"name": "sample_accession", "type":  "string"},
@@ -28,7 +28,7 @@
 		{"name": "run", "type": "string"},
 		{"name": "channel", "type":  "string"},
 
-		{"name": "search_engine_score_{}", "type": "string"},
+		{"name": "id_score_{}", "type": "string"},
 		{"name": "consensus_support","type": "double"},
 		{"name": "reference_file_name","type": "string"},
 		{"name": "scan_number", "type":  "string"},

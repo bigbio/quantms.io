@@ -10,7 +10,7 @@ The Protein table is a [Parquet](https://github.com/apache/parquet-format) file 
 ## Format
 
 - `protein_accession`: A list protein's accessions -> `list[string] (e.g. [P02768, P02769])`
-- `best_search_engine_score_{}`: The best search engine score for the given protein -> `double`
+- `best_id_score_{}`: The best search engine score for the given protein -> `double`
 - `sample_identifier`: The sample identifier -> `string`
 - `reference_file_name`: The reference file name that contains the spectrum. -> `string` `e.g. Adult_Frontalcortex_bRP_Elite_85_f09.mzML`
 - `abundance_{label}`: The protein's abundance as measured in the given samples in LFQ experiments or in defined spectrum file name combined with channel in TMT tag experiments. `{}` can be omitted in LFQ `(e.g. abundance_TMT126)` -> `double`
