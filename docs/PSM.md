@@ -44,6 +44,6 @@ Optional fields:
 - `gene_names`: A list of gene names -> `list[string]`
 - `consensus_support`: Global consensus support scores for multiple search engines -> `double`
 - `mz`: A list of mz values for the spectrum -> `list[double]`
-- `intesity`: A list of intensity values for the spectrum ->  `list[double]`
+- `intensity`: A list of intensity values for the spectrum ->  `list[double]`
 - `num_peaks`: The number of peaks in the spectrum, this is the size of previous lists intensity and mz -> `integer`
 - `id_score_{}`: The search engine scores are the only fields that are not defined in the schema. Each search engine score will be an optional column with the prefix `id_score_` and the value of the column is the corresponding value of the `(e.g. MS-GF:RawScore -> id_score_MS-GF:RawScore)` -> `double`
