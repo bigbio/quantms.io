@@ -26,10 +26,10 @@ For large-scale datasets, a peptide section would be very large. Therefore, Parq
 
 Optional fields:
 
-- `retention_time`: Retention time (seconds), it can be the median across all retention times in the [Feature File](FEATURE.md) -> `double`
+- `retention_time`: Retention time (seconds), it can be the median across all retention times in the [Feature File](FEATURE.md) -> `float`
 - `gene_accessions`: A list of gene accessions -> `list[string] (e.g. [ENSG00000139618, ENSG00000139618])`
 - `gene_names`: A list of gene names -> `list[string] (e.g. [APOA1, APOA1])`
-- `consensus_support`: Global consensus support scores for multiple search engines -> `double`
+- `consensus_support`: Global consensus support scores for multiple search engines -> `float`
 - `id_score_{}`: The search engine scores are the only fields that are not defined in the schema. Each search engine score will be an optional column with the prefix `id_score_` and the value of the column is the corresponding value of the `(e.g. MS-GF:RawScore -> id_score_MS-GF:RawScore)` -> `double`
 - `reference_file_name`: The reference file name that contains the spectrum. -> `string` 
 - `scan_number`: The scan number of the spectrum. The scan number or index of the spectrum in the file -> `string` 

@@ -19,7 +19,7 @@
 		{"name": "posterior_error_probability","type": "double"},
 		{"name": "global_qvalue","type": "double"},
 		{"name": "is_decoy","type": "int"},
-		{"name": "consensus_support","type": "double"},
+		{"name": "consensus_support","type": "float"},
 		{"name": "mz","type": {"type": "array","items": "double","default": []}},
 		{"name": "intensity","type": {"type": "array","items": "double","default": []}},
 		{"name": "num_peaks","type": "int"},

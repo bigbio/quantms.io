@@ -27,7 +27,7 @@ The [Avro PSM schema](psm.avsc) is used to define the PSM table format. The foll
 - `protein_end_positions`: A list of protein's end positions -> `list[int]`
 - `unique`: Indicates whether the peptide sequence (coming from the PSM) is unique for this protein in respect to the searched database -> `boolean (0/1)`
 - `modifications`: A list of modifications for a give peptide `[modification1, modification2, ...]`. A modification should be recorded as string like [modification definition](README.md#modifications)-> `list[string]`
-- `retention_time`: The retention time of the spectrum -> `double`
+- `retention_time`: The retention time of the spectrum -> `float`
 - `charge`: The charge assigned by the search engine/software -> `integer`
 - `exp_mass_to_charge`: The PSM’s experimental mass to charge (m/z) -> `double`
 - `calc_mass_to_charge`: The PSM’s calculated (theoretical) mass to charge (m/z) -> `double`
@@ -42,7 +42,7 @@ Optional fields:
 
 - `gene_accessions`: A list of gene accessions -> `list[string]`
 - `gene_names`: A list of gene names -> `list[string]`
-- `consensus_support`: Global consensus support scores for multiple search engines -> `double`
+- `consensus_support`: Global consensus support scores for multiple search engines -> `float`
 - `mz`: A list of mz values for the spectrum -> `list[double]`
 - `intensity`: A list of intensity values for the spectrum ->  `list[double]`
 - `num_peaks`: The number of peaks in the spectrum, this is the size of previous lists intensity and mz -> `integer`

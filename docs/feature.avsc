@@ -8,7 +8,7 @@
 		{"name": "protein_end_positions", "type": {"type": "array","items": "int"}},
 		{"name": "unique","type": "int"},
 		{"name": "modifications","type": {"type": "array", "items": "string"}},
-		{"name": "retention_time","type": "double"},
+		{"name": "retention_time","type": "float"},
 		{"name": "charge","type": "int"},
 		{"name": "exp_mass_to_charge","type": "double"},
 		{"name": "calc_mass_to_charge","type": "double"},
@@ -29,7 +29,7 @@
 		{"name": "channel", "type":  "string"},
 
 		{"name": "id_score_{}", "type": "string"},
-		{"name": "consensus_support","type": "double"},
+		{"name": "consensus_support","type": "float"},
 		{"name": "reference_file_name","type": "string"},
 		{"name": "scan_number", "type":  "string"},
 		{"name": "mz","type": {"type": "array","items": "double","default": []}},
