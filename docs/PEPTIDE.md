@@ -22,7 +22,7 @@ For large-scale datasets, a peptide section would be very large. Therefore, a Pa
 - `exp_mass_to_charge`: The precursor’s experimental mass to charge (m/z) -> `double`
 - `peptidoform`: Peptidoform of the peptide `PEPTIDE[+80.0]FORM` -> `string`
 - `sample_accession`: A unique sample accession corresponding to the source name in the SDRF-> `string`
-- `abundance`: The peptide’s abundance in the given sample -> `double`
+- `abundance`: The peptide’s abundance in the given sample -> `float`
 - `is_decoy`: Indicates whether the peptide sequence is decoy -> `boolean (0/1)`
 
 Optional fields:

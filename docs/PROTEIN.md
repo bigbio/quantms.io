@@ -11,7 +11,7 @@ The Protein table is a [Parquet](https://github.com/apache/parquet-format) file 
 
 - `protein_accession`: A list protein's accessions -> `list[string] (e.g. [P02768, P02769])`
 - `best_id_score`: The best search engine score for the given protein as a key value pair -> `string`
-- `abundance`: The protein's abundance as measured in the given samples in LFQ experiments or in defined spectrum file name combined with channel in TMT tag experiments. `{}` can be omitted in LFQ `(e.g. abundance_TMT126)` -> `double`
+- `abundance`: The protein's abundance as measured in the given sample -> `float`
 - `sample_accession`: A unique sample accession corresponding to the source name in the SDRF-> `string`
 - `global_qvalue`: Global q-value from quantms -> `double`
 - `is_decoy`: Indicates whether the protein is decoy -> `boolean (0/1)`

@@ -13,7 +13,7 @@
 		{"name": "exp_mass_to_charge","type": "double"},
 		{"name": "scan_number", "type":  "string"},
 		{"name": "sample_accession","type": "string"},
-		{"name": "abundance","type": "double"},
+		{"name": "abundance","type": "float"},
 		{"name": "peptidoform","type": "string"},
 		{"name": "number_of_psms", "type": "int"},
 		{"name": "is_decoy","type": "int"},

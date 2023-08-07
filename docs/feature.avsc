@@ -32,7 +32,7 @@
 		{"name": "reference_file_name","type": "string"},
 		{"name": "scan_number", "type":  "string"},
 		{"name": "mz","type": {"type": "array","items": "double","default": []}},
-		{"name": "intensity","type": {"type": "array","items": "double","default": []}},
+		{"name": "intensity","type": {"type": "array","items": "float","default": []}},
 		{"name": "num_peaks","type": "int"},
 		{"name": "gene_accessions", "type": {"type": "array","items": "string"}},
 		{"name": "gene_names", "type": {"type": "array","items": "string"}

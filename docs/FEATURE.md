@@ -28,7 +28,7 @@ Peptide properties and columns:
 - `global_qvalue`: Global q-value from quantms -> `double`
 - `is_decoy`: Indicates whether the peptide sequence (coming from the PSM) is decoy -> `boolean (0/1)`
 - `best_id_score`: A key value pair of the best search engine score selected by the algorithm `(e.g. "MS-GF:RawScore": 234.0)` -> `string`
-- `intensity`: The abundance of the peptide in the sample -> `double`
+- `intensity`: The abundance of the peptide in the sample -> `float`
 - `spectral_count`: The number of spectra that match the peptide -> `integer`
 
 Properties and columns from sample: 
@@ -46,7 +46,11 @@ Optional fields:
 
 - `gene_accessions`: A list of gene accessions -> `list[string]`
 - `gene_names`: A list of gene names -> `list[string]`
-- `consensus_support`: Global consensus support scores for multiple search engines -> `double`
+- `consensus_support`: Global consensus support scores for multiple search engines -> `float`
 - `id_scores`: A list of identification scores, search engine, percolator etc. Each search engine score will be a key/value pair `(e.g. "MS-GF:RawScore": 78.9)` -> `list[string]`
 - `reference_file_name`: The reference file name that contains the spectrum. -> `string` 
 - `scan_number`: The scan number of the spectrum. The scan number or index of the spectrum in the file -> `string` 
+- `mz`: A list of mz values for the spectrum -> `list[double]`
+- `intensity`: A list of intensity values for the spectrum ->  `list[float]`
+- `num_peaks`: The number of peaks in the spectrum, this is the size of previous lists intensity and mz -> `integer`
+

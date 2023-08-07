@@ -11,20 +11,20 @@
 
 The differential expression format by quantms is based on the [MSstats](https://msstats.org/wp-content/uploads/2017/01/MSstats_v3.7.3_manual.pdf) output. The MSstats format is a tab-delimited file that contains the following fields - see example [file](include/PXD004683.csv):
 
-- `Protein` -> Protein Accession
-- `Label` -> Label for the contrast on which the fold changes and p-values are based on
-- `log2FC` -> Log2 Fold Change	
-- `SE` -> Standard error of the log2 fold change 	
-- `DF` -> Degree of freedom of the Student test	
+- `protein` -> Protein Accession
+- `label` -> Label for the contrast on which the fold changes and p-values are based on
+- `log2fc` -> Log2 Fold Change	
+- `se` -> Standard error of the log2 fold change 	
+- `df` -> Degree of freedom of the Student test	
 - `pvalue`	-> Raw p-values
 - `adj.pvalue`	->  P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg
 - `issue` -> Issue column shows if there is any issue for inference in corresponding protein and comparison, for example, OneConditionMissing or CompleteMissing. 
 
 Example: 
 
-| Protein    | Label                          | log2FC | SE | DF | pvalue | adj.pvalue | issue |
-| ---------  |--------------------------------| ------ | -- | -- | ------ | ---------- |-------|
-|LV861_HUMAN | normal-squamous cell carcinoma | 0.60   | 0.87 | 8  | 0.51   | 0.62       | NA  |
+| protein     | label                          | log2fc | se   | df | pvalue | adj.pvalue | issue |
+|-------------|--------------------------------|--------|------|----| ------ | ---------- |-------|
+| LV861_HUMAN | normal-squamous cell carcinoma | 0.60   | 0.87 | 8  | 0.51   | 0.62       | NA  |
 
 ## DE Header 
 
@@ -35,13 +35,13 @@ By default, the MSstats format does not have any header of metadata. We suggest 
 In addition, for each `Default` column of the matrix the following information should be added: 
 
 ```
-#INFO=<ID=Protein, Number=inf, Type=String, Description="Protein Accession">
-#INFO=<ID=Label, Number=1, Type=String, Description="Label for the Conditions combination">
-#INFO=<ID=log2FC, Number=1, Type=Float, Description="Log2 Fold Change">
-#INFO=<ID=SE, Number=1, Type=Float, Description="Standard error of the log2 fold change">
-#INFO=<ID=DF, Number=1, Type=Integer, Description="Degree of freedom of the Student test">
-#INFO=<ID=pvalue, Number=1, Type=Float, Description="Raw p-values">
-#INFO=<ID=adj.pvalue, Number=1, Type=Float, Description="P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg">
+#INFO=<ID=protein, Number=inf, Type=String, Description="Protein Accession">
+#INFO=<ID=label, Number=1, Type=String, Description="Label for the Conditions combination">
+#INFO=<ID=log2fc, Number=1, Type=Double, Description="Log2 Fold Change">
+#INFO=<ID=se, Number=1, Type=Double, Description="Standard error of the log2 fold change">
+#INFO=<ID=df, Number=1, Type=Integer, Description="Degree of freedom of the Student test">
+#INFO=<ID=pvalue, Number=1, Type=Double, Description="Raw p-values">
+#INFO=<ID=adj.pvalue, Number=1, Type=Double, Description="P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg">
 #INFO=<ID=issue, Number=1, Type=String, Description="Issue column shows if there is any issue for inference in corresponding protein and comparison">
 ```
 

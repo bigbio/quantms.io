@@ -44,6 +44,6 @@ Optional fields:
 - `gene_names`: A list of gene names -> `list[string]`
 - `consensus_support`: Global consensus support scores for multiple search engines -> `float`
 - `mz`: A list of mz values for the spectrum -> `list[double]`
-- `intensity`: A list of intensity values for the spectrum ->  `list[double]`
+- `intensity`: A list of intensity values for the spectrum ->  `list[float]`
 - `num_peaks`: The number of peaks in the spectrum, this is the size of previous lists intensity and mz -> `integer`
 - `id_scores`: A list of identification scores, search engine, percolator etc. Each search engine score will be a key/value pair `(e.g. "MS-GF:RawScore": 78.9)` -> `list[string]`
