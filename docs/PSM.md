@@ -12,9 +12,9 @@
 _* [Parquet](https://github.com/apache/parquet-format)_ file is a columnar storage format that supports nested data. For these large-scale analyses, Parquet has helped its users reduce storage requirements by at least one-third on large datasets, in addition, it greatly improved scan and deserialization time (web use-cases), hence the overall costs. The following table compares the savings as well as the speedup obtained by converting data into Parquet from CSV.
 
 | Dataset    | Size on Amazon S3 | Query Run Time | Data Scanned |
-| ---------  |--------------|-----------|--------|
-|Data stored as CSV files | 1 TB     | 236 seconds     | 1.15 TB |
-|Data stored in Apache Parquet Format | 130 GB     | 6.78 seconds     | 2.51 GB |
+| ---------  |-------------------|----------------|--------------|
+|Data stored as CSV files | 1 TB              | 236 seconds    | 1.15 TB      |
+|Data stored in Apache Parquet Format | 130 GB            | 6.78 seconds   | 2.51 GB      |
 
 ## Format
 
@@ -46,4 +46,4 @@ Optional fields:
 - `mz`: A list of mz values for the spectrum -> `list[double]`
 - `intensity`: A list of intensity values for the spectrum ->  `list[double]`
 - `num_peaks`: The number of peaks in the spectrum, this is the size of previous lists intensity and mz -> `integer`
-- `id_score_{}`: The search engine scores are the only fields that are not defined in the schema. Each search engine score will be an optional column with the prefix `id_score_` and the value of the column is the corresponding value of the `(e.g. MS-GF:RawScore -> id_score_MS-GF:RawScore)` -> `double`
+- `id_scores`: A list of identification scores, search engine, percolator etc. Each search engine score will be a key/value pair `(e.g. "MS-GF:RawScore": 78.9)` -> `list[string]`

@@ -10,8 +10,9 @@ The Protein table is a [Parquet](https://github.com/apache/parquet-format) file 
 ## Format
 
 - `protein_accession`: A list protein's accessions -> `list[string] (e.g. [P02768, P02769])`
-- `best_id_score_{}`: The best search engine score for the given protein -> `double`
-- `abundance_{label}`: The protein's abundance as measured in the given samples in LFQ experiments or in defined spectrum file name combined with channel in TMT tag experiments. `{}` can be omitted in LFQ `(e.g. abundance_TMT126)` -> `double`
+- `best_id_score`: The best search engine score for the given protein as a key value pair -> `string`
+- `abundance`: The protein's abundance as measured in the given samples in LFQ experiments or in defined spectrum file name combined with channel in TMT tag experiments. `{}` can be omitted in LFQ `(e.g. abundance_TMT126)` -> `double`
+- `sample_accession`: A unique sample accession corresponding to the source name in the SDRF-> `string`
 - `global_qvalue`: Global q-value from quantms -> `double`
 - `is_decoy`: Indicates whether the protein is decoy -> `boolean (0/1)`
 
@@ -19,3 +20,6 @@ Optional fields:
 
 - `gene_accessions`: A list of gene accessions -> `list[string] (e.g. [ENSG00000139618, ENSG00000139618])`
 - `gene_names`: A list of gene names -> `list[string] (e.g. [APOA1, APOA1])`
+- `number_of_peptides`: Number of peptides for the protein in the given sample `sample_accession` -> `int`
+- `number_of_psms`: Number of PSMs for the protein in the given sample `sample_accession` -> `int`
+- `number_of_unique_peptides`: Number of unique peptides for the protein in the given sample `sample_accession` -> `int`

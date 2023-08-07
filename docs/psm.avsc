@@ -24,7 +24,8 @@
 		{"name": "intensity","type": {"type": "array","items": "double","default": []}},
 		{"name": "num_peaks","type": "int"},
 		{"name": "gene_accessions", "type": {"type": "array","items": "string"}},
-		{"name": "gene_names", "type": {"type": "array","items": "string"}
+		{"name": "gene_names", "type": {"type": "array","items": "string"}},
+		{"name": "id_scores", "type": {"type": "array","items": "string"}
 		}
 	]
 }
