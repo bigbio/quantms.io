@@ -20,7 +20,7 @@ Some general rules for all the files:
 
 ## Common data structures and formats
 
-We have some concepts that are common for some of the outputs and would be good to define and explain them here: 
+We have some concepts that are common for some outputs and would be good to define and explain them here: 
 
 ### Peptidoform
 
