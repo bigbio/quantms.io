@@ -78,13 +78,13 @@ In this Python code snippet, the generate_uuid_filename function creates a rando
 
 **file_sections**: File sections are used to identify the type of file. The file sections are the following:
 
-- `protein` -> [Protein file](PROTEIN.md)
-- `peptide` -> [Peptide file](PEPTIDE.md)
-- `psm` ->     [PSM file](PSM.md)
-- `feature` -> [Feature file](FEATURE.md)
+- `protein`      -> [Protein file](PROTEIN.md)
+- `peptide`      -> [Peptide file](PEPTIDE.md)
+- `psm`          ->     [PSM file](PSM.md)
+- `feature`      -> [Feature file](FEATURE.md)
 - `differential` -> [Differential file](DE.md)
-- `absolute` -> [Absolute file](AE.md)
-- `sdrf` -> [Sample table](#sample-table)
+- `absolute`     -> [Absolute file](AE.md)
+- `sdrf`         -> [Sample table](#sample-table)
 
  
 
