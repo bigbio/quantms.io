@@ -37,21 +37,56 @@ Example of `acquisition_properties`:
 ]
 ```
 
+In the acquisition properties only the instrument and the enzyme are not present and should be written independently in the properties `instrument` and `enzyme`.
+
+## Quantms files
+
+Recommendations for the file name in the quantms project. The file name should be in the following format:
+
+{user_prefix}-{uui}.{file_section}.{file_extension}
+
 Example of `quantms_files`:
 
 ```json
 "quantms_files": [
-     {"protein_table": "protein_table.parquet"},
-     {"peptide_table": "peptide_table.parquet"},
-     {"psm_table": "psm_table.parquet"},
-     {"feature_table": "feature_table.parquet"},
-     {"differential_table": "differential_table.csv"},
-     {"absolute_table": "absolute_table.csv"},
-     {"sample_table": "projects.sdrf.tsv"}   
+     {"protein_file": "PXD004683-550e8400-e29b-41d4-a716-446655440000.protein.parquet"},
+     {"peptide_file": "PXD004683-550e8400-e29b-41d4-a716-446655440000.peptide.parquet"},
+     {"psm_file":     "PXD004683-550e8400-e29b-41d4-a716-446655440000.psm.parquet"},
+     {"feature_file": "PXD004683-958e8400-e29b-41f4-a716-446655440000.feature.parquet"}, 
+     {"differential_file": "PXD004683-958e8400-e29b-41f4-a716-446655440000.differential.tsv"},
+     {"absolute_file":     "PXD004683-958e8400-e29b-41f4-a716-446655440000.absolute.tsv"},
+     {"sdrf_file":         "PXD004683-958e8400-e29b-41f4-a716-446655440000.sdrf.tsv"}
 ]
 ```
 
-In the acquisition properties only the instrument and the enzyme are not present and should be written independently in the properties `instrument` and `enzyme`.
+**uuids**: A Universally Unique Identifier (UUID) URN Namespace, as defined in RFC 4122, provides a standardized method for generating globally unique identifiers across various systems and applications. UUIDs are structured into five sections, separated by hyphens, which include a time-based timestamp, a clock sequence, and a node identifier. The UUID URN Namespace ensures that each generated UUID is highly unlikely to collide with any other UUID, even when produced by different entities and systems. 
+
+To generate file names using UUIDs in a programming language like Python, you can utilize the uuid module that provides functions to create UUIDs. Here's an example of how you could generate and format UUID-based file names:
+
+```python
+
+import uuid
+
+def generate_uuid_filename():
+    return uuid.uuid4()  # Generate a random UUID
+
+# Generate and print a UUID-based file name
+print("Generated UUID filename:", generate_uuid_filename())
+```
+
+In this Python code snippet, the generate_uuid_filename function creates a random UUID using the uuid4 function. The uuid in quantms will contain 5 sections separated by hyphens, which include a time-based timestamp, a clock sequence, and a node identifier.
+
+**file_sections**: File sections are used to identify the type of file. The file sections are the following:
+
+- `protein` -> [Protein file](PROTEIN.md)
+- `peptide` -> [Peptide file](PEPTIDE.md)
+- `psm` ->     [PSM file](PSM.md)
+- `feature` -> [Feature file](FEATURE.md)
+- `differential` -> [Differential file](DE.md)
+- `absolute` -> [Absolute file](AE.md)
+- `sdrf` -> [Sample table](#sample-table)
+
+ 
 
 ## Sample table
 
