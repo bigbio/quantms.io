@@ -1,0 +1,27 @@
+{
+	"name": "peptide",
+	"type": "record",
+	"fields": [
+		{"name": "sequence", "type": "string"},
+		{"name": "protein_accessions", "type": {"type": "array","items": "string"}},
+		{"name": "unique","type": "int"},
+    	{"name": "best_id_score","type": "double"},
+		{"name": "reference_file_name","type": "string"},
+		{"name": "modifications","type": {"type": "array", "items": "string"}},
+		{"name": "retention_time","type": "float"},
+		{"name": "charge","type": "int"},
+		{"name": "exp_mass_to_charge","type": "double"},
+		{"name": "scan_number", "type":  "string"},
+		{"name": "sample_accession","type": "string"},
+		{"name": "abundance","type": "float"},
+		{"name": "peptidoform","type": "string"},
+		{"name": "number_of_psms", "type": "int"},
+		{"name": "is_decoy","type": "int"},
+		{"name": "posterior_error_probability","type": "double"},
+		{"name": "consensus_support","type": "float"},
+		{"name": "id_scores", "type": {"type": "array","items": "string"}},
+		{"name": "gene_accessions", "type": {"type": "array","items": "string"}},
+		{"name": "gene_names", "type": {"type": "array","items": "string"}
+		}
+	]
+}

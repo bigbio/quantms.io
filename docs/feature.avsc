@@ -1,0 +1,41 @@
+{
+	"name": "feature",
+	"type": "record",
+	"fields": [
+		{"name": "sequence", "type": "string"},
+		{"name": "protein_accessions", "type": {"type": "array","items": "string"}},
+		{"name": "protein_start_positions", "type": {"type": "array","items": "int"}},
+		{"name": "protein_end_positions", "type": {"type": "array","items": "int"}},
+		{"name": "unique","type": "int"},
+		{"name": "modifications","type": {"type": "array", "items": "string"}},
+		{"name": "retention_time","type": "float"},
+		{"name": "charge","type": "int"},
+		{"name": "exp_mass_to_charge","type": "double"},
+		{"name": "calc_mass_to_charge","type": "double"},
+		{"name": "peptidoform","type": "string"},
+		{"name": "posterior_error_probability","type": "double"},
+		{"name": "global_qvalue","type": "double"},
+		{"name": "is_decoy","type": "int"},
+		{"name": "best_id_score", "type": "string"},
+		{"name": "intensity", "type":  "double"},
+		{"name": "spectral_count", "type":  "int"},
+		{"name": "sample_accession", "type":  "string"},
+		{"name": "condition", "type":  "string"},
+		{"name": "fraction", "type": "string"},
+		{"name": "biological_replicate", "type": "string"},
+		{"name": "fragment_ion", "type": "string"},
+		{"name": "isotope_label_type", "type":  "string"},
+		{"name": "run", "type": "string"},
+		{"name": "channel", "type":  "string"},
+		{"name": "id_scores", "type": {"type": "array","items": "string"}
+		{"name": "consensus_support","type": "float"},
+		{"name": "reference_file_name","type": "string"},
+		{"name": "scan_number", "type":  "string"},
+		{"name": "mz","type": {"type": "array","items": "double","default": []}},
+		{"name": "intensity","type": {"type": "array","items": "float","default": []}},
+		{"name": "num_peaks","type": "int"},
+		{"name": "gene_accessions", "type": {"type": "array","items": "string"}},
+		{"name": "gene_names", "type": {"type": "array","items": "string"}
+		}
+	]
+}

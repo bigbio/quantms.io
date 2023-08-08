@@ -10,17 +10,17 @@ The absolute expression format aims to cover the following use cases:
 ## Format 
 The absolute expression format by quantms is a tab-delimited file format that contains the following fields:
 
-- `Protein` -> Protein accession or semicolon-separated list of accessions for indistinguishable groups
-- `SampleID` -> Sample accession in the SDRF.
-- `Condition` -> Condition name
-- `iBAQ` -> iBAQ value
-- `riBAQ` -> Relative iBAQ value
+- `protein` -> Protein accession or semicolon-separated list of accessions for indistinguishable groups
+- `sample_accession` -> Sample accession in the SDRF.
+- `condition` -> Condition name
+- `ibaq` -> iBAQ value
+- `ribaq` -> Relative iBAQ value
 
 Example: 
 
-| Protein    | SampleID     | Condition | iBAQ   | riBAQ  |
-| ---------  |--------------|-----------|--------| -------|
-|LV861_HUMAN | Sample-1     | heart     | 1234.1 | 12.34  |
+| protein     | sample_accession | condition | ibaq   | ribaq |
+|-------------|------------------|-----------|--------|-------|
+| LV861_HUMAN | Sample-1         | heart     | 1234.1 | 12.34 |
 
 ## AE Header 
 
@@ -31,11 +31,11 @@ By default, the MSstats format does not have any header of metadata. We suggest 
 In addition, for each `Default` column of the matrix the following information should be added: 
 
 ```
-#INFO=<ID=Protein, Number=inf, Type=String, Description="Protein Accession">
-#INFO=<ID=SampleID, Number=1, Type=String, Description="Sample Accession in the SDRF">
-#INFO=<ID=Condition, Number=1, Type=String, Description="Value of the factor value">
-#INFO=<ID=iBAQ, Number=1, Type=Float, Description="Intensity based absolute quantification">
-#INFO=<ID=riBAQ, Number=1, Type=Float, Description="relative iBAQ">
+#INFO=<ID=protein, Number=inf, Type=String, Description="Protein Accession">
+#INFO=<ID=sample_accession, Number=1, Type=String, Description="Sample Accession in the SDRF">
+#INFO=<ID=condition, Number=1, Type=String, Description="Value of the factor value">
+#INFO=<ID=ibaq, Number=1, Type=Float, Description="Intensity based absolute quantification">
+#INFO=<ID=ribaq, Number=1, Type=Float, Description="relative iBAQ">
 ```
 
 - The `ID` is the column name in the matrix, the `Number` is the number of values in the column (separated by `;`), the `Type` is the type of the values in the column and the `Description` is a description of the column. The number of values in the column can go from 1 to `inf` (infinity).

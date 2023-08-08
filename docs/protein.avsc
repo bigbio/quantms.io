@@ -1,0 +1,16 @@
+{
+	"name": "protein",
+	"type": "record",
+	"fields": [
+        {"name": "protein_accessions", "type": {"type": "array","items": "string"}},
+		{"name": "abundance","type": "float"},
+		{"name": "global_qvalue","type": "double"},
+		{"name": "is_decoy","type": "int"},
+		{"name": "best_id_score", "type": "string"},
+		{"name": "gene_accessions", "type": {"type": "array","items": "string"}},
+		{"name": "gene_names", "type": {"type": "array","items": "string"}},
+		{"name": "number_of_peptides","type": "int"},
+		{"name": "number_of_psms","type": "int"},
+		{"name": "number_of_unique_peptides","type": "int"},
+	]
+}
