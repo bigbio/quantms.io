@@ -1,9 +1,11 @@
-import uuid
 import json
+import uuid
 
-import uuid
-import json
 import requests
+
+from quantms_io.core.sdrf import SDRFHandler
+from quantms_io.utils.pride_utils import get_pubmed_id_pride_json, get_set_of_experiment_keywords
+
 
 class ProjectHandler:
     def __init__(self, project_accession: str):
@@ -30,10 +32,35 @@ class ProjectHandler:
 
         if response.status_code == 200:
             pride_data = response.json()
+            self.project.project_info["project_accession"] = self.project_accession
             self.project.project_info["project_title"] = pride_data["title"]
             self.project.project_info["project_description"] = pride_data["projectDescription"]
+            self.project.project_info["project_sample_description"] = pride_data["sampleProcessingProtocol"]
+            self.project.project_info["project_data_description"] = pride_data["dataProcessingProtocol"]
+            self.project.project_info["project_pubmed_id"] = get_pubmed_id_pride_json(pride_data)
+            self.project.project_info["experiment_type"] = get_set_of_experiment_keywords(pride_data)
         else:
             print(f"Error retrieving data from PRIDE Archive API. Status code: {response.status_code}")
+
+    def add_quantms_version(self, quantms_version: str):
+        """
+        Add the quantms version to the project information
+        :param quantms_version: QuantMS version
+        """
+        self.project.project_info["quantms_version"] = quantms_version
+
+    def add_sdrf_project_properties(self, sdrf: SDRFHandler):
+        """
+        Add the project properties from the SDRF file to the project information.
+        :param sdrf: SDRFHandler object
+        """
+        self.project.project_info["organisms"] = sdrf.get_organisms()
+        self.project.project_info["organism_parts"] = sdrf.get_organism_parts()
+        self.project.project_info["diseases"] = sdrf.get_diseases()
+        self.project.project_info["cell_lines"] = sdrf.get_cell_lines()
+        self.project.project_info["instruments"] = sdrf.get_instruments()
+        self.project.project_info["enzymes"] = sdrf.get_enzymes()
+        self.project.project_info["acquisition_properties"] = sdrf.get_acquisition_properties()
 
     def add_quantms_file(self, file_section: str, file_extension: str):
         """
@@ -58,13 +85,23 @@ class ProjectHandler:
             json.dump(self.project.project_info, json_file, indent=4)
         print(f"Updated project information saved to {output_filename}")
 
+    def populate_from_sdrf(self, sdrf_file: str):
+        """
+        Populate the project information from an SDRF file using the SDRFHandler class.
+        :param sdrf_file: SDRF file
+        """
+        sdrf = SDRFHandler(sdrf_file)
+        self.add_sdrf_project_properties(sdrf)
+
+
 class ProjectDefinition:
     """
     Class to define the project information. This class will be used to generate the project JSON file. Read more about
     the project JSON file in the docs folder of this repository
     (https://github.com/bigbio/quantms.io/blob/main/docs/PROJECT.md).
     """
-    def __init__(self):
+
+    def __init__(self, project_accession: str = None):
         self.project_info = {
             "project_accession": "",
             "project_title": "",
@@ -72,18 +109,20 @@ class ProjectDefinition:
             "project_sample_description": "",
             "project_data_description": "",
             "project_pubmed_id": "",
-            "organism": [],
-            "organism_part": [],
-            "disease": [],
-            "cell_line": [],
-            "instrument": [],
-            "enzyme": [],
+            "organisms": [],
+            "organism_parts": [],
+            "diseases": [],
+            "cell_lines": [],
+            "instruments": [],
+            "enzymes": [],
             "experiment_type": [],
             "acquisition_properties": [],
             "quantms_files": [],
             "quantms_version": "",
             "comments": []
         }
+        if project_accession:
+            self.set_basic_info(project_accession)
 
     def set_basic_info(self, project_accession: str):
         self.project_info["project_accession"] = project_accession

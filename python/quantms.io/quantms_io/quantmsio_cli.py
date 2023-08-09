@@ -1,13 +1,14 @@
-'''
+"""
 Commandline interface for quantmsio package allows generating the quantms.io file format from different sources and
  steps. The quantms.io specification is available in the docs folder of this repository.
-'''
+"""
 
 import click
+
 from quantms_io import __version__ as __version__
 
-
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
+
 
 @click.version_option(version=__version__, package_name="quantms_io", message="%(package)s %(version)s")
 @click.group(context_settings=CONTEXT_SETTINGS)
@@ -42,7 +43,9 @@ def generate_project_json(project_accession: str,
 
     pass
 
+
 cli.add_command(generate_project_json)
+
 
 def quantms_io_main():
     """
@@ -50,6 +53,7 @@ def quantms_io_main():
     :return: none
     """
     cli()
+
 
 if __name__ == '__main__':
     quantms_io_main()

@@ -33,10 +33,23 @@ class TestProjectHandler(TestCase):
         project_manager.populate_from_pride_archive()
 
         # Assert that the project_info has been updated
-        self.assertEqual(project_manager.project.project_info["project_title"], "Structural insights into Cullin4-RING ubiquitin ligase remodelling by Vpr from simian immunodeficiency viruses")
-        self.assertEqual(project_manager.project.project_info["project_description"], "crosslinking mass spectrometry results for sulfo-SDA crosslinking of human CUL4-NEDD8/ROC1/DDB1/DCAF1-CtD in complex with SAMHD1 and Vpr protein from simian immunodeficiency virus infecting Cercopithecus cephus (SIVmus Vpr)")
+        self.assertEqual(project_manager.project.project_info["project_title"],
+                         "Structural insights into Cullin4-RING ubiquitin ligase remodelling by Vpr from simian immunodeficiency viruses")
+        self.assertEqual(project_manager.project.project_info["project_description"],
+                         "crosslinking mass spectrometry results for sulfo-SDA crosslinking of human CUL4-NEDD8/ROC1/DDB1/DCAF1-CtD in complex with SAMHD1 and Vpr protein from simian immunodeficiency virus infecting Cercopithecus cephus (SIVmus Vpr)")
+        print(project_manager.project.project_info)
 
 
+    def test_save_project_info(self):
+        project_accession = "PXD020187"
+        sdrf_file = "data/PXD020187.sdrf.tsv"
+        quantms_version = "0.1.1"
+
+        project_manager = ProjectHandler(project_accession)
+        project_manager.populate_from_pride_archive()
+        project_manager.populate_from_sdrf(sdrf_file)
+
+        project_manager.save_project_info() # Save the project information to a JSON file
 
 def test_save_project_info(self):
-        self.fail()
+    self.fail()
