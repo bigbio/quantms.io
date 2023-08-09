@@ -14,7 +14,12 @@ class TestProjectHandler(TestCase):
         mock_response.status_code = 200
         mock_response.json = lambda: {
             "title": "Test Project",
-            "projectDescription": "Test description"
+            "projectDescription": "Test description",
+            "sampleProcessingProtocol": "Test sample processing protocol",
+            "dataProcessingProtocol": "Test data processing protocol",
+            "references": [{"pubmedId": "12345678"}],
+            "keywords": ["keyword1", "keyword2"],
+            "projectTags": ["tag1", "tag2"],
             # Add other mock data as needed
         }
         mock_get.return_value = mock_response
