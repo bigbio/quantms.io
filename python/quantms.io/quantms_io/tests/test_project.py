@@ -51,5 +51,11 @@ class TestProjectHandler(TestCase):
 
         project_manager.save_project_info() # Save the project information to a JSON file
 
+    def test_load_project_from_json(self):
+        project_file = "data/PXD020187-934d85ce-6a7a-4417-8330-a21b750fd9e4.project.json"
+        project_manager = ProjectHandler(project_json_file=project_file)
+        project_manager.save_project_info()  # Save the project information to a JSON file
+
+
 def test_save_project_info(self):
     self.fail()

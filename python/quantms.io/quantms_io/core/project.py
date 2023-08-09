@@ -8,9 +8,21 @@ from quantms_io.utils.pride_utils import get_pubmed_id_pride_json, get_set_of_ex
 
 
 class ProjectHandler:
-    def __init__(self, project_accession: str):
-        self.project_accession = project_accession
-        self.project = ProjectDefinition()
+    def __init__(self, project_accession: str = None, project_json_file: str = None):
+        """
+        ProjectHandler class can be created using the PRIDE accession or a JSON file with the project information
+        :param project_accession: PRIDE accession of the project
+        :param project_json_file: JSON file with the project information
+        """
+        if project_accession is None and project_json_file is None:
+             self.project_accession = project_accession
+             self.project = None
+        elif project_accession is not None and project_json_file is None:
+            self.project_accession = project_accession
+            self.project = ProjectDefinition(project_accession)
+        else:
+            self._load_project_info(project_json_file)
+            self.project_accession = self.project.project_info["project_accession"]
 
     def _load_project_info(self, project_json_file: str = None):
         """
@@ -23,7 +35,7 @@ class ProjectHandler:
                 self.project = ProjectDefinition()
                 self.project.set_project_info(json_dict)
         except FileNotFoundError:
-            self.project = ProjectDefinition()
+            raise FileNotFoundError(f"File {project_json_file} not found")
 
     def populate_from_pride_archive(self):
         # Simulate API request to PRIDE Archive
