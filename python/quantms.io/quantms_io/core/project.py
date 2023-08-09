@@ -1,13 +1,20 @@
 import json
+import os
+import shutil
 import uuid
+from pathlib import Path
 
 import requests
 
 from quantms_io.core.sdrf import SDRFHandler
+from quantms_io.utils.file_utils import delete_files_extension
 from quantms_io.utils.pride_utils import get_pubmed_id_pride_json, get_set_of_experiment_keywords
 
 
 class ProjectHandler:
+
+    PROJECT_EXTENSION = ".project.json"
+
     def __init__(self, project_accession: str = None, project_json_file: str = None):
         """
         ProjectHandler class can be created using the PRIDE accession or a JSON file with the project information
@@ -87,12 +94,27 @@ class ProjectHandler:
             self.project.project_info["quantms_files"] = []
         self.project.project_info["quantms_files"].append({file_section + "_file": file_name})
 
-    def save_project_info(self):
+    def save_project_info(self, output_prefix_file: str = None, output_folder: str = None, delete_existing: bool = False):
         """
         Save the updated project information to a JSON file. The file name will be generated automatically.
         """
         # Save the updated project info to a JSON file
-        output_filename = f"{self.project_accession}-{str(uuid.uuid4())}.project.json"
+        if output_prefix_file is None:
+            output_prefix_file = self.project_accession
+
+        # Create the output folder if it does not exist.
+        if output_folder is not None and not os.path.exists(output_folder):
+            Path(output_folder).mkdir(parents=True, exist_ok=True)
+
+        ## Delete existing SDRF file
+        if delete_existing:
+            delete_files_extension(output_folder, ProjectHandler.PROJECT_EXTENSION)
+
+        if output_folder is None:
+           output_filename = f"{output_prefix_file}-{str(uuid.uuid4())}{ProjectHandler.PROJECT_EXTENSION}"
+        else:
+            output_filename = f"{output_folder}/{output_prefix_file}-{str(uuid.uuid4())}{ProjectHandler.PROJECT_EXTENSION}"
+
         with open(output_filename, "w") as json_file:
             json.dump(self.project.project_info, json_file, indent=4)
         print(f"Updated project information saved to {output_filename}")
@@ -104,6 +126,35 @@ class ProjectHandler:
         """
         sdrf = SDRFHandler(sdrf_file)
         self.add_sdrf_project_properties(sdrf)
+
+    def add_sdrf_file(self, sdrf_file_path: str, output_folder: str, delete_existing: bool = True) -> None:
+        """
+        Copy the given file to the project folder and add the file name to the project information.
+        :param sdrf_file_path: SDRF file path
+        :param output_folder: Output folder
+        """
+        base_name = os.path.basename(sdrf_file_path).replace(".sdrf.tsv", "")
+        extension = ".sdrf.tsv"
+
+        # Create the output folder if it does not exist.
+        if output_folder is not None and not os.path.exists(output_folder):
+            Path(output_folder).mkdir(parents=True, exist_ok=True)
+
+        ## Delete existing SDRF file
+        if delete_existing:
+            delete_files_extension(output_folder, extension)
+
+        output_filename = f"{base_name}-{str(uuid.uuid4())}{extension}"
+        if output_folder is None:
+            output_filename_path = output_filename
+        else:
+            output_filename_path = f"{output_folder}/{base_name}-{str(uuid.uuid4())}{extension}"
+
+        shutil.copyfile(sdrf_file_path, output_filename_path)
+        self.project.project_info["sdrf_file"] = output_filename
+        print(f"SDRF file copied to {output_filename} and added to the project information")
+
+
 
 
 class ProjectDefinition:
