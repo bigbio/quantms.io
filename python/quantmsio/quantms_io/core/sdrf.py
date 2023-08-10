@@ -44,10 +44,11 @@ def get_complex_value_sdrf_column(sdrf_table: DataFrame, column: str) -> list:
 
 def get_acquisition_method(sdrf_table: DataFrame, acquisition_method_column: str, column_labeling: str) -> list:
     """
-    Get the acquisition method from the SDRF table.Returns the acquisition method and the labeling method. Three
-    different methods are supported: label free, TMT and iTRAQ. For DIA methods, the acquisition method is Data-dependent
+    get the acquisition method from the SDRF table.Returns the acquisition method and the labeling method.
+    Three different methods are supported: label free, TMT and iTRAQ.
+    For DIA methods, the acquisition method is Data-dependent
     acquisition and MUST be annotated in the SDRF.
-    :param sdrf_table: pandas dataframe
+    :param sdrf_table: Pandas dataframe
     :param acquisition_method_column: acquisition method column name
     :param column_labeling: labeling column name
     """

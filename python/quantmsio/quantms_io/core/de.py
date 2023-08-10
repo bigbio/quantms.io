@@ -10,7 +10,6 @@ from quantms_io.utils.file_utils import delete_files_extension
 
 
 class DifferentialExpressionHandler:
-
     PROTEIN_ACCESSION_COLUMN = {"msstats_column": "protein", "quantms_column": "protein"}
     LABEL_COLUMN = {"msstats_column": "label", "quantms_column": "label"}
     log2FC_COLUMN = {"msstats_column": "log2fc", "quantms_column": "log2FC"}
@@ -28,7 +27,7 @@ class DifferentialExpressionHandler:
 #INFO=<ID=pvalue, Number=1, Type=Double, Description="Raw p-values">
 #INFO=<ID=adj.pvalue, Number=1, Type=Double, Description="P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg">
 #INFO=<ID=issue, Number=1, Type=String, Description="Issue column shows if there is any issue for inference in corresponding protein and comparison">\n'''
-    
+
     DIFFERENTIAL_EXPRESSION_EXTENSION = ".differential.tsv"
 
     def __init__(self):
@@ -38,7 +37,7 @@ class DifferentialExpressionHandler:
         https://github.com/bigbio/quantms.io/blob/main/docs/DE.md
         """
         # SDRF file information
-        self.fdr_threshold = 0.05 # FDR threshold to consider a protein as differentially expressed
+        self.fdr_threshold = 0.05  # FDR threshold to consider a protein as differentially expressed
         self.sdrf_manager = None
         self.sdrf_file_path = None
 
@@ -65,7 +64,6 @@ class DifferentialExpressionHandler:
         # Rename columns to a lower case
         self.msstats_df.columns = self.msstats_df.columns.str.lower()
 
-
     def load_project_file(self, project_file: str):
         """
         Load a project file that link the different files in the quamtms.io format
@@ -81,7 +79,8 @@ class DifferentialExpressionHandler:
         self.project_manager = ProjectHandler()
         self.project_manager.load_project_info(project_file)
 
-    def convert_msstats_to_quantms(self, output_folder: str = None, output_file_prefix: str = None, delete_existing: bool = False):
+    def convert_msstats_to_quantms(self, output_folder: str = None, output_file_prefix: str = None,
+                                   delete_existing: bool = False):
         """
         Convert a MSstats differential file to quantms.io format
         :return: none
@@ -90,18 +89,19 @@ class DifferentialExpressionHandler:
             raise Exception("MSstats file or project file not loaded")
 
         quantms_df = self.msstats_df[[DifferentialExpressionHandler.PROTEIN_ACCESSION_COLUMN["msstats_column"],
-                                        DifferentialExpressionHandler.LABEL_COLUMN["msstats_column"],
-                                        DifferentialExpressionHandler.log2FC_COLUMN["msstats_column"],
-                                        DifferentialExpressionHandler.SE_COLUMN["msstats_column"],
-                                        DifferentialExpressionHandler.DF_COLUMN["msstats_column"],
-                                        DifferentialExpressionHandler.PVALUE_COLUMN["msstats_column"],
-                                        DifferentialExpressionHandler.ADJUST_PVALUE_COLUMN["msstats_column"],
-                                        DifferentialExpressionHandler.ISSUE_COLUMN["msstats_column"]]].copy()
+                                      DifferentialExpressionHandler.LABEL_COLUMN["msstats_column"],
+                                      DifferentialExpressionHandler.log2FC_COLUMN["msstats_column"],
+                                      DifferentialExpressionHandler.SE_COLUMN["msstats_column"],
+                                      DifferentialExpressionHandler.DF_COLUMN["msstats_column"],
+                                      DifferentialExpressionHandler.PVALUE_COLUMN["msstats_column"],
+                                      DifferentialExpressionHandler.ADJUST_PVALUE_COLUMN["msstats_column"],
+                                      DifferentialExpressionHandler.ISSUE_COLUMN["msstats_column"]]].copy()
 
         # Add project information
         output_lines = "#project_accession: " + self.project_manager.project.project_info["project_accession"] + "\n"
         output_lines += "#project_title: " + self.project_manager.project.project_info["project_title"] + "\n"
-        output_lines += "#project_description: " + self.project_manager.project.project_info["project_description"] + "\n"
+        output_lines += "#project_description: " + self.project_manager.project.project_info[
+            "project_description"] + "\n"
         output_lines += "#quantms_version: " + self.project_manager.project.project_info["quantms_version"] + "\n"
         factor_value = self.get_factor_value()
         if factor_value is not None:
@@ -112,13 +112,14 @@ class DifferentialExpressionHandler:
         output_lines += "#fdr_threshold: " + str(self.fdr_threshold) + "\n"
 
         # Combine comments and DataFrame into a single list
-        output_lines += DifferentialExpressionHandler.DE_HEADER + str(quantms_df.to_csv(sep='\t', index=False, header=True))
+        output_lines += DifferentialExpressionHandler.DE_HEADER + str(
+            quantms_df.to_csv(sep='\t', index=False, header=True))
 
         # Create the output file name
         base_name = output_file_prefix
         if output_file_prefix is None:
             base_name = os.path.basename(self.de_file_path).replace(".csv", "")
-        
+
         # Create the output folder if it does not exist.
         if output_folder is not None and not os.path.exists(output_folder):
             Path(output_folder).mkdir(parents=True, exist_ok=True)
@@ -137,7 +138,7 @@ class DifferentialExpressionHandler:
         with open(output_filename_path, 'w') as f:
             f.write(output_lines)
 
-        self.project_manager.add_quantms_file(file_category="differential_file", file_name = output_filename)
+        self.project_manager.add_quantms_file(file_category="differential_file", file_name=output_filename)
         print(f"Differential expression file copied to {output_filename} and added to the project information")
 
     def update_project_file(self, project_file: str = None):
@@ -151,9 +152,10 @@ class DifferentialExpressionHandler:
 
         if project_file is not None:
             project_file = self.project_file
-        self.project_manager.save_updated_project_info(output_file_name = project_file)
+        self.project_manager.save_updated_project_info(output_file_name=project_file)
 
-    def get_contrast_labels(self, quantms_df: pd.DataFrame):
+    @staticmethod
+    def get_contrast_labels(quantms_df: pd.DataFrame):
         """
         Get the contrast labels from a QuantMS file
         :param quantms_df: QuantMS file
@@ -182,7 +184,7 @@ class DifferentialExpressionHandler:
         if not os.path.isfile(sdrf_file):
             raise FileNotFoundError("SDRF file not found: " + sdrf_file)
 
-        self.sdrf_manager = SDRFHandler(sdrf_file = sdrf_file)
+        self.sdrf_manager = SDRFHandler(sdrf_file=sdrf_file)
 
     def set_fdr_threshold(self, fdr_threshold: float = 0.05):
         """
@@ -191,17 +193,3 @@ class DifferentialExpressionHandler:
         if self.msstats_df is None:
             raise Exception("MSstats file not loaded")
         self.fdr_threshold = fdr_threshold
-
-        
-
-        
-
-
-
-
-
-
-
-
-
-

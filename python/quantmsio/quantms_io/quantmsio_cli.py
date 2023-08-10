@@ -80,6 +80,7 @@ def convert_msstats_differential(msstats_file: str, project_file: str, sdrf_file
     :param output_folder: Folder to generate the df expression file.
     :param output_file: Prefix of the df expression file
     :param delete_existing: Delete existing files in the output folder
+    :param fdr_threshold: FDR threshold to use to filter the results
     :return: none
     """
 

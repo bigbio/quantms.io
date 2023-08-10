@@ -61,6 +61,3 @@ class TestProjectHandler(TestCase):
         project_manager = ProjectHandler(project_json_file=project_file)
         project_manager.save_project_info()  # Save the project information to a JSON file
 
-
-def test_save_project_info(self):
-    self.fail()

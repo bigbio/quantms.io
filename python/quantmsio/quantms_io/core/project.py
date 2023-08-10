@@ -86,8 +86,8 @@ class ProjectHandler:
         Add a quantms file to the project information. The file name will be generated automatically. Read more about the
         quantms file naming convention in the docs folder of this repository
         (https://github.com/bigbio/quantms.io/blob/main/docs/PROJECT.md)
-        :param file_name: Name of the quantms file
-        :param file_category: Category of the quantms file (e.g. "protein_file", "peptide_file", "psm_file", "differential_file", etc.)
+        :param file_name: quantms file name
+        :param file_category: quantms file category (e.g. "protein_file", "peptide_file", "psm_file", "differential_file", etc.)
         """
         if "quantms_files" not in self.project.project_info:
             self.project.project_info["quantms_files"] = []
@@ -145,6 +145,7 @@ class ProjectHandler:
         Copy the given file to the project folder and add the file name to the project information.
         :param sdrf_file_path: SDRF file path
         :param output_folder: Output folder
+        :param delete_existing: Delete existing SDRF files
         """
         base_name = os.path.basename(sdrf_file_path).replace(".sdrf.tsv", "")
         extension = ".sdrf.tsv"
