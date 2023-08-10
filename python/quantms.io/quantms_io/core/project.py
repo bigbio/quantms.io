@@ -22,16 +22,16 @@ class ProjectHandler:
         :param project_json_file: JSON file with the project information
         """
         if project_accession is None and project_json_file is None:
-             self.project_accession = project_accession
+             self.project_accession = None
              self.project = None
         elif project_accession is not None and project_json_file is None:
             self.project_accession = project_accession
             self.project = ProjectDefinition(project_accession)
         else:
-            self._load_project_info(project_json_file)
+            self.load_project_info(project_json_file)
             self.project_accession = self.project.project_info["project_accession"]
 
-    def _load_project_info(self, project_json_file: str = None):
+    def load_project_info(self, project_json_file: str = None):
         """
         Load the project information from a JSON file
         :param project_json_file: JSON file with the project information
@@ -81,18 +81,20 @@ class ProjectHandler:
         self.project.project_info["enzymes"] = sdrf.get_enzymes()
         self.project.project_info["acquisition_properties"] = sdrf.get_acquisition_properties()
 
-    def add_quantms_file(self, file_section: str, file_extension: str):
+    def add_quantms_file(self, file_name: str, file_category: str):
         """
         Add a quantms file to the project information. The file name will be generated automatically. Read more about the
         quantms file naming convention in the docs folder of this repository
         (https://github.com/bigbio/quantms.io/blob/main/docs/PROJECT.md)
-        :param file_section: Section of the quantms file (protein, peptide, psm, feature, absolute, differential, sdrf, etc.)
-        :param file_extension: File extension of the quantms file (json, csv, tsv, etc.)
+        :param file_name: Name of the quantms file
+        :param file_category: Category of the quantms file (e.g. "protein_file", "peptide_file", "psm_file", "differential_file", etc.)
         """
-        file_name = f"{self.project_accession}-{str(uuid.uuid4())}.{file_section}.{file_extension}"
         if "quantms_files" not in self.project.project_info:
             self.project.project_info["quantms_files"] = []
-        self.project.project_info["quantms_files"].append({file_section + "_file": file_name})
+        else:
+            self.project.project_info["quantms_files"] = [d for d in self.project.project_info["quantms_files"] if file_category not in d]
+
+        self.project.project_info["quantms_files"].append({file_category: file_name})
 
     def save_project_info(self, output_prefix_file: str = None, output_folder: str = None, delete_existing: bool = False):
         """
@@ -118,6 +120,17 @@ class ProjectHandler:
         with open(output_filename, "w") as json_file:
             json.dump(self.project.project_info, json_file, indent=4)
         print(f"Updated project information saved to {output_filename}")
+
+    def save_updated_project_info(self, output_file_name: str):
+        """
+        Save the updated project information to a JSON file. The filename should be provided, no uui is generated
+        the function for uui and json generation is save_project_info.
+        :param output_file_name: Output file name
+        """
+        with open(output_file_name, "w") as json_file:
+            json.dump(self.project.project_info, json_file, indent=4)
+        print(f"Updated project information saved to {output_file_name}")
+
 
     def populate_from_sdrf(self, sdrf_file: str):
         """
