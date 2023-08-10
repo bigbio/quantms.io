@@ -132,3 +132,15 @@ class SDRFHandler:
         [acquisition_values.append({"fragment mass tolerance": fragment_mass_tolerance_value}) for
          fragment_mass_tolerance_value in get_complex_value_sdrf_column(self.sdrf_table, self.FRAGMENT_MASS_TOLERANCE)]
         return acquisition_values
+
+    def get_factor_value(self) -> str:
+        """
+        Get the factor value
+        """
+        selected_columns = [column for column in self.sdrf_table.columns if "factor value" in column]
+        if len(selected_columns) != 1:
+            return None
+        values = re.findall(r'\[(.*?)\]', selected_columns[0])
+        if len(values) != 1:
+            return None
+        return values[0]

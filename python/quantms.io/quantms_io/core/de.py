@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 
 from quantms_io.core.project import ProjectHandler
+from quantms_io.core.sdrf import SDRFHandler
 from quantms_io.utils.file_utils import delete_files_extension
 
 
@@ -36,8 +37,15 @@ class DifferentialExpressionHandler:
         differential expression analysis performed in a project; documentation of the format can be found in
         https://github.com/bigbio/quantms.io/blob/main/docs/DE.md
         """
+        # SDRF file information
+        self.sdrf_manager = None
+        self.sdrf_file_path = None
+
+        # Project file information
         self.project_file = None
         self.project_manager = None
+
+        # MSstats file information
         self.msstats_df = None
         self.de_file_path = None
 
@@ -53,7 +61,7 @@ class DifferentialExpressionHandler:
             raise FileNotFoundError("MSstats differential file not found: " + msstats_file_path)
 
         self.msstats_df = pd.read_csv(msstats_file_path, sep="\t")
-        # Rename columns to lower case
+        # Rename columns to a lower case
         self.msstats_df.columns = self.msstats_df.columns.str.lower()
 
 
@@ -89,8 +97,20 @@ class DifferentialExpressionHandler:
                                         DifferentialExpressionHandler.ADJUST_PVALUE_COLUMN["msstats_column"],
                                         DifferentialExpressionHandler.ISSUE_COLUMN["msstats_column"]]].copy()
 
+        # Add project information
+        output_lines = "#project_accession: " + self.project_manager.project.project_info["project_accession"] + "\n"
+        output_lines += "#project_title: " + self.project_manager.project.project_info["project_title"] + "\n"
+        output_lines += "#project_description: " + self.project_manager.project.project_info["project_description"] + "\n"
+        output_lines += "#quantms_version: " + self.project_manager.project.project_info["quantms_version"] + "\n"
+        factor_value = self.get_factor_value()
+        if factor_value is not None:
+            output_lines += "#factor_value: " + factor_value + "\n"
+        first_contrast, second_contrast = self.get_contrast_labels(quantms_df)
+        output_lines += "#first_contrast: " + first_contrast + "\n"
+        output_lines += "#second_contrast: " + second_contrast + "\n"
+
         # Combine comments and DataFrame into a single list
-        output_lines = DifferentialExpressionHandler.DE_HEADER + str(quantms_df.to_csv(sep='\t', index=False, header=True))
+        output_lines += DifferentialExpressionHandler.DE_HEADER + str(quantms_df.to_csv(sep='\t', index=False, header=True))
 
         # Create the output file name
         base_name = output_file_prefix
@@ -130,7 +150,38 @@ class DifferentialExpressionHandler:
         if project_file is not None:
             project_file = self.project_file
         self.project_manager.save_updated_project_info(output_file_name = project_file)
-        
+
+    def get_contrast_labels(self, quantms_df: pd.DataFrame):
+        """
+        Get the contrast labels from a QuantMS file
+        :param quantms_df: QuantMS file
+        """
+        unique_label = quantms_df["label"].unique()
+        if len(unique_label) == 1:
+            labels = unique_label[0].split("-")
+            first_contrast = labels[0].strip()
+            second_contrast = labels[1].strip()
+        else:
+            raise ValueError("QuantMS file has more than one label divided by '-'")
+        return first_contrast, second_contrast
+
+    def get_factor_value(self):
+        """
+        Get the factor value from the SDRF file
+        """
+        if self.sdrf_manager is None:
+            return None
+        return self.sdrf_manager.get_factor_value()
+
+    def load_sdrf_file(self, sdrf_file: str):
+
+        self.sdrf_file_path = sdrf_file
+
+        if not os.path.isfile(sdrf_file):
+            raise FileNotFoundError("SDRF file not found: " + sdrf_file)
+
+        self.sdrf_manager = SDRFHandler(sdrf_file = sdrf_file)
+
         
 
         
