@@ -38,6 +38,7 @@ class DifferentialExpressionHandler:
         https://github.com/bigbio/quantms.io/blob/main/docs/DE.md
         """
         # SDRF file information
+        self.fdr_threshold = 0.05 # FDR threshold to consider a protein as differentially expressed
         self.sdrf_manager = None
         self.sdrf_file_path = None
 
@@ -108,6 +109,7 @@ class DifferentialExpressionHandler:
         first_contrast, second_contrast = self.get_contrast_labels(quantms_df)
         output_lines += "#first_contrast: " + first_contrast + "\n"
         output_lines += "#second_contrast: " + second_contrast + "\n"
+        output_lines += "#fdr_threshold: " + str(self.fdr_threshold) + "\n"
 
         # Combine comments and DataFrame into a single list
         output_lines += DifferentialExpressionHandler.DE_HEADER + str(quantms_df.to_csv(sep='\t', index=False, header=True))
@@ -181,6 +183,14 @@ class DifferentialExpressionHandler:
             raise FileNotFoundError("SDRF file not found: " + sdrf_file)
 
         self.sdrf_manager = SDRFHandler(sdrf_file = sdrf_file)
+
+    def set_fdr_threshold(self, fdr_threshold: float = 0.05):
+        """
+        Set the FDR threshold for the differential expression file
+        """
+        if self.msstats_df is None:
+            raise Exception("MSstats file not loaded")
+        self.fdr_threshold = fdr_threshold
 
         
 
