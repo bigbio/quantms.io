@@ -1,8 +1,0 @@
-# Include the README
-include README.md
-
-# Include the license file
-include LICENSE
-
-# Include the data files
-recursive-include quantmsio *.xml *.yml
