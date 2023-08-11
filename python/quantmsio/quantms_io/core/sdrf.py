@@ -1,3 +1,10 @@
+"""
+The SDRF classes are used to parse and handle SDRF file format within the quantms.io package. The SDRF file format is
+used to describe the experimental design of a proteomics experiment. The SDRF file format is described in the docs
+folder of this repository.
+This module contains the following classes:
+    * SDRFHandler - class to handle SDRF files
+"""
 import re
 
 import pandas as pd

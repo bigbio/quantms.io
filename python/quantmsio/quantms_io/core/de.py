@@ -1,3 +1,18 @@
+"""
+This file contains the classes to manage and handler the quantms.io differential expression files. The differential
+expression files are tab delimited files with the following columns:
+    * protein: protein accession
+    * label: label for the conditions combination
+    * log2FC: log2 fold change
+    * se: standard error
+    * df: degrees of freedom
+    * pvalue: p-value
+    * adj.pvalue: adjusted p-value
+    * issue: issue with the protein quantification
+The quantms.io differential expression file format is described in the docs folder of this repository.
+(https://github.com/bigbio/quantms.io/blob/main/docs/DE.md)
+"""
+
 import os
 import uuid
 from pathlib import Path
