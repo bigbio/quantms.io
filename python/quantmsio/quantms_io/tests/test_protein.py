@@ -4,6 +4,7 @@ import pandas as pd
 
 from quantms_io.core.protein import ProteinHandler
 import pyarrow as pa
+import random
 
 class TestProteinHandler(TestCase):
     def test_describe_schema(self):
@@ -25,8 +26,8 @@ class TestProteinHandler(TestCase):
         protein_handler = ProteinHandler(parquet_path)
         protein_handler.schema = schema
 
-        # Test the read_proteins method
-        df = protein_handler.read_proteins()
+        # Test the read_protein_dataset method
+        df = protein_handler.read_protein_dataset()
 
         # Verify that the mock read_table function was called
         mock_read_table.assert_called_once_with(parquet_path)
@@ -62,3 +63,45 @@ class TestProteinHandler(TestCase):
             "ribaq": 67.89,
             "intensity": 987.65
         })
+
+    @staticmethod
+    def generate_random_protein():
+        protein = {
+            "protein_accessions": ["P" + str(random.randint(10000, 99999))],
+            "sample_accession": "S" + str(random.randint(1, 100)),
+            "abundance": round(random.uniform(0.1, 10.0), 2),
+            "global_qvalue": round(random.uniform(0.01, 0.1), 2),
+            "is_decoy": random.choice([0, 1]),
+            "best_id_score": "Score" + str(random.randint(1, 100)) + ": " + str(
+                round(random.uniform(0.1, 10.0), 2)),
+            "gene_accessions": ["G" + str(random.randint(100, 999)) for _ in range(random.randint(1, 5))],
+            "gene_names": ["Gene" + chr(random.randint(65, 90)) for _ in range(random.randint(1, 5))],
+            "number_of_peptides": random.randint(1, 50),
+            "number_of_psms": random.randint(1, 50),
+            "number_of_unique_peptides": random.randint(1, 20),
+            "protein_descriptions": ["Description of Protein"],
+            "ibaq": round(random.uniform(50.0, 500.0), 2),
+            "ribaq": round(random.uniform(10.0, 100.0), 2),
+            "intensity": round(random.uniform(100.0, 1000.0), 2)
+        }
+        return protein
+
+    def test_write_an_example_protein_million(self):
+
+        # Generate a list of random proteins
+        num_proteins = 1000000  # You can adjust the number of proteins
+        protein_list = [self.generate_random_protein() for _ in range(num_proteins)]
+
+        protein_manager = ProteinHandler()
+        protein_manager.parquet_path = 'example_protein.parquet'
+        table = protein_manager.create_proteins_table(protein_list)
+        protein_manager.write_single_file_parquet(table)
+
+
+
+    def test_read_parquet_file(self):
+        protein_handler = ProteinHandler()
+        protein_handler.parquet_path = 'data/example_protein.parquet'
+        df_table = protein_handler.read_protein_dataset()
+        print(df_table)
+

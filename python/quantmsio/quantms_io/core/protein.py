@@ -10,15 +10,19 @@ specific sample in the experiment. Among other information, the protein file con
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pandas as pd
+import pyarrow.dataset as ds
+
+from quantms_io.core.parquet_handler import ParquetHandler
 
 
-class ProteinHandler:
+class ProteinHandler(ParquetHandler):
     """
     This class handle protein tables in column format. The main serialization format is Apache Parquet.
     """
     def __init__(self, parquet_path: str = None):
         self.schema = self._create_schema()
         self.parquet_path = parquet_path
+        self.dataset = None
 
     def _create_schema(self):
         """
@@ -59,15 +63,28 @@ class ProteinHandler:
         ]
         return pa.schema(fields)
 
-    def read_proteins(self):
-        table = pq.read_table(self.parquet_path)
-        return table.to_pandas()
+    def read_protein_dataset(self) -> pa.Table:
+        table = pq.ParquetDataset(self.parquet_path, use_legacy_dataset=False, schema=self.schema).read() # type: pa.Table
+        return table
 
     def create_protein(self, protein_data):
         table = pa.Table.from_pandas(pd.DataFrame([protein_data]), schema=self.schema)
-        writer = pq.ParquetWriter(self.parquet_path, self.schema)
-        writer.write_table(table)
-        writer.close()
+        self.write_protein_dataset(table)
+
+    def create_proteins_table(self, protein_list: list):
+        return pa.Table.from_pandas(pd.DataFrame(protein_list), schema=self.schema)
+
+
+    def write_single_file_parquet(self, table: pa.Table, parquet_output: str = None):
+        if self.parquet_path is None and parquet_output is None:
+            raise ValueError("parquet_output is required")
+        if parquet_output is None:
+            parquet_output = self.parquet_path
+
+        pq.write_table(table = table, where = parquet_output, compression="snappy")
+
+
+
 
     def append_protein(self, protein_data):
         table = pa.Table.from_pandas(pd.DataFrame([protein_data]))
@@ -85,3 +102,4 @@ class ProteinHandler:
             }
             schema_description.append(field_description)
         return schema_description
+
