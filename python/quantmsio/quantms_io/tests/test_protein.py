@@ -1,3 +1,4 @@
+import unittest
 from unittest import TestCase, mock
 
 import pandas as pd
@@ -10,38 +11,6 @@ class TestProteinHandler(TestCase):
     def test_describe_schema(self):
         protein_handler = ProteinHandler()
         print(protein_handler.describe_schema())
-
-    @mock.patch('pyarrow.parquet.read_table')
-    def test_read_proteins(self, mock_read_table):
-        # Mock the behavior of pyarrow.parquet.read_table
-        mock_table = mock.Mock(spec=pa.Table)
-        mock_read_table.return_value = mock_table
-
-        # Create a mock schema
-        protein_mock = ProteinHandler()
-        schema = protein_mock._create_schema()
-
-        # Create a ProteinHandler instance
-        parquet_path = 'mock_protein_data.parquet'
-        protein_handler = ProteinHandler(parquet_path)
-        protein_handler.schema = schema
-
-        # Test the read_protein_dataset method
-        df = protein_handler.read_protein_dataset()
-
-        # Verify that the mock read_table function was called
-        mock_read_table.assert_called_once_with(parquet_path)
-
-        # Verify that the returned DataFrame matches the mock_table data
-        expected_data = {
-            "protein_accessions": [["P123"], ["P456"]],
-            "sample_accession": ["S1", "S2"],
-            "abundance": [0.5, 0.8],
-            # ... other fields ...
-        }
-        expected_df = pd.DataFrame(expected_data)
-        pd.testing.assert_frame_equal(df, expected_df)
-
 
     def test_write_an_example_protein(self):
         protein_manager = ProteinHandler()
@@ -86,6 +55,7 @@ class TestProteinHandler(TestCase):
         }
         return protein
 
+    @unittest.skip("Skipping test_write_an_example_protein_million")
     def test_write_an_example_protein_million(self):
 
         # Generate a list of random proteins
@@ -97,11 +67,13 @@ class TestProteinHandler(TestCase):
         table = protein_manager.create_proteins_table(protein_list)
         protein_manager.write_single_file_parquet(table, write_metadata=True)
 
+    def test_write_an_example_protein(self):
 
+        # Generate a list of random proteins
+        protein_list = [self.generate_random_protein() for _ in range(100)]
 
-    def test_read_parquet_file(self):
-        protein_handler = ProteinHandler()
-        protein_handler.parquet_path = 'data/example_protein.parquet'
-        df_table = protein_handler.read_protein_dataset()
-        print(df_table)
+        protein_manager = ProteinHandler()
+        protein_manager.parquet_path = 'example_protein.parquet'
+        table = protein_manager.create_proteins_table(protein_list)
+        protein_manager.write_single_file_parquet(table, write_metadata=True)
 

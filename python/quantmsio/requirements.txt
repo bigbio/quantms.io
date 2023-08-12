@@ -3,3 +3,4 @@ setuptools
 pandas
 requests
 numpy
+pyarrow
