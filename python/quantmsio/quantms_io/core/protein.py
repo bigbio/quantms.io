@@ -10,7 +10,6 @@ specific sample in the experiment. Among other information, the protein file con
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pandas as pd
-import pyarrow.dataset as ds
 
 from quantms_io.core.parquet_handler import ParquetHandler
 
@@ -19,23 +18,14 @@ class ProteinHandler(ParquetHandler):
     """
     This class handle protein tables in column format. The main serialization format is Apache Parquet.
     """
-    def __init__(self, parquet_path: str = None):
-        self.schema = self._create_schema()
-        self.parquet_path = parquet_path
-        self.dataset = None
 
-    def _create_schema(self):
-        """
-        Create the schema for the protein file. The schema is defined in the docs folder of this repository.
-        (https://github.com/bigbio/quantms.io/blob/main/docs/PROTEIN.md)
-        """
-        fields = [
+    PROTEIN_FIELDS = [
             pa.field("protein_accessions", pa.list_(pa.string()),
                      metadata={"description": "accessions of the protein"}),
             pa.field("sample_accession", pa.string(),
                      metadata={"description": "accession of the sample in the SDRF file"}),
             pa.field("abundance", pa.float64(),
-                     metadata={"description": "protein abudance value selected by the workflow (e.g. MaxLFQ, iBAQ, etc)"}),
+                     metadata={"description": "protein abundance value selected by the workflow (e.g. MaxLFQ, iBAQ, etc)"}),
             pa.field("global_qvalue", pa.float64(),
                      metadata={"description": "global q-value"}),
             pa.field("is_decoy", pa.int32(),
@@ -61,25 +51,25 @@ class ProteinHandler(ParquetHandler):
             pa.field("intensity", pa.float64(),
                      metadata={"description": "sum of all peptide intensity value"}),
         ]
-        return pa.schema(fields, metadata={"description": "Protein file in quantms.io format", "intensity": "sum of all peptide intensity value"})
+
+    def __init__(self, parquet_path: str = None):
+        self.schema = self._create_schema()
+        self.parquet_path = parquet_path
+        self.dataset = None
+
+    def _create_schema(self):
+        """
+        Create the schema for the protein file. The schema is defined in the docs folder of this repository.
+        (https://github.com/bigbio/quantms.io/blob/main/docs/PROTEIN.md)
+        """
+        return pa.schema(ProteinHandler.PROTEIN_FIELDS, metadata={"description": "Protein file in quantms.io format"})
 
     def read_protein_dataset(self) -> pa.Table:
         table = pq.ParquetDataset(self.parquet_path, use_legacy_dataset=False, schema=self.schema).read() # type: pa.Table
         return table
 
-    def create_protein(self, protein_data):
-        table = pa.Table.from_pandas(pd.DataFrame([protein_data]), schema=self.schema)
-        self.write_protein_dataset(table)
-
     def create_proteins_table(self, protein_list: list):
         return pa.Table.from_pandas(pd.DataFrame(protein_list), schema=self.schema)
-
-
-    def append_protein(self, protein_data):
-        table = pa.Table.from_pandas(pd.DataFrame([protein_data]))
-        writer = pq.ParquetWriter(self.parquet_path, self.schema, append=True)
-        writer.write_table(table)
-        writer.close()
 
     def describe_schema(self):
         schema_description = []
