@@ -95,7 +95,7 @@ class TestProteinHandler(TestCase):
         protein_manager = ProteinHandler()
         protein_manager.parquet_path = 'example_protein.parquet'
         table = protein_manager.create_proteins_table(protein_list)
-        protein_manager.write_single_file_parquet(table)
+        protein_manager.write_single_file_parquet(table, write_metadata=True)
 
 
 

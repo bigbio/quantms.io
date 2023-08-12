@@ -61,7 +61,7 @@ class ProteinHandler(ParquetHandler):
             pa.field("intensity", pa.float64(),
                      metadata={"description": "sum of all peptide intensity value"}),
         ]
-        return pa.schema(fields)
+        return pa.schema(fields, metadata={"description": "Protein file in quantms.io format", "intensity": "sum of all peptide intensity value"})
 
     def read_protein_dataset(self) -> pa.Table:
         table = pq.ParquetDataset(self.parquet_path, use_legacy_dataset=False, schema=self.schema).read() # type: pa.Table
@@ -73,17 +73,6 @@ class ProteinHandler(ParquetHandler):
 
     def create_proteins_table(self, protein_list: list):
         return pa.Table.from_pandas(pd.DataFrame(protein_list), schema=self.schema)
-
-
-    def write_single_file_parquet(self, table: pa.Table, parquet_output: str = None):
-        if self.parquet_path is None and parquet_output is None:
-            raise ValueError("parquet_output is required")
-        if parquet_output is None:
-            parquet_output = self.parquet_path
-
-        pq.write_table(table = table, where = parquet_output, compression="snappy")
-
-
 
 
     def append_protein(self, protein_data):
