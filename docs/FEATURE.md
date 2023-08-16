@@ -14,9 +14,6 @@ The features table (peptide features) aims to cover detail on peptide level, inc
 Peptide properties and columns: 
 
 - `sequence`: The peptide's sequence corresponding to the PSM -> `string`
-- `protein_accessions`: A list protein's accessions -> `list[string]` 
-- `protein_start_positions`: A list of protein's start positions -> `list[int]`
-- `protein_end_positions`: A list of protein's end positions -> `list[int]`
 - `unique`: Indicates whether the peptide sequence (coming from the PSM) is unique for this protein in respect to the searched database -> `boolean (0/1)`
 - `modifications`: A list of modifications for a give peptide `[modification1, modification2, ...]`. A modification should be recorded as string like [modification definition](README.md#modifications)-> `list[string]`
 - `retention_time`: The retention time of the spectrum -> `float`
@@ -41,6 +38,13 @@ Properties and columns from sample:
 - `isotope_label_type`: The column indicates whether the measurement is based on an endogenous peptide (indicated by value `L` or `light`) or reference peptide (indicated by value `H` or `heavy`) -> `string`
 - `run`: The column stores IDs of mass spectrometry runs for LFQ experiments `e.g. 1`. For TMT/iTRAQ experiments, it is a identifier of mixture combined with technical replicate and fractions `{mixture}_{technical_replicate}_{fraction}` `e.g. 1_2_3` -> `string`
 - `channel`: The channel used to label the sample (e.g. TMT115)-> `string`
+
+Protein group samples: 
+- `protein_accessions`: A list protein's accessions -> `list[string]` 
+- `protein_start_positions`: A list of protein's start positions -> `list[int]`
+- `protein_end_positions`: A list of protein's end positions -> `list[int]`
+- `protein_blobal_qvalue`: Global q-value associated with the protein or protein group. -> `double`
+- `protein_best_id_score`: A key value pair of the best search engine score selected by the algorithm -> `string`
 
 Optional fields:
 

@@ -6,6 +6,8 @@
 		{"name": "protein_accessions", "type": {"type": "array","items": "string"}},
 		{"name": "protein_start_positions", "type": {"type": "array","items": "int"}},
 		{"name": "protein_end_positions", "type": {"type": "array","items": "int"}},
+		{"name": "protein_global_qvalue","type": "double"},
+		{"name": "best_id_score", "type": "string"},
 		{"name": "unique","type": "int"},
 		{"name": "modifications","type": {"type": "array", "items": "string"}},
 		{"name": "retention_time","type": "float"},
