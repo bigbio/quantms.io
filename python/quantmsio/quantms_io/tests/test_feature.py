@@ -11,6 +11,8 @@ def generate_random_feature():
         "protein_accessions": ["P12345", "P67890"],
         "protein_start_positions": [10, 50],
         "protein_end_positions": [30, 70],
+        "protein_global_qvalue": random.uniform(0.0, 0.1),
+        "protein_best_id_score": f"Score{random.randint(1, 10)}: {random.uniform(0.0, 1.0)}",
         "unique": random.randint(0, 1),
         "modifications": ["Phospho", "Acetyl"],
         "retention_time": random.uniform(40.0, 50.0),
