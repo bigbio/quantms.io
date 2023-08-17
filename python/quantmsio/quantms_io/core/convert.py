@@ -1,3 +1,5 @@
+import os
+
 import pyarrow as pa
 import pandas as pd
 import numpy as np
