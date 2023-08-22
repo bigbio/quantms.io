@@ -3,6 +3,9 @@ import os
 import pyarrow as pa
 import pandas as pd
 import numpy as np
+from pyteomics import mzml
+from Bio import Entrez
+from Bio import SeqIO
 import codecs
 import gc
 
@@ -18,6 +21,9 @@ class FeatureConvertor():
     def __init__(self, experiment_type, schema):
         self.experiment_type = experiment_type
         self.schema = schema
+        self.mzml_directory = None
+        self.email = None
+        self.tool = None
 
     # load csv from mzTab
     def __skip_and_load_csv(self, fle, header, **kwargs):
@@ -37,7 +43,8 @@ class FeatureConvertor():
     def __extract_len(self, fle, header):
         map_tag = {
             "PSH": 'PSM',
-            "PEH": 'PEP'
+            "PEH": 'PEP',
+            'PRH': 'PRT'
         }
         if os.stat(fle).st_size == 0:
             raise ValueError("File is empty")
@@ -202,8 +209,65 @@ class FeatureConvertor():
                          'sample_accession', 'condition', 'fraction']]
             return sdrf
 
-    def _extract_optional_featrue(self):
-        pass
+    def extract_optional_spectrum_featrue(self, res_df, mzml_directory):
+
+        self.mzml_directory = mzml_directory
+        res_df[['mz', 'array_intensity', 'num_peaks']] = res_df[['spectra_ref', 'scan_number']].apply(
+            lambda x: self._map_spectrum_mz(x['spectra_ref'], x['scan_number']), axis=1, result_type="expand")
+
+        return res_df
+
+    def _map_spectrum_mz(self, mz_path, scan):
+        scan = "controllerType=0 controllerNumber=1 scan=" + str(scan)
+        mz_path = self.mzml_directory + '/' + mz_path + '.mzml'
+        spectral = mzml.MzML(mz_path).get_by_id(scan)
+        mz_array = spectral["m/z array"]
+        array_intensity = spectral['intensity array']
+        return mz_array, array_intensity, len(mz_array)
+
+    def _query_accession(self, gene_name):
+        Entrez.email = self.Email
+        Entrez.tool = self.tool
+        if gene_name == 'unknow':
+            return ['unknow']
+        q_name = gene_name + " AND Homo sapiens[porgn:__txid9606]"
+        handle = Entrez.esearch(db="nucleotide", term=q_name)
+        record = Entrez.read(handle)
+        id_list = record["IdList"]
+        accessions = self._get_accessions(id_list)
+        return accessions
+
+    def _get_accessions(self, id_list):
+        accessions = []
+        for id_q in id_list:
+            handle = Entrez.efetch(
+                db="nucleotide", id=id_q, rettype="gb", retmode="text")
+            record = SeqIO.read(handle, "genbank")
+            accessions.append(record.id)
+        return accessions
+
+    def extract_optional_gene_featrue(self, res_df, mzTab_path, gene_accession=False, Email=None, Tool=None):
+        PRT = self.__skip_and_load_csv(mzTab_path, 'PRH', usecols=[
+                                       'accession', 'description'])
+        PRT['accession'] = PRT['accession'].apply(lambda x: x.split("|")[-1])
+        PRT.loc[:, 'gene_names'] = PRT['description'].fillna('unkonw').apply(
+            lambda x: re.findall(r'GN=(\w+)', x)[0]if re.findall(r'GN=(\w+)', x) else 'unknow')
+        gene_df = protein[["accession", "gene_names"]].set_index(
+            "accession").to_dict(orient='dict')["gene_names"]
+        gene_df = pd.DataFrame(
+            index=res.keys(), data=res.values()).reset_index()
+        gene_df.columns = ['accession', 'gene_names']
+        if gene_accession:
+            self.email = Email
+            self.tool = Tool
+            gene_df.loc[:, 'gene_accession'] = gene_df['gene_names'].apply(
+                lambda x: self._query_accession(x))
+        res_df['accession'] = res_df['protein_accessions'].apply(
+            lambda x: x[-1])
+        res_df = res_df.merge(gene_df, on='accession', how='left')
+        res_df.drop("accession", axis=1, inplace=True)
+
+        return res_df
 
     def __split_start_or_end(self, value):
         if ',' in str(value):
@@ -236,6 +300,21 @@ class FeatureConvertor():
                            'protein_accessions', 'peptidoform', "charge", 'reference_file_name'], how="inner")
             self.__clear_up_memory(psm, msstats)
             res = pd.merge(res, sdrf, on='reference_file_name', how='left')
+
+        # optional fields
+        res.loc[:, 'gene_accessions'] = "not"
+        res.loc[:, 'gene_names'] = "not"
+        res.loc[:, 'id_scores'] = "not"
+        res.loc[:, 'mz'] = 0.0
+        res.loc[:, 'intensity_array'] = 0.0
+        res.loc[:, 'num_peaks'] = 0
+
+        res['gene_accessions'] = res['gene_accessions'].apply(lambda x: [x])
+        res['gene_names'] = res['gene_names'].apply(lambda x: [x])
+        res['id_scores'] = res['id_scores'].apply(lambda x: [x])
+        res['mz'] = res['mz'].apply(lambda x: [x])
+        res['intensity_array'] = res['intensity_array'].apply(lambda x: [x])
+
         return res
 
     def convert_to_parquet(self, res):
@@ -262,21 +341,7 @@ class FeatureConvertor():
         res['biological_replicate'] = res['biological_replicate'].fillna(
             1).astype(str)
         res['run'] = res['run'].fillna(1).astype(str)
-
-        # optional fields
-        res.loc[:, 'gene_accessions'] = [["not"] for _ in range(len(res))]
-        res.loc[:, 'gene_names'] = [["not"] for _ in range(len(res))]
-        res.loc[:, 'consensus_support'] = 0.0
-        res.loc[:, 'id_scores'] = [["not"] for _ in range(len(res))]
-        res.loc[:, 'scan_number'] = 'not'
-        res.loc[:, 'mz'] = [[0.0] for _ in range(len(res))]
-        res.loc[:, 'intensity_array'] = [[0.0] for _ in range(len(res))]
-        res.loc[:, 'num_peaks'] = 0
-
-        res['gene_accessions'] = res['gene_accessions'].apply(lambda x: [x])
-        res['gene_names'] = res['gene_names'].apply(lambda x: [x])
-        res['id_scores'] = res['id_scores'].apply(lambda x: [x])
-        res['mz'] = res['mz'].apply(lambda x: [x])
-        res['intensity_array'] = res['intensity_array'].apply(lambda x: [x])
+        res['scan_number'].astype(str)
+        res['consensus_support'] = res['consensus_support'].fillna(0.0)
 
         return pa.Table.from_pandas(res, schema=self.schema)
