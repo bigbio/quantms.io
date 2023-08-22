@@ -73,3 +73,12 @@ class TestFeatureHandler(TestCase):
         table = feature_manager.create_feature_table([generate_random_feature()])
         print(f"Number of rows: {table.num_rows}")
         feature_manager.write_single_file_parquet(table, write_metadata=True)
+
+    def test_convert_mztab_msstats_to_feature(self):
+        feature_manager = FeatureHandler()
+        feature_manager.parquet_path = 'example_feature.parquet'
+        feature_manager.convert_mztab_msstats_to_feature(
+            mztab_file="data/raw_ae_example/PXD009219.sdrf_openms_design_openms.mzTab",
+            msstats_file="data/raw_ae_example/PXD009219.sdrf_openms_design_msstats_in.csv",
+            sdrf_file="data/raw_ae_example/PXD009219.sdrf.tsv", use_cache=True
+        )

@@ -152,3 +152,61 @@ class SDRFHandler:
         if len(values) != 1:
             return None
         return values[0]
+
+    def extract_feature_properties(self, experiment_type: str):
+        """
+        Extract the feature properties from the SDRF file. These properties are needed by the feature file and
+        FeatureHandler class. The experiment type can be: "lfq", "tmt" or "itraq".
+        """
+        sdrf_pd = self.sdrf_table.copy() # type: DataFrame
+
+        sdrf_pd['comment[data file]'] = sdrf_pd['comment[data file]'].apply(lambda x: x.split(".")[0])
+
+        factor_columns = [column for column in sdrf_pd.columns if "factor value" in column]
+        if len(factor_columns) != 1:
+            raise ValueError("The number of factor columns should be 1")
+
+        # Rename the factor value column with condition as name
+        sdrf_pd = sdrf_pd.rename(columns={factor_columns[0]: 'condition'})
+
+        sdrf_pd = sdrf_pd.rename(columns={
+            'comment[data file]': 'reference_file_name',
+            'source name': 'sample_accession',
+            'comment[fraction identifier]': 'fraction',
+            'comment[label]': 'channel'
+        })
+
+        # Add the channel column if it is not present
+        if experiment_type not in ['tmt', 'itraq', "lfq"]:
+            raise ValueError("The experiment type provided is not supported: {}, available values [lfq,tmt,itraq]".format(experiment_type))
+
+        # extract
+        if experiment_type != 'lfq':
+            sdrf = sdrf_pd[['reference_file_name', 'sample_accession', 'condition', 'fraction', 'channel']]
+            return sdrf
+        sdrf = sdrf_pd[['reference_file_name', 'sample_accession', 'condition', 'fraction']]
+        sdrf["channel"] = None # Channel will be needed in the LFQ as empty.
+        return sdrf
+
+    def extra_experiment_type_from_sdrf(self):
+        """
+        Using the SDRF file label column, we will try to extract the experiment type of an SDRF.
+        The three possible values supported in SDRF are lfq, tmt and itraq.
+        """
+        if self.LABELING not in self.sdrf_table.columns:
+            raise ValueError("The SDRF file provided does not contain the comment[label] column")
+
+        labeling_values = get_complex_value_sdrf_column(self.sdrf_table, self.LABELING)
+        if len(labeling_values) == 0:
+            raise ValueError("The SDRF file provided does not contain any comment[label] value")
+
+        if len([i for i in labeling_values if "label free" in i]) > 0:
+            return "lfq"
+        elif len([i for i in labeling_values if "tmt" in i]) > 0:
+            return "tmt"
+        elif len([i for i in labeling_values if "itraq" in i]) > 0:
+            return "itraq"
+        else:
+            raise ValueError("The SDRF file provided does not contain any supported comment[label] value")
+
+

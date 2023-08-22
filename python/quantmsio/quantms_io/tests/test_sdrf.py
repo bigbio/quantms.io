@@ -20,3 +20,10 @@ class TestSDRFHandler(TestCase):
                           {'dissociation method': 'HCD'},
                           {'precursor mass tolerance': '10 ppm'},
                           {'fragment mass tolerance': '0.05 Da'}])
+
+        values_df = sdrf_handler.extract_feature_properties("lfq")
+        print(values_df)
+
+        print(sdrf_handler.extra_experiment_type_from_sdrf())
+
+

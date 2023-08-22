@@ -11,12 +11,18 @@ The feature file is defined in the docs folder of this repository.
 The feature file is a column format that defines the peptide quantification/identification and its relation with each
 sample in the experiment.
 """
+import random
+
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pandas as pd
+from scipy.linalg._solve_toeplitz import float64
 
-
+from quantms_io.core.mztab import MztabHandler
 from quantms_io.core.parquet_handler import ParquetHandler
+from quantms_io.core.sdrf import SDRFHandler
+from quantms_io.utils.pride_utils import clean_peptidoform_sequence, compare_protein_lists, \
+    standardize_protein_list_accession, standardize_protein_string_accession
 
 
 class FeatureHandler(ParquetHandler):
@@ -118,6 +124,38 @@ class FeatureHandler(ParquetHandler):
     def create_feature_table(self, feature_list: list):
         return pa.Table.from_pandas(pd.DataFrame(feature_list), schema=self.schema)
 
+    def convert_mztab_msstats_to_feature(self, msstats_file: str, sdrf_file: str, mztab_file: str,
+                                         use_cache: bool = False):
+        """
+        Convert a MSstats input file and mztab into a quantms.io file format.
+        :param msstats_file: MSstats input file
+        :param sdrf_file: SDRF file
+        :param mztab_file: mztab file
+        :param use_cache: use cache to store the mztab file
+        :return: none
+        """
+        sdrf_handler = SDRFHandler(sdrf_file)
+        mztab_handler = MztabHandler(mztab_file, use_cache=use_cache)
+        mztab_handler.load_mztab_file(use_cache=use_cache)
+
+        # Read the MSstats file line by line and convert it to a quantms.io file feature format
+        with open(msstats_file, "r") as msstats_file_handler:
+            line = msstats_file_handler.readline()
+            if line.startswith("Protein"):
+                # Skip the header
+                msstats_columns = line.rstrip().split(",")
+            else:
+                raise Exception("The MSstats file does not have the expected header")
+            line = msstats_file_handler.readline()
+            while line.rstrip() != "":
+                line = line.rstrip()
+                msstats_values = line.split(",")
+                # Create a dictionary with the values
+                feature_dict = dict(zip(msstats_columns, msstats_values))
+                msstats_feature = self._fetch_msstats_feature(feature_dict, sdrf_handler, mztab_handler)
+                # Create a feature table
+                feature_table = self.create_feature_table([msstats_feature])
+
     def describe_schema(self):
         schema_description = []
         for field in self.schema:
@@ -128,3 +166,88 @@ class FeatureHandler(ParquetHandler):
             }
             schema_description.append(field_description)
         return schema_description
+
+    def _fetch_msstats_feature(self, feature_dict: dict, sdrf_handler: SDRFHandler, mztab_handler: MztabHandler):
+        """
+        Fetch a feature from a MSstats dictionary and convert to a quantms.io format row
+        :param feature_dict: MSstats feature dictionary
+        :param sdrf_handler: SDRF handler
+        :param mztab_handler: mztab handler
+        :return: quantms.io format row
+        """
+        protein_accessions_list = standardize_protein_list_accession(feature_dict["ProteinName"])
+        protein_accessions_string = standardize_protein_string_accession(feature_dict["ProteinName"])
+
+        peptidoform = feature_dict["PeptideSequence"] # Peptidoform is the Msstats form .e.g. EM(Oxidation)QDLGGGER
+        peptide_sequence = clean_peptidoform_sequence(peptidoform)  # Get sequence .e.g. EMQDLGGGER
+        charge = feature_dict["PrecursorCharge"] # Charge is the Msstats form .e.g. 2
+        reference_file = feature_dict["Reference"].replace("\"", "").split(".")[0] # Reference is the Msstats form .e.g. HeLa_1to1_01
+
+        peptide_mztab_qvalue = mztab_handler.get_peptide_qvalue_from_index(msstats_peptidoform=peptidoform,
+                                                                           charge=charge)
+        peptide_score_name = mztab_handler.get_search_engine_scores()["peptide_score"]
+
+        peptide_mztab_qvalue_accession = standardize_protein_list_accession(peptide_mztab_qvalue[0])
+        peptide_mztab_qvalue = peptide_mztab_qvalue[1] # Peptide q-value index 1
+        peptide_mztab_qvalue_decoy = peptide_mztab_qvalue[2] # Peptide q-value decoy index 2
+
+        peptide_count = mztab_handler.get_number_psm_from_index(msstats_peptidoform=peptidoform,
+                                                                charge=charge, reference_file=reference_file)
+        start_positions = peptide_count[2].split(",") # Start positions in the protein
+        end_positions = peptide_count[3].split(",")   # End positions in the protein
+        peptide_count_accession = standardize_protein_list_accession(peptide_count[1]) # Accession of the protein
+        spectral_count = peptide_count[0] # Spectral count
+
+        protein_qvalue_object = mztab_handler.get_protein_qvalue_from_index(protein_accession=protein_accessions_string)
+        protein_qvalue = protein_qvalue_object[0] # Protein q-value index 0
+
+        if not compare_protein_lists(protein_accessions_list, peptide_mztab_qvalue_accession, peptide_count_accession):
+            raise Exception("The protein accessions in the MSstats file do not match with the mztab file")
+
+        # Unique is different in PSM section, Peptide, We are using the msstats number of accessions.
+        unique = 1 if len(protein_accessions_list) == 1 else 0
+
+        # TODO: get retention time from mztab file. The rentention time in the mzTab peptide level is not clear how is
+        # related to the retention time in the MSstats file. The retention time in the MSstats file is the retention time.
+        rt = None
+        return {
+            "sequence": peptide_sequence,
+            "protein_accessions":protein_accessions_list,
+            "protein_start_positions": start_positions,
+            "protein_end_positions": end_positions,
+            "protein_global_qvalue": float64(protein_qvalue),
+            "protein_best_id_score": None,
+            "unique": unique,
+            "modifications": ["Phospho", "Acetyl"],
+            "retention_time": rt,
+            "charge": charge,
+            "calc_mass_to_charge": random.uniform(2.0, 3.0),
+            "peptidoform": peptide_mztab_qvalue[0],
+            "posterior_error_probability": None,
+            "global_qvalue": peptide_mztab_qvalue,
+            "is_decoy": peptide_mztab_qvalue_decoy,
+            "best_id_score": f"{peptide_score_name}: {peptide_mztab_qvalue}",
+            "intensity": feature_dict["Intensity"],
+            "spectral_count": spectral_count,
+            "sample_accession": "S1",
+            "condition": "ConditionA",
+            "fraction": "F1",
+            "biological_replicate": "BioRep1",
+            "fragment_ion": "b2",
+            "isotope_label_type": "LabelA",
+            "run": "Run1",
+            "channel": "ChannelA",
+            "id_scores": [f"{peptide_score_name}: {peptide_mztab_qvalue}"],
+            "consensus_support": None,
+            "reference_file_name": reference_file,
+            "scan_number": peptide_mztab_qvalue[3],
+            "exp_mass_to_charge": random.uniform(2.0, 3.0),
+            "mz": None,
+            "intensity_array": None,
+            "num_peaks": None,
+            "gene_accessions": None,
+            "gene_names": None
+        }
+
+
+

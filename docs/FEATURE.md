@@ -26,7 +26,7 @@ Peptide properties and columns:
 - `is_decoy`: Indicates whether the peptide sequence (coming from the PSM) is decoy -> `boolean (0/1)`
 - `best_id_score`: A key value pair of the best search engine score selected by the algorithm `(e.g. "MS-GF:RawScore": 234.0)` -> `string`
 - `intensity`: The abundance of the peptide in the sample -> `float`
-- `spectral_count`: The number of spectra that match the peptide -> `integer`
+- `spectral_count`: The number of spectra that match the peptide. Number of a PSMs for a given peptidoform in a given file (peptide sequence + charge + modifications) -> `integer` 
 
 Properties and columns from sample: 
 

@@ -54,7 +54,7 @@ class FeatureConvertor():
         return fle_len
 
     # extract ms runs
-    def extract_ms_runs(self, fle):
+    def extract_ms_runs(self, fle): # DONE implemented.
         if os.stat(fle).st_size == 0:
             raise ValueError("File is empty")
         f = codecs.open(fle, 'r', 'utf-8')
