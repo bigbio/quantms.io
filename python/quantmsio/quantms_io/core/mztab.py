@@ -2,7 +2,7 @@ import re
 from quantms_io.core.core import DiskCache
 from quantms_io.utils.constants import PROTEIN_DETAILS
 from quantms_io.utils.pride_utils import get_key_peptide_combination, standardize_protein_string_accession, \
-    parse_score_name_in_mztab
+    parse_score_name_in_mztab, get_modifications_object_from_mztab_line
 
 
 def fetch_peptide_spectra_ref(peptide_spectra_ref: str):
@@ -43,7 +43,7 @@ def get_peptidoform_proforma_version_in_mztab(peptide_sequence: str, modificatio
     peptide_sequence = list(peptide_sequence)
     # Add n-term modification if it is present
     for key_index, value_index in modifications.items():
-        if aa_index in value_index:
+        if aa_index in value_index["position"]:
             result_peptide = "[" + key_index + "]" + result_peptide
     if len(result_peptide) > 0:
         result_peptide = result_peptide + "-"
@@ -52,13 +52,13 @@ def get_peptidoform_proforma_version_in_mztab(peptide_sequence: str, modificatio
     for aa in peptide_sequence:
         add_mod = ""
         for key_index, value_index in modifications.items():
-            if aa_index in value_index:
+            if aa_index in value_index["position"]:
                 add_mod = add_mod + "[" + key_index + "]"
         result_peptide = result_peptide + aa + add_mod
         aa_index += 1
     # Add c-term modification if it is present
     for key_index, value_index in modifications.items():
-        if aa_index in value_index:
+        if aa_index in value_index["position"]:
             result_peptide = result_peptide + "-[" + key_index + "]"
     return result_peptide
 
@@ -88,45 +88,6 @@ def compare_msstats_peptidoform_with_proforma(msstats_peptidoform: str, proforma
         proforma = result_proforma
     return msstats_peptidoform == proforma
 
-
-def get_modifications_object_from_mztab_line(modification_string: str, modifications_definition: dict) -> dict:
-    """
-    Get the modifications from a mztab line. This method is used to transform peptide + modification strings to
-    proteoform notations, for msstats notation and for proforma notation.
-    :param modification_string: modification string
-    :param modifications_definition: dictionary modifications definition
-    :return: modifications dictionary
-    """
-    modifications = {}
-    modification_values = re.split(r',(?![^\[]*\])', modification_string)
-    for modification in modification_values:
-        modification = modification.strip()
-        accession = modification.split("-")[1]
-        if accession not in modifications_definition:
-            raise Exception("The modification {} is not in the modifications definition".format(accession))
-        accession = modifications_definition[accession][0]  # get the name of the modification
-        position = []
-        position_probability_string = modification.split("-")[0]
-        if "[" not in position_probability_string and "|" not in position_probability_string:  # only one position
-            position = [position_probability_string]
-        elif "[" not in position_probability_string and "|" in position_probability_string:  # multiple positions not probability
-            position = position_probability_string.split("|")  # multiple positions not probability
-        else:
-            positions_probabilities = position_probability_string.split("|")
-            for position_probability in positions_probabilities:
-                if "[" not in position_probability:
-                    position.append(position_probability)
-                else:
-                    position_with_probability = position_probability.split("[")[0]
-                    position.append(position_with_probability)
-        position = [int(i) for i in position]
-        if accession in modifications:  # Avoid error in OpenMS that do not write 1|4-UNIMOD:35 but 1-UNIMOD:35, 4-UNIMOD:35
-            modifications[accession] = modifications[accession] + position
-        else:
-            modifications[accession] = position
-    return modifications
-
-
 def get_petidoform_msstats_notation(peptide_sequence: str, modification_string: str, modifications_definition: dict) -> str:
     """
     Get the peptidoform in msstats notation from a mztab line definition, it could be for a PEP definition
@@ -149,20 +110,20 @@ def get_petidoform_msstats_notation(peptide_sequence: str, modification_string: 
     peptide_sequence = list(peptide_sequence)
     # Add n-term modification if it is present
     for key_index, value_index in modifications.items():
-        if aa_index in value_index:
+        if aa_index in value_index["position"]:
             result_peptide = "." + "(" + key_index + ")" + result_peptide
 
     aa_index += 1
     for aa in peptide_sequence:
         add_mod = ""
         for key_index, value_index in modifications.items():
-            if aa_index in value_index:
+            if aa_index in value_index["position"]:
                 add_mod = add_mod + "(" + key_index + ")"
         result_peptide = result_peptide + aa + add_mod
         aa_index += 1
     # Add c-term modification if it is present
     for key_index, value_index in modifications.items():
-        if aa_index in value_index:
+        if aa_index in value_index["position"]:
             result_peptide = result_peptide + ".(" + key_index + ")"
     return result_peptide
 
@@ -228,7 +189,7 @@ def fetch_protein_from_mztab_line(pos: int, protein_dict: dict):
     :param protein_dict: dictionary with the protein information
     :return: protein dictionary
     """
-    accession_string = standardize_protein_string_accession(protein_dict["accession"])
+    accession_string = standardize_protein_string_accession(protein_dict["ambiguity_members"])
     return {"accession": accession_string, "score": protein_dict["best_search_engine_score[1]"], "pos": pos}
 
 
@@ -257,7 +218,8 @@ def fetch_psm_from_mztab_line(pos: int, es: dict, ms_runs: dict = None, modifica
     :param modifications_definition: modifications definition
     :return: psm dictionary
     """
-    keys = ["sequence", "modifications", "charge", "retention_time", "accession", "start", "end"]
+    keys = ["sequence", "modifications", "charge", "retention_time", "accession", "start", "end", "calc_mass_to_charge",
+            "exp_mass_to_charge"]
     psm = dict(zip(keys, [es[k] for k in keys]))
 
     psm["accession"] = standardize_protein_string_accession(psm["accession"])
@@ -349,8 +311,34 @@ class MztabHandler:
 
     def __init__(self, mztab_file, use_cache: bool = False):
         self._search_engine_scores = {}  # search engine scores names
+
+        # The key is the combination of the msstats_peptidoform notations and the charge state. The value is a list
+        # with the following information:
+        # - 0 - protein accession
+        # - 1 - peptide qvalue
+        # - 2 - is decoy
+        # - 3 - peptidoform in proforma notation
+        # - 4 - modifications
+        # - 5 - ms run
+        # - 6 - scan number
+        # - 7 - position in the mztab file
         self._peptide_qvalues = None  # peptide index details
+
+        # The dictionary contains a key value pair of the information from the protein, the key is the accessions of the
+        # proteins, the value is the qvalue score and the position in the mztab file.
         self._protein_details = None  # protein index details
+
+        # The key is the combination of the msstats_peptidoform notations, the charge state and the ms_run.
+        # The value is a list with the following information:
+        # - 0 - psm count
+        # - 1 - protein accession
+        # - 2 - protein start
+        # - 3 - protein end
+        # - 4 - list of psms information
+          # - 0 - calculated mass to charge
+          # - 1 - experimental mass to charge
+          # - 2 - reference file
+          # - 3 - scan number
         self._psm_count = None  # psm count index
 
         self._ms_runs = {}  # ms runs index
@@ -394,33 +382,42 @@ class MztabHandler:
         else:
             self._peptide_qvalues[peptide_key] = peptide_value
 
-    def add_psm_to_count(self, psm_key: str, protein_accession: str, protein_start: str, protein_end: str):
+    def add_psm_to_count(self, psm_key: str, protein_accession: str, protein_start: str, protein_end: str,
+                         calc_mass_to_charge: str, exp_mass_to_charge: str, reference_file: str, scan_number: str):
         """
         PSM count is used to count the number of psms for a given peptidoform in a file.
         :param psm_key: psm key
         :param protein_accession: protein accession
         :param protein_start: protein start
         :param protein_end: protein end
+        :param calc_mass_to_charge: calculated mass to charge
+        :param exp_mass_to_charge: experimental mass to charge
+        :param scan_number: scan number
         :return: None
         """
-
         if self._use_cache:
             if self._psm_count.contains(psm_key):
                 psm = self._psm_count.get_item(psm_key)
-                if [protein_accession, protein_start, protein_end] != psm[1:]:
+                if [protein_accession, protein_start, protein_end] != psm[1:4]:
                     raise Exception("The protein information is different for the same psm key")
-                count = psm[0]
+                count = psm[0] # psms count
                 count += 1
-                self._psm_count.add_item(psm_key, [count, protein_accession, protein_start, protein_end])
+                list_psms = psm[4] # list of psms information
+                list_psms.append([calc_mass_to_charge, exp_mass_to_charge, reference_file, scan_number])
+                self._psm_count.add_item(psm_key, [count, protein_accession, protein_start, protein_end, list_psms])
             else:
-                self._psm_count.add_item(psm_key, [1, protein_accession, protein_start, protein_end])
+                list_psms = [[calc_mass_to_charge, exp_mass_to_charge, reference_file, scan_number]]
+                self._psm_count.add_item(psm_key, [1, protein_accession, protein_start, protein_end, list_psms])
         else:
             if psm_key in self._psm_count:
                 count = self._psm_count[psm_key][0]
                 count += 1
-                self._psm_count[psm_key] = [count, protein_accession, protein_start, protein_end]
+                list_psms = self._psm_count[psm_key][4]
+                list_psms.append([calc_mass_to_charge, exp_mass_to_charge, reference_file, scan_number])
+                self._psm_count[psm_key] = [count, protein_accession, protein_start, protein_end, list_psms]
             else:
-                self._psm_count[psm_key] = [1, protein_accession, protein_start, protein_end]
+                list_psms = [[calc_mass_to_charge, exp_mass_to_charge, reference_file, scan_number]]
+                self._psm_count[psm_key] = [1, protein_accession, protein_start, protein_end, list_psms]
 
     def create_mztab_index(self, mztab_file: str, qvalue_index: bool = True, psm_count_index: bool = True):
         """
@@ -454,7 +451,13 @@ class MztabHandler:
                     psm = fetch_psm_from_mztab_line(pos, es, ms_runs=self._ms_runs,
                                                     modifications_definition=self._modifications)
                     psm_key = get_key_peptide_combination(psm["peptidoform"], psm["charge"], psm["ms_run"])
-                    self.add_psm_to_count(psm_key, psm["accession"], psm["start"], psm["end"])
+                    self.add_psm_to_count(psm_key=psm_key, protein_accession=psm["accession"],
+                                          protein_start=psm["start"], protein_end=psm["end"],
+                                          calc_mass_to_charge=psm["calc_mass_to_charge"],
+                                          exp_mass_to_charge=psm["exp_mass_to_charge"],
+                                          reference_file=psm["ms_run"],
+                                          scan_number=psm["scan_number"]
+                                          )
                 elif line.startswith("PEH"):
                     print("-- All proteins have been read, starting peptide section -- ")
                     self._index["PEH"] = pos
@@ -471,6 +474,7 @@ class MztabHandler:
                                      peptide["score"],
                                      peptide["is_decoy"],
                                      peptide["proforma_peptidoform"],
+                                     peptide["modifications"],
                                      peptide["ms_run"],
                                      peptide["scan_number"],
                                      peptide["pos"]]
@@ -580,6 +584,9 @@ class MztabHandler:
 
     def get_search_engine_scores(self):
         return self._search_engine_scores
+
+    def get_modifications_definition(self):
+        return self._modifications
 
 
 

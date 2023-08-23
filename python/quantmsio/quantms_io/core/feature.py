@@ -22,7 +22,20 @@ from quantms_io.core.mztab import MztabHandler
 from quantms_io.core.parquet_handler import ParquetHandler
 from quantms_io.core.sdrf import SDRFHandler
 from quantms_io.utils.pride_utils import clean_peptidoform_sequence, compare_protein_lists, \
-    standardize_protein_list_accession, standardize_protein_string_accession
+    standardize_protein_list_accession, standardize_protein_string_accession, get_modifications_object_from_mztab_line
+
+
+def get_quantmsio_modifications(modifications_string: str, modification_definition: dict) -> dict:
+    """
+    Get the modifications in quantms.io format from a string of modifications in mztab format.
+    :param modifications_string: modifications string in mztab format
+    :return: modifications in quantms.io format
+    """
+    if modifications_string is None or modifications_string == "null":
+        return {}
+
+    return get_modifications_object_from_mztab_line(modification_string = modifications_string,
+                                                             modifications_definition=modification_definition)
 
 
 class FeatureHandler(ParquetHandler):
@@ -137,6 +150,7 @@ class FeatureHandler(ParquetHandler):
         sdrf_handler = SDRFHandler(sdrf_file)
         mztab_handler = MztabHandler(mztab_file, use_cache=use_cache)
         mztab_handler.load_mztab_file(use_cache=use_cache)
+        feature_list = []
 
         # Read the MSstats file line by line and convert it to a quantms.io file feature format
         with open(msstats_file, "r") as msstats_file_handler:
@@ -153,8 +167,19 @@ class FeatureHandler(ParquetHandler):
                 # Create a dictionary with the values
                 feature_dict = dict(zip(msstats_columns, msstats_values))
                 msstats_feature = self._fetch_msstats_feature(feature_dict, sdrf_handler, mztab_handler)
+                if msstats_feature is not None:
+                    feature_list.append(msstats_feature)
+                #feature_table = self.create_feature_table([msstats_feature])
+                print(msstats_feature)
+                line = msstats_file_handler.readline()
                 # Create a feature table
-                feature_table = self.create_feature_table([msstats_feature])
+        feature_table = self.create_feature_table(feature_list)
+        # Write the feature table to a parquet file
+
+        self.parquet_path = "feature.parquet"
+        self.write_single_file_parquet(feature_table, write_metadata=True)
+        mztab_handler.close()
+
 
     def describe_schema(self):
         schema_description = []
@@ -188,20 +213,58 @@ class FeatureHandler(ParquetHandler):
         peptide_score_name = mztab_handler.get_search_engine_scores()["peptide_score"]
 
         peptide_mztab_qvalue_accession = standardize_protein_list_accession(peptide_mztab_qvalue[0])
-        peptide_mztab_qvalue = peptide_mztab_qvalue[1] # Peptide q-value index 1
+        peptide_qvalue = peptide_mztab_qvalue[1] # Peptide q-value index 1
         peptide_mztab_qvalue_decoy = peptide_mztab_qvalue[2] # Peptide q-value decoy index 2
 
-        peptide_count = mztab_handler.get_number_psm_from_index(msstats_peptidoform=peptidoform,
+        # Mods in quantms.io format
+        modifications_string = peptide_mztab_qvalue[4] # Mods
+        modifications = get_quantmsio_modifications(modifications_string= modifications_string,
+                                                    modification_definition=mztab_handler.get_modifications_definition())
+        modifications_string = ""
+        for key, value in modifications.items():
+            modifications_string += "|".join(map(str, value["position"]))
+            modifications_string = modifications_string + "-" + value["unimod_accession"] + ","
+        modifications_string = None if len(modifications_string)==0 else modifications_string[:-1] # Remove last comma
+        try:
+            peptide_count = mztab_handler.get_number_psm_from_index(msstats_peptidoform=peptidoform,
                                                                 charge=charge, reference_file=reference_file)
+        except:
+            print(f"MBR peptide: {peptidoform}, {charge}, {reference_file}")
+            return None
+
         start_positions = peptide_count[2].split(",") # Start positions in the protein
+        start_positions = [int(i) for i in start_positions]
+
         end_positions = peptide_count[3].split(",")   # End positions in the protein
+        end_positions = [int(i) for i in end_positions]
         peptide_count_accession = standardize_protein_list_accession(peptide_count[1]) # Accession of the protein
         spectral_count = peptide_count[0] # Spectral count
 
-        protein_qvalue_object = mztab_handler.get_protein_qvalue_from_index(protein_accession=protein_accessions_string)
-        protein_qvalue = protein_qvalue_object[0] # Protein q-value index 0
+        # find calculated mass and experimental mass in peptide_count. Here we are using the scan number and the
+        # reference file name to find the calculated mass and the experimental mass.
+        scan_number = peptide_mztab_qvalue[6]
+        mztab_reference_file = peptide_mztab_qvalue[5]
+        calculated_mass = None
+        experimental_mass = None
+        for row in peptide_count[4]:
+            if row[3] == scan_number and row[2] == mztab_reference_file:
+                calculated_mass = row[0]
+                experimental_mass = row[1]
+                break
 
-        if not compare_protein_lists(protein_accessions_list, peptide_mztab_qvalue_accession, peptide_count_accession):
+        try:
+            protein_qvalue_object = mztab_handler.get_protein_qvalue_from_index(protein_accession=protein_accessions_string)
+            protein_qvalue = protein_qvalue_object[0] # Protein q-value index 0
+        except:
+            print("Error in line: {}".format(feature_dict))
+            return None
+
+        # TODO: Importantly, the protein accessions in the peptide section of the mzTab files peptide_mztab_qvalue_accession
+        #  are not the same as the protein accessions in the protein section of the mzTab file protein_accessions_list, that is
+        #  why we are using the protein_accessions_list to compare with the protein accessions in the MSstats file.
+        if not compare_protein_lists(protein_accessions_list, peptide_count_accession):
+            print("Error in line: {}".format(feature_dict))
+            print("Protein accessions: {}-{}-{}".format(protein_accessions_list, peptide_mztab_qvalue_accession, peptide_count_accession))
             raise Exception("The protein accessions in the MSstats file do not match with the mztab file")
 
         # Unique is different in PSM section, Peptide, We are using the msstats number of accessions.
@@ -218,16 +281,16 @@ class FeatureHandler(ParquetHandler):
             "protein_global_qvalue": float64(protein_qvalue),
             "protein_best_id_score": None,
             "unique": unique,
-            "modifications": ["Phospho", "Acetyl"],
+            "modifications": modifications_string,
             "retention_time": rt,
-            "charge": charge,
-            "calc_mass_to_charge": random.uniform(2.0, 3.0),
+            "charge": int(charge),
+            "calc_mass_to_charge": float64(calculated_mass),
             "peptidoform": peptide_mztab_qvalue[0],
             "posterior_error_probability": None,
-            "global_qvalue": peptide_mztab_qvalue,
-            "is_decoy": peptide_mztab_qvalue_decoy,
-            "best_id_score": f"{peptide_score_name}: {peptide_mztab_qvalue}",
-            "intensity": feature_dict["Intensity"],
+            "global_qvalue": float64(peptide_qvalue),
+            "is_decoy": int(peptide_mztab_qvalue_decoy),
+            "best_id_score": f"{peptide_score_name}: {peptide_qvalue}",
+            "intensity": float64(feature_dict["Intensity"]),
             "spectral_count": spectral_count,
             "sample_accession": "S1",
             "condition": "ConditionA",
@@ -240,8 +303,8 @@ class FeatureHandler(ParquetHandler):
             "id_scores": [f"{peptide_score_name}: {peptide_mztab_qvalue}"],
             "consensus_support": None,
             "reference_file_name": reference_file,
-            "scan_number": peptide_mztab_qvalue[3],
-            "exp_mass_to_charge": random.uniform(2.0, 3.0),
+            "scan_number": scan_number,
+            "exp_mass_to_charge": float64(experimental_mass),
             "mz": None,
             "intensity_array": None,
             "num_peaks": None,

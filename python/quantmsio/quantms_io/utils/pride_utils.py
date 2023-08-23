@@ -79,15 +79,16 @@ def clean_peptidoform_sequence(sequence: str) -> str:
     sequence = sequence.replace(".", "").replace(" ", "").replace("-", "")
     return sequence
 
-def compare_protein_lists(protein_list_1: list, protein_list_2: list, protein_list_3: list) -> bool:
+def compare_protein_lists(protein_list_1: list, protein_list_2: list) -> bool:
     """
     Compare two protein lists
     :param protein_list_1: protein list 1
     :param protein_list_2: protein list 2
-    :param protein_list_3: protein list 3
     :return: True if the three protein lists are the same
     """
-    return protein_list_1 == protein_list_2 == protein_list_3
+    protein_list_1 = set([x.strip() for x in protein_list_1])
+    protein_list_2 = set([x.strip() for x in protein_list_2])
+    return protein_list_1 == protein_list_2
 
 def standardize_protein_string_accession(protein_string: str) -> str:
     """
@@ -119,4 +120,43 @@ def parse_score_name_in_mztab(score_name_mztab_line: str) -> str:
         score_name = "'{}'".format(score_name) # add quotes to the score name if it contains a colon like
         # "OpenMS:Target-decoy protein q-value"
     return score_name
+
+def get_modifications_object_from_mztab_line(modification_string: str, modifications_definition: dict) -> dict:
+    """
+    Get the modifications from a mztab line. This method is used to transform peptide + modification strings to
+    proteoform notations, for msstats notation and for proforma notation.
+    :param modification_string: modification string
+    :param modifications_definition: dictionary modifications definition
+    :return: modifications dictionary
+    """
+    modifications = {}
+    modification_values = re.split(r',(?![^\[]*\])', modification_string)
+    for modification in modification_values:
+        modification = modification.strip()
+        accession = modification.split("-")[1]
+        unimod_accession = accession
+        if accession not in modifications_definition:
+            raise Exception("The modification {} is not in the modifications definition".format(accession))
+        accession = modifications_definition[accession][0]  # get the name of the modification
+        position = []
+        position_probability_string = modification.split("-")[0]
+        if "[" not in position_probability_string and "|" not in position_probability_string:  # only one position
+            position = [position_probability_string]
+        elif "[" not in position_probability_string and "|" in position_probability_string:  # multiple positions not probability
+            position = position_probability_string.split("|")  # multiple positions not probability
+        else:
+            positions_probabilities = position_probability_string.split("|")
+            for position_probability in positions_probabilities:
+                if "[" not in position_probability:
+                    position.append(position_probability)
+                else:
+                    position_with_probability = position_probability.split("[")[0]
+                    position.append(position_with_probability)
+        position = [int(i) for i in position]
+        if accession in modifications:  # Avoid error in OpenMS that do not write 1|4-UNIMOD:35 but 1-UNIMOD:35, 4-UNIMOD:35
+            position = modifications[accession]["position"] + position
+            modifications[accession] = {"position":position, "unimod_accession": unimod_accession}
+        else:
+            modifications[accession] = {"position": position, "unimod_accession":unimod_accession}
+    return modifications
 
