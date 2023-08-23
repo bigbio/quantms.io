@@ -16,11 +16,13 @@ import random
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pandas as pd
+from pandas import DataFrame
 from scipy.linalg._solve_toeplitz import float64
 
 from quantms_io.core.mztab import MztabHandler
 from quantms_io.core.parquet_handler import ParquetHandler
 from quantms_io.core.sdrf import SDRFHandler
+from quantms_io.utils.constants import TMT_CHANNELS, ITRAQ_CHANNEL
 from quantms_io.utils.pride_utils import clean_peptidoform_sequence, compare_protein_lists, \
     standardize_protein_list_accession, standardize_protein_string_accession, get_modifications_object_from_mztab_line
 
@@ -36,6 +38,30 @@ def get_quantmsio_modifications(modifications_string: str, modification_definiti
 
     return get_modifications_object_from_mztab_line(modification_string = modifications_string,
                                                              modifications_definition=modification_definition)
+
+
+def get_additional_properties_from_sdrf(feature_dict: dict, experiment_type: str, sdrf_samples: dict) -> dict:
+
+    if 'FragmentIon' not in feature_dict: # FragmentIon is not in the MSstats file object if the experiment is label free
+        feature_dict["FragmentIon"] = None
+
+    if 'IsotopeLabelType' not in feature_dict:
+        feature_dict["IsotopeLabelType"] = "L"
+
+    if "TMT" in experiment_type: # TMT experiment
+        feature_dict["Channel"] = TMT_CHANNELS[experiment_type][feature_dict["Channel"] - 1]
+    elif "ITRAQ" in experiment_type: # ITRAQ experiment
+        feature_dict["Channel"] = ITRAQ_CHANNEL[experiment_type][feature_dict["Channel"] - 1]
+    else: # Label free experiment
+        feature_dict["Channel"] = "LABEL FREE SAMPLE"
+
+    # Get the sample accession from the SDRF file.
+    sample_id = sdrf_samples[feature_dict["Reference"] + ":_:" + feature_dict["Channel"]]
+    feature_dict["SampleName"] = sample_id
+
+
+
+    return feature_dict
 
 
 class FeatureHandler(ParquetHandler):
@@ -148,6 +174,8 @@ class FeatureHandler(ParquetHandler):
         :return: none
         """
         sdrf_handler = SDRFHandler(sdrf_file)
+        experiment_type = sdrf_handler.get_experiment_type_from_sdrf()
+        sdrf_samples = sdrf_handler.get_sample_map()
         mztab_handler = MztabHandler(mztab_file, use_cache=use_cache)
         mztab_handler.load_mztab_file(use_cache=use_cache)
         feature_list = []
@@ -166,7 +194,7 @@ class FeatureHandler(ParquetHandler):
                 msstats_values = line.split(",")
                 # Create a dictionary with the values
                 feature_dict = dict(zip(msstats_columns, msstats_values))
-                msstats_feature = self._fetch_msstats_feature(feature_dict, sdrf_handler, mztab_handler)
+                msstats_feature = self._fetch_msstats_feature(feature_dict, experiment_type, sdrf_samples, mztab_handler)
                 if msstats_feature is not None:
                     feature_list.append(msstats_feature)
                 #feature_table = self.create_feature_table([msstats_feature])
@@ -192,21 +220,28 @@ class FeatureHandler(ParquetHandler):
             schema_description.append(field_description)
         return schema_description
 
-    def _fetch_msstats_feature(self, feature_dict: dict, sdrf_handler: SDRFHandler, mztab_handler: MztabHandler):
+    def _fetch_msstats_feature(self, feature_dict: dict, experiment_type: str, sdrf_samples: dict, mztab_handler: MztabHandler):
         """
         Fetch a feature from a MSstats dictionary and convert to a quantms.io format row
         :param feature_dict: MSstats feature dictionary
-        :param sdrf_handler: SDRF handler
+        :param experiment_type: experiment type
+        :param sdrf_samples: SDRF samples
         :param mztab_handler: mztab handler
         :return: quantms.io format row
         """
+
+        feature_dict["Reference"] = feature_dict["Reference"].replace("\"", "").split(".")[
+            0]  # Reference is the Msstats form .e.g. HeLa_1to1_01
+
+
+        feature_dict = get_additional_properties_from_sdrf(feature_dict, experiment_type, sdrf_samples)
+
         protein_accessions_list = standardize_protein_list_accession(feature_dict["ProteinName"])
         protein_accessions_string = standardize_protein_string_accession(feature_dict["ProteinName"])
 
         peptidoform = feature_dict["PeptideSequence"] # Peptidoform is the Msstats form .e.g. EM(Oxidation)QDLGGGER
         peptide_sequence = clean_peptidoform_sequence(peptidoform)  # Get sequence .e.g. EMQDLGGGER
         charge = feature_dict["PrecursorCharge"] # Charge is the Msstats form .e.g. 2
-        reference_file = feature_dict["Reference"].replace("\"", "").split(".")[0] # Reference is the Msstats form .e.g. HeLa_1to1_01
 
         peptide_mztab_qvalue = mztab_handler.get_peptide_qvalue_from_index(msstats_peptidoform=peptidoform,
                                                                            charge=charge)
@@ -227,8 +262,9 @@ class FeatureHandler(ParquetHandler):
         modifications_string = None if len(modifications_string)==0 else modifications_string[:-1] # Remove last comma
         try:
             peptide_count = mztab_handler.get_number_psm_from_index(msstats_peptidoform=peptidoform,
-                                                                charge=charge, reference_file=reference_file)
+                                                                charge=charge, reference_file=feature_dict["Reference"])
         except:
+            reference_file = feature_dict["Reference"]
             print(f"MBR peptide: {peptidoform}, {charge}, {reference_file}")
             return None
 
@@ -292,17 +328,17 @@ class FeatureHandler(ParquetHandler):
             "best_id_score": f"{peptide_score_name}: {peptide_qvalue}",
             "intensity": float64(feature_dict["Intensity"]),
             "spectral_count": spectral_count,
-            "sample_accession": "S1",
-            "condition": "ConditionA",
-            "fraction": "F1",
-            "biological_replicate": "BioRep1",
-            "fragment_ion": "b2",
-            "isotope_label_type": "LabelA",
-            "run": "Run1",
-            "channel": "ChannelA",
-            "id_scores": [f"{peptide_score_name}: {peptide_mztab_qvalue}"],
+            "sample_accession": feature_dict["SampleName"],
+            "condition": feature_dict["Condition"],
+            "fraction": feature_dict["Fraction"],
+            "biological_replicate": feature_dict["BioReplicate"],
+            "fragment_ion": feature_dict["FragmentIon"],
+            "isotope_label_type": feature_dict["IsotopeLabelType"],
+            "run": feature_dict["Run"],
+            "channel": feature_dict["Channel"],
+            "id_scores": [f"{peptide_score_name}: {peptide_qvalue}"],
             "consensus_support": None,
-            "reference_file_name": reference_file,
+            "reference_file_name": feature_dict["Reference"],
             "scan_number": scan_number,
             "exp_mass_to_charge": float64(experimental_mass),
             "mz": None,

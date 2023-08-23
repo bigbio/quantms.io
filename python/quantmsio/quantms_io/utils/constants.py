@@ -10,7 +10,12 @@ TMT_CHANNELS = {
     'TMT16': ["TMT126", "TMT127N", "TMT127C", "TMT128N", "TMT128C", "TMT129N", "TMT129C", "TMT130N", "TMT130C",
               "TMT131N", "TMT131C", "TMT132N", "TMT132C", "TMT133N", "TMT133C", "TMT134N"],
     'TMT6': ["TMT126", "TMT127", "TMT128", "TMT129", "TMT130", "TMT131"]
-}  # TMT channels used in different experiments
+}
+
+ITRAQ_CHANNEL = {
+    'ITRAQ4': ['ITRAQ114', 'ITRAQ115', 'ITRAQ116', 'ITRAQ117'],
+    'ITRAQ8': ['ITRAQ113', 'ITRAQ114', 'ITRAQ115', 'ITRAQ116', 'ITRAQ117', 'ITRAQ118', 'ITRAQ119', 'ITRAQ121'] # NO EXAMPLES.
+}
 
 SINGLE_PROTEIN = "single_protein"
 GROUP_PROTEIN = "indistinguishable_protein_group"

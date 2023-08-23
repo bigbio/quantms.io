@@ -88,6 +88,9 @@ class SDRFHandler:
     PRECURSOR_MASS_TOLERANCE = "comment[precursor mass tolerance]"
     LABELING = "comment[label]"
 
+    # The supported labeling methods
+    SUPOORTED_LABELING = ["LABEL FREE", "TMT10", "TMT11", "TMT16", "TMT6", "ITRAQ4", "ITRAQ8"]
+
     def __init__(self, sdrf_file: str):
         self.sdrf_file = sdrf_file
         self.sdrf_table = None
@@ -153,11 +156,13 @@ class SDRFHandler:
             return None
         return values[0]
 
-    def extract_feature_properties(self, experiment_type: str):
+    def extract_feature_properties(self):
         """
         Extract the feature properties from the SDRF file. These properties are needed by the feature file and
         FeatureHandler class. The experiment type can be: "lfq", "tmt" or "itraq".
         """
+
+        experiment_type = self.get_experiment_type_from_sdrf()
         sdrf_pd = self.sdrf_table.copy() # type: DataFrame
 
         sdrf_pd['comment[data file]'] = sdrf_pd['comment[data file]'].apply(lambda x: x.split(".")[0])
@@ -188,7 +193,7 @@ class SDRFHandler:
         sdrf["channel"] = None # Channel will be needed in the LFQ as empty.
         return sdrf
 
-    def extra_experiment_type_from_sdrf(self):
+    def get_experiment_type_from_sdrf(self):
         """
         Using the SDRF file label column, we will try to extract the experiment type of an SDRF.
         The three possible values supported in SDRF are lfq, tmt and itraq.
@@ -200,13 +205,61 @@ class SDRFHandler:
         if len(labeling_values) == 0:
             raise ValueError("The SDRF file provided does not contain any comment[label] value")
 
-        if len([i for i in labeling_values if "label free" in i]) > 0:
-            return "lfq"
-        elif len([i for i in labeling_values if "tmt" in i]) > 0:
-            return "tmt"
-        elif len([i for i in labeling_values if "itraq" in i]) > 0:
-            return "itraq"
+        labeling_values = [i.upper() for i in labeling_values]
+
+        if len([i for i in labeling_values if "LABEL FREE" in i]) > 0:
+            return "LFQ"
+        elif len([i for i in labeling_values if "TMT" in i]) > 0:
+            if len(labeling_values) == 10:
+                return "TMT10"
+            elif len(labeling_values) == 11:
+                return "TMT11"
+            elif len(labeling_values) == 16:
+                return "TMT16"
+            elif len(labeling_values) == 6:
+                return "TMT6"
+            else:
+                raise ValueError("The SDRF file provided does not contain a supported TMT comment[label] value")
+        elif len([i for i in labeling_values if "ITRAQ" in i]) > 0:
+            if len(labeling_values) == 4:
+                return "ITRAQ4"
+            elif len(labeling_values) == 8:
+                return "ITRAQ8"
+            else:
+                raise ValueError("The SDRF file provided does not contain a supported iTRAQ comment[label] value")
         else:
             raise ValueError("The SDRF file provided does not contain any supported comment[label] value")
+
+
+    def get_sample_labels(self):
+        """
+        Get the sample labels from the SDRF file. The sample labels are the values of the column "comment[label]".
+        :return: set of sample labels
+        """
+        labels = self.sdrf_table['comment[label]'].unique()
+        return set(labels)
+
+    def get_sample_map(self):
+        """
+        Get the sample accession map from the sdrf file. The key of the sample map is:
+        - data file + :_: + sample label
+        The value of the sample map is the sample accession.
+        :return: sample map
+        """
+        sample_map = {}
+        sdrf_pd = self.sdrf_table.copy()  # type: DataFrame
+        sdrf_pd['comment[data file]'] = sdrf_pd['comment[data file]'].apply(lambda x: x.split(".")[0])
+        for index, row in sdrf_pd.iterrows():
+            channel = "LABEL FREE SAMPLE" if "LABEL FREE" in row['comment[label]'].upper() else row['comment[label]']
+            if row['comment[data file]'] + ":_:" + channel in sample_map:
+                if sample_map[row['comment[data file]'] + ":_:" + channel] != row['source name']:
+                    raise ValueError("The sample map is not unique")
+                else:
+                    print("channel {} for sample {} already in the sample map".format(channel, row['source name']))
+            sample_map[row['comment[data file]'] + ":_:" + channel] = row['source name']
+        return sample_map
+
+
+
 
 

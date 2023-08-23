@@ -26,4 +26,11 @@ class TestSDRFHandler(TestCase):
 
         print(sdrf_handler.extra_experiment_type_from_sdrf())
 
+    def test_get_labels(self):
+        file = "data/PXD016999-first-instrument.sdrf.tsv"
+        sdrf_handler=SDRFHandler(file)
+        self.assertEqual(len(sdrf_handler.get_sample_labels()), 10)
+
+        experiment_type = sdrf_handler.get_experiment_type_from_sdrf()
+
 
