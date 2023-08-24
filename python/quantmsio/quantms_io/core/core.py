@@ -26,6 +26,16 @@ class DiskCache:
         """
         return self.cache[key]
 
+    def get_first_subkey(self, subkey):
+        """
+        Get an item from the cache
+        """
+        for key in self.cache.iterkeys():
+            if subkey in key:
+                return self.cache[key]
+        return None
+
+
     def add_item(self, key, value):
         self.cache[key] = value
 

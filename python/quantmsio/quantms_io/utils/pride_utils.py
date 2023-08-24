@@ -51,7 +51,7 @@ def get_key_peptide_combination(msstats_peptidoform: str, charge: str, reference
         # We use a different separator for the key to avoid conflicts with the separator of the msruns
         # which can sometimes use the separator "_".
         return msstats_peptidoform + ":_:" + charge + ":_:" + reference_file
-    return msstats_peptidoform + "_" + charge
+    return msstats_peptidoform + ":_:" + charge
 
 
 def decompose_key_peptide_combination(key: str):
