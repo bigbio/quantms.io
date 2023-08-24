@@ -8,6 +8,7 @@ import click
 from quantms_io import __version__ as __version__
 from quantms_io.commands.project_command import generate_pride_project_json
 from quantms_io.commands.differential_expression_command import convert_msstats_differential
+from quantms_io.commands.feature_command import convert_feature_file
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -22,6 +23,7 @@ def cli():
 
 cli.add_command(generate_pride_project_json)
 cli.add_command(convert_msstats_differential)
+cli.add_command(convert_feature_file)
 
 
 def quantms_io_main():

@@ -58,9 +58,132 @@ def get_additional_properties_from_sdrf(feature_dict: dict, experiment_type: str
     sample_id = sdrf_samples[feature_dict["Reference"] + ":_:" + feature_dict["Channel"]]
     feature_dict["SampleName"] = sample_id
 
-
-
     return feature_dict
+
+
+def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_samples: dict, mztab_handler: MztabHandler):
+    """
+    Fetch a feature from a MSstats dictionary and convert to a quantms.io format row
+    :param feature_dict: MSstats feature dictionary
+    :param experiment_type: experiment type
+    :param sdrf_samples: SDRF samples
+    :param mztab_handler: mztab handler
+    :return: quantms.io format row
+    """
+
+    # Reference is the Msstats form .e.g. HeLa_1to1_01
+    feature_dict["Reference"] = feature_dict["Reference"].replace("\"", "").split(".")[0]
+    feature_dict = get_additional_properties_from_sdrf(feature_dict, experiment_type, sdrf_samples)
+
+    protein_accessions_list = standardize_protein_list_accession(feature_dict["ProteinName"])
+    protein_accessions_string = standardize_protein_string_accession(feature_dict["ProteinName"])
+
+    peptidoform = feature_dict["PeptideSequence"] # Peptidoform is the Msstats form .e.g. EM(Oxidation)QDLGGGER
+    peptide_sequence = clean_peptidoform_sequence(peptidoform)  # Get sequence .e.g. EMQDLGGGER
+    charge = feature_dict["PrecursorCharge"] # Charge is the Msstats form .e.g. 2
+
+    peptide_indexed = mztab_handler.get_peptide_index(msstats_peptidoform=peptidoform, charge=charge)
+    peptide_score_name = mztab_handler.get_search_engine_scores()["peptide_score"]
+
+    peptide_mztab_qvalue_accession = standardize_protein_list_accession(peptide_indexed["protein_accession"])
+    peptide_qvalue = peptide_indexed["peptide_qvalue"] # Peptide q-value index 1
+    peptide_mztab_qvalue_decoy = peptide_indexed["is_decoy"] # Peptide q-value decoy index 2
+
+    # Mods in quantms.io format
+    modifications_string = peptide_indexed["modifications"] # Mods
+    modifications = get_quantmsio_modifications(modifications_string= modifications_string,
+                                                modification_definition=mztab_handler.get_modifications_definition())
+    modifications_string = ""
+    for key, value in modifications.items():
+        modifications_string += "|".join(map(str, value["position"]))
+        modifications_string = modifications_string + "-" + value["unimod_accession"] + ","
+    modifications_string = None if len(modifications_string)==0 else modifications_string[:-1] # Remove last comma
+
+    start_positions = peptide_indexed["psm_protein_start"].split(",") # Start positions in the protein
+    start_positions = [int(i) for i in start_positions]
+    end_positions = peptide_indexed["psm_protein_end"].split(",") # End positions in the protein
+    end_positions = [int(i) for i in end_positions]
+    spectral_count = None
+    scan_number = None
+
+    spectral_count_list = peptide_indexed["spectral_count"] # Spectral count
+    if feature_dict["Reference"] in spectral_count_list:
+        spectral_count = spectral_count_list[feature_dict["Reference"]]
+    else:
+        reference_file = feature_dict["Reference"]
+        print(f"MBR peptide: {peptidoform}, {charge}, {reference_file}")
+
+    # find calculated mass and experimental mass in peptide_count. Here we are using the scan number and the
+    # reference file name to find the calculated mass and the experimental mass.
+    peptide_ms_run = peptide_indexed["peptide_ms_run"]
+    peptide_scan_number = peptide_indexed["peptide_scan_number"]
+    calculated_mass = None
+    experimental_mass = None
+    for row in peptide_indexed["list_psms"]:
+        if row[3] == peptide_scan_number and row[2] == peptide_ms_run:
+            calculated_mass = row[0]
+            experimental_mass = row[1]
+            break
+
+    try:
+        protein_qvalue_object = mztab_handler.get_protein_qvalue_from_index(protein_accession=protein_accessions_string)
+        protein_qvalue = protein_qvalue_object[0] # Protein q-value index 0
+    except:
+        print("Error in line: {}".format(feature_dict))
+        return None
+
+    # TODO: Importantly, the protein accessions in the peptide section of the mzTab files peptide_mztab_qvalue_accession
+    #  are not the same as the protein accessions in the protein section of the mzTab file protein_accessions_list, that is
+    #  why we are using the protein_accessions_list to compare with the protein accessions in the MSstats file.
+    if not compare_protein_lists(protein_accessions_list, peptide_mztab_qvalue_accession):
+        print("Error in line: {}".format(feature_dict))
+        print("Protein accessions: {}-{}".format(protein_accessions_list, peptide_mztab_qvalue_accession))
+        raise Exception("The protein accessions in the MSstats file do not match with the mztab file")
+
+    # Unique is different in PSM section, Peptide, We are using the msstats number of accessions.
+    unique = 1 if len(protein_accessions_list) == 1 else 0
+
+    # TODO: get retention time from mztab file. The rentention time in the mzTab peptide level is not clear how is
+    # related to the retention time in the MSstats file. The retention time in the MSstats file is the retention time.
+    rt = None
+    return {
+        "sequence": peptide_sequence,
+        "protein_accessions":protein_accessions_list,
+        "protein_start_positions": start_positions,
+        "protein_end_positions": end_positions,
+        "protein_global_qvalue": float64(protein_qvalue),
+        "protein_best_id_score": None,
+        "unique": unique,
+        "modifications": modifications_string,
+        "retention_time": rt,
+        "charge": int(charge),
+        "calc_mass_to_charge": float64(calculated_mass),
+        "peptidoform": peptide_indexed["peptidoform"], # Peptidoform in proforma notation
+        "posterior_error_probability": None,
+        "global_qvalue": float64(peptide_qvalue),
+        "is_decoy": int(peptide_mztab_qvalue_decoy),
+        "best_id_score": f"{peptide_score_name}: {peptide_qvalue}",
+        "intensity": float64(feature_dict["Intensity"]),
+        "spectral_count": spectral_count,
+        "sample_accession": feature_dict["SampleName"],
+        "condition": feature_dict["Condition"],
+        "fraction": feature_dict["Fraction"],
+        "biological_replicate": feature_dict["BioReplicate"],
+        "fragment_ion": feature_dict["FragmentIon"],
+        "isotope_label_type": feature_dict["IsotopeLabelType"],
+        "run": feature_dict["Run"],
+        "channel": feature_dict["Channel"],
+        "id_scores": [f"{peptide_score_name}: {peptide_qvalue}"],
+        "consensus_support": None,
+        "reference_file_name": feature_dict["Reference"],
+        "scan_number": scan_number,
+        "exp_mass_to_charge": float64(experimental_mass),
+        "mz": None,
+        "intensity_array": None,
+        "num_peaks": None,
+        "gene_accessions": None,
+        "gene_names": None
+    }
 
 
 class FeatureHandler(ParquetHandler):
@@ -193,7 +316,7 @@ class FeatureHandler(ParquetHandler):
                 msstats_values = line.split(",")
                 # Create a dictionary with the values
                 feature_dict = dict(zip(msstats_columns, msstats_values))
-                msstats_feature = self._fetch_msstats_feature(feature_dict, experiment_type, sdrf_samples, mztab_handler)
+                msstats_feature = _fetch_msstats_feature(feature_dict, experiment_type, sdrf_samples, mztab_handler)
                 if msstats_feature is not None:
                     feature_list.append(msstats_feature)
                 #feature_table = self.create_feature_table([msstats_feature])
@@ -218,130 +341,6 @@ class FeatureHandler(ParquetHandler):
             }
             schema_description.append(field_description)
         return schema_description
-
-    def _fetch_msstats_feature(self, feature_dict: dict, experiment_type: str, sdrf_samples: dict, mztab_handler: MztabHandler):
-        """
-        Fetch a feature from a MSstats dictionary and convert to a quantms.io format row
-        :param feature_dict: MSstats feature dictionary
-        :param experiment_type: experiment type
-        :param sdrf_samples: SDRF samples
-        :param mztab_handler: mztab handler
-        :return: quantms.io format row
-        """
-
-        # Reference is the Msstats form .e.g. HeLa_1to1_01
-        feature_dict["Reference"] = feature_dict["Reference"].replace("\"", "").split(".")[0]
-        feature_dict = get_additional_properties_from_sdrf(feature_dict, experiment_type, sdrf_samples)
-
-        protein_accessions_list = standardize_protein_list_accession(feature_dict["ProteinName"])
-        protein_accessions_string = standardize_protein_string_accession(feature_dict["ProteinName"])
-
-        peptidoform = feature_dict["PeptideSequence"] # Peptidoform is the Msstats form .e.g. EM(Oxidation)QDLGGGER
-        peptide_sequence = clean_peptidoform_sequence(peptidoform)  # Get sequence .e.g. EMQDLGGGER
-        charge = feature_dict["PrecursorCharge"] # Charge is the Msstats form .e.g. 2
-
-        peptide_indexed = mztab_handler.get_peptide_index(msstats_peptidoform=peptidoform, charge=charge)
-        peptide_score_name = mztab_handler.get_search_engine_scores()["peptide_score"]
-
-        peptide_mztab_qvalue_accession = standardize_protein_list_accession(peptide_indexed["protein_accession"])
-        peptide_qvalue = peptide_indexed["peptide_qvalue"] # Peptide q-value index 1
-        peptide_mztab_qvalue_decoy = peptide_indexed["is_decoy"] # Peptide q-value decoy index 2
-
-        # Mods in quantms.io format
-        modifications_string = peptide_indexed["modifications"] # Mods
-        modifications = get_quantmsio_modifications(modifications_string= modifications_string,
-                                                    modification_definition=mztab_handler.get_modifications_definition())
-        modifications_string = ""
-        for key, value in modifications.items():
-            modifications_string += "|".join(map(str, value["position"]))
-            modifications_string = modifications_string + "-" + value["unimod_accession"] + ","
-        modifications_string = None if len(modifications_string)==0 else modifications_string[:-1] # Remove last comma
-
-        start_positions = peptide_indexed["psm_protein_start"].split(",") # Start positions in the protein
-        start_positions = [int(i) for i in start_positions]
-        end_positions = peptide_indexed["psm_protein_end"].split(",") # End positions in the protein
-        end_positions = [int(i) for i in end_positions]
-        spectral_count = None
-        scan_number = None
-
-        spectral_count_list = peptide_indexed["spectral_count"] # Spectral count
-        if feature_dict["Reference"] in spectral_count_list:
-            spectral_count = spectral_count_list[feature_dict["Reference"]]
-        else:
-            reference_file = feature_dict["Reference"]
-            print(f"MBR peptide: {peptidoform}, {charge}, {reference_file}")
-
-        # find calculated mass and experimental mass in peptide_count. Here we are using the scan number and the
-        # reference file name to find the calculated mass and the experimental mass.
-        peptide_ms_run = peptide_indexed["peptide_ms_run"]
-        peptide_scan_number = peptide_indexed["peptide_scan_number"]
-        calculated_mass = None
-        experimental_mass = None
-        for row in peptide_indexed["list_psms"]:
-            if row[3] == peptide_scan_number and row[2] == peptide_ms_run:
-                calculated_mass = row[0]
-                experimental_mass = row[1]
-                break
-
-        try:
-            protein_qvalue_object = mztab_handler.get_protein_qvalue_from_index(protein_accession=protein_accessions_string)
-            protein_qvalue = protein_qvalue_object[0] # Protein q-value index 0
-        except:
-            print("Error in line: {}".format(feature_dict))
-            return None
-
-        # TODO: Importantly, the protein accessions in the peptide section of the mzTab files peptide_mztab_qvalue_accession
-        #  are not the same as the protein accessions in the protein section of the mzTab file protein_accessions_list, that is
-        #  why we are using the protein_accessions_list to compare with the protein accessions in the MSstats file.
-        if not compare_protein_lists(protein_accessions_list, peptide_mztab_qvalue_accession):
-            print("Error in line: {}".format(feature_dict))
-            print("Protein accessions: {}-{}".format(protein_accessions_list, peptide_mztab_qvalue_accession))
-            raise Exception("The protein accessions in the MSstats file do not match with the mztab file")
-
-        # Unique is different in PSM section, Peptide, We are using the msstats number of accessions.
-        unique = 1 if len(protein_accessions_list) == 1 else 0
-
-        # TODO: get retention time from mztab file. The rentention time in the mzTab peptide level is not clear how is
-        # related to the retention time in the MSstats file. The retention time in the MSstats file is the retention time.
-        rt = None
-        return {
-            "sequence": peptide_sequence,
-            "protein_accessions":protein_accessions_list,
-            "protein_start_positions": start_positions,
-            "protein_end_positions": end_positions,
-            "protein_global_qvalue": float64(protein_qvalue),
-            "protein_best_id_score": None,
-            "unique": unique,
-            "modifications": modifications_string,
-            "retention_time": rt,
-            "charge": int(charge),
-            "calc_mass_to_charge": float64(calculated_mass),
-            "peptidoform": peptide_indexed["peptidoform"], # Peptidoform in proforma notation
-            "posterior_error_probability": None,
-            "global_qvalue": float64(peptide_qvalue),
-            "is_decoy": int(peptide_mztab_qvalue_decoy),
-            "best_id_score": f"{peptide_score_name}: {peptide_qvalue}",
-            "intensity": float64(feature_dict["Intensity"]),
-            "spectral_count": spectral_count,
-            "sample_accession": feature_dict["SampleName"],
-            "condition": feature_dict["Condition"],
-            "fraction": feature_dict["Fraction"],
-            "biological_replicate": feature_dict["BioReplicate"],
-            "fragment_ion": feature_dict["FragmentIon"],
-            "isotope_label_type": feature_dict["IsotopeLabelType"],
-            "run": feature_dict["Run"],
-            "channel": feature_dict["Channel"],
-            "id_scores": [f"{peptide_score_name}: {peptide_qvalue}"],
-            "consensus_support": None,
-            "reference_file_name": feature_dict["Reference"],
-            "scan_number": scan_number,
-            "exp_mass_to_charge": float64(experimental_mass),
-            "mz": None,
-            "intensity_array": None,
-            "num_peaks": None,
-            "gene_accessions": None,
-            "gene_names": None
-        }
 
 
 

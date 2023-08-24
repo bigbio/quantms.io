@@ -13,20 +13,19 @@ The features table (peptide features) aims to cover detail on peptide level, inc
 
 Peptide properties and columns: 
 
-- `sequence`: The peptide's sequence corresponding to the PSM -> `string`
-- `unique`: Indicates whether the peptide sequence (coming from the PSM) is unique for this protein in respect to the searched database -> `boolean (0/1)`
+- `sequence`: The peptide's sequence corresponding to the feature, this peptide sequence do not includes posttraslational modifications -> `string`
+- `unique`: Indicates whether the peptide sequence is unique for this protein in respect to the searched database -> `boolean (0/1)`
 - `modifications`: A list of modifications for a give peptide `[modification1, modification2, ...]`. A modification should be recorded as string like [modification definition](README.md#modifications)-> `list[string]`
-- `retention_time`: The retention time of the spectrum -> `float`
 - `charge`: The charge assigned by the search engine/software -> `integer`
-- `exp_mass_to_charge`: The PSM’s experimental mass to charge (m/z) -> `double`
 - `calc_mass_to_charge`: The PSM’s calculated (theoretical) mass to charge (m/z) -> `double`
 - `peptidoform`: Peptidoform of the PSM. See more [documentation here](README.md#peptidoform). -> `string`
 - `posterior_error_probability`: Posterior Error Probability score from quantms -> `double`
-- `global_qvalue`: Global q-value from quantms -> `double`
+- `global_qvalue`: Global q-value for the feature for the peptide identification in the experiment -> `double`
 - `is_decoy`: Indicates whether the peptide sequence (coming from the PSM) is decoy -> `boolean (0/1)`
 - `best_id_score`: A key value pair of the best search engine score selected by the algorithm `(e.g. "MS-GF:RawScore": 234.0)` -> `string`
 - `intensity`: The abundance of the peptide in the sample -> `float`
-- `spectral_count`: The number of spectra that match the peptide. Number of a PSMs for a given peptidoform in a given file (peptide sequence + charge + modifications) -> `integer` 
+- `spectral_count`: The number of spectra that match the peptide. Number of a PSMs for a given peptidoform in a given file (peptide sequence + charge + modifications). If the peptidoform in the file is a product of an inference process like match between runs, it must be 0, but if the value is not computed or provided it must be NA or Null -> `integer` 
+- `retention_time`: The retention time of the spectrum -> `float`
 
 Properties and columns from sample: 
 
@@ -52,6 +51,7 @@ Optional fields:
 - `gene_names`: A list of gene names -> `list[string]`
 - `consensus_support`: Global consensus support scores for multiple search engines -> `float`
 - `id_scores`: A list of identification scores, search engine, percolator etc. Each search engine score will be a key/value pair `(e.g. "MS-GF:RawScore": 78.9)` -> `list[string]`
+- `exp_mass_to_charge`: The PSM’s experimental mass to charge (m/z) -> `double`
 - `reference_file_name`: The reference file name that contains the spectrum. -> `string` 
 - `scan_number`: The scan number of the spectrum. The scan number or index of the spectrum in the file -> `string` 
 - `mz`: A list of mz values for the spectrum -> `list[double]`
