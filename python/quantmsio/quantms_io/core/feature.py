@@ -362,7 +362,6 @@ class FeatureHandler(ParquetHandler):
         feature_table = self.create_feature_table(feature_list)
         # Write the feature table to a parquet file
 
-        self.parquet_path = "feature.parquet"
         self.write_single_file_parquet(feature_table, write_metadata=True)
         mztab_handler.close()
 

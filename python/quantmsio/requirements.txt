@@ -5,3 +5,4 @@ requests
 numpy
 pyarrow
 diskcache
+pyopenms

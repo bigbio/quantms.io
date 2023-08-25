@@ -35,7 +35,7 @@ setup(
     package_data={"": ["*.xml"],},
     url="https://github.com/bigbio/quantms.io",
     packages=find_packages(),
-    install_requires=["click", "pandas", "pandas_schema", "requests", "pytest", "pyyaml", "pyarrow", "diskcache"],
+    install_requires=["click", "pandas", "pandas_schema", "requests", "pytest", "pyyaml", "pyarrow", "diskcache", "pyopenms"],
     entry_points={"console_scripts": ["quantmsio_cli = quantms_io.quantmsio_cli:quantms_io_main"]},
     platforms=["any"],
     classifiers=[
