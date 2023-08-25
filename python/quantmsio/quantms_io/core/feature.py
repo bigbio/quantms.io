@@ -87,9 +87,16 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
 
     peptide_indexed = mztab_handler.get_peptide_index(msstats_peptidoform=peptidoform, charge=charge)
     peptide_score_name = mztab_handler.get_search_engine_scores()["peptide_score"]
+    protein_score_name = mztab_handler.get_search_engine_scores()["protein_score"]
 
     peptide_mztab_qvalue_accession = standardize_protein_list_accession(peptide_indexed["protein_accession"])
     peptide_qvalue = peptide_indexed["peptide_qvalue"] # Peptide q-value index 1
+
+    posterior_error_probability = peptide_indexed["posterior_error_probability"] # Get posterior error probability
+    if posterior_error_probability is not None:
+        posterior_error_probability = float64(posterior_error_probability)
+
+    # Get if decoy or not
     peptide_mztab_qvalue_decoy = peptide_indexed["is_decoy"] # Peptide q-value decoy index 2
 
     # Mods in quantms.io format
@@ -164,9 +171,6 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
             if abs(consensus_intensity - float64(feature_dict["Intensity"])) < 0.1:
                 rt = intensity_map[key]["rt"]
                 experimental_mass = intensity_map[key]["mz"]
-            else:
-                print("Feature found with same intensity {} in ConsensusXML in line: {}"
-                      .format(consensus_intensity, feature_dict))
 
     return {
         "sequence": peptide_sequence,
@@ -174,17 +178,15 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
         "protein_start_positions": start_positions,
         "protein_end_positions": end_positions,
         "protein_global_qvalue": float64(protein_qvalue),
-        "protein_best_id_score": None,
         "unique": unique,
         "modifications": modifications_string,
         "retention_time": rt,
         "charge": int(charge),
         "calc_mass_to_charge": float64(calculated_mass),
         "peptidoform": peptide_indexed["peptidoform"], # Peptidoform in proforma notation
-        "posterior_error_probability": None,
+        "posterior_error_probability": posterior_error_probability,
         "global_qvalue": float64(peptide_qvalue),
         "is_decoy": int(peptide_mztab_qvalue_decoy),
-        "best_id_score": f"{peptide_score_name}: {peptide_qvalue}",
         "intensity": float64(feature_dict["Intensity"]),
         "spectral_count": spectral_count,
         "sample_accession": feature_dict["SampleName"],
@@ -195,8 +197,7 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
         "isotope_label_type": feature_dict["IsotopeLabelType"],
         "run": feature_dict["Run"],
         "channel": feature_dict["Channel"],
-        "id_scores": [f"{peptide_score_name}: {peptide_qvalue}"],
-        "consensus_support": None,
+        "id_scores": [f"{peptide_score_name}: {peptide_qvalue}", f"Best PSM PEP: {posterior_error_probability}"],
         "reference_file_name": peptide_ms_run,
         "scan_number": peptide_scan_number,
         "exp_mass_to_charge": float64(experimental_mass),
@@ -223,8 +224,8 @@ class FeatureHandler(ParquetHandler):
                                metadata={"description": "end positions in the associated proteins"}),
                       pa.field("protein_global_qvalue", pa.float64(),
                                metadata={"description": "global q-value of the associated protein or protein group"}),
-                      pa.field("protein_best_id_score", pa.string(),
-                               metadata={"description": "best identification score of the associated protein or protein group"}),
+                      # pa.field("protein_best_id_score", pa.string(),
+                      #          metadata={"description": "best identification score of the associated protein or protein group"}),
                       pa.field("unique", pa.int32(),
                                metadata={"description": "if the peptide is unique to a particular protein"}),
                       pa.field("modifications", pa.list_(pa.string()),
@@ -245,8 +246,8 @@ class FeatureHandler(ParquetHandler):
                                metadata={"description": "global q-value"}),
                       pa.field("is_decoy", pa.int32(),
                                metadata={"description": "flag indicating if the feature is a decoy (1 is decoy, 0 is not decoy)"}),
-                      pa.field("best_id_score", pa.string(),
-                               metadata={"description": "best identification score as key value pair"}),
+                      # pa.field("best_id_score", pa.string(),
+                      #          metadata={"description": "best identification score as key value pair"}),
                       pa.field("intensity", pa.float64(),
                                metadata={"description": "intensity value"}),
                       pa.field("spectral_count", pa.int32(),
@@ -269,8 +270,8 @@ class FeatureHandler(ParquetHandler):
                                metadata={"description": "experimental channel information"}),
                       pa.field("id_scores", pa.list_(pa.string()),
                                metadata={"description": "identification scores as key value pairs"}),
-                      pa.field("consensus_support", pa.float64(),
-                               metadata={"description": "consensus support value"}),
+                      # pa.field("consensus_support", pa.float64(),
+                      #          metadata={"description": "consensus support value"}),
                       pa.field("reference_file_name", pa.string(),
                                metadata={"description": "file name of the reference file"}),
                       pa.field("scan_number", pa.string(),

@@ -1,4 +1,7 @@
 import re
+
+from scipy.linalg._solve_toeplitz import float64
+
 from quantms_io.core.core import DiskCache
 from quantms_io.utils.constants import PROTEIN_DETAILS
 from quantms_io.utils.pride_utils import get_key_peptide_combination, standardize_protein_string_accession, \
@@ -226,7 +229,7 @@ def fetch_psm_from_mztab_line(pos: int, es: dict, ms_runs: dict = None, modifica
     :return: psm dictionary
     """
     keys = ["sequence", "modifications", "charge", "retention_time", "accession", "start", "end", "calc_mass_to_charge",
-            "exp_mass_to_charge"]
+            "exp_mass_to_charge", "opt_global_Posterior_Error_Probability_score", "opt_global_q-value"]
     psm = dict(zip(keys, [es[k] for k in keys]))
 
     psm["accession"] = standardize_protein_string_accession(psm["accession"])
@@ -237,6 +240,16 @@ def fetch_psm_from_mztab_line(pos: int, es: dict, ms_runs: dict = None, modifica
         psm["is_decoy"] = es["opt_global_cv_MS:1002217_decoy_peptide"]
     else:
         psm["is_decoy"] = None  # if the information is not available
+
+    if "opt_global_Posterior_Error_Probability_score" in es:
+        psm["posterior_error_probability"] = es["opt_global_Posterior_Error_Probability_score"]
+    else:
+        psm["posterior_error_probability"] = None
+
+    if "opt_global_q-value" in es:
+        psm["global_qvalue"] = es["opt_global_q-value"]
+    else:
+        psm["global_qvalue"] = None
 
     if "opt_global_cv_MS:1000889_peptidoform_sequence" in es:
         psm["peptidoform"] = es["opt_global_cv_MS:1000889_peptidoform_sequence"]
@@ -311,7 +324,8 @@ def fetch_modifications_from_mztab_line(line: str, _modifications: dict) -> dict
 def create_peptide_for_index(peptide_qvalue: str, is_decoy: str, peptidoform: str,
                              modifications: str, peptide_ms_run: str, peptide_scan_number: str,
                              peptide_position_mztab: str, psm_protein_start: str = None, psm_protein_end: str = None,
-                             spectral_count: dict = None, list_psms: list = None) -> dict:
+                             posterior_error_probability: str = None, spectral_count: dict = None,
+                             list_psms: list = None) -> dict:
     """
     Create a peptide to be store in the index. A index peptide have the following structure:
       # - protein_accession: protein accession
@@ -319,6 +333,7 @@ def create_peptide_for_index(peptide_qvalue: str, is_decoy: str, peptidoform: st
       # - is_decoy: is decoy
       # - peptidoform: peptidoform in proforma notation
       # - modifications:  modifications
+      # - posterior_error_probability: posterior error probability
       # - peptide_ms_run: ms run
       # - peptide_scan_number: scan number
       # - peptide_position_mztab: position in the mztab file
@@ -337,6 +352,7 @@ def create_peptide_for_index(peptide_qvalue: str, is_decoy: str, peptidoform: st
      :param is_decoy: is decoy
      :param peptidoform: peptidoform in proforma
      :param modifications: modifications
+     :param posterior_error_probability: posterior error probability
      :param peptide_ms_run: ms run
      :param peptide_scan_number: scan number
      :param peptide_position_mztab: position in the mztab file
@@ -354,7 +370,8 @@ def create_peptide_for_index(peptide_qvalue: str, is_decoy: str, peptidoform: st
                "peptidoform": peptidoform, "modifications": modifications, "peptide_ms_run": peptide_ms_run,
                "peptide_scan_number": peptide_scan_number, "peptide_position_mztab": peptide_position_mztab,
                "psm_protein_start": psm_protein_start, "psm_protein_end": psm_protein_end,
-               "spectral_count": spectral_count, "list_psms": list_psms}
+               "spectral_count": spectral_count, "list_psms": list_psms,
+               "posterior_error_probability": posterior_error_probability}
     return peptide
 
 
@@ -424,7 +441,8 @@ class MztabHandler:
             self._peptide_index[peptide_key] = peptide_value
 
     def add_psm_to_count(self, psm_key: str, protein_accession: str, protein_start: str, protein_end: str,
-                         calc_mass_to_charge: str, exp_mass_to_charge: str, reference_file: str, scan_number: str, mztab_postion: str):
+                         calc_mass_to_charge: str, exp_mass_to_charge: str, reference_file: str, scan_number: str,
+                         mztab_postion: str, posterior_error_probability: str = None):
         """
         PSM count is used to count the number of psms for a given peptidoform in a file.
         :param psm_key: psm key
@@ -435,6 +453,9 @@ class MztabHandler:
         :param exp_mass_to_charge: experimental mass to charge
         :param reference_file: reference file
         :param scan_number: scan number
+        :param mztab_postion: position in the mztab file
+        :param posterior_error_probability: posterior error probability
+        :param global_qvalue: global qvalue
         :return: None
         """
         if self._use_cache:
@@ -443,6 +464,11 @@ class MztabHandler:
                 peptide_protein_accession = psm["protein_accession"] if "protein_accession" in psm else None
                 peptide_protein_start = psm["psm_protein_start"] if "psm_protein_start" in psm else None
                 peptide_protein_end = psm["psm_protein_end"] if "psm_protein_end" in psm else None
+                if posterior_error_probability is not None:
+                    if (psm["posterior_error_probability"] is None or
+                            (float64(posterior_error_probability) < psm["posterior_error_probability"])):
+                           psm["posterior_error_probability"] = float64(posterior_error_probability)
+
                 if ((peptide_protein_start is not None and peptide_protein_end is not None)
                         and [peptide_protein_accession, peptide_protein_start, peptide_protein_end] != [
                             protein_accession, protein_start, protein_end]):
@@ -476,6 +502,8 @@ class MztabHandler:
                 peptide_protein_accession = psm["protein_accession"]
                 peptide_protein_start = psm["psm_protein_start"]
                 peptide_protein_end = psm["psm_protein_end"]
+                if posterior_error_probability is not None and posterior_error_probability < psm["posterior_error_probability"]:
+                    psm["posterior_error_probability"] = posterior_error_probability
                 if ((peptide_protein_start is not None and peptide_protein_end is not None)
                         and [peptide_protein_accession, peptide_protein_start, peptide_protein_end] != [
                             protein_accession, protein_start,
@@ -570,6 +598,7 @@ class MztabHandler:
                     psm_key = get_key_peptide_combination(psm["peptidoform"], psm["charge"])
                     self.add_psm_to_count(psm_key=psm_key, protein_accession=psm["accession"],
                                           protein_start=psm["start"], protein_end=psm["end"],
+                                          posterior_error_probability=psm["posterior_error_probability"],
                                           calc_mass_to_charge=psm["calc_mass_to_charge"],
                                           exp_mass_to_charge=psm["exp_mass_to_charge"],
                                           reference_file=psm["ms_run"],
