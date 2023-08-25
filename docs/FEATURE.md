@@ -25,7 +25,7 @@ Peptide properties and columns:
 - `best_id_score`: A key value pair of the best search engine score selected by the algorithm `(e.g. "MS-GF:RawScore": 234.0)` -> `string`
 - `intensity`: The abundance of the peptide in the sample -> `float`
 - `spectral_count`: The number of spectra that match the peptide. Number of a PSMs for a given peptidoform in a given file (peptide sequence + charge + modifications). If the peptidoform in the file is a product of an inference process like match between runs, it must be 0, but if the value is not computed or provided it must be NA or Null -> `integer` 
-- `retention_time`: The retention time of the spectrum -> `float`
+- `retention_time`: The retention time of the feature -> `float`
 
 Properties and columns from sample: 
 
@@ -37,6 +37,7 @@ Properties and columns from sample:
 - `isotope_label_type`: The column indicates whether the measurement is based on an endogenous peptide (indicated by value `L` or `light`) or reference peptide (indicated by value `H` or `heavy`) -> `string`
 - `run`: The column stores IDs of mass spectrometry runs for LFQ experiments `e.g. 1`. For TMT/iTRAQ experiments, it is a identifier of mixture combined with technical replicate and fractions `{mixture}_{technical_replicate}_{fraction}` `e.g. 1_2_3` -> `string`
 - `channel`: The channel used to label the sample (e.g. TMT115)-> `string`
+-- `reference_file_name`: The reference file name that contains the feature. -> `string` 
 
 Protein group samples: 
 - `protein_accessions`: A list protein's accessions -> `list[string]` 
@@ -49,11 +50,10 @@ Optional fields:
 
 - `gene_accessions`: A list of gene accessions -> `list[string]`
 - `gene_names`: A list of gene names -> `list[string]`
-- `consensus_support`: Global consensus support scores for multiple search engines -> `float`
 - `id_scores`: A list of identification scores, search engine, percolator etc. Each search engine score will be a key/value pair `(e.g. "MS-GF:RawScore": 78.9)` -> `list[string]`
 - `exp_mass_to_charge`: The PSM’s experimental mass to charge (m/z) -> `double`
-- `reference_file_name`: The reference file name that contains the spectrum. -> `string` 
-- `scan_number`: The scan number of the spectrum. The scan number or index of the spectrum in the file -> `string` 
+- `best_psm_reference_file_name`: The reference file containing the best PSM that identified the feature. **Note**: This file can be different from the file that contains the feature (reference_file_name).  
+- `best_psm_scan_number`: The scan number of the spectrum. The scan number or index of the spectrum in the file -> `string` 
 - `mz`: A list of mz values for the spectrum -> `list[double]`
 - `intensity`: A list of intensity values for the spectrum ->  `list[float]`
 - `num_peaks`: The number of peaks in the spectrum, this is the size of previous lists intensity and mz -> `integer`

@@ -87,7 +87,6 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
 
     peptide_indexed = mztab_handler.get_peptide_index(msstats_peptidoform=peptidoform, charge=charge)
     peptide_score_name = mztab_handler.get_search_engine_scores()["peptide_score"]
-    protein_score_name = mztab_handler.get_search_engine_scores()["protein_score"]
 
     peptide_mztab_qvalue_accession = standardize_protein_list_accession(peptide_indexed["protein_accession"])
     peptide_qvalue = peptide_indexed["peptide_qvalue"] # Peptide q-value index 1
@@ -198,8 +197,9 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
         "run": feature_dict["Run"],
         "channel": feature_dict["Channel"],
         "id_scores": [f"{peptide_score_name}: {peptide_qvalue}", f"Best PSM PEP: {posterior_error_probability}"],
-        "reference_file_name": peptide_ms_run,
-        "scan_number": peptide_scan_number,
+        "reference_file_name": feature_dict["Reference"],
+        "best_psm_reference_file_name": peptide_ms_run,
+        "best_psm_scan_number": peptide_scan_number,
         "exp_mass_to_charge": float64(experimental_mass),
         "mz": None,
         "intensity_array": None,
@@ -273,8 +273,10 @@ class FeatureHandler(ParquetHandler):
                       # pa.field("consensus_support", pa.float64(),
                       #          metadata={"description": "consensus support value"}),
                       pa.field("reference_file_name", pa.string(),
-                               metadata={"description": "file name of the reference file"}),
-                      pa.field("scan_number", pa.string(),
+                               metadata={"description": "file name of the reference file for the feature"}),
+                      pa.field("best_psm_reference_file_name", pa.string(),
+                               metadata={"description": "file name of the reference file for the best PSM"}),
+                      pa.field("best_psm_scan_number", pa.string(),
                                metadata={"description": "scan number of the best PSM"}),
                       pa.field("mz", pa.list_(pa.float64()),
                                metadata={"description": "mass-to-charge ratio values"}),
