@@ -153,15 +153,20 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
     # Unique is different in PSM section, Peptide, We are using the msstats number of accessions.
     unique = 1 if len(protein_accessions_list) == 1 else 0
 
-    # TODO: get retention time from mztab file. The rentention time in the mzTab peptide level is not clear how is
+    # TODO: get retention time from mztab file. The retention time in the mzTab peptide level is not clear how is
     # related to the retention time in the MSstats file. If the consensusxml file is provided, we can get the retention
     # time from the consensusxml file.
     rt = None
     if intensity_map is not None:
         key = peptide_sequence + ":_:" + str(charge) + ":_:" + feature_dict["Reference"]
-        if key in intensity_map and abs(intensity_map[key]["intensity"] - float64(feature_dict["Intensity"])) < 0.01:
-            rt = intensity_map[key]["rt"]
-            experimental_mass = intensity_map[key]["mz"]
+        if key in intensity_map:
+            consensus_intensity = intensity_map[key]["intensity"]
+            if abs(consensus_intensity - float64(feature_dict["Intensity"])) < 0.1:
+                rt = intensity_map[key]["rt"]
+                experimental_mass = intensity_map[key]["mz"]
+            else:
+                print("Feature found with same intensity {} in ConsensusXML in line: {}"
+                      .format(consensus_intensity, feature_dict))
 
     return {
         "sequence": peptide_sequence,
