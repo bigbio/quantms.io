@@ -19,6 +19,7 @@ import pandas as pd
 from scipy.linalg._solve_toeplitz import float64
 
 from quantms_io.core.mztab import MztabHandler
+from quantms_io.core.openms import ConsensusXMLHandler
 from quantms_io.core.parquet_handler import ParquetHandler
 from quantms_io.core.sdrf import SDRFHandler
 from quantms_io.utils.constants import TMT_CHANNELS, ITRAQ_CHANNEL
@@ -61,13 +62,15 @@ def get_additional_properties_from_sdrf(feature_dict: dict, experiment_type: str
     return feature_dict
 
 
-def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_samples: dict, mztab_handler: MztabHandler):
+def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_samples: dict,
+                           mztab_handler: MztabHandler = None, intensity_map: dict = None):
     """
     Fetch a feature from a MSstats dictionary and convert to a quantms.io format row
     :param feature_dict: MSstats feature dictionary
     :param experiment_type: experiment type
     :param sdrf_samples: SDRF samples
     :param mztab_handler: mztab handler
+    :param intensity_map: intensity map
     :return: quantms.io format row
     """
 
@@ -103,8 +106,10 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
     start_positions = [int(i) for i in start_positions]
     end_positions = peptide_indexed["psm_protein_end"].split(",") # End positions in the protein
     end_positions = [int(i) for i in end_positions]
-    spectral_count = None
-    scan_number = None
+
+    # The spectral count is 0 for a given file if a peptide does not appear in the psm section because for example is
+    # match between runs. However, for TMT/ITRAQ experiments, the spectral count can't be provided.
+    spectral_count = None if "LABEL FREE" not in feature_dict["Channel"] else 0 #
 
     spectral_count_list = peptide_indexed["spectral_count"] # Spectral count
     if feature_dict["Reference"] in spectral_count_list:
@@ -120,10 +125,15 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
     calculated_mass = None
     experimental_mass = None
     for row in peptide_indexed["list_psms"]:
+        calculated_mass = row[0]
         if row[3] == peptide_scan_number and row[2] == peptide_ms_run:
-            calculated_mass = row[0]
             experimental_mass = row[1]
             break
+
+    # If the experimental mass is not found, in the psm list this means that the peptide is MBR product.
+    if experimental_mass is None:
+        peptide_ms_run = None
+        peptide_scan_number = None
 
     try:
         protein_qvalue_object = mztab_handler.get_protein_qvalue_from_index(protein_accession=protein_accessions_string)
@@ -144,8 +154,15 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
     unique = 1 if len(protein_accessions_list) == 1 else 0
 
     # TODO: get retention time from mztab file. The rentention time in the mzTab peptide level is not clear how is
-    # related to the retention time in the MSstats file. The retention time in the MSstats file is the retention time.
+    # related to the retention time in the MSstats file. If the consensusxml file is provided, we can get the retention
+    # time from the consensusxml file.
     rt = None
+    if intensity_map is not None:
+        key = peptide_sequence + ":_:" + str(charge) + ":_:" + feature_dict["Reference"]
+        if key in intensity_map and abs(intensity_map[key]["intensity"] - float64(feature_dict["Intensity"])) < 0.01:
+            rt = intensity_map[key]["rt"]
+            experimental_mass = intensity_map[key]["mz"]
+
     return {
         "sequence": peptide_sequence,
         "protein_accessions":protein_accessions_list,
@@ -175,8 +192,8 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
         "channel": feature_dict["Channel"],
         "id_scores": [f"{peptide_score_name}: {peptide_qvalue}"],
         "consensus_support": None,
-        "reference_file_name": feature_dict["Reference"],
-        "scan_number": scan_number,
+        "reference_file_name": peptide_ms_run,
+        "scan_number": peptide_scan_number,
         "exp_mass_to_charge": float64(experimental_mass),
         "mz": None,
         "intensity_array": None,
@@ -286,20 +303,30 @@ class FeatureHandler(ParquetHandler):
         return pa.Table.from_pandas(pd.DataFrame(feature_list), schema=self.schema)
 
     def convert_mztab_msstats_to_feature(self, msstats_file: str, sdrf_file: str, mztab_file: str,
+                                         consesusxml_file: str,
                                          use_cache: bool = False):
         """
         Convert a MSstats input file and mztab into a quantms.io file format.
         :param msstats_file: MSstats input file
         :param sdrf_file: SDRF file
         :param mztab_file: mztab file
+        :param consesusxml_file: consensusxml file
         :param use_cache: use cache to store the mztab file
         :return: none
         """
         sdrf_handler = SDRFHandler(sdrf_file)
         experiment_type = sdrf_handler.get_experiment_type_from_sdrf()
         sdrf_samples = sdrf_handler.get_sample_map()
+
         mztab_handler = MztabHandler(mztab_file, use_cache=use_cache)
         mztab_handler.load_mztab_file(use_cache=use_cache)
+
+        # Get the intensity map from the consensusxml file
+        intensity_map = {}
+        if consesusxml_file is not None:
+            consensus_handler = ConsensusXMLHandler()
+            intensity_map = consensus_handler.get_intensity_map(consensusxml_path=consesusxml_file)
+
         feature_list = []
 
         # Read the MSstats file line by line and convert it to a quantms.io file feature format
@@ -316,7 +343,8 @@ class FeatureHandler(ParquetHandler):
                 msstats_values = line.split(",")
                 # Create a dictionary with the values
                 feature_dict = dict(zip(msstats_columns, msstats_values))
-                msstats_feature = _fetch_msstats_feature(feature_dict, experiment_type, sdrf_samples, mztab_handler)
+                msstats_feature = _fetch_msstats_feature(feature_dict, experiment_type, sdrf_samples, mztab_handler,
+                                                         intensity_map)
                 if msstats_feature is not None:
                     feature_list.append(msstats_feature)
                 #feature_table = self.create_feature_table([msstats_feature])

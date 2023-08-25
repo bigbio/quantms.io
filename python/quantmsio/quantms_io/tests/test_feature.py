@@ -80,5 +80,7 @@ class TestFeatureHandler(TestCase):
         feature_manager.convert_mztab_msstats_to_feature(
             mztab_file="data/raw_ae_example/PXD009219.sdrf_openms_design_openms.mzTab",
             msstats_file="data/raw_ae_example/PXD009219.sdrf_openms_design_msstats_in.csv",
-            sdrf_file="data/raw_ae_example/PXD009219.sdrf.tsv", use_cache=True
+            sdrf_file="data/raw_ae_example/PXD009219.sdrf.tsv",
+            consesusxml_file="data/raw_ae_example/PXD009219.sdrf_openms_design_openms.consensusXML",
+            use_cache=True
         )
