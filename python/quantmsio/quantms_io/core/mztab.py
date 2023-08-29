@@ -229,7 +229,7 @@ def fetch_psm_from_mztab_line(pos: int, es: dict, ms_runs: dict = None, modifica
     :return: psm dictionary
     """
     keys = ["sequence", "modifications", "charge", "retention_time", "accession", "start", "end", "calc_mass_to_charge",
-            "exp_mass_to_charge", "opt_global_Posterior_Error_Probability_score", "opt_global_q-value"]
+            "exp_mass_to_charge"]
     psm = dict(zip(keys, [es[k] for k in keys]))
 
     psm["accession"] = standardize_protein_string_accession(psm["accession"])
@@ -499,9 +499,9 @@ class MztabHandler:
         else:
             if psm_key in self._peptide_index:
                 psm = self._peptide_index[psm_key]
-                peptide_protein_accession = psm["protein_accession"]
-                peptide_protein_start = psm["psm_protein_start"]
-                peptide_protein_end = psm["psm_protein_end"]
+                peptide_protein_accession = psm["protein_accession"] 
+                peptide_protein_start = psm["psm_protein_start"] 
+                peptide_protein_end = psm["psm_protein_end"] 
                 if posterior_error_probability is not None and posterior_error_probability < psm["posterior_error_probability"]:
                     psm["posterior_error_probability"] = posterior_error_probability
                 if ((peptide_protein_start is not None and peptide_protein_end is not None)
