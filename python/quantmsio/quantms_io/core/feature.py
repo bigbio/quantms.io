@@ -31,6 +31,7 @@ def get_quantmsio_modifications(modifications_string: str, modification_definiti
     """
     Get the modifications in quantms.io format from a string of modifications in mztab format.
     :param modifications_string: modifications string in mztab format
+    :param modification_definition: modification definition
     :return: modifications in quantms.io format
     """
     if modifications_string is None or modifications_string == "null":
@@ -49,9 +50,9 @@ def get_additional_properties_from_sdrf(feature_dict: dict, experiment_type: str
         feature_dict["IsotopeLabelType"] = "L"
 
     if "TMT" in experiment_type: # TMT experiment
-        feature_dict["Channel"] = TMT_CHANNELS[experiment_type][feature_dict["Channel"] - 1]
+        feature_dict["Channel"] = TMT_CHANNELS[experiment_type][int(feature_dict["Channel"]) - 1]
     elif "ITRAQ" in experiment_type: # ITRAQ experiment
-        feature_dict["Channel"] = ITRAQ_CHANNEL[experiment_type][feature_dict["Channel"] - 1]
+        feature_dict["Channel"] = ITRAQ_CHANNEL[experiment_type][int(feature_dict["Channel"]) - 1]
     else: # Label free experiment
         feature_dict["Channel"] = "LABEL FREE SAMPLE"
 
@@ -83,7 +84,11 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
 
     peptidoform = feature_dict["PeptideSequence"] # Peptidoform is the Msstats form .e.g. EM(Oxidation)QDLGGGER
     peptide_sequence = clean_peptidoform_sequence(peptidoform)  # Get sequence .e.g. EMQDLGGGER
-    charge = feature_dict["PrecursorCharge"] # Charge is the Msstats form .e.g. 2
+    charge = None
+    if "PrecursorCharge" in feature_dict:
+        charge = feature_dict["PrecursorCharge"] # Charge is the Msstats form .e.g. 2
+    elif "Charge" in feature_dict:
+        charge = feature_dict["Charge"] # Charge is the Msstats form .e.g. 2
 
     peptide_indexed = mztab_handler.get_peptide_index(msstats_peptidoform=peptidoform, charge=charge)
     peptide_score_name = mztab_handler.get_search_engine_scores()["peptide_score"]
@@ -107,6 +112,7 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
         modifications_string += "|".join(map(str, value["position"]))
         modifications_string = modifications_string + "-" + value["unimod_accession"] + ","
     modifications_string = None if len(modifications_string)==0 else modifications_string[:-1] # Remove last comma
+    modification_list = None if modifications_string is None else modifications_string.split(",")
 
     start_positions = peptide_indexed["psm_protein_start"].split(",") # Start positions in the protein
     start_positions = [int(i) for i in start_positions]
@@ -162,14 +168,19 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
     # TODO: get retention time from mztab file. The retention time in the mzTab peptide level is not clear how is
     # related to the retention time in the MSstats file. If the consensusxml file is provided, we can get the retention
     # time from the consensusxml file.
-    rt = None
+    rt = None if "RetentionTime" not in feature_dict else float64(feature_dict["RetentionTime"])
     if intensity_map is not None:
-        key = peptide_sequence + ":_:" + str(charge) + ":_:" + feature_dict["Reference"]
-        if key in intensity_map:
+        key = None
+        if "LABEL FREE" in feature_dict["Channel"]:
+            key = peptidoform + ":_:" + str(charge) + ":_:" + feature_dict["Reference"]
+        elif "TMT" in feature_dict["Channel"]:
+            key = peptidoform + ":_:" + str(charge) + ":_:" + feature_dict["Reference"] + ":_:" + feature_dict["Channel"]
+        if key is not None and key in intensity_map:
             consensus_intensity = intensity_map[key]["intensity"]
             if abs(consensus_intensity - float64(feature_dict["Intensity"])) < 0.1:
-                rt = intensity_map[key]["rt"]
+                rt = rt if rt is not None else intensity_map[key]["rt"]
                 experimental_mass = intensity_map[key]["mz"]
+
 
     return {
         "sequence": peptide_sequence,
@@ -178,7 +189,7 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
         "protein_end_positions": end_positions,
         "protein_global_qvalue": float64(protein_qvalue),
         "unique": unique,
-        "modifications": modifications_string,
+        "modifications": modification_list,
         "retention_time": rt,
         "charge": int(charge),
         "calc_mass_to_charge": float64(calculated_mass),
@@ -311,7 +322,7 @@ class FeatureHandler(ParquetHandler):
         return pa.Table.from_pandas(pd.DataFrame(feature_list), schema=self.schema)
 
     def convert_mztab_msstats_to_feature(self, msstats_file: str, sdrf_file: str, mztab_file: str,
-                                         consesusxml_file: str,
+                                         consesusxml_file: str = None,
                                          use_cache: bool = False):
         """
         Convert a MSstats input file and mztab into a quantms.io file format.
@@ -333,14 +344,15 @@ class FeatureHandler(ParquetHandler):
         intensity_map = {}
         if consesusxml_file is not None:
             consensus_handler = ConsensusXMLHandler()
-            intensity_map = consensus_handler.get_intensity_map(consensusxml_path=consesusxml_file)
+            intensity_map = consensus_handler.get_intensity_map(consensusxml_path=consesusxml_file,
+                                                                experiment_type=experiment_type)
 
         feature_list = []
 
         # Read the MSstats file line by line and convert it to a quantms.io file feature format
         with open(msstats_file, "r") as msstats_file_handler:
             line = msstats_file_handler.readline()
-            if line.startswith("Protein"):
+            if "Protein" in line:
                 # Skip the header
                 msstats_columns = line.rstrip().split(",")
             else:

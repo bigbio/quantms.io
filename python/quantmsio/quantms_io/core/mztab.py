@@ -230,6 +230,10 @@ def fetch_psm_from_mztab_line(pos: int, es: dict, ms_runs: dict = None, modifica
     """
     keys = ["sequence", "modifications", "charge", "retention_time", "accession", "start", "end", "calc_mass_to_charge",
             "exp_mass_to_charge", "opt_global_Posterior_Error_Probability_score", "opt_global_q-value"]
+
+    if "opt_global_q-value" not in es:
+        keys.remove("opt_global_q-value")
+
     psm = dict(zip(keys, [es[k] for k in keys]))
 
     psm["accession"] = standardize_protein_string_accession(psm["accession"])
