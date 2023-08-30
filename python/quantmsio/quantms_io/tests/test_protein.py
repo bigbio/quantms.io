@@ -1,10 +1,7 @@
 import unittest
-from unittest import TestCase, mock
-
-import pandas as pd
+from unittest import TestCase
 
 from quantms_io.core.protein import ProteinHandler
-import pyarrow as pa
 import random
 
 class TestProteinHandler(TestCase):

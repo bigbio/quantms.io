@@ -16,7 +16,7 @@ class ConsensusXMLHandler:
           - mz: mass to charge ratio
           - intensity: intensity
         :param consensusxml_path: path to the consensusxml file
-        :param experiment_type: experiment type (e.g. lfq, tmt, etc)
+        :param experiment_type: experiment type (e.g. lfq, tmt, etc.)
         :return: intensity map
         """
         self._consensus_xml_path = consensusxml_path

@@ -2,7 +2,7 @@
 The protein file is a file that handle and manage the protein information in quantms.io format. The protein file is defined
 in the docs folder of this repository. (https://github.com/bigbio/quantms.io/blob/main/docs/PROTEIN.md). The Protein
 information is a column format that defines the protein quantification/identification and its relation with each
-specific sample in the experiment. Among other information, the protein file contains:
+ sample in the experiment. Among other information, the protein file contains:
  - Protein accession
  - Protein description
  - Sample accession

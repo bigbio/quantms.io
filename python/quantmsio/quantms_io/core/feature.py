@@ -11,7 +11,6 @@ The feature file is defined in the docs folder of this repository.
 The feature file is a column format that defines the peptide quantification/identification and its relation with each
 sample in the experiment.
 """
-import random
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -30,7 +29,7 @@ from quantms_io.utils.pride_utils import clean_peptidoform_sequence, compare_pro
 def get_quantmsio_modifications(modifications_string: str, modification_definition: dict) -> dict:
     """
     Get the modifications in quantms.io format from a string of modifications in mztab format.
-    :param modifications_string: modifications string in mztab format
+    :param modifications_string: Modifications string in mztab format
     :param modification_definition: modification definition
     :return: modifications in quantms.io format
     """
@@ -129,7 +128,7 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
         reference_file = feature_dict["Reference"]
         print(f"MBR peptide: {peptidoform}, {charge}, {reference_file}")
 
-    # find calculated mass and experimental mass in peptide_count. Here we are using the scan number and the
+    # Find calculated mass and experimental mass in peptide_count. Here we are using the scan number and the
     # reference file name to find the calculated mass and the experimental mass.
     peptide_ms_run = peptide_indexed["peptide_ms_run"]
     peptide_scan_number = peptide_indexed["peptide_scan_number"]

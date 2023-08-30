@@ -1,7 +1,4 @@
-import re
-
 from scipy.linalg._solve_toeplitz import float64
-
 from quantms_io.core.core import DiskCache
 from quantms_io.utils.constants import PROTEIN_DETAILS
 from quantms_io.utils.pride_utils import get_key_peptide_combination, standardize_protein_string_accession, \
@@ -139,7 +136,7 @@ def fetch_peptide_from_mztab_line(pos: int, peptide_dict: dict, ms_runs: dict = 
                                   modification_definition: dict = None) -> dict:
     """
     Get the peptide from a mztab line include the post.
-    :param pos: position of the peptide in the mztab file
+    :param pos: Position of the peptide in the mztab file
     :param peptide_dict: dictionary with the peptide information
     :param ms_runs: ms runs dictionary
     :param modification_definition: modification definition
@@ -540,6 +537,8 @@ class MztabHandler:
         Create an index for a mztab file; the index contains a structure with the position of each psm, peptide and
         protein in the file.
         :param mztab_file: mztab file
+        :param qvalue_index: create a qvalue index
+        :param psm_count_index: create a psm count index
         """
         self._protein_details = {}
         self.create_peptide_index()

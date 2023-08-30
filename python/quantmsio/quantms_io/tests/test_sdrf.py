@@ -21,10 +21,10 @@ class TestSDRFHandler(TestCase):
                           {'precursor mass tolerance': '10 ppm'},
                           {'fragment mass tolerance': '0.05 Da'}])
 
-        values_df = sdrf_handler.extract_feature_properties("lfq")
+        values_df = sdrf_handler.extract_feature_properties()
         print(values_df)
 
-        print(sdrf_handler.extra_experiment_type_from_sdrf())
+        print(sdrf_handler.get_experiment_type_from_sdrf())
 
     def test_get_labels(self):
         file = "data/PXD016999-first-instrument.sdrf.tsv"

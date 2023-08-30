@@ -6,7 +6,6 @@ This module contains the following classes:
     * SDRFHandler - class to handle SDRF files
 """
 import re
-from typing import Any
 
 import pandas as pd
 from pandas import DataFrame
@@ -52,7 +51,7 @@ def get_complex_value_sdrf_column(sdrf_table: DataFrame, column: str) -> list:
 
 def get_acquisition_method(sdrf_table: DataFrame, acquisition_method_column: str, column_labeling: str) -> list:
     """
-    get the acquisition method from the SDRF table.Returns the acquisition method and the labeling method.
+    Get the acquisition method from the SDRF table.Returns the acquisition method and the labeling method.
     Three different methods are supported: label free, TMT and iTRAQ.
     For DIA methods, the acquisition method is Data-dependent
     acquisition and MUST be annotated in the SDRF.
@@ -235,7 +234,7 @@ class SDRFHandler:
     def get_sample_labels(self):
         """
         Get the sample labels from the SDRF file. The sample labels are the values of the column "comment[label]".
-        :return: set of sample labels
+        :return: Set of sample labels
         """
         labels = self.sdrf_table['comment[label]'].unique()
         return set(labels)
@@ -245,7 +244,7 @@ class SDRFHandler:
         Get the sample accession map from the sdrf file. The key of the sample map is:
         - data file + :_: + sample label
         The value of the sample map is the sample accession.
-        :return: sample map
+        :return: Sample map
         """
         sample_map = {}
         sdrf_pd = self.sdrf_table.copy()  # type: DataFrame
