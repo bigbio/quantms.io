@@ -102,7 +102,7 @@ def get_petidoform_msstats_notation(peptide_sequence: str, modification_string: 
         - EM(Oxidation)EVEES(Phospho)PEK
         - .(iTRAQ4plex)EMEVNESPEK.(Methyl)
     :param peptide_sequence: peptide sequence
-    :param modifications_string: modification string
+    :param modification_string: modification string
     :param modifications_definition: dictionary modifications definition
     :return: peptidoform in msstats
     """
@@ -351,7 +351,6 @@ def create_peptide_for_index(peptide_qvalue: str, is_decoy: str, peptidoform: st
            # - 2 - reference file
            # - 3 - scan number
            # - 4 - position in the mztab file
-     :param protein_accession: protein accession
      :param peptide_qvalue: peptide qvalue
      :param is_decoy: is decoy
      :param peptidoform: peptidoform in proforma
@@ -459,7 +458,6 @@ class MztabHandler:
         :param scan_number: scan number
         :param mztab_postion: position in the mztab file
         :param posterior_error_probability: posterior error probability
-        :param global_qvalue: global qvalue
         :return: None
         """
         if self._use_cache:

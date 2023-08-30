@@ -37,23 +37,22 @@ def get_quantmsio_modifications(modifications_string: str, modification_definiti
     if modifications_string is None or modifications_string == "null":
         return {}
 
-    return get_modifications_object_from_mztab_line(modification_string = modifications_string,
-                                                             modifications_definition=modification_definition)
+    return get_modifications_object_from_mztab_line(modification_string=modifications_string,
+                                                    modifications_definition=modification_definition)
 
 
 def get_additional_properties_from_sdrf(feature_dict: dict, experiment_type: str, sdrf_samples: dict) -> dict:
-
-    if 'FragmentIon' not in feature_dict: # FragmentIon is not in the MSstats file object if the experiment is label free
+    if 'FragmentIon' not in feature_dict:  # FragmentIon is not in the MSstats file object if the experiment is label free
         feature_dict["FragmentIon"] = None
 
     if 'IsotopeLabelType' not in feature_dict:
         feature_dict["IsotopeLabelType"] = "L"
 
-    if "TMT" in experiment_type: # TMT experiment
+    if "TMT" in experiment_type:  # TMT experiment
         feature_dict["Channel"] = TMT_CHANNELS[experiment_type][int(feature_dict["Channel"]) - 1]
-    elif "ITRAQ" in experiment_type: # ITRAQ experiment
+    elif "ITRAQ" in experiment_type:  # ITRAQ experiment
         feature_dict["Channel"] = ITRAQ_CHANNEL[experiment_type][int(feature_dict["Channel"]) - 1]
-    else: # Label free experiment
+    else:  # Label free experiment
         feature_dict["Channel"] = "LABEL FREE SAMPLE"
 
     # Get the sample accession from the SDRF file.
@@ -82,48 +81,48 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
     protein_accessions_list = standardize_protein_list_accession(feature_dict["ProteinName"])
     protein_accessions_string = standardize_protein_string_accession(feature_dict["ProteinName"])
 
-    peptidoform = feature_dict["PeptideSequence"] # Peptidoform is the Msstats form .e.g. EM(Oxidation)QDLGGGER
+    peptidoform = feature_dict["PeptideSequence"]  # Peptidoform is the Msstats form .e.g. EM(Oxidation)QDLGGGER
     peptide_sequence = clean_peptidoform_sequence(peptidoform)  # Get sequence .e.g. EMQDLGGGER
     charge = None
     if "PrecursorCharge" in feature_dict:
-        charge = feature_dict["PrecursorCharge"] # Charge is the Msstats form .e.g. 2
+        charge = feature_dict["PrecursorCharge"]  # Charge is the Msstats form .e.g. 2
     elif "Charge" in feature_dict:
-        charge = feature_dict["Charge"] # Charge is the Msstats form .e.g. 2
+        charge = feature_dict["Charge"]  # Charge is the Msstats form .e.g. 2
 
     peptide_indexed = mztab_handler.get_peptide_index(msstats_peptidoform=peptidoform, charge=charge)
     peptide_score_name = mztab_handler.get_search_engine_scores()["peptide_score"]
 
     peptide_mztab_qvalue_accession = standardize_protein_list_accession(peptide_indexed["protein_accession"])
-    peptide_qvalue = peptide_indexed["peptide_qvalue"] # Peptide q-value index 1
+    peptide_qvalue = peptide_indexed["peptide_qvalue"]  # Peptide q-value index 1
 
-    posterior_error_probability = peptide_indexed["posterior_error_probability"] # Get posterior error probability
+    posterior_error_probability = peptide_indexed["posterior_error_probability"]  # Get posterior error probability
     if posterior_error_probability is not None:
         posterior_error_probability = float64(posterior_error_probability)
 
     # Get if decoy or not
-    peptide_mztab_qvalue_decoy = peptide_indexed["is_decoy"] # Peptide q-value decoy index 2
+    peptide_mztab_qvalue_decoy = peptide_indexed["is_decoy"]  # Peptide q-value decoy index 2
 
     # Mods in quantms.io format
-    modifications_string = peptide_indexed["modifications"] # Mods
-    modifications = get_quantmsio_modifications(modifications_string= modifications_string,
+    modifications_string = peptide_indexed["modifications"]  # Mods
+    modifications = get_quantmsio_modifications(modifications_string=modifications_string,
                                                 modification_definition=mztab_handler.get_modifications_definition())
     modifications_string = ""
     for key, value in modifications.items():
         modifications_string += "|".join(map(str, value["position"]))
         modifications_string = modifications_string + "-" + value["unimod_accession"] + ","
-    modifications_string = None if len(modifications_string)==0 else modifications_string[:-1] # Remove last comma
+    modifications_string = None if len(modifications_string) == 0 else modifications_string[:-1]  # Remove last comma
     modification_list = None if modifications_string is None else modifications_string.split(",")
 
-    start_positions = peptide_indexed["psm_protein_start"].split(",") # Start positions in the protein
+    start_positions = peptide_indexed["psm_protein_start"].split(",")  # Start positions in the protein
     start_positions = [int(i) for i in start_positions]
-    end_positions = peptide_indexed["psm_protein_end"].split(",") # End positions in the protein
+    end_positions = peptide_indexed["psm_protein_end"].split(",")  # End positions in the protein
     end_positions = [int(i) for i in end_positions]
 
     # The spectral count is 0 for a given file if a peptide does not appear in the psm section because for example is
     # match between runs. However, for TMT/ITRAQ experiments, the spectral count can't be provided.
-    spectral_count = None if "LABEL FREE" not in feature_dict["Channel"] else 0 #
+    spectral_count = None if "LABEL FREE" not in feature_dict["Channel"] else 0  #
 
-    spectral_count_list = peptide_indexed["spectral_count"] # Spectral count
+    spectral_count_list = peptide_indexed["spectral_count"]  # Spectral count
     if feature_dict["Reference"] in spectral_count_list:
         spectral_count = spectral_count_list[feature_dict["Reference"]]
     else:
@@ -149,7 +148,7 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
 
     try:
         protein_qvalue_object = mztab_handler.get_protein_qvalue_from_index(protein_accession=protein_accessions_string)
-        protein_qvalue = protein_qvalue_object[0] # Protein q-value index 0
+        protein_qvalue = protein_qvalue_object[0]  # Protein q-value index 0
     except:
         print("Error in line: {}".format(feature_dict))
         return None
@@ -174,17 +173,17 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
         if "LABEL FREE" in feature_dict["Channel"]:
             key = peptidoform + ":_:" + str(charge) + ":_:" + feature_dict["Reference"]
         elif "TMT" in feature_dict["Channel"]:
-            key = peptidoform + ":_:" + str(charge) + ":_:" + feature_dict["Reference"] + ":_:" + feature_dict["Channel"]
+            key = peptidoform + ":_:" + str(charge) + ":_:" + feature_dict["Reference"] + ":_:" + feature_dict[
+                "Channel"]
         if key is not None and key in intensity_map:
             consensus_intensity = intensity_map[key]["intensity"]
             if abs(consensus_intensity - float64(feature_dict["Intensity"])) < 0.1:
                 rt = rt if rt is not None else intensity_map[key]["rt"]
                 experimental_mass = intensity_map[key]["mz"]
 
-
     return {
         "sequence": peptide_sequence,
-        "protein_accessions":protein_accessions_list,
+        "protein_accessions": protein_accessions_list,
         "protein_start_positions": start_positions,
         "protein_end_positions": end_positions,
         "protein_global_qvalue": float64(protein_qvalue),
@@ -193,7 +192,7 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
         "retention_time": rt,
         "charge": int(charge),
         "calc_mass_to_charge": float64(calculated_mass),
-        "peptidoform": peptide_indexed["peptidoform"], # Peptidoform in proforma notation
+        "peptidoform": peptide_indexed["peptidoform"],  # Peptidoform in proforma notation
         "posterior_error_probability": posterior_error_probability,
         "global_qvalue": float64(peptide_qvalue),
         "is_decoy": int(peptide_mztab_qvalue_decoy),
@@ -256,7 +255,8 @@ class FeatureHandler(ParquetHandler):
                       pa.field("global_qvalue", pa.float64(),
                                metadata={"description": "global q-value"}),
                       pa.field("is_decoy", pa.int32(),
-                               metadata={"description": "flag indicating if the feature is a decoy (1 is decoy, 0 is not decoy)"}),
+                               metadata={
+                                   "description": "flag indicating if the feature is a decoy (1 is decoy, 0 is not decoy)"}),
                       # pa.field("best_id_score", pa.string(),
                       #          metadata={"description": "best identification score as key value pair"}),
                       pa.field("intensity", pa.float64(),
@@ -302,6 +302,7 @@ class FeatureHandler(ParquetHandler):
                       ]
 
     def __init__(self, parquet_path: str = None):
+        super().__init__(parquet_path)
         self.schema = self._create_schema()
         self.parquet_path = parquet_path
         self.dataset = None
@@ -318,7 +319,7 @@ class FeatureHandler(ParquetHandler):
             self.parquet_path, use_legacy_dataset=False, schema=self.schema).read()  # type: pa.Table
         return table
 
-    def create_feature_table(self, feature_list: list):
+    def create_feature_table(self, feature_list: list) -> pa.Table:
         return pa.Table.from_pandas(pd.DataFrame(feature_list), schema=self.schema)
 
     def convert_mztab_msstats_to_feature(self, msstats_file: str, sdrf_file: str, mztab_file: str,
@@ -367,7 +368,7 @@ class FeatureHandler(ParquetHandler):
                                                          intensity_map)
                 if msstats_feature is not None:
                     feature_list.append(msstats_feature)
-                #feature_table = self.create_feature_table([msstats_feature])
+                # feature_table = self.create_feature_table([msstats_feature])
                 print(msstats_feature)
                 line = msstats_file_handler.readline()
                 # Create a feature table
@@ -376,7 +377,6 @@ class FeatureHandler(ParquetHandler):
 
         self.write_single_file_parquet(feature_table, write_metadata=True)
         mztab_handler.close()
-
 
     def describe_schema(self):
         schema_description = []
@@ -388,6 +388,3 @@ class FeatureHandler(ParquetHandler):
             }
             schema_description.append(field_description)
         return schema_description
-
-
-

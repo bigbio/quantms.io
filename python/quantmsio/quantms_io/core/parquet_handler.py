@@ -30,7 +30,7 @@ class ParquetHandler:
         so we need to allow creating a new parquet file with the metadata.
         Todo: write_metadata should be explored because the current write is not keeping the metadata of each field.
         :param table: pyarrow Table :param
-        parquet_output: Output parquet file
+        :param parquet_output: Output parquet file
         :param write_metadata: Write metadata to the parquet file
         """
         if self.parquet_path is None and parquet_output is None:

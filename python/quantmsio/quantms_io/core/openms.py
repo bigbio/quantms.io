@@ -33,7 +33,8 @@ class ConsensusXMLHandler:
 
         return self._get_intensity_map_lfq(df)  # If not experiment type is provided, we assume it is label free
 
-    def _get_intensity_map_lfq(self, df):
+    @staticmethod
+    def _get_intensity_map_lfq(df):
         """
         Get the intensity map for label free experiments
         :param df: pandas dataframe with the consensusxml data
@@ -54,7 +55,8 @@ class ConsensusXMLHandler:
                             intensity_map[key] = {"rt": row.RT, "mz": row.mz, "intensity": row[column]}
         return intensity_map
 
-    def _get_intensity_map_tmt(self, df):
+    @staticmethod
+    def _get_intensity_map_tmt(df):
         """
         Get the intensity map for TMT experiments
         :param df: pandas dataframe with the consensusxml data

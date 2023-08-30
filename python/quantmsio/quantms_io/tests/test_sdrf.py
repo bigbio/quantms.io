@@ -32,5 +32,6 @@ class TestSDRFHandler(TestCase):
         self.assertEqual(len(sdrf_handler.get_sample_labels()), 10)
 
         experiment_type = sdrf_handler.get_experiment_type_from_sdrf()
+        print(experiment_type)
 
 

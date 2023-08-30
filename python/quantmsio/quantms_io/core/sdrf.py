@@ -6,6 +6,7 @@ This module contains the following classes:
     * SDRFHandler - class to handle SDRF files
 """
 import re
+from typing import Any
 
 import pandas as pd
 from pandas import DataFrame
@@ -144,7 +145,7 @@ class SDRFHandler:
          fragment_mass_tolerance_value in get_complex_value_sdrf_column(self.sdrf_table, self.FRAGMENT_MASS_TOLERANCE)]
         return acquisition_values
 
-    def get_factor_value(self) -> str:
+    def get_factor_value(self) -> str | None:
         """
         Get the factor value
         """
@@ -156,7 +157,7 @@ class SDRFHandler:
             return None
         return values[0]
 
-    def extract_feature_properties(self):
+    def extract_feature_properties(self) -> DataFrame:
         """
         Extract the feature properties from the SDRF file. These properties are needed by the feature file and
         FeatureHandler class. The experiment type can be: "lfq", "tmt" or "itraq".

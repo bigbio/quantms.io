@@ -53,6 +53,7 @@ class ProteinHandler(ParquetHandler):
         ]
 
     def __init__(self, parquet_path: str = None):
+        super().__init__(parquet_path)
         self.schema = self._create_schema()
         self.parquet_path = parquet_path
         self.dataset = None
