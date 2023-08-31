@@ -2,7 +2,6 @@ import os
 import pyarrow as pa
 import pandas as pd
 import numpy as np
-from pyteomics import mzml
 import re
 import codecs
 from quantms_io.core.mztab import fetch_modifications_from_mztab_line, get_petidoform_msstats_notation
@@ -474,12 +473,13 @@ class FeatureConvertor():
         return res_df
 
     def _map_spectrum_mz(self, mz_path, scan):
-        scan = "controllerType=0 controllerNumber=1 scan=" + str(scan)
-        mz_path = self.mzml_directory + '/' + mz_path + '.mzml'
-        spectral = mzml.MzML(mz_path).get_by_id(scan)
-        mz_array = spectral["m/z array"]
-        array_intensity = spectral['intensity array']
-        return mz_array, array_intensity, len(mz_array)
+        # TODO: Replace by OpenMSHandler function
+        # scan = "controllerType=0 controllerNumber=1 scan=" + str(scan)
+        # mz_path = self.mzml_directory + '/' + mz_path + '.mzml'
+        # spectral = mzml.MzML(mz_path).get_by_id(scan)
+        # mz_array = spectral["m/z array"]
+        # array_intensity = spectral['intensity array']
+        return [], [], 0
 
     def __split_start_or_end(self, value):
         if pd.isna(value):

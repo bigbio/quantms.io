@@ -1,11 +1,32 @@
 import pyopenms as oms
+from pyopenms import SpectrumLookup
 from scipy.linalg._solve_toeplitz import float64
 
 
-class ConsensusXMLHandler:
+class OpenMSHandler:
 
     def __init__(self) -> None:
+        self._mzml_exp = None
         self._consensus_xml_path = None
+        self._spec_lookup = None
+
+    def get_spectrum_from_scan(self, mzml_path: str, scan_number: int) -> oms.MSSpectrum:
+        """
+        Get a spectrum from a mzML file using the scan number
+        :param mzml_path: path to the mzML file
+        :param scan_number: scan number
+        :return: spectrum
+        """
+        if self._mzml_exp is None:
+            self._mzml_exp = oms.MSExperiment()
+            oms.MzMLFile().load(mzml_path, self._mzml_exp)
+            self._spec_lookup = SpectrumLookup()
+            self._spec_lookup.readSpectra(self._mzml_exp, "scan=(?<SCAN>\\d+)")
+        index = self._spec_lookup.findByScanNumber(scan_number)
+        spectrum = self._mzml_exp.getSpectrum(index)
+        spectrum_mz, spectrum_intensities = spectrum.get_peaks()
+        return spectrum_mz, spectrum_intensities
+
 
     def get_intensity_map(self, consensusxml_path: str, experiment_type: str = None) -> dict:
         """

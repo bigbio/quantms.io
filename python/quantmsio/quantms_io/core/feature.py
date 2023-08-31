@@ -19,9 +19,8 @@ from scipy.linalg._solve_toeplitz import float64
 import os
 from quantms_io.core.convert import FeatureConvertor
 
-
 from quantms_io.core.mztab import MztabHandler
-from quantms_io.core.openms import ConsensusXMLHandler
+from quantms_io.core.openms import OpenMSHandler
 from quantms_io.core.parquet_handler import ParquetHandler
 from quantms_io.core.sdrf import SDRFHandler
 from quantms_io.utils.constants import TMT_CHANNELS, ITRAQ_CHANNEL
@@ -338,7 +337,7 @@ class FeatureHandler(ParquetHandler):
         """
         sdrf_handler = SDRFHandler(sdrf_file)
         experiment_type = sdrf_handler.get_experiment_type_from_sdrf()
-        if use_cache==True:
+        if use_cache:
             sdrf_samples = sdrf_handler.get_sample_map()
 
             mztab_handler = MztabHandler(mztab_file, use_cache=use_cache)
@@ -347,15 +346,16 @@ class FeatureHandler(ParquetHandler):
             # Get the intensity map from the consensusxml file
             intensity_map = {}
             if consesusxml_file is not None:
-                consensus_handler = ConsensusXMLHandler()
-                intensity_map = consensus_handler.get_intensity_map(consensusxml_path=consesusxml_file)
+                consensus_handler = OpenMSHandler()
+                intensity_map = consensus_handler.get_intensity_map(consensusxml_path=consesusxml_file,
+                                                                    experiment_type=experiment_type)
 
             feature_list = []
 
             # Read the MSstats file line by line and convert it to a quantms.io file feature format
             with open(msstats_file, "r") as msstats_file_handler:
                 line = msstats_file_handler.readline()
-                if line.startswith("Protein"):
+                if "Protein" in line:
                     # Skip the header
                     msstats_columns = line.rstrip().split(",")
                 else:
@@ -367,19 +367,20 @@ class FeatureHandler(ParquetHandler):
                     # Create a dictionary with the values
                     feature_dict = dict(zip(msstats_columns, msstats_values))
                     msstats_feature = _fetch_msstats_feature(feature_dict, experiment_type, sdrf_samples, mztab_handler,
-                                                            intensity_map)
+                                                             intensity_map)
                     if msstats_feature is not None:
                         feature_list.append(msstats_feature)
-                    #feature_table = self.create_feature_table([msstats_feature])
-                    #print(msstats_feature)
+                    # feature_table = self.create_feature_table([msstats_feature])
+                    # print(msstats_feature)
                     line = msstats_file_handler.readline()
                     # Create a feature table
             feature_table = self.create_feature_table(feature_list)
             # Write the feature table to a parquet file
             mztab_handler.close()
         else:
-            Convert = FeatureConvertor(experiment_type,self.schema)
-            Convert.merge_mzTab_and_sdrf_to_msstats_in(mztab_file,msstats_file,sdrf_file, 'msstats_pep_psm_sdrf_merge.tsv')
+            Convert = FeatureConvertor(experiment_type, self.schema)
+            Convert.merge_mzTab_and_sdrf_to_msstats_in(mztab_file, msstats_file, sdrf_file,
+                                                       'msstats_pep_psm_sdrf_merge.tsv')
             try:
                 feature_table = Convert.convert_to_parquet('msstats_pep_psm_sdrf_merge.tsv')
             except Exception as e:
@@ -387,8 +388,7 @@ class FeatureHandler(ParquetHandler):
             finally:
                 os.remove('msstats_pep_psm_sdrf_merge.tsv')
 
-        self.write_single_file_parquet(feature_table,parquet_output=self.parquet_path,write_metadata=True)
-
+        self.write_single_file_parquet(feature_table, parquet_output=self.parquet_path, write_metadata=True)
 
     def describe_schema(self):
         schema_description = []
@@ -400,6 +400,3 @@ class FeatureHandler(ParquetHandler):
             }
             schema_description.append(field_description)
         return schema_description
-
-
-
