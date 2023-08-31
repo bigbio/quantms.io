@@ -311,6 +311,7 @@ class FeatureHandler(ParquetHandler):
 
     def convert_mztab_msstats_to_feature(self, msstats_file: str, sdrf_file: str, mztab_file: str,
                                          consesusxml_file: str = None,
+                                         mzml_directory:str = None,
                                          use_cache: bool = False):
         """
         Convert a MSstats input file and mztab into a quantms.io file format.
@@ -366,7 +367,7 @@ class FeatureHandler(ParquetHandler):
         else:
             Convert = FeatureConvertor(experiment_type, self.schema)
             Convert.merge_mzTab_and_sdrf_to_msstats_in(mztab_file, msstats_file, sdrf_file,
-                                                       'msstats_pep_psm_sdrf_merge.tsv')
+                                                       'msstats_pep_psm_sdrf_merge.tsv', mzml_directory)
             try:
                 feature_table = Convert.convert_to_parquet('msstats_pep_psm_sdrf_merge.tsv')
             except Exception as e:

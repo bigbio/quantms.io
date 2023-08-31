@@ -144,7 +144,7 @@ class SDRFHandler:
          fragment_mass_tolerance_value in get_complex_value_sdrf_column(self.sdrf_table, self.FRAGMENT_MASS_TOLERANCE)]
         return acquisition_values
 
-    def get_factor_value(self) -> str | None:
+    def get_factor_value(self) -> str:
         """
         Get the factor value
         """
