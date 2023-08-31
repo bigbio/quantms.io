@@ -3,6 +3,8 @@ This file contains utility functions for parsing PRIDE JSON files
 """
 import itertools
 import re
+from builtins import sorted
+
 
 def get_pubmed_id_pride_json(pride_json: dict) -> str:
     """
@@ -91,13 +93,20 @@ def compare_protein_lists(protein_list_1: list, protein_list_2: list) -> bool:
     protein_list_2 = set([x.strip() for x in protein_list_2])
     return protein_list_1 == protein_list_2
 
-def standardize_protein_string_accession(protein_string: str) -> str:
+def standardize_protein_string_accession(protein_string: str, sorted: bool = False) -> str:
     """
     Standardize the protein string accession, in some cases the protein string accession is decided by commas
     instead of semicolons.
     :param protein_string: protein string
     :return: standardized protein string
     """
+
+    if sorted:
+        protein_string = protein_string.replace(",", ";").strip()
+        accessions = protein_string.split(";")
+        accessions.sort()
+        return ";".join(accessions)
+
     return protein_string.replace(",", ";").strip()
 
 def standardize_protein_list_accession(protein_string: str) -> list:

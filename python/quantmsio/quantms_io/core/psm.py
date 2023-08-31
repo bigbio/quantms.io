@@ -72,7 +72,7 @@ class PSMHandler(ParquetHandler):
         """
         return pa.schema(PSMHandler.PSM_FIELDS, metadata={"description": "PSM file in quantms.io format"})
 
-    def create_psm_table(self, psm_list: list) -> pa.Table:
+    def _create_psm_table(self, psm_list: list) -> pa.Table:
         return pa.Table.from_pandas(pd.DataFrame(psm_list), schema=self.schema)
 
     def convert_mztab_to_feature(self, mztab_path: str, parquet_path: str = None):
@@ -88,9 +88,12 @@ class PSMHandler(ParquetHandler):
         mztab_handler.create_mztab_psm_iterator(mztab_path)
         psm_list = []
         while (it := mztab_handler.read_next_psm()) is not None:
+            if it["sequence"] == "HAVSEGTK":
+                print(it)
             psm_list.append(self._transform_psm_from_mztab(psm=it, mztab_handler=mztab_handler))
+            print(it)
 
-        feature_table = self.create_psm_table(psm_list)
+        feature_table = self._create_psm_table(psm_list)
         self.write_single_file_parquet(feature_table, parquet_output=self.parquet_path, write_metadata=True)
 
     def _transform_psm_from_mztab(self, psm, mztab_handler) -> dict:
@@ -158,7 +161,7 @@ class PSMHandler(ParquetHandler):
             "global_qvalue": global_qvalue,
             "is_decoy": int(psm["is_decoy"]),
             "consensus_support": consensus_support,
-            "id_scores": [f"{peptide_score_name}: {psm_score}", f"PEP: {posterior_error_probability}"],
+            "id_scores": [f"{peptide_score_name}: {psm_score}", f"Posterior error probability: {posterior_error_probability}"],
             "reference_file_name": psm["ms_run"],
             "scan_number": psm["scan_number"],
             "exp_mass_to_charge": exp_mass_to_charge,

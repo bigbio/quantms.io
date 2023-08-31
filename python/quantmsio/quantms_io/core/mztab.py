@@ -1,10 +1,12 @@
-from scipy.linalg._solve_toeplitz import float64
+import numpy as np
+
 from quantms_io.core.core import DiskCache
 from quantms_io.utils.constants import PROTEIN_DETAILS
-from quantms_io.utils.pride_utils import get_key_peptide_combination, standardize_protein_string_accession, \
-    parse_score_name_in_mztab, get_modifications_object_from_mztab_line, \
+from quantms_io.utils.pride_utils import get_key_peptide_combination, \
+    parse_score_name_in_mztab, \
     get_permutations_of_original_list, fetch_ms_runs_from_mztab_line, fetch_modifications_from_mztab_line, \
-    fetch_protein_from_mztab_line, fetch_peptide_from_mztab_line, fetch_psm_from_mztab_line
+    fetch_protein_from_mztab_line, fetch_peptide_from_mztab_line, fetch_psm_from_mztab_line, \
+    standardize_protein_string_accession
 
 
 def create_peptide_for_index(peptide_qvalue: str, is_decoy: str, peptidoform: str,
@@ -150,8 +152,8 @@ class MztabHandler:
                 peptide_protein_end = psm["psm_protein_end"] if "psm_protein_end" in psm else None
                 if posterior_error_probability is not None:
                     if (psm["posterior_error_probability"] is None or
-                            (float64(posterior_error_probability) < psm["posterior_error_probability"])):
-                           psm["posterior_error_probability"] = float64(posterior_error_probability)
+                            (np.float64(posterior_error_probability) < psm["posterior_error_probability"])):
+                           psm["posterior_error_probability"] = np.float64(posterior_error_probability)
 
                 if ((peptide_protein_start is not None and peptide_protein_end is not None)
                         and [peptide_protein_accession, peptide_protein_start, peptide_protein_end] != [
@@ -368,6 +370,19 @@ class MztabHandler:
         if protein_accession_list is None or self._protein_details is None:
             raise Exception("Protein accession to be search is None or the protein accession is not in the index")
 
+        # # If the number of proteins where the peptide maps is to big, we will have an error in the permutations.
+        # if len(protein_accession_list) > 4:
+        #     return None
+
+        protein_accession_string = ";".join(protein_accession_list)
+        protein_accession_string = standardize_protein_string_accession(protein_string=protein_accession_string, sorted=True)
+        if protein_accession_string in self._protein_details:
+            return self._protein_details[protein_accession_string]
+
+        # # If the number of proteins where the peptide maps is to big, we will have an error in the permutations.
+        if len(protein_accession_list) > 10:
+            return None
+
         solutions = get_permutations_of_original_list(protein_accession_list)
         for accession in solutions:
             accession_string = ";".join(accession)
@@ -418,6 +433,7 @@ class MztabHandler:
                 if PROTEIN_DETAILS not in line:
                     es = dict(zip(protein_columns, protein_info))
                     protein = fetch_protein_from_mztab_line(pos, es)
+                    protein["accession"] = standardize_protein_string_accession(protein["accession"], sorted=True)
                     self._protein_details[protein["accession"]] = [protein["score"], pos]
             elif line.startswith("PSH"):
                 print("-- All peptides have been read, starting psm section -- ")
