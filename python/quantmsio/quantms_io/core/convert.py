@@ -6,6 +6,7 @@ import re
 import codecs
 from quantms_io.core.mztab import fetch_modifications_from_mztab_line, get_petidoform_msstats_notation
 from quantms_io.utils.pride_utils import clean_peptidoform_sequence
+from quantms_io.core.openms import OpenMSHandler
 '''
 example
 Convert = FeatureConvertor('lfq',schema)
@@ -265,17 +266,19 @@ class FeatureConvertor():
         # check opt_global_cv_MS:1000889_peptidoform_sequence
         if 'opt_global_cv_MS:1000889_peptidoform_sequence' not in pep.columns:
             modifications = self.__get_modifications(mzTab_path)
-            pep['opt_global_cv_MS:1000889_peptidoform_sequence'] = pep[['modifications', 'sequence']].apply(lambda row: get_petidoform_msstats_notation(row['sequence'], row['modifications'], modifications), axis=1)
+            pep.loc[:,'opt_global_cv_MS:1000889_peptidoform_sequence'] = pep[['modifications', 'sequence']].apply(lambda row: get_petidoform_msstats_notation(row['sequence'], row['modifications'], modifications), axis=1)
         
         # check spectra_ref
         if 'spectra_ref' not in pep.columns:
             pep.loc[:,'scan_number'] = None
             pep.loc[:,'spectra_ref'] = None
         else:
-            pep['scan_number'] = pep['spectra_ref'].apply(lambda x: re.findall(r'scan=(\d+)',x)[0])
+            pep.loc[:,'scan_number'] = pep['spectra_ref'].apply(lambda x: re.findall(r'scan=(\d+)',x)[0])
             pep['spectra_ref'] = pep['spectra_ref'].apply(lambda x:self._ms_runs[x.split(":")[0]])
-        pep_msg = pep.groupby(['opt_global_cv_MS:1000889_peptidoform_sequence','charge']).max()
-        pep_msg['pep_msg'] = pep_msg[['best_search_engine_score[1]','spectra_ref','scan_number']].apply(lambda row: [row['best_search_engine_score[1]'],row['spectra_ref'],row['scan_number']],axis=1)
+        pep_msg = pep.iloc[pep.groupby(['opt_global_cv_MS:1000889_peptidoform_sequence','charge']).apply(lambda row: row['best_search_engine_score[1]'].idxmax())]
+        pep_msg = pep_msg.set_index(['opt_global_cv_MS:1000889_peptidoform_sequence','charge'])
+
+        pep_msg.loc[:,'pep_msg'] = pep_msg[['best_search_engine_score[1]','spectra_ref','scan_number']].apply(lambda row: [row['best_search_engine_score[1]'],row['spectra_ref'],row['scan_number']],axis=1)
         
         map_dict = pep_msg.to_dict()['pep_msg']
         return map_dict
@@ -286,15 +289,14 @@ class FeatureConvertor():
         '''
         psm = self.skip_and_load_csv(mzTab_path,'PSH',sep='\t')
         modifications = self.__get_modifications(mzTab_path)
-        #psm['spectra_ref'] = psm['spectra_ref'].apply(lambda x:ms_runs[x.split(":")[0]])
         if 'opt_global_cv_MS:1000889_peptidoform_sequence' not in psm.columns:
-            psm['opt_global_cv_MS:1000889_peptidoform_sequence'] = psm[['modifications', 'sequence']].apply(lambda row: get_petidoform_msstats_notation(row['sequence'], row['modifications'], modifications), axis=1)
+            psm.loc[:,'opt_global_cv_MS:1000889_peptidoform_sequence'] = psm[['modifications', 'sequence']].apply(lambda row: get_petidoform_msstats_notation(row['sequence'], row['modifications'], modifications), axis=1)
         for key,df in psm.groupby(['opt_global_cv_MS:1000889_peptidoform_sequence','charge']):
             if key not in map_dict.keys():
                 map_dict[key] = [None,None,None]
             
             if pd.isna(map_dict[key][1]):
-                df['scan_number'] = df['spectra_ref'].apply(lambda x: re.findall(r'scan=(\d+)',x)[0])
+                df.loc[:,'scan_number'] = df['spectra_ref'].apply(lambda x: re.findall(r'scan=(\d+)',x)[0])
                 df['spectra_ref'] = df['spectra_ref'].apply(lambda x:self._ms_runs[x.split(":")[0]])
                 if 'opt_global_q-value_score' in df.columns:
                     map_dict[key][1] = df[df['opt_global_q-value_score'] == df['opt_global_q-value_score'].max()]['spectra_ref'].values[0]
@@ -347,9 +349,9 @@ class FeatureConvertor():
         map key: PeptideSequence,charge
         '''
         if self.experiment_type == 'LFQ':
-            msstats_in["spectral_count"] = msstats_in[['PeptideSequence','PrecursorCharge','Reference']].apply(lambda row: spectra_count_dict[(row['PeptideSequence'], row['PrecursorCharge'],row['Reference'])], axis=1)
+            msstats_in.loc[:,"spectral_count"] = msstats_in[['PeptideSequence','PrecursorCharge','Reference']].apply(lambda row: spectra_count_dict[(row['PeptideSequence'], row['PrecursorCharge'],row['Reference'])], axis=1)
         else:
-            msstats_in["spectral_count"] = msstats_in[['PeptideSequence','Charge','Reference']].apply(lambda row: spectra_count_dict[(row['PeptideSequence'], row['Charge'],row['Reference'])], axis=1)
+            msstats_in.loc[:,"spectral_count"] = msstats_in[['PeptideSequence','Charge','Reference']].apply(lambda row: spectra_count_dict[(row['PeptideSequence'], row['Charge'],row['Reference'])], axis=1)
         map_features = ["global_qvalue","best_psm_reference_file_name","best_psm_scan_number","protein_start_positions","protein_end_positions",'unique','modifications',"posterior_error_probability","is_decoy","calc_mass_to_charge","exp_mass_to_charge"]
         for i,feature in enumerate(map_features):
             if self.experiment_type == 'LFQ':
@@ -357,10 +359,10 @@ class FeatureConvertor():
             else:
                 msstats_in.loc[:,feature] = msstats_in[['PeptideSequence','Charge']].apply(lambda row:map_dict[(row['PeptideSequence'],row['Charge'])][i],axis=1)   
         peptide_score_name = self._score_names['peptide_score']
-        msstats_in["id_scores"] = msstats_in[["global_qvalue","posterior_error_probability"]].apply(lambda row: peptide_score_name + ':' + str(row['global_qvalue']) +',' + 'Best PSM PEP:' + str(row['posterior_error_probability']),axis=1)
+        msstats_in.loc[:,"id_scores"] = msstats_in[["global_qvalue","posterior_error_probability"]].apply(lambda row: peptide_score_name + ':' + str(row['global_qvalue']) +',' + 'Best PSM PEP:' + str(row['posterior_error_probability']),axis=1)
         return msstats_in
         
-    def merge_mzTab_and_sdrf_to_msstats_in(self, mzTab_path, msstats_path, sdrf_path, output_path, msstats_chunksize=500000):
+    def merge_mzTab_and_sdrf_to_msstats_in(self, mzTab_path, msstats_path, sdrf_path, output_path, mzml_directory=None, msstats_chunksize=1000000):
         '''
         pep_path: the output file of function merge_psm_to_pep 
         msstats_path: msstats_in file path
@@ -377,8 +379,8 @@ class FeatureConvertor():
         for msstats_in in msstats_ins:
             msstats_in['Reference'] = msstats_in['Reference'].apply(
                 lambda x: x.split(".")[0])
-            msstats_in['protein_global_qvalue'] =  msstats_in['ProteinName'].apply(lambda x: self.__handle_protein_map(protein_map, x))
-            msstats_in['sequence'] = msstats_in['PeptideSequence'].apply(lambda x: clean_peptidoform_sequence(x))
+            msstats_in.loc[:,'protein_global_qvalue'] =  msstats_in['ProteinName'].apply(lambda x: self.__handle_protein_map(protein_map, x))
+            msstats_in.loc[:,'sequence'] = msstats_in['PeptideSequence'].apply(lambda x: clean_peptidoform_sequence(x))
             if self.experiment_type != 'LFQ':
                 no_tmt_usecols = [
                     col for col in self._tmt_msstats_usecols if col not in msstats_in.columns]
@@ -398,7 +400,12 @@ class FeatureConvertor():
                 msstats_in = msstats_in[self._tmt_msstats_usecols]
                 self._tmt_msstats_usecols.remove('RetentionTime')
                 msstats_in = self._map_msstats_in(msstats_in,map_dict,spectra_count_dict)
-                self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in, output_path, header, msstats_chunksize)
+                if mzml_directory:
+                    self.mzml_directory = mzml_directory
+                    mzml = OpenMSHandler()
+                    msstats_in[['mz', 'array_intensity', 'num_peaks']] = msstats_in[['best_psm_reference_file_name', 'best_psm_scan_number']].apply(
+                    lambda x: self._map_spectrum_mz(x['best_psm_reference_file_name'], x['best_psm_scan_number'], mzml), axis=1, result_type="expand")
+                self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in, output_path, header)
                 header = False
             else:
                 no_lfq_usecols = [
@@ -410,10 +417,15 @@ class FeatureConvertor():
                         msstats_in.loc[:, col] = None
                 msstats_in = msstats_in[self._lfq_msstats_usecols]
                 msstats_in = self._map_msstats_in(msstats_in,map_dict,spectra_count_dict)
-                self._merge_sdrf_to_msstats_in(sdrf_path,msstats_in, output_path, header, msstats_chunksize)
+                if mzml_directory:
+                    self.mzml_directory = mzml_directory
+                    mzml = OpenMSHandler()
+                    msstats_in[['mz', 'array_intensity', 'num_peaks']] = msstats_in[['best_psm_reference_file_name', 'best_psm_scan_number']].apply(
+                    lambda x: self._map_spectrum_mz(x['best_psm_reference_file_name'], x['best_psm_scan_number'], mzml), axis=1, result_type="expand")
+                self._merge_sdrf_to_msstats_in(sdrf_path,msstats_in, output_path, header)
                 header = False
 
-    def _merge_sdrf_to_msstats_in(self, sdrf_path, msstats_in, output_path, header, msstats_chunksize):
+    def _merge_sdrf_to_msstats_in(self, sdrf_path, msstats_in, output_path, header):
         '''
         sdrf_path:
         msstats_in: dataframe of msstats
@@ -463,23 +475,13 @@ class FeatureConvertor():
         f.close()
         return ms_runs
 
-    # optional
-    def extract_optional_spectrum_featrue(self, res_df, mzml_directory):
-
-        self.mzml_directory = mzml_directory
-        res_df[['mz', 'array_intensity', 'num_peaks']] = res_df[['reference_file_name', 'scan_number']].apply(
-            lambda x: self._map_spectrum_mz(x['reference_file_name'], x['scan_number']), axis=1, result_type="expand")
-
-        return res_df
-
-    def _map_spectrum_mz(self, mz_path, scan):
-        # TODO: Replace by OpenMSHandler function
-        # scan = "controllerType=0 controllerNumber=1 scan=" + str(scan)
-        # mz_path = self.mzml_directory + '/' + mz_path + '.mzml'
-        # spectral = mzml.MzML(mz_path).get_by_id(scan)
-        # mz_array = spectral["m/z array"]
-        # array_intensity = spectral['intensity array']
-        return [], [], 0
+    def _map_spectrum_mz(self, mz_path, scan,mzml):
+        if self.mzml_directory.endswith('/'):
+            mz_path = self.mzml_directory + mz_path + '.mzML'
+        else:
+            mz_path = self.mzml_directory + '/' + mz_path + '.mzML'
+        mz_array,array_intensity = mzml.get_spectrum_from_scan(mz_path,int(scan))
+        return mz_array,array_intensity, 0
 
     def __split_start_or_end(self, value):
         if pd.isna(value):
@@ -525,9 +527,11 @@ class FeatureConvertor():
         else:
             res.loc[:,'retention_time'] = None
         
+        if 'num_peaks' not in res.columns:
+            res.loc[:,'num_peaks'] = None
+            res.loc[:,'mz'] = None
+            res.loc[:,'intensity_array'] = None
+
         res.loc[:,'gene_accessions'] = None
         res.loc[:,'gene_names'] = None
-        res.loc[:,'num_peaks'] = None
-        res.loc[:,'mz'] = None
-        res.loc[:,'intensity_array'] = None
         return pa.Table.from_pandas(res, schema=self.schema)
