@@ -25,21 +25,8 @@ from quantms_io.core.parquet_handler import ParquetHandler
 from quantms_io.core.sdrf import SDRFHandler
 from quantms_io.utils.constants import TMT_CHANNELS, ITRAQ_CHANNEL
 from quantms_io.utils.pride_utils import clean_peptidoform_sequence, compare_protein_lists, \
-    standardize_protein_list_accession, standardize_protein_string_accession, get_modifications_object_from_mztab_line
-
-
-def get_quantmsio_modifications(modifications_string: str, modification_definition: dict) -> dict:
-    """
-    Get the modifications in quantms.io format from a string of modifications in mztab format.
-    :param modifications_string: Modifications string in mztab format
-    :param modification_definition: modification definition
-    :return: modifications in quantms.io format
-    """
-    if modifications_string is None or modifications_string == "null":
-        return {}
-
-    return get_modifications_object_from_mztab_line(modification_string=modifications_string,
-                                                    modifications_definition=modification_definition)
+    standardize_protein_list_accession, standardize_protein_string_accession, get_modifications_object_from_mztab_line, \
+    get_quantmsio_modifications
 
 
 def get_additional_properties_from_sdrf(feature_dict: dict, experiment_type: str, sdrf_samples: dict) -> dict:
@@ -212,7 +199,7 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
         "best_psm_reference_file_name": peptide_ms_run,
         "best_psm_scan_number": peptide_scan_number,
         "exp_mass_to_charge": float64(experimental_mass),
-        "mz": None,
+        "mz_array": None,
         "intensity_array": None,
         "num_peaks": None,
         "gene_accessions": None,
@@ -290,7 +277,7 @@ class FeatureHandler(ParquetHandler):
                                metadata={"description": "file name of the reference file for the best PSM"}),
                       pa.field("best_psm_scan_number", pa.string(),
                                metadata={"description": "scan number of the best PSM"}),
-                      pa.field("mz", pa.list_(pa.float64()),
+                      pa.field("mz_array", pa.list_(pa.float64()),
                                metadata={"description": "mass-to-charge ratio values"}),
                       pa.field("intensity_array", pa.list_(pa.float64()),
                                metadata={"description": "intensity array values"}),
@@ -310,7 +297,7 @@ class FeatureHandler(ParquetHandler):
 
     def _create_schema(self):
         """
-        Create the schema for the protein file. The schema is defined in the docs folder of this repository.
+        Create the schema for the feature file. The schema is defined in the docs folder of this repository.
         (https://github.com/bigbio/quantms.io/blob/main/docs/FEATURE.md)
         """
         return pa.schema(FeatureHandler.FEATURE_FIELDS, metadata={"description": "Feature file in quantms.io format"})
