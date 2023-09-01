@@ -475,7 +475,7 @@ class FeatureConvertor():
         f.close()
         return ms_runs
 
-    def _map_spectrum_mz(self, mz_path, scan,mzml):
+    def _map_spectrum_mz(self, mz_path, scan, mzml):
         if self.mzml_directory.endswith('/'):
             mz_path = self.mzml_directory + mz_path + '.mzML'
         else:
