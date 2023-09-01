@@ -3,9 +3,44 @@ import pandas as pd
 
 from quantms_io.core.mztab import MztabHandler
 import pyarrow as pa
-
+import os
+import pyarrow.parquet as pq
 from quantms_io.core.parquet_handler import ParquetHandler
 from quantms_io.utils.pride_utils import standardize_protein_list_accession, get_quantmsio_modifications
+
+def extract_len(fle, header):
+        map_tag = {
+            "PSH": 'PSM',
+            "PEH": 'PEP',
+            'PRH': 'PRT'
+        }
+        if os.stat(fle).st_size == 0:
+            raise ValueError("File is empty")
+        f = open(fle)
+        pos = 0
+        line = f.readline()
+        while line.split("\t")[0] != header:
+            pos = f.tell()
+            line = f.readline()
+        line = f.readline()
+        fle_len = 0
+        while line.split("\t")[0] == map_tag[header]:
+            fle_len += 1
+            line = f.readline()
+        f.close()
+        return fle_len,pos
+
+def get_psm_in_batches(mztab_file:str, batch_size:int) -> int:
+    '''
+    return batches
+    '''
+    total_len, _ = extract_len(mztab_file,'PSH')
+    if total_len <= batch_size:
+        return 1
+    elif total_len % batch_size != 0:
+        return total_len // batch_size + 1
+    else:
+        return total_len // batch_size
 
 
 class PSMHandler(ParquetHandler):
@@ -75,7 +110,7 @@ class PSMHandler(ParquetHandler):
     def _create_psm_table(self, psm_list: list) -> pa.Table:
         return pa.Table.from_pandas(pd.DataFrame(psm_list), schema=self.schema)
 
-    def convert_mztab_to_feature(self, mztab_path: str, parquet_path: str = None):
+    def convert_mztab_to_feature(self, mztab_path: str, parquet_path: str = None,batch_size:int = 100000):
         """
         Convert a mzTab file to a feature file
         :param mztab_path: path to the mzTab file
@@ -87,8 +122,37 @@ class PSMHandler(ParquetHandler):
         mztab_handler = MztabHandler(mztab_file=mztab_path)
         mztab_handler.create_mztab_psm_iterator(mztab_path)
         psm_list = []
+        batches = get_psm_in_batches(mztab_path,batch_size)
+        batch_count = 1
+        pqwriter = None
+
         for it in iter(mztab_handler.read_next_psm, None):
             psm_list.append(self._transform_psm_from_mztab(psm=it, mztab_handler=mztab_handler))
+            print(it["sequence"] + "---" + it["accession"])
+            #batches > 1
+            if len(psm_list) == batch_size and batch_count < batches:
+                feature_table = self._create_psm_table(psm_list)
+                psm_list = []
+                batch_count += 1
+                if not pqwriter:
+                    pqwriter = pq.ParquetWriter(self.parquet_path, feature_table.schema)
+                pqwriter.write_table(feature_table)
+        #batches = 1
+        if batch_count == 1:
+            feature_table = self._create_psm_table(psm_list)
+            pqwriter = pq.ParquetWriter(self.parquet_path, feature_table.schema)
+            pqwriter.write_table(feature_table)
+        # final batch
+        else:
+            feature_table = self._create_psm_table(psm_list)
+            pqwriter.write_table(feature_table)
+        if pqwriter:
+            pqwriter.close()
+
+            #print(it)
+
+        #feature_table = self._create_psm_table(psm_list)
+        #self.write_single_file_parquet(feature_table, parquet_output=self.parquet_path, write_metadata=True)
             print(it["sequence"] + "---" + it["accession"])
 
         feature_table = self._create_psm_table(psm_list)

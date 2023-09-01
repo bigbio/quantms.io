@@ -3,6 +3,7 @@ import pyarrow as pa
 import pandas as pd
 import numpy as np
 import re
+import pyarrow.parquet as pq
 import codecs
 from quantms_io.core.mztab import fetch_modifications_from_mztab_line
 from quantms_io.utils.pride_utils import clean_peptidoform_sequence, get_petidoform_msstats_notation
@@ -116,7 +117,7 @@ class FeatureConvertor():
         self._pep_columns = line.split('\n')[0].split('\t')
 
     # extract csv len
-    def __extract_len(self, fle, header):
+    def _extract_len(self, fle, header):
         map_tag = {
             "PSH": 'PSM',
             "PEH": 'PEP',
@@ -153,7 +154,7 @@ class FeatureConvertor():
             return self.__load_second(fle, header, **kwargs)
         if self._mzTab_file == fle and self._prt_pos != None and header == 'PRH':
             return self.__load_second(fle, header, **kwargs)
-        fle_len,pos = self.__extract_len(fle, header)
+        fle_len,pos = self._extract_len(fle, header)
         if os.stat(fle).st_size == 0:
             raise ValueError("File is empty")
         f = open(fle)
@@ -420,7 +421,7 @@ class FeatureConvertor():
                 if mzml_directory:
                     self.mzml_directory = mzml_directory
                     mzml = OpenMSHandler()
-                    msstats_in[['mz', 'array_intensity', 'num_peaks']] = msstats_in[['best_psm_reference_file_name', 'best_psm_scan_number']].apply(
+                    msstats_in[['mz_array', 'array_intensity', 'num_peaks']] = msstats_in[['best_psm_reference_file_name', 'best_psm_scan_number']].apply(
                     lambda x: self._map_spectrum_mz(x['best_psm_reference_file_name'], x['best_psm_scan_number'], mzml), axis=1, result_type="expand")
                 self._merge_sdrf_to_msstats_in(sdrf_path,msstats_in, output_path, header)
                 header = False
@@ -475,7 +476,7 @@ class FeatureConvertor():
         f.close()
         return ms_runs
 
-    def _map_spectrum_mz(self, mz_path, scan,mzml):
+    def _map_spectrum_mz(self, mz_path, scan, mzml):
         if self.mzml_directory.endswith('/'):
             mz_path = self.mzml_directory + mz_path + '.mzML'
         else:
@@ -493,11 +494,10 @@ class FeatureConvertor():
         else:
             return [int(value)]
 
-    def convert_to_parquet(self, res_path):
+    def convert_to_parquet(self, res):
         '''
-        return: parquet
+        return: parquet table
         '''
-        res = pd.read_csv(res_path,sep='\t')
         res['id_scores'] = res['id_scores'].str.split(',')
         res['sequence'] = res['sequence'].astype(str)
         res['protein_accessions'] = res['protein_accessions'].str.split(",")
@@ -529,9 +529,27 @@ class FeatureConvertor():
         
         if 'num_peaks' not in res.columns:
             res.loc[:,'num_peaks'] = None
-            res.loc[:,'mz'] = None
+            res.loc[:,'mz_array'] = None
             res.loc[:,'intensity_array'] = None
 
         res.loc[:,'gene_accessions'] = None
         res.loc[:,'gene_names'] = None
+
         return pa.Table.from_pandas(res, schema=self.schema)
+
+    def write_parquet(self,res_path,parquet_path,chunksize):
+        '''
+        res_path: Merge files path
+        parquet_path: patquet output path
+        chunksize: batch size
+        '''
+        pqwriter = None
+        for i, df in enumerate(pd.read_csv(res_path ,sep='\t', chunksize=chunksize)):
+            table = self.convert_to_parquet(df)
+            if i == 0:
+            # create a parquet write object giving it an output file
+                pqwriter = pq.ParquetWriter(parquet_path, table.schema)            
+            pqwriter.write_table(table)
+        # close the parquet writer
+        if pqwriter:
+            pqwriter.close()

@@ -27,6 +27,17 @@ from quantms_io.utils.pride_utils import clean_peptidoform_sequence, compare_pro
     standardize_protein_list_accession, standardize_protein_string_accession, get_modifications_object_from_mztab_line, \
     get_quantmsio_modifications
 
+def get_msstats_in_batches(msstats_file:str, batch_size:int) -> int:
+    '''
+    return batches
+    '''
+    total_len = sum(1 for _ in open(msstats_file)) - 1 # neglect header
+    if total_len <= batch_size:
+        return 1
+    elif total_len % batch_size != 0:
+        return total_len // batch_size + 1
+    else:
+        return total_len // batch_size
 
 def get_additional_properties_from_sdrf(feature_dict: dict, experiment_type: str, sdrf_samples: dict) -> dict:
     if 'FragmentIon' not in feature_dict:  # FragmentIon is not in the MSstats file object if the experiment is label free
@@ -312,6 +323,7 @@ class FeatureHandler(ParquetHandler):
     def convert_mztab_msstats_to_feature(self, msstats_file: str, sdrf_file: str, mztab_file: str,
                                          consesusxml_file: str = None,
                                          mzml_directory:str = None,
+                                         batch_size: int = 100000,
                                          use_cache: bool = False):
         """
         Convert a MSstats input file and mztab into a quantms.io file format.
@@ -340,6 +352,8 @@ class FeatureHandler(ParquetHandler):
             feature_list = []
 
             # Read the MSstats file line by line and convert it to a quantms.io file feature format
+            batches = get_msstats_in_batches(msstats_file,batch_size)
+            batch_count = 1
             with open(msstats_file, "r") as msstats_file_handler:
                 line = msstats_file_handler.readline()
                 if "Protein" in line:
@@ -348,6 +362,7 @@ class FeatureHandler(ParquetHandler):
                 else:
                     raise Exception("The MSstats file does not have the expected header")
                 line = msstats_file_handler.readline()
+                pqwriter = None
                 while line.rstrip() != "":
                     line = line.rstrip()
                     msstats_values = line.split(",")
@@ -357,11 +372,30 @@ class FeatureHandler(ParquetHandler):
                                                              intensity_map)
                     if msstats_feature is not None:
                         feature_list.append(msstats_feature)
+                    # batches > 1
+                    if len(feature_list) == batch_size and batch_count < batches:
+                        feature_table = self.create_feature_table(feature_list)
+                        feature_list = []
+                        batch_count += 1
+                        if not pqwriter:
+                            pqwriter = pq.ParquetWriter(self.parquet_path, feature_table.schema)
+                        pqwriter.write_table(feature_table)
                     # feature_table = self.create_feature_table([msstats_feature])
                     # print(msstats_feature)
                     line = msstats_file_handler.readline()
+                #batches = 1
+                if batch_count == 1:
+                    feature_table = self.create_feature_table(feature_list)
+                    pqwriter = pq.ParquetWriter(self.parquet_path, feature_table.schema)
+                    pqwriter.write_table(feature_table)
+                # final batch
+                else:
+                    feature_table = self.create_feature_table(feature_list)
+                    pqwriter.write_table(feature_table)
+                if pqwriter:
+                    pqwriter.close()
                     # Create a feature table
-            feature_table = self.create_feature_table(feature_list)
+            #feature_table = self.create_feature_table(feature_list)
             # Write the feature table to a parquet file
             mztab_handler.close()
         else:
@@ -369,13 +403,13 @@ class FeatureHandler(ParquetHandler):
             Convert.merge_mzTab_and_sdrf_to_msstats_in(mztab_file, msstats_file, sdrf_file,
                                                        'msstats_pep_psm_sdrf_merge.tsv', mzml_directory)
             try:
-                feature_table = Convert.convert_to_parquet('msstats_pep_psm_sdrf_merge.tsv')
+                Convert.write_parquet('msstats_pep_psm_sdrf_merge.tsv',self.parquet_path,batch_size)
             except Exception as e:
                 print(e)
             finally:
                 os.remove('msstats_pep_psm_sdrf_merge.tsv')
 
-        self.write_single_file_parquet(feature_table, parquet_output=self.parquet_path, write_metadata=True)
+        #self.write_single_file_parquet(feature_table, parquet_output=self.parquet_path, write_metadata=True)
 
     def describe_schema(self):
         schema_description = []
