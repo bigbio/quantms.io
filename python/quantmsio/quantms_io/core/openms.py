@@ -1,6 +1,6 @@
+import numpy as np
 import pyopenms as oms
 from pyopenms import SpectrumLookup
-from scipy.linalg._solve_toeplitz import float64
 
 
 class OpenMSHandler:
@@ -66,7 +66,7 @@ class OpenMSHandler:
         intensity_map = {}
         for index, row in df.iterrows():
             for column in intensity_columns:
-                if float64(row[f'{column}']) > 0.0:
+                if np.float64(row[f'{column}']) > 0.0:
                     reference_file = column.split(".")[0]
                     key = row.sequence + ":_:" + str(row.charge) + ":_:" + reference_file
                     if key not in intensity_map:
@@ -88,7 +88,7 @@ class OpenMSHandler:
         intensity_map = {}
         for index, row in df.iterrows():
             for column in intensity_columns:
-                if float64(row[f'{column}']) > 0.0:
+                if np.float64(row[f'{column}']) > 0.0:
                     reference_file = row.file.split(".")[0]
                     channel = "TMT" + column.split("_")[1]  # A TMT channel has in consesusXML the following format:
                     # tmt10plex_129N -> TMT129N

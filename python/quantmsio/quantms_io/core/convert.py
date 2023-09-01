@@ -4,8 +4,8 @@ import pandas as pd
 import numpy as np
 import re
 import codecs
-from quantms_io.core.mztab import fetch_modifications_from_mztab_line, get_petidoform_msstats_notation
-from quantms_io.utils.pride_utils import clean_peptidoform_sequence
+from quantms_io.core.mztab import fetch_modifications_from_mztab_line
+from quantms_io.utils.pride_utils import clean_peptidoform_sequence, get_petidoform_msstats_notation
 from quantms_io.core.openms import OpenMSHandler
 '''
 example

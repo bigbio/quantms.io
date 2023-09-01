@@ -11,11 +11,10 @@ The feature file is defined in the docs folder of this repository.
 The feature file is a column format that defines the peptide quantification/identification and its relation with each
 sample in the experiment.
 """
-
+import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pandas as pd
-from scipy.linalg._solve_toeplitz import float64
 import os
 from quantms_io.core.convert import FeatureConvertor
 
@@ -25,21 +24,8 @@ from quantms_io.core.parquet_handler import ParquetHandler
 from quantms_io.core.sdrf import SDRFHandler
 from quantms_io.utils.constants import TMT_CHANNELS, ITRAQ_CHANNEL
 from quantms_io.utils.pride_utils import clean_peptidoform_sequence, compare_protein_lists, \
-    standardize_protein_list_accession, standardize_protein_string_accession, get_modifications_object_from_mztab_line
-
-
-def get_quantmsio_modifications(modifications_string: str, modification_definition: dict) -> dict:
-    """
-    Get the modifications in quantms.io format from a string of modifications in mztab format.
-    :param modifications_string: Modifications string in mztab format
-    :param modification_definition: modification definition
-    :return: modifications in quantms.io format
-    """
-    if modifications_string is None or modifications_string == "null":
-        return {}
-
-    return get_modifications_object_from_mztab_line(modification_string=modifications_string,
-                                                    modifications_definition=modification_definition)
+    standardize_protein_list_accession, standardize_protein_string_accession, get_modifications_object_from_mztab_line, \
+    get_quantmsio_modifications
 
 
 def get_additional_properties_from_sdrf(feature_dict: dict, experiment_type: str, sdrf_samples: dict) -> dict:
@@ -98,7 +84,7 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
 
     posterior_error_probability = peptide_indexed["posterior_error_probability"]  # Get posterior error probability
     if posterior_error_probability is not None:
-        posterior_error_probability = float64(posterior_error_probability)
+        posterior_error_probability = np.float64(posterior_error_probability)
 
     # Get if decoy or not
     peptide_mztab_qvalue_decoy = peptide_indexed["is_decoy"]  # Peptide q-value decoy index 2
@@ -168,7 +154,7 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
     # TODO: get retention time from mztab file. The retention time in the mzTab peptide level is not clear how is
     # related to the retention time in the MSstats file. If the consensusxml file is provided, we can get the retention
     # time from the consensusxml file.
-    rt = None if "RetentionTime" not in feature_dict else float64(feature_dict["RetentionTime"])
+    rt = None if "RetentionTime" not in feature_dict else np.float64(feature_dict["RetentionTime"])
     if intensity_map is not None:
         key = None
         if "LABEL FREE" in feature_dict["Channel"]:
@@ -178,7 +164,7 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
                 "Channel"]
         if key is not None and key in intensity_map:
             consensus_intensity = intensity_map[key]["intensity"]
-            if abs(consensus_intensity - float64(feature_dict["Intensity"])) < 0.1:
+            if abs(consensus_intensity - np.float64(feature_dict["Intensity"])) < 0.1:
                 rt = rt if rt is not None else intensity_map[key]["rt"]
                 experimental_mass = intensity_map[key]["mz"]
 
@@ -187,17 +173,17 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
         "protein_accessions": protein_accessions_list,
         "protein_start_positions": start_positions,
         "protein_end_positions": end_positions,
-        "protein_global_qvalue": float64(protein_qvalue),
+        "protein_global_qvalue": np.float64(protein_qvalue),
         "unique": unique,
         "modifications": modification_list,
         "retention_time": rt,
         "charge": int(charge),
-        "calc_mass_to_charge": float64(calculated_mass),
+        "calc_mass_to_charge": np.float64(calculated_mass),
         "peptidoform": peptide_indexed["peptidoform"],  # Peptidoform in proforma notation
         "posterior_error_probability": posterior_error_probability,
-        "global_qvalue": float64(peptide_qvalue),
+        "global_qvalue": np.float64(peptide_qvalue),
         "is_decoy": int(peptide_mztab_qvalue_decoy),
-        "intensity": float64(feature_dict["Intensity"]),
+        "intensity": np.float64(feature_dict["Intensity"]),
         "spectral_count": spectral_count,
         "sample_accession": feature_dict["SampleName"],
         "condition": feature_dict["Condition"],
@@ -211,8 +197,8 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
         "reference_file_name": feature_dict["Reference"],
         "best_psm_reference_file_name": peptide_ms_run,
         "best_psm_scan_number": peptide_scan_number,
-        "exp_mass_to_charge": float64(experimental_mass),
-        "mz": None,
+        "exp_mass_to_charge": np.float64(experimental_mass),
+        "mz_array": None,
         "intensity_array": None,
         "num_peaks": None,
         "gene_accessions": None,
@@ -290,7 +276,7 @@ class FeatureHandler(ParquetHandler):
                                metadata={"description": "file name of the reference file for the best PSM"}),
                       pa.field("best_psm_scan_number", pa.string(),
                                metadata={"description": "scan number of the best PSM"}),
-                      pa.field("mz", pa.list_(pa.float64()),
+                      pa.field("mz_array", pa.list_(pa.float64()),
                                metadata={"description": "mass-to-charge ratio values"}),
                       pa.field("intensity_array", pa.list_(pa.float64()),
                                metadata={"description": "intensity array values"}),
@@ -310,7 +296,7 @@ class FeatureHandler(ParquetHandler):
 
     def _create_schema(self):
         """
-        Create the schema for the protein file. The schema is defined in the docs folder of this repository.
+        Create the schema for the feature file. The schema is defined in the docs folder of this repository.
         (https://github.com/bigbio/quantms.io/blob/main/docs/FEATURE.md)
         """
         return pa.schema(FeatureHandler.FEATURE_FIELDS, metadata={"description": "Feature file in quantms.io format"})
