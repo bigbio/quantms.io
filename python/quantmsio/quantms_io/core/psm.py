@@ -87,11 +87,9 @@ class PSMHandler(ParquetHandler):
         mztab_handler = MztabHandler(mztab_file=mztab_path)
         mztab_handler.create_mztab_psm_iterator(mztab_path)
         psm_list = []
-        while (it := mztab_handler.read_next_psm()) is not None:
-            if it["sequence"] == "HAVSEGTK":
-                print(it)
+        for it in iter(mztab_handler.read_next_psm, None):
             psm_list.append(self._transform_psm_from_mztab(psm=it, mztab_handler=mztab_handler))
-            print(it)
+            print(it["sequence"] + "---" + it["accession"])
 
         feature_table = self._create_psm_table(psm_list)
         self.write_single_file_parquet(feature_table, parquet_output=self.parquet_path, write_metadata=True)
