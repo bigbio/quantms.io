@@ -110,10 +110,12 @@ class PSMHandler(ParquetHandler):
     def _create_psm_table(self, psm_list: list) -> pa.Table:
         return pa.Table.from_pandas(pd.DataFrame(psm_list), schema=self.schema)
 
-    def convert_mztab_to_feature(self, mztab_path: str, parquet_path: str = None,batch_size:int = 100000):
+    def convert_mztab_to_feature(self, mztab_path: str, parquet_path: str = None, batch_size: int = 100000):
         """
-        Convert a mzTab file to a feature file
+        convert a mzTab file to a feature file
         :param mztab_path: path to the mzTab file
+        :param parquet_path: path to the feature file
+        :param batch_size: number of psm to write in a single batch
         :return: path to the feature file
         """
         if parquet_path is not None:
@@ -124,7 +126,7 @@ class PSMHandler(ParquetHandler):
         psm_list = []
         batches = get_psm_in_batches(mztab_path,batch_size)
         batch_count = 1
-        pqwriter = None
+        pq_writer = None
 
         for it in iter(mztab_handler.read_next_psm, None):
             print(it["sequence"] + "---" + it["accession"])
@@ -133,20 +135,20 @@ class PSMHandler(ParquetHandler):
                 feature_table = self._create_psm_table(psm_list)
                 psm_list = []
                 batch_count += 1
-                if not pqwriter:
-                    pqwriter = pq.ParquetWriter(self.parquet_path, feature_table.schema)
-                pqwriter.write_table(feature_table)
+                if not pq_writer:
+                    pq_writer = pq.ParquetWriter(self.parquet_path, feature_table.schema)
+                pq_writer.write_table(feature_table)
         #batches = 1
         if batch_count == 1:
             feature_table = self._create_psm_table(psm_list)
-            pqwriter = pq.ParquetWriter(self.parquet_path, feature_table.schema)
-            pqwriter.write_table(feature_table)
+            pq_writer = pq.ParquetWriter(self.parquet_path, feature_table.schema)
+            pq_writer.write_table(feature_table)
         else: # final batch
             feature_table = self._create_psm_table(psm_list)
-            pqwriter.write_table(feature_table)
+            pq_writer.write_table(feature_table)
 
-        if pqwriter:
-            pqwriter.close()
+        if pq_writer:
+            pq_writer.close()
 
             #print(it)
 

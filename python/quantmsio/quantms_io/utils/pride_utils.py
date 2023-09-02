@@ -59,7 +59,7 @@ def get_key_peptide_combination(msstats_peptidoform: str, charge: str, reference
 
 def decompose_key_peptide_combination(key: str):
     """
-    Decompose the key for a peptide in mztab. The key is a combination of msstats_peptidoform,
+    decompose the key for a peptide in mztab. The key is a combination of msstats_peptidoform,
     charge and in some cases the reference file.
     :param key: key
     :return: sequence, modification, charge and retention time
@@ -70,7 +70,7 @@ def decompose_key_peptide_combination(key: str):
 
 def clean_peptidoform_sequence(sequence: str) -> str:
     """
-    Clean any peptidoform a proforma sequence or a msstats sequence. This function removes any modification from the
+    clean any peptidoform a proforma sequence or a msstats sequence. This function removes any modification from the
     sequence.
     :param sequence: sequence
     """
@@ -95,9 +95,10 @@ def compare_protein_lists(protein_list_1: list, protein_list_2: list) -> bool:
 
 def standardize_protein_string_accession(protein_string: str, sorted: bool = False) -> str:
     """
-    Standardize the protein string accession, in some cases the protein string accession is decided by commas
+    standardize the protein string accession, in some cases the protein string accession is decided by commas
     instead of semicolons.
     :param protein_string: protein string
+    :param sorted: sort the protein string
     :return: standardized protein string
     """
 
@@ -111,7 +112,7 @@ def standardize_protein_string_accession(protein_string: str, sorted: bool = Fal
 
 def standardize_protein_list_accession(protein_string: str) -> list:
     """
-    Get the list of protein accessions from a protein string join by semicolons.
+    get the list of protein accessions from a protein string join by semicolons.
     :param protein_string: protein string
     :return: list of protein accessions
     """
@@ -119,7 +120,7 @@ def standardize_protein_list_accession(protein_string: str) -> list:
 
 def parse_score_name_in_mztab(score_name_mztab_line: str) -> str:
     """
-    Parse the score name in mztab. The score name in mztab is a combination of the score name and the score type.
+    parse the score name in mztab. The score name in mztab is a combination of the score name and the score type.
     :param score_name_mztab_line: score name in mztab
     :return: score name
     """
@@ -133,7 +134,7 @@ def parse_score_name_in_mztab(score_name_mztab_line: str) -> str:
 
 def get_modifications_object_from_mztab_line(modification_string: str, modifications_definition: dict) -> dict:
     """
-    Get the modifications from a mztab line. This method is used to transform peptide + modification strings to
+    get the modifications from a mztab line. This method is used to transform peptide + modification strings to
     proteoform notations, for msstats notation and for proforma notation.
     :param modification_string: modification string
     :param modifications_definition: dictionary modifications definition
@@ -322,7 +323,7 @@ def fetch_peptide_from_mztab_line(pos: int, peptide_dict: dict, ms_runs: dict = 
 
 def fetch_protein_from_mztab_line(pos: int, protein_dict: dict):
     """
-    Get the protein from a mztab line include the post.
+    get the protein from a mztab line include the post.
     :param pos: position of the protein in the mztab file
     :param protein_dict: dictionary with the protein information
     :return: protein dictionary
@@ -417,7 +418,7 @@ def fetch_psm_from_mztab_line(pos: int, es: dict, ms_runs: dict = None, modifica
 
 def fetch_modifications_from_mztab_line(line: str, _modifications: dict) -> dict:
     """
-    Get the modifications from a mztab line. An mzTab modification could be a fixed or variable modification.
+    get the modifications from a mztab line. An mzTab modification could be a fixed or variable modification.
     The structure of a fixed is the following:
       MTD	fixed_mod[1]	[UNIMOD, UNIMOD:4, Carbamidomethyl, ]
       MTD	fixed_mod[1]-site	C
@@ -510,7 +511,7 @@ def get_peptidoform_proforma_version_in_mztab(peptide_sequence: str, modificatio
 
 def get_permutations_of_original_list(original_elems: list):
     """
-    Get all the posible list by permutating elements of an original list.
+    get all the posible list by permutating elements of an original list.
     :param original_elems
     :return: list of elements
     """

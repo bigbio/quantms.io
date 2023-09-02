@@ -20,7 +20,25 @@ parquet = Convert.convert_to_parquet("result_lfq.csv")
 from quantms_io.utils.constants import TMT_CHANNELS, ITRAQ_CHANNEL
 
 
-class FeatureInMemory():
+def get_modifications(mztab_path):
+    """
+    mzTab_path: mzTab file path
+    return: a dict about modifications
+    """
+    if os.stat(mztab_path).st_size == 0:
+        raise ValueError("File is empty")
+    f = codecs.open(mztab_path, 'r', 'utf-8')
+    line = f.readline()
+    mod_dict = {}
+    while line.split("\t")[0] == 'MTD':
+        if "_mod[" in line:
+            mod_dict = fetch_modifications_from_mztab_line(line, mod_dict)
+        line = f.readline()
+    f.close()
+    return mod_dict
+
+
+class FeatureInMemory:
 
     def __init__(self, experiment_type, schema):
         self.mzml_directory = None
@@ -158,10 +176,11 @@ class FeatureInMemory():
         return fle_len, pos
 
     def skip_and_load_csv(self, fle, header, **kwargs):
-        '''
+        """
         file: mzTab file
-        header: table tag #PSH PRH PEH
-        '''
+        :param fle: mzTab file
+        :param header table tag #PSH PRH PEH
+        """
         if self._mzTab_file == fle and self._psm_pos is not None and header == 'PSH':
             return self.__load_second(fle, header, **kwargs)
         if self._mzTab_file == fle and self._pep_pos is not None and header == 'PEH':
@@ -176,16 +195,16 @@ class FeatureInMemory():
         self.__set_table_config(header, fle_len, pos, fle)
         return pd.read_csv(f, nrows=fle_len, **kwargs)
 
-    def __get_spectra_count(self, mzTab_path, psm_chunksize):
-        '''
+    def __get_spectra_count(self, mztab_path, psm_chunksize):
+        """
         mzTab_path: mzTab file path
         psm_chunksize: the large of chunk
         return: a dict about piptie numbers
-        '''
+        """
         from collections import Counter
         counter = Counter()
         psms = self.skip_and_load_csv(
-            mzTab_path, 'PSH', sep='\t', chunksize=psm_chunksize)
+            mztab_path, 'PSH', sep='\t', chunksize=psm_chunksize)
         for psm in psms:
             psm['spectra_ref'] = psm['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
             spectra_dict = psm[['opt_global_cv_MS:1000889_peptidoform_sequence', 'charge', 'spectra_ref']].groupby(
@@ -193,38 +212,21 @@ class FeatureInMemory():
             counter.update(spectra_dict.to_dict())
         return counter
 
-    def __get_protein_map(self, mzTab_path):
-        '''
+    def __get_protein_map(self, mztab_path):
+        """
         return: a dict about protein score
-        '''
-        prt = self.skip_and_load_csv(mzTab_path, 'PRH', sep='\t', usecols=[
+        """
+        prt = self.skip_and_load_csv(mztab_path, 'PRH', sep='\t', usecols=[
             'accession', 'best_search_engine_score[1]'])
         prt_score = prt.groupby('accession').max()
         protein_map = prt_score.to_dict()['best_search_engine_score[1]']
         return protein_map
 
     @staticmethod
-    def __get_modifications(fle):
-        '''
-        return: a dict about modifications
-        '''
-        if os.stat(fle).st_size == 0:
-            raise ValueError("File is empty")
-        f = codecs.open(fle, 'r', 'utf-8')
-        line = f.readline()
-        mod_dict = {}
-        while line.split("\t")[0] == 'MTD':
-            if "_mod[" in line:
-                mod_dict = fetch_modifications_from_mztab_line(line, mod_dict)
-            line = f.readline()
-        f.close()
-        return mod_dict
-
-    @staticmethod
     def __get_score_names(fle):
-        '''
+        """
         return: a dict about search engine
-        '''
+        """
         if os.stat(fle).st_size == 0:
             raise ValueError("File is empty")
         f = codecs.open(fle, 'r', 'utf-8')
@@ -250,9 +252,9 @@ class FeatureInMemory():
 
     @staticmethod
     def __handle_protein_map(protein_map, key):
-        '''
+        """
         map protein score from accession
-        '''
+        """
         if key not in protein_map.keys():
             keys = key.split(',')
             for k in keys:
@@ -262,11 +264,11 @@ class FeatureInMemory():
         else:
             return protein_map[key]
 
-    def _extract_from_pep(self, mzTab_path):
-        '''
+    def _extract_from_pep(self, mztab_path):
+        """
         return: dict about pep_msg
-        '''
-        self.__extract_pep_columns(mzTab_path)
+        """
+        self.__extract_pep_columns(mztab_path)
         pep_usecols = ['opt_global_cv_MS:1000889_peptidoform_sequence', 'charge', 'best_search_engine_score[1]',
                        'spectra_ref']
         live_cols = [col for col in pep_usecols if col in self._pep_columns]
@@ -280,11 +282,11 @@ class FeatureInMemory():
         if 'charge' in not_cols or 'best_search_engine_score[1]' in not_cols:
             raise Exception("The peptide table don't have best_search_engine_score[1] or charge columns")
 
-        pep = self.skip_and_load_csv(mzTab_path, 'PEH', sep='\t', usecols=live_cols)
+        pep = self.skip_and_load_csv(mztab_path, 'PEH', sep='\t', usecols=live_cols)
 
         # check opt_global_cv_MS:1000889_peptidoform_sequence
         if 'opt_global_cv_MS:1000889_peptidoform_sequence' not in pep.columns:
-            modifications = self.__get_modifications(mzTab_path)
+            modifications = get_modifications(mztab_path)
             pep.loc[:, 'opt_global_cv_MS:1000889_peptidoform_sequence'] = pep[['modifications', 'sequence']].apply(
                 lambda row: get_petidoform_msstats_notation(row['sequence'], row['modifications'], modifications),
                 axis=1)
@@ -306,12 +308,12 @@ class FeatureInMemory():
         map_dict = pep_msg.to_dict()['pep_msg']
         return map_dict
 
-    def _extract_from_psm_to_pep_msg(self, mzTab_path, map_dict):
-        '''
+    def _extract_from_psm_to_pep_msg(self, mztab_path, map_dict):
+        """
         return dict about pep and psm msg
-        '''
-        psm = self.skip_and_load_csv(mzTab_path, 'PSH', sep='\t')
-        modifications = self.__get_modifications(mzTab_path)
+        """
+        psm = self.skip_and_load_csv(mztab_path, 'PSH', sep='\t')
+        modifications = get_modifications(mztab_path)
         if 'opt_global_cv_MS:1000889_peptidoform_sequence' not in psm.columns:
             psm.loc[:, 'opt_global_cv_MS:1000889_peptidoform_sequence'] = psm[['modifications', 'sequence']].apply(
                 lambda row: get_petidoform_msstats_notation(row['sequence'], row['modifications'], modifications),
@@ -361,16 +363,16 @@ class FeatureInMemory():
 
         return map_dict
 
-    def _extract_psm_pep_msg(self, mzTab_path):
+    def _extract_psm_pep_msg(self, mztab_path):
         """
         mzTab_path: mzTab file path
         return: dict about pep and psm msg
         """
         # load ms_runs
-        self._ms_runs = self.extract_ms_runs(mzTab_path)
-        self._score_names = self.__get_score_names(mzTab_path)
-        map_dict = self._extract_from_pep(mzTab_path)
-        map_dict = self._extract_from_psm_to_pep_msg(mzTab_path, map_dict)
+        self._ms_runs = self.extract_ms_runs(mztab_path)
+        self._score_names = self.__get_score_names(mztab_path)
+        map_dict = self._extract_from_pep(mztab_path)
+        map_dict = self._extract_from_psm_to_pep_msg(mztab_path, map_dict)
 
         return map_dict
 
@@ -411,7 +413,7 @@ class FeatureInMemory():
                                                              str(row['posterior_error_probability']), axis=1))
         return msstats_in
 
-    def merge_mzTab_and_sdrf_to_msstats_in(self, mzTab_path, msstats_path, sdrf_path, output_path, mzml_directory=None,
+    def merge_mztab_and_sdrf_to_msstats_in(self, mztab_path, msstats_path, sdrf_path, output_path, mzml_directory=None,
                                            msstats_chunksize=1000000):
         """
         pep_path: the output file of function merge_psm_to_pep
@@ -421,10 +423,10 @@ class FeatureInMemory():
         msstats_chunksize: the large of msstats chunk
         pep_chunksize: the large of pep chunk
         """
-        protein_map = self.__get_protein_map(mzTab_path)
-        map_dict = self._extract_psm_pep_msg(mzTab_path)
+        protein_map = self.__get_protein_map(mztab_path)
+        map_dict = self._extract_psm_pep_msg(mztab_path)
         msstats_ins = pd.read_csv(msstats_path, chunksize=msstats_chunksize)
-        spectra_count_dict = self.__get_spectra_count(mzTab_path, 500000)
+        spectra_count_dict = self.__get_spectra_count(mztab_path, 500000)
         header = True
         for msstats_in in msstats_ins:
             msstats_in['Reference'] = msstats_in['Reference'].apply(
@@ -501,7 +503,7 @@ class FeatureInMemory():
             res.drop(['comment[data file]', 'comment[label]'],
                      axis=1, inplace=True)
             res.rename(columns=self._map_tmt, inplace=True)
-            if header != True:
+            if not header:
                 res.to_csv(output_path, mode='a+', index=False, header=False, sep='\t')
             else:
                 header = False

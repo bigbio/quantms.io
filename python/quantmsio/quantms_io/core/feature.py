@@ -16,21 +16,23 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pandas as pd
 import os
-from quantms_io.core.convert import FeatureConvertor
 
+from quantms_io.core.feature_in_memory import FeatureInMemory
 from quantms_io.core.mztab import MztabHandler
 from quantms_io.core.openms import OpenMSHandler
 from quantms_io.core.parquet_handler import ParquetHandler
 from quantms_io.core.sdrf import SDRFHandler
 from quantms_io.utils.constants import TMT_CHANNELS, ITRAQ_CHANNEL
 from quantms_io.utils.pride_utils import clean_peptidoform_sequence, compare_protein_lists, \
-    standardize_protein_list_accession, standardize_protein_string_accession, get_modifications_object_from_mztab_line, \
+    standardize_protein_list_accession, standardize_protein_string_accession, \
     get_quantmsio_modifications
 
 def get_msstats_in_batches(msstats_file:str, batch_size:int) -> int:
-    '''
-    return batches
-    '''
+    """
+    :param msstats_file: MSstats input file
+    :param batch_size: batch size
+    :return: number of batches
+    """
     total_len = sum(1 for _ in open(msstats_file)) - 1 # neglect header
     if total_len <= batch_size:
         return 1
@@ -40,7 +42,7 @@ def get_msstats_in_batches(msstats_file:str, batch_size:int) -> int:
         return total_len // batch_size
 
 def get_additional_properties_from_sdrf(feature_dict: dict, experiment_type: str, sdrf_samples: dict) -> dict:
-    if 'FragmentIon' not in feature_dict:  # FragmentIon is not in the MSstats file object if the experiment is label free
+    if 'FragmentIon' not in feature_dict:  # FragmentIon is not in the MSstats if the experiment is label free
         feature_dict["FragmentIon"] = None
 
     if 'IsotopeLabelType' not in feature_dict:
@@ -63,7 +65,7 @@ def get_additional_properties_from_sdrf(feature_dict: dict, experiment_type: str
 def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_samples: dict,
                            mztab_handler: MztabHandler = None, intensity_map: dict = None):
     """
-    Fetch a feature from a MSstats dictionary and convert to a quantms.io format row
+    fetch a feature from a MSstats dictionary and convert to a quantms.io format row
     :param feature_dict: MSstats feature dictionary
     :param experiment_type: experiment type
     :param sdrf_samples: SDRF samples
@@ -219,7 +221,7 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
 
 class FeatureHandler(ParquetHandler):
     """
-    This class handle protein tables in column format. The main serialization format is Apache Parquet.
+    this class handle protein tables in column format. The main serialization format is Apache Parquet.
     """
 
     FEATURE_FIELDS = [pa.field("sequence", pa.string(),
@@ -307,7 +309,7 @@ class FeatureHandler(ParquetHandler):
 
     def _create_schema(self):
         """
-        Create the schema for the feature file. The schema is defined in the docs folder of this repository.
+        create the schema for the feature file. The schema is defined in the docs folder of this repository.
         (https://github.com/bigbio/quantms.io/blob/main/docs/FEATURE.md)
         """
         return pa.schema(FeatureHandler.FEATURE_FIELDS, metadata={"description": "Feature file in quantms.io format"})
@@ -326,11 +328,13 @@ class FeatureHandler(ParquetHandler):
                                          batch_size: int = 100000,
                                          use_cache: bool = False):
         """
-        Convert a MSstats input file and mztab into a quantms.io file format.
+        convert a MSstats input file and mztab into a quantms.io file format.
         :param msstats_file: MSstats input file
         :param sdrf_file: SDRF file
         :param mztab_file: mztab file
         :param consesusxml_file: consensusxml file
+        :param mzml_directory: mzml directory
+        :param batch_size: batch size
         :param use_cache: use cache to store the mztab file
         :return: none
         """
@@ -399,11 +403,11 @@ class FeatureHandler(ParquetHandler):
             # Write the feature table to a parquet file
             mztab_handler.close()
         else:
-            Convert = FeatureConvertor(experiment_type, self.schema)
-            Convert.merge_mzTab_and_sdrf_to_msstats_in(mztab_file, msstats_file, sdrf_file,
+            convert = FeatureInMemory(experiment_type, self.schema)
+            convert.merge_mztab_and_sdrf_to_msstats_in(mztab_file, msstats_file, sdrf_file,
                                                        'msstats_pep_psm_sdrf_merge.tsv', mzml_directory)
             try:
-                Convert.write_parquet('msstats_pep_psm_sdrf_merge.tsv',self.parquet_path,batch_size)
+                convert.write_parquet('msstats_pep_psm_sdrf_merge.tsv',self.parquet_path,batch_size)
             except Exception as e:
                 print(e)
             finally:
@@ -412,6 +416,9 @@ class FeatureHandler(ParquetHandler):
         #self.write_single_file_parquet(feature_table, parquet_output=self.parquet_path, write_metadata=True)
 
     def describe_schema(self):
+        """
+        describe the schema of the feature file
+        """
         schema_description = []
         for field in self.schema:
             field_description = {

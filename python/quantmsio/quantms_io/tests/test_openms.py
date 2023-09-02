@@ -9,10 +9,7 @@ class TestConsensusXMLHandler(TestCase):
         consensus_xml_handler = OpenMSHandler()
         consensus_xml_handler.get_intensity_map(consensusxml_path)
 
-
-class TestConsensusXMLHandler(TestCase):
     def test_get_spectrum_from_scan(self):
         openms_handler = OpenMSHandler()
         spectrum = openms_handler.get_spectrum_from_scan("data/test.mzML", 1)
         print(spectrum)
-
