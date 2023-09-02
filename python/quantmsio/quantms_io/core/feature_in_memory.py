@@ -20,7 +20,7 @@ parquet = Convert.convert_to_parquet("result_lfq.csv")
 from quantms_io.utils.constants import TMT_CHANNELS, ITRAQ_CHANNEL
 
 
-class FeatureConvertor():
+class FeatureInMemory():
 
     def __init__(self, experiment_type, schema):
         self.mzml_directory = None
