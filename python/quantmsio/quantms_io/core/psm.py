@@ -157,7 +157,8 @@ class PSMHandler(ParquetHandler):
         feature_table = self._create_psm_table(psm_list)
         self.write_single_file_parquet(feature_table, parquet_output=self.parquet_path, write_metadata=True)
 
-    def _transform_psm_from_mztab(self, psm, mztab_handler) -> dict:
+    @staticmethod
+    def _transform_psm_from_mztab(psm, mztab_handler) -> dict:
         """
         Transform a an mztab psm to quantms io psm.
         :param psm mztab psm

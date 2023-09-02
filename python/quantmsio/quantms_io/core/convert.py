@@ -148,11 +148,11 @@ class FeatureConvertor():
         file: mzTab file
         header: table tag #PSH PRH PEH
         '''
-        if self._mzTab_file == fle and self._psm_pos != None and header == 'PSH':
+        if self._mzTab_file == fle and self._psm_pos is not None and header == 'PSH':
             return self.__load_second(fle, header, **kwargs)
-        if self._mzTab_file == fle and self._pep_pos != None and header == 'PEH':
+        if self._mzTab_file == fle and self._pep_pos is not None and header == 'PEH':
             return self.__load_second(fle, header, **kwargs)
-        if self._mzTab_file == fle and self._prt_pos != None and header == 'PRH':
+        if self._mzTab_file == fle and self._prt_pos is not None and header == 'PRH':
             return self.__load_second(fle, header, **kwargs)
         fle_len,pos = self._extract_len(fle, header)
         if os.stat(fle).st_size == 0:
@@ -189,7 +189,8 @@ class FeatureConvertor():
         protein_map = prt_score.to_dict()['best_search_engine_score[1]']
         return protein_map
 
-    def __get_modifications(self, fle):
+    @staticmethod
+    def __get_modifications(fle):
         '''
         return: a dict about modifications
         '''
@@ -205,7 +206,8 @@ class FeatureConvertor():
         f.close()
         return mod_dict
 
-    def __get_score_names(self, fle):
+    @staticmethod
+    def __get_score_names(fle):
         '''
         return: a dict about search engine
         '''
@@ -232,7 +234,8 @@ class FeatureConvertor():
         f.close()
         return score_names
 
-    def __handle_protein_map(self, protein_map, key):
+    @staticmethod
+    def __handle_protein_map(protein_map, key):
         '''
         map protein score from accession
         '''
@@ -462,7 +465,8 @@ class FeatureConvertor():
                 res.to_csv(output_path, mode='a+', index=False,sep='\t')
 
     # extract ms runs
-    def extract_ms_runs(self, fle):
+    @staticmethod
+    def extract_ms_runs(fle):
         if os.stat(fle).st_size == 0:
             raise ValueError("File is empty")
         f = codecs.open(fle, 'r', 'utf-8')
@@ -484,7 +488,8 @@ class FeatureConvertor():
         mz_array,array_intensity = mzml.get_spectrum_from_scan(mz_path,int(scan))
         return mz_array,array_intensity, 0
 
-    def __split_start_or_end(self, value):
+    @staticmethod
+    def __split_start_or_end(value):
         if pd.isna(value):
             return pd.NA
         elif ',' in str(value):

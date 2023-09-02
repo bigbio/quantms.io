@@ -116,7 +116,7 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
     end_positions = peptide_indexed["psm_protein_end"].split(",")  # End positions in the protein
     end_positions = [int(i) for i in end_positions]
 
-    # The spectral count is 0 for a given file if a peptide does not appear in the psm section because for example is
+    # The spectral count is cero for a given file if a peptide does not appear in the psm section because for example is
     # match between runs. However, for TMT/ITRAQ experiments, the spectral count can't be provided.
     spectral_count = None if "LABEL FREE" not in feature_dict["Channel"] else 0  #
 

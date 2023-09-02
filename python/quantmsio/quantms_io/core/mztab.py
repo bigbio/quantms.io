@@ -15,7 +15,7 @@ def create_peptide_for_index(peptide_qvalue: str, is_decoy: str, peptidoform: st
                              posterior_error_probability: str = None, spectral_count: dict = None,
                              list_psms: list = None) -> dict:
     """
-    Create a peptide to be store in the index. A index peptide have the following structure:
+    Create a peptide to be store in the index. An index peptide have the following structure:
       # - protein_accession: protein accession
       # - peptide_qvalue: peptide qvalue
       # - is_decoy: is decoy
@@ -64,8 +64,8 @@ def create_peptide_for_index(peptide_qvalue: str, is_decoy: str, peptidoform: st
 
 class MztabHandler:
     """
-    Mztab handler class for quantms.io. This class is used to load mztab files and create indexes for the mztab files.
-    The mztab handler has multiple indexes to access the mztab content: protein, peptide and psm.
+    mztab handler class for quantms.io. This class is used to load mztab files and create indexes for the mztab files.
+    the mztab handler has multiple indexes to access the mztab content: protein, peptide and psm.
     - Protein index: contains the position and the qvalue of each protein in the mztab file.
     - Peptide index: contains the position and the qvalue/modifications of each peptide in the mztab file.
     """
@@ -117,7 +117,7 @@ class MztabHandler:
 
     def add_peptide_to_index(self, peptide_key: str, peptide_value: dict):
         """
-        Add a peptide to the index if the file is big then use cache.
+        add a peptide to the index if the file is big then use cache.
         :param peptide_key: peptide key
         :param peptide_value: peptide value
         :return: None
@@ -131,7 +131,7 @@ class MztabHandler:
                          calc_mass_to_charge: str, exp_mass_to_charge: str, reference_file: str, scan_number: str,
                          mztab_postion: str, posterior_error_probability: str = None):
         """
-        PSM count is used to count the number of psms for a given peptidoform in a file.
+        psm count is used to count the number of psms for a given peptidoform in a file.
         :param psm_key: psm key
         :param protein_accession: protein accession
         :param protein_start: protein start
@@ -221,7 +221,7 @@ class MztabHandler:
 
     def create_mztab_index(self, mztab_file: str, qvalue_index: bool = True, psm_count_index: bool = True):
         """
-        Create an index for a mztab file; the index contains a structure with the position of each psm, peptide and
+        create an index for a mztab file; the index contains a structure with the position of each psm, peptide and
         protein in the file.
         :param mztab_file: mztab file
         :param qvalue_index: create a qvalue index
@@ -300,7 +300,8 @@ class MztabHandler:
 
     def load_mztab_file(self, use_cache: bool = False):
         """
-        Load a mztab file it can be in memory or in cache. If the file is in cache, it will be loaded from there.
+        load a mztab file it can be in memory or in cache. If the file is in cache, it will be loaded from there.
+        :param use_cache: use cache
         """
         if self._mztab_file is None:
             raise Exception("Mztab file is None")
@@ -308,7 +309,7 @@ class MztabHandler:
 
     def print_all_peptides(self):
         """
-        Print all the peptides in the mztab file.
+        print all the peptides in the mztab file.
         """
         if self._use_cache:
             for key in self._peptide_index.get_all_keys():
@@ -319,7 +320,7 @@ class MztabHandler:
 
     def print_mztab_stats(self):
         """
-        Print the mztab stats.
+        print the mztab stats.
         """
         print("Mztab stats")
         print("Number of proteins {}".format(len(self._protein_details)))
@@ -335,7 +336,7 @@ class MztabHandler:
 
     def get_peptide_index(self, msstats_peptidoform: str, charge: str) -> dict:
         """
-        Get the peptide qvalue from the peptide index.
+        get the peptide qvalue from the peptide index.
         :param msstats_peptidoform: msstats peptidoform
         :param charge: charge
         :return: peptide qvalue object
@@ -352,7 +353,7 @@ class MztabHandler:
 
     def get_protein_qvalue_from_index(self, protein_accession: str):
         """
-        Get the protein qvalue from the protein index.
+        get the protein qvalue from the protein index.
         :param protein_accession: protein accession
         :return: protein qvalue object
         """
@@ -362,7 +363,7 @@ class MztabHandler:
 
     def get_protein_qvalue_from_index_list(self, protein_accession_list: list):
         """
-        Get protein qvalue from the protein index using the protein acessions in a list structure.
+        get protein qvalue from the protein index using the protein acessions in a list structure.
         :param protein_accession_list list of protein accessions
         :return: qvalue structure.
         """
@@ -407,7 +408,7 @@ class MztabHandler:
 
     def create_mztab_psm_iterator(self, mztab_file: str):
         """
-        Create an iterator for the mztab file. The iterator is used to read the psm in the mztab file.
+        create an iterator for the mztab file. The iterator is used to read the psm in the mztab file.
         :param mztab_file: mztab file
         :return: None
         """
@@ -446,7 +447,7 @@ class MztabHandler:
 
     def read_next_psm(self):
         """
-        Read the next psm in the mztab file. A precondition of the method is that the mztab file has been loaded and
+        read the next psm in the mztab file. A precondition of the method is that the mztab file has been loaded and
         the iterator has been created using the method create_mztab_psm_iterator.
         :return: psm dictionary
         """

@@ -1,3 +1,5 @@
+from typing import Tuple, Any
+
 import numpy as np
 import pyopenms as oms
 from pyopenms import SpectrumLookup
@@ -10,7 +12,7 @@ class OpenMSHandler:
         self._consensus_xml_path = None
         self._spec_lookup = None
 
-    def get_spectrum_from_scan(self, mzml_path: str, scan_number: int) -> oms.MSSpectrum:
+    def get_spectrum_from_scan(self, mzml_path: str, scan_number: int) -> tuple[Any, Any]:
         """
         Get a spectrum from a mzML file using the scan number
         :param mzml_path: path to the mzML file
