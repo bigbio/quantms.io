@@ -127,10 +127,9 @@ class PSMHandler(ParquetHandler):
         pqwriter = None
 
         for it in iter(mztab_handler.read_next_psm, None):
-            psm_list.append(self._transform_psm_from_mztab(psm=it, mztab_handler=mztab_handler))
             print(it["sequence"] + "---" + it["accession"])
-            #batches > 1
-            if len(psm_list) == batch_size and batch_count < batches:
+            psm_list.append(self._transform_psm_from_mztab(psm=it, mztab_handler=mztab_handler))
+            if len(psm_list) == batch_size and batch_count < batches: #write in batches
                 feature_table = self._create_psm_table(psm_list)
                 psm_list = []
                 batch_count += 1
@@ -142,10 +141,10 @@ class PSMHandler(ParquetHandler):
             feature_table = self._create_psm_table(psm_list)
             pqwriter = pq.ParquetWriter(self.parquet_path, feature_table.schema)
             pqwriter.write_table(feature_table)
-        # final batch
-        else:
+        else: # final batch
             feature_table = self._create_psm_table(psm_list)
             pqwriter.write_table(feature_table)
+
         if pqwriter:
             pqwriter.close()
 
