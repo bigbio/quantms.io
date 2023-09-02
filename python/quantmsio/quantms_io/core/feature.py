@@ -221,7 +221,8 @@ def _fetch_msstats_feature(feature_dict: dict, experiment_type: str, sdrf_sample
 
 class FeatureHandler(ParquetHandler):
     """
-    this class handle protein tables in column format. The main serialization format is Apache Parquet.
+    this class handle protein tables in column format.
+    The main serialization format is Apache Parquet.
     """
 
     FEATURE_FIELDS = [pa.field("sequence", pa.string(),
@@ -234,8 +235,6 @@ class FeatureHandler(ParquetHandler):
                                metadata={"description": "end positions in the associated proteins"}),
                       pa.field("protein_global_qvalue", pa.float64(),
                                metadata={"description": "global q-value of the associated protein or protein group"}),
-                      # pa.field("protein_best_id_score", pa.string(),
-                      #          metadata={"description": "best identification score of the associated protein or protein group"}),
                       pa.field("unique", pa.int32(),
                                metadata={"description": "if the peptide is unique to a particular protein"}),
                       pa.field("modifications", pa.list_(pa.string()),
@@ -309,7 +308,7 @@ class FeatureHandler(ParquetHandler):
 
     def _create_schema(self):
         """
-        create the schema for the feature file. The schema is defined in the docs folder of this repository.
+        Create the schema for the feature file. The schema is defined in the docs folder of this repository.
         (https://github.com/bigbio/quantms.io/blob/main/docs/FEATURE.md)
         """
         return pa.schema(FeatureHandler.FEATURE_FIELDS, metadata={"description": "Feature file in quantms.io format"})
