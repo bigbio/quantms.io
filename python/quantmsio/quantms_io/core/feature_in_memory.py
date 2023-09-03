@@ -7,15 +7,6 @@ import pyarrow.parquet as pq
 import codecs
 from quantms_io.core.mztab import fetch_modifications_from_mztab_line
 from quantms_io.utils.pride_utils import clean_peptidoform_sequence, get_petidoform_msstats_notation
-from quantms_io.core.openms import OpenMSHandler
-
-'''
-example
-Convert = FeatureConvertor('lfq',schema)
-Convert.merge_psm_to_pep("lfq2\PXD002854-serum.sdrf_openms_design_openms.mzTab",'res1.txt')
-Convert.merge_pep_and_sdrf_to_msstats_in("res1.txt","lfq2\PXD002854-serum.sdrf_openms_design_msstats_in.csv","lfq2\PXD002854-serum.sdrf.tsv","result_lfq.csv")
-parquet = Convert.convert_to_parquet("result_lfq.csv")
-'''
 
 from quantms_io.utils.constants import TMT_CHANNELS, ITRAQ_CHANNEL
 
@@ -413,15 +404,14 @@ class FeatureInMemory:
                                                              str(row['posterior_error_probability']), axis=1))
         return msstats_in
 
-    def merge_mztab_and_sdrf_to_msstats_in(self, mztab_path, msstats_path, sdrf_path, output_path, mzml_directory=None,
+    def merge_mztab_and_sdrf_to_msstats_in(self, mztab_path, msstats_path, sdrf_path, output_path,
                                            msstats_chunksize=1000000):
         """
-        pep_path: the output file of function merge_psm_to_pep
+        mzTab_path: mzTab file path
         msstats_path: msstats_in file path
         sdrf_path: sdrf file path
-        output_path: output file path(csv)
+        output_path: output path of parquet file 
         msstats_chunksize: the large of msstats chunk
-        pep_chunksize: the large of pep chunk
         """
         protein_map = self.__get_protein_map(mztab_path)
         map_dict = self._extract_psm_pep_msg(mztab_path)
@@ -454,13 +444,6 @@ class FeatureInMemory:
                 msstats_in = msstats_in[self._tmt_msstats_usecols]
                 self._tmt_msstats_usecols.remove('RetentionTime')
                 msstats_in = self._map_msstats_in(msstats_in, map_dict, spectra_count_dict)
-                if mzml_directory:
-                    self.mzml_directory = mzml_directory
-                    mzml = OpenMSHandler()
-                    msstats_in[['mz', 'array_intensity', 'num_peaks']] = msstats_in[
-                        ['best_psm_reference_file_name', 'best_psm_scan_number']].apply(
-                        lambda x: self._map_spectrum_mz(x['best_psm_reference_file_name'], x['best_psm_scan_number'],
-                                                        mzml), axis=1, result_type="expand")
                 table = self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
                 parquet_table = self.convert_to_parquet(table)
                 if not pqwriter:
@@ -477,13 +460,6 @@ class FeatureInMemory:
                         msstats_in.loc[:, col] = None
                 msstats_in = msstats_in[self._lfq_msstats_usecols]
                 msstats_in = self._map_msstats_in(msstats_in, map_dict, spectra_count_dict)
-                if mzml_directory:
-                    self.mzml_directory = mzml_directory
-                    mzml = OpenMSHandler()
-                    msstats_in[['mz_array', 'array_intensity', 'num_peaks']] = msstats_in[
-                        ['best_psm_reference_file_name', 'best_psm_scan_number']].apply(
-                        lambda x: self._map_spectrum_mz(x['best_psm_reference_file_name'], x['best_psm_scan_number'],
-                                                        mzml), axis=1, result_type="expand")
                 table = self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
                 parquet_table = self.convert_to_parquet(table)
                 if not pqwriter:
@@ -541,19 +517,6 @@ class FeatureInMemory:
         f.close()
         return ms_runs
 
-    def _map_spectrum_mz(self, mz_path, scan, mzml):
-        """
-        mz_path: mzML file path
-        scan: scan number
-        mzml: OpenMSHandler object
-        """
-        if self.mzml_directory.endswith('/'):
-            mz_path = self.mzml_directory + mz_path + '.mzML'
-        else:
-            mz_path = self.mzml_directory + '/' + mz_path + '.mzML'
-        mz_array, array_intensity = mzml.get_spectrum_from_scan(mz_path, int(scan))
-        return mz_array, array_intensity, 0
-
     @staticmethod
     def __split_start_or_end(value):
         """
@@ -603,10 +566,10 @@ class FeatureInMemory:
         else:
             res.loc[:, 'retention_time'] = None
 
-        if 'num_peaks' not in res.columns:
-            res.loc[:, 'num_peaks'] = None
-            res.loc[:, 'mz_array'] = None
-            res.loc[:, 'intensity_array'] = None
+        
+        res.loc[:, 'num_peaks'] = None
+        res.loc[:, 'mz_array'] = None
+        res.loc[:, 'intensity_array'] = None
 
         res.loc[:, 'gene_accessions'] = None
         res.loc[:, 'gene_names'] = None

@@ -15,7 +15,6 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pandas as pd
-import os
 
 from quantms_io.core.feature_in_memory import FeatureInMemory
 from quantms_io.core.mztab import MztabHandler
@@ -324,7 +323,6 @@ class FeatureHandler(ParquetHandler):
 
     def convert_mztab_msstats_to_feature(self, msstats_file: str, sdrf_file: str, mztab_file: str,
                                          consesusxml_file: str = None,
-                                         mzml_directory:str = None,
                                          batch_size: int = 1000000,
                                          use_cache: bool = False):
         """
@@ -333,7 +331,6 @@ class FeatureHandler(ParquetHandler):
         :param sdrf_file: SDRF file
         :param mztab_file: mztab file
         :param consesusxml_file: consensusxml file
-        :param mzml_directory: mzml directory
         :param batch_size: batch size
         :param use_cache: use cache to store the mztab file
         :return: none
@@ -405,7 +402,7 @@ class FeatureHandler(ParquetHandler):
         else:
             convert = FeatureInMemory(experiment_type, self.schema)
             convert.merge_mztab_and_sdrf_to_msstats_in(mztab_file, msstats_file, sdrf_file,
-                                                       self.parquet_path, mzml_directory=mzml_directory,msstats_chunksize=batch_size)
+                                                       self.parquet_path,msstats_chunksize=batch_size)
 
     def describe_schema(self):
         """
