@@ -427,7 +427,7 @@ class FeatureInMemory:
         map_dict = self._extract_psm_pep_msg(mztab_path)
         msstats_ins = pd.read_csv(msstats_path, chunksize=msstats_chunksize)
         spectra_count_dict = self.__get_spectra_count(mztab_path, 500000)
-        header = True
+        pqwriter = None
         for msstats_in in msstats_ins:
             msstats_in['Reference'] = msstats_in['Reference'].apply(
                 lambda x: x.split(".")[0])
@@ -461,8 +461,12 @@ class FeatureInMemory:
                         ['best_psm_reference_file_name', 'best_psm_scan_number']].apply(
                         lambda x: self._map_spectrum_mz(x['best_psm_reference_file_name'], x['best_psm_scan_number'],
                                                         mzml), axis=1, result_type="expand")
-                self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in, output_path, header)
-                header = False
+                table = self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
+                parquet_table = self.convert_to_parquet(table)
+                if not pqwriter:
+                    # create a parquet write object giving it an output file
+                    pqwriter = pq.ParquetWriter(output_path, parquet_table.schema)
+                pqwriter.write_table(parquet_table)
             else:
                 no_lfq_usecols = [
                     col for col in self._lfq_msstats_usecols if col not in msstats_in.columns]
@@ -480,10 +484,16 @@ class FeatureInMemory:
                         ['best_psm_reference_file_name', 'best_psm_scan_number']].apply(
                         lambda x: self._map_spectrum_mz(x['best_psm_reference_file_name'], x['best_psm_scan_number'],
                                                         mzml), axis=1, result_type="expand")
-                self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in, output_path, header)
-                header = False
+                table = self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
+                parquet_table = self.convert_to_parquet(table)
+                if not pqwriter:
+                    # create a parquet write object giving it an output file
+                    pqwriter = pq.ParquetWriter(output_path, parquet_table.schema)
+                pqwriter.write_table(parquet_table)
+        if pqwriter:
+            pqwriter.close()
 
-    def _merge_sdrf_to_msstats_in(self, sdrf_path, msstats_in, output_path, header):
+    def _merge_sdrf_to_msstats_in(self, sdrf_path, msstats_in):
         """
         sdrf_path: sdrf file path
         msstats_in: msstats_in dataframe
@@ -503,22 +513,14 @@ class FeatureInMemory:
             res.drop(['comment[data file]', 'comment[label]'],
                      axis=1, inplace=True)
             res.rename(columns=self._map_tmt, inplace=True)
-            if not header:
-                res.to_csv(output_path, mode='a+', index=False, header=False, sep='\t')
-            else:
-                header = False
-                res.to_csv(output_path, mode='a+', index=False, sep='\t')
+            return res
         else:
             res = pd.merge(msstats_in, sdrf, left_on=['Reference'], right_on=[
                 'comment[data file]'], how='left')
             res.drop(['comment[data file]', 'comment[label]'],
                      axis=1, inplace=True)
             res.rename(columns=self._map_lfq, inplace=True)
-            if header != True:
-                res.to_csv(output_path, mode='a+', index=False, header=False, sep='\t')
-            else:
-                header = False
-                res.to_csv(output_path, mode='a+', index=False, sep='\t')
+            return res
 
     # extract ms runs
     @staticmethod
@@ -610,20 +612,3 @@ class FeatureInMemory:
         res.loc[:, 'gene_names'] = None
 
         return pa.Table.from_pandas(res, schema=self.schema)
-
-    def write_parquet(self, res_path, parquet_path, chunksize):
-        """
-        res_path: Merge files path
-        parquet_path: patquet output path
-        chunksize: batch size
-        """
-        pqwriter = None
-        for i, df in enumerate(pd.read_csv(res_path, sep='\t', chunksize=chunksize)):
-            table = self.convert_to_parquet(df)
-            if i == 0:
-                # create a parquet write object giving it an output file
-                pqwriter = pq.ParquetWriter(parquet_path, table.schema)
-            pqwriter.write_table(table)
-        # close the parquet writer
-        if pqwriter:
-            pqwriter.close()

@@ -325,7 +325,7 @@ class FeatureHandler(ParquetHandler):
     def convert_mztab_msstats_to_feature(self, msstats_file: str, sdrf_file: str, mztab_file: str,
                                          consesusxml_file: str = None,
                                          mzml_directory:str = None,
-                                         batch_size: int = 100000,
+                                         batch_size: int = 1000000,
                                          use_cache: bool = False):
         """
         convert a MSstats input file and mztab into a quantms.io file format.
@@ -405,15 +405,7 @@ class FeatureHandler(ParquetHandler):
         else:
             convert = FeatureInMemory(experiment_type, self.schema)
             convert.merge_mztab_and_sdrf_to_msstats_in(mztab_file, msstats_file, sdrf_file,
-                                                       'msstats_pep_psm_sdrf_merge.tsv', mzml_directory)
-            try:
-                convert.write_parquet('msstats_pep_psm_sdrf_merge.tsv',self.parquet_path,batch_size)
-            except Exception as e:
-                print(e)
-            finally:
-                os.remove('msstats_pep_psm_sdrf_merge.tsv')
-
-        #self.write_single_file_parquet(feature_table, parquet_output=self.parquet_path, write_metadata=True)
+                                                       self.parquet_path, mzml_directory=mzml_directory,msstats_chunksize=batch_size)
 
     def describe_schema(self):
         """
