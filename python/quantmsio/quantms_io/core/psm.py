@@ -7,28 +7,8 @@ import os
 import pyarrow.parquet as pq
 from quantms_io.core.parquet_handler import ParquetHandler
 from quantms_io.utils.pride_utils import standardize_protein_list_accession, get_quantmsio_modifications
+from quantms_io.core.tools import extract_len
 
-def extract_len(fle, header):
-        map_tag = {
-            "PSH": 'PSM',
-            "PEH": 'PEP',
-            'PRH': 'PRT'
-        }
-        if os.stat(fle).st_size == 0:
-            raise ValueError("File is empty")
-        f = open(fle)
-        pos = 0
-        line = f.readline()
-        while line.split("\t")[0] != header:
-            pos = f.tell()
-            line = f.readline()
-        line = f.readline()
-        fle_len = 0
-        while line.split("\t")[0] == map_tag[header]:
-            fle_len += 1
-            line = f.readline()
-        f.close()
-        return fle_len,pos
 
 def get_psm_in_batches(mztab_file:str, batch_size:int) -> int:
     '''

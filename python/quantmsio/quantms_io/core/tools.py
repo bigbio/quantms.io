@@ -11,6 +11,32 @@ from quantms_io.core.feature import FeatureHandler
 import pandas as pd
 import pyarrow.parquet as pq
 import pyarrow as pa
+import os
+from Bio import Entrez
+from Bio import SeqIO
+import re
+
+def extract_len(fle, header):
+        map_tag = {
+            "PSH": 'PSM',
+            "PEH": 'PEP',
+            'PRH': 'PRT'
+        }
+        if os.stat(fle).st_size == 0:
+            raise ValueError("File is empty")
+        f = open(fle)
+        pos = 0
+        line = f.readline()
+        while line.split("\t")[0] != header:
+            pos = f.tell()
+            line = f.readline()
+        line = f.readline()
+        fle_len = 0
+        while line.split("\t")[0] == map_tag[header]:
+            fle_len += 1
+            line = f.readline()
+        f.close()
+        return fle_len,pos
 
 # optional about spectrum
 def map_spectrum_mz(mz_path: str, scan: str, Mzml: OpenMSHandler, mzml_directory: str):
@@ -40,3 +66,57 @@ def generate_features_of_spectrum(parquet_path: str, mzml_directory: str):
     pq.write_table(parquet_table, parquet_path, compression="snappy", store_schema=True)
 
 #option about gene
+
+def generate_gene_names(parquet_path:str,mzTab_path:str):
+    '''
+    get gene names from mzTab into parquet.
+    '''
+    gene_map = extract_optional_gene_dict(mzTab_path)
+    table =  pd.read_parquet(parquet_path)
+    keys = gene_map.keys()
+    table['gene_names'] = table['protein_accessions'].apply(lambda x: gene_map[','.join(x)] if ','.join(x) in keys else pd.NA)
+    Feature = FeatureHandler()
+    parquet_table = pa.Table.from_pandas(table, schema=Feature.schema)
+    
+    pq.write_table(parquet_table, parquet_path, compression="snappy", store_schema=True)
+
+def query_accessions(gene_name,Email,species:str = 'Homo sapiens', OX: str = '9606'):
+    '''
+    Getting the gene_accessions is time-consuming work, so we support single gene query.
+    gene_name: 'gene name'
+    Email: 'a available email address'
+    species: ''
+    OX: 'Organism Taxonomy ID'  
+    '''
+    Entrez.email = Email
+    q_name = gene_name + " AND " + species + "[porgn:__txid" + OX + "]"
+    handle = Entrez.esearch(db="nucleotide", term=q_name)
+    record = Entrez.read(handle)
+    id_list = record["IdList"]
+    accessions = get_accessions(id_list)
+    return accessions
+
+def get_accessions(id_list):
+    accessions = []
+    for id_q in id_list:
+        handle = Entrez.efetch(db="nucleotide", id=id_q, rettype="gb", retmode="text")
+        record = SeqIO.read(handle, "genbank")
+        accessions.append(record.id)
+    return accessions
+    
+def load_PRT(mzTab_path,**kwargs):
+    fle_len,pos = extract_len(mzTab_path,'PRH')
+    f = open(mzTab_path)
+    f.seek(pos)
+    return pd.read_csv(f,nrows=fle_len,**kwargs)
+
+
+def extract_optional_gene_dict(mzTab_path):
+    '''
+    return: a dict, key is protein accessions, value is gene names
+    '''
+    PRT = load_PRT(mzTab_path,'PRH',sep='\t', usecols=['accession','description'])
+    PRT.loc[:,'gene_names'] = PRT['description'].fillna('unknow').apply(lambda x: re.findall(r'GN=(\w+)',x)if re.findall(r'GN=(\w+)',x) else pd.NA)
+    gene_map = PRT[["accession", "gene_names"]].set_index("accession").to_dict(orient='dict')["gene_names"]
+
+    return gene_map
