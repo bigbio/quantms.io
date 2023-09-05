@@ -214,20 +214,9 @@ class PSMHandler(ParquetHandler):
 
             # print(it)
 
-<<<<<<< HEAD
         #feature_table = self._create_psm_table(psm_list)
         #self.write_single_file_parquet(feature_table, parquet_output=self.parquet_path, write_metadata=True)
             #print(it["sequence"] + "---" + it["accession"])
-=======
-            # feature_table = self._create_psm_table(psm_list)
-            # self.write_single_file_parquet(feature_table, parquet_output=self.parquet_path, write_metadata=True)
-            print(it["sequence"] + "---" + it["accession"])
-
-        feature_table = self._create_psm_table(psm_list)
-        self.write_single_file_parquet(
-            feature_table, parquet_output=self.parquet_path, write_metadata=True
-        )
->>>>>>> c0510320e2c2ceeab279d43c88cc47c969996396
 
     @staticmethod
     def _transform_psm_from_mztab(psm, mztab_handler) -> dict:

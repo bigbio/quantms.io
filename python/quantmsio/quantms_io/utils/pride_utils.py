@@ -579,15 +579,7 @@ def get_peptidoform_proforma_version_in_mztab(
     :param modifications_definition: dictionary modifications definition
     :return: peptidoform in proforma
     """
-<<<<<<< HEAD
     if modification_string == "null" or modification_string is None or modification_string == "" or pd.isna(modification_string):
-=======
-    if (
-        modification_string == "null"
-        or modification_string is None
-        or modification_string == ""
-    ):
->>>>>>> c0510320e2c2ceeab279d43c88cc47c969996396
         return peptide_sequence
 
     modifications = get_modifications_object_from_mztab_line(
