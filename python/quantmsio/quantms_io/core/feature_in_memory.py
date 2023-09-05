@@ -7,15 +7,6 @@ import pyarrow.parquet as pq
 import codecs
 from quantms_io.core.mztab import fetch_modifications_from_mztab_line
 from quantms_io.utils.pride_utils import clean_peptidoform_sequence, get_petidoform_msstats_notation
-from quantms_io.core.openms import OpenMSHandler
-
-'''
-example
-Convert = FeatureConvertor('lfq',schema)
-Convert.merge_psm_to_pep("lfq2\PXD002854-serum.sdrf_openms_design_openms.mzTab",'res1.txt')
-Convert.merge_pep_and_sdrf_to_msstats_in("res1.txt","lfq2\PXD002854-serum.sdrf_openms_design_msstats_in.csv","lfq2\PXD002854-serum.sdrf.tsv","result_lfq.csv")
-parquet = Convert.convert_to_parquet("result_lfq.csv")
-'''
 
 from quantms_io.utils.constants import TMT_CHANNELS, ITRAQ_CHANNEL
 
@@ -217,8 +208,8 @@ class FeatureInMemory:
         return: a dict about protein score
         """
         prt = self.skip_and_load_csv(mztab_path, 'PRH', sep='\t', usecols=[
-            'accession', 'best_search_engine_score[1]'])
-        prt_score = prt.groupby('accession').max()
+            'ambiguity_members', 'best_search_engine_score[1]'])
+        prt_score = prt.groupby('ambiguity_members').max()
         protein_map = prt_score.to_dict()['best_search_engine_score[1]']
         return protein_map
 
@@ -255,8 +246,9 @@ class FeatureInMemory:
         """
         map protein score from accession
         """
+        key = key.replace(';',',')
         if key not in protein_map.keys():
-            keys = key.split(',')
+            keys = key.split(';')
             for k in keys:
                 if k in protein_map.keys():
                     return protein_map[k]
@@ -299,7 +291,7 @@ class FeatureInMemory:
             pep.loc[:, 'scan_number'] = pep['spectra_ref'].apply(lambda x: re.findall(r'scan=(\d+)', x)[0])
             pep['spectra_ref'] = pep['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
         pep_msg = pep.iloc[pep.groupby(['opt_global_cv_MS:1000889_peptidoform_sequence', 'charge']).apply(
-            lambda row: row['best_search_engine_score[1]'].idxmax())]
+            lambda row: row['best_search_engine_score[1]'].idxmin())]
         pep_msg = pep_msg.set_index(['opt_global_cv_MS:1000889_peptidoform_sequence', 'charge'])
 
         pep_msg.loc[:, 'pep_msg'] = pep_msg[['best_search_engine_score[1]', 'spectra_ref', 'scan_number']].apply(
@@ -321,10 +313,11 @@ class FeatureInMemory:
         for key, df in psm.groupby(['opt_global_cv_MS:1000889_peptidoform_sequence', 'charge']):
             if key not in map_dict.keys():
                 map_dict[key] = [None, None, None]
-
+            df.loc[:, 'scan_number'] = df['spectra_ref'].apply(lambda x: re.findall(r'scan=(\d+)', x)[0])
+            df['spectra_ref'] = df['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
             if pd.isna(map_dict[key][1]):
-                df.loc[:, 'scan_number'] = df['spectra_ref'].apply(lambda x: re.findall(r'scan=(\d+)', x)[0])
-                df['spectra_ref'] = df['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
+                #df.loc[:, 'scan_number'] = df['spectra_ref'].apply(lambda x: re.findall(r'scan=(\d+)', x)[0])
+                #df['spectra_ref'] = df['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
                 if 'opt_global_q-value_score' in df.columns:
                     map_dict[key][1] = \
                         df[df['opt_global_q-value_score'] == df['opt_global_q-value_score'].max()][
@@ -340,14 +333,14 @@ class FeatureInMemory:
                 else:
                     raise Exception(
                         "The psm table don't have opt_global_q-value_score or search_engine_score[1] columns")
-            else:
-                df['spectra_ref'] = df['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
+            #else:
+                #df['spectra_ref'] = df['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
             map_dict[key].append(df['start'].values[0])
             map_dict[key].append(df['end'].values[0])
             map_dict[key].append(df['unique'].values[0])
             map_dict[key].append(df['modifications'].values[0])
             if 'opt_global_Posterior_Error_Probability_score' in df.columns:
-                map_dict[key].append(df['opt_global_Posterior_Error_Probability_score'].values[0])
+                map_dict[key].append(df['opt_global_Posterior_Error_Probability_score'].min())
             else:
                 map_dict[key].append(None)
             if 'opt_global_cv_MS:1002217_decoy_peptide' in df.columns:
@@ -358,8 +351,8 @@ class FeatureInMemory:
                 map_dict[key].append(df["calc_mass_to_charge"].values[0])
                 map_dict[key].append(None)
             else:
-                map_dict[key].append(df[df['spectra_ref'] == map_dict[key][1]]["calc_mass_to_charge"].values[0])
-                map_dict[key].append(df[df['spectra_ref'] == map_dict[key][1]]["exp_mass_to_charge"].values[0])
+                map_dict[key].append(df[(df['spectra_ref'] == map_dict[key][1])&(df['scan_number']==map_dict[key][2])]["calc_mass_to_charge"].values[0])
+                map_dict[key].append(df[(df['spectra_ref'] == map_dict[key][1])&(df['scan_number']==map_dict[key][2])]["exp_mass_to_charge"].values[0])
 
         return map_dict
 
@@ -413,21 +406,20 @@ class FeatureInMemory:
                                                              str(row['posterior_error_probability']), axis=1))
         return msstats_in
 
-    def merge_mztab_and_sdrf_to_msstats_in(self, mztab_path, msstats_path, sdrf_path, output_path, mzml_directory=None,
+    def merge_mztab_and_sdrf_to_msstats_in(self, mztab_path, msstats_path, sdrf_path, output_path,
                                            msstats_chunksize=1000000):
         """
-        pep_path: the output file of function merge_psm_to_pep
+        mzTab_path: mzTab file path
         msstats_path: msstats_in file path
         sdrf_path: sdrf file path
-        output_path: output file path(csv)
+        output_path: output path of parquet file 
         msstats_chunksize: the large of msstats chunk
-        pep_chunksize: the large of pep chunk
         """
         protein_map = self.__get_protein_map(mztab_path)
         map_dict = self._extract_psm_pep_msg(mztab_path)
         msstats_ins = pd.read_csv(msstats_path, chunksize=msstats_chunksize)
         spectra_count_dict = self.__get_spectra_count(mztab_path, 500000)
-        header = True
+        pqwriter = None
         for msstats_in in msstats_ins:
             msstats_in['Reference'] = msstats_in['Reference'].apply(
                 lambda x: x.split(".")[0])
@@ -454,36 +446,32 @@ class FeatureInMemory:
                 msstats_in = msstats_in[self._tmt_msstats_usecols]
                 self._tmt_msstats_usecols.remove('RetentionTime')
                 msstats_in = self._map_msstats_in(msstats_in, map_dict, spectra_count_dict)
-                if mzml_directory:
-                    self.mzml_directory = mzml_directory
-                    mzml = OpenMSHandler()
-                    msstats_in[['mz', 'array_intensity', 'num_peaks']] = msstats_in[
-                        ['best_psm_reference_file_name', 'best_psm_scan_number']].apply(
-                        lambda x: self._map_spectrum_mz(x['best_psm_reference_file_name'], x['best_psm_scan_number'],
-                                                        mzml), axis=1, result_type="expand")
-                self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in, output_path, header)
-                header = False
+                table = self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
+                parquet_table = self.convert_to_parquet(table)
+                if not pqwriter:
+                    # create a parquet write object giving it an output file
+                    pqwriter = pq.ParquetWriter(output_path, parquet_table.schema)
+                pqwriter.write_table(parquet_table)
             else:
                 no_lfq_usecols = [
                     col for col in self._lfq_msstats_usecols if col not in msstats_in.columns]
                 for col in no_lfq_usecols:
                     if col == 'Channel':
-                        msstats_in.loc[:, col] = 'label free sample'
+                        msstats_in.loc[:, col] = 'LABEL FREE SAMPLE'
                     else:
                         msstats_in.loc[:, col] = None
                 msstats_in = msstats_in[self._lfq_msstats_usecols]
                 msstats_in = self._map_msstats_in(msstats_in, map_dict, spectra_count_dict)
-                if mzml_directory:
-                    self.mzml_directory = mzml_directory
-                    mzml = OpenMSHandler()
-                    msstats_in[['mz_array', 'array_intensity', 'num_peaks']] = msstats_in[
-                        ['best_psm_reference_file_name', 'best_psm_scan_number']].apply(
-                        lambda x: self._map_spectrum_mz(x['best_psm_reference_file_name'], x['best_psm_scan_number'],
-                                                        mzml), axis=1, result_type="expand")
-                self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in, output_path, header)
-                header = False
+                table = self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
+                parquet_table = self.convert_to_parquet(table)
+                if not pqwriter:
+                    # create a parquet write object giving it an output file
+                    pqwriter = pq.ParquetWriter(output_path, parquet_table.schema)
+                pqwriter.write_table(parquet_table)
+        if pqwriter:
+            pqwriter.close()
 
-    def _merge_sdrf_to_msstats_in(self, sdrf_path, msstats_in, output_path, header):
+    def _merge_sdrf_to_msstats_in(self, sdrf_path, msstats_in):
         """
         sdrf_path: sdrf file path
         msstats_in: msstats_in dataframe
@@ -503,22 +491,14 @@ class FeatureInMemory:
             res.drop(['comment[data file]', 'comment[label]'],
                      axis=1, inplace=True)
             res.rename(columns=self._map_tmt, inplace=True)
-            if not header:
-                res.to_csv(output_path, mode='a+', index=False, header=False, sep='\t')
-            else:
-                header = False
-                res.to_csv(output_path, mode='a+', index=False, sep='\t')
+            return res
         else:
             res = pd.merge(msstats_in, sdrf, left_on=['Reference'], right_on=[
                 'comment[data file]'], how='left')
             res.drop(['comment[data file]', 'comment[label]'],
                      axis=1, inplace=True)
             res.rename(columns=self._map_lfq, inplace=True)
-            if header != True:
-                res.to_csv(output_path, mode='a+', index=False, header=False, sep='\t')
-            else:
-                header = False
-                res.to_csv(output_path, mode='a+', index=False, sep='\t')
+            return res
 
     # extract ms runs
     @staticmethod
@@ -538,19 +518,6 @@ class FeatureInMemory:
             line = f.readline()
         f.close()
         return ms_runs
-
-    def _map_spectrum_mz(self, mz_path, scan, mzml):
-        """
-        mz_path: mzML file path
-        scan: scan number
-        mzml: OpenMSHandler object
-        """
-        if self.mzml_directory.endswith('/'):
-            mz_path = self.mzml_directory + mz_path + '.mzML'
-        else:
-            mz_path = self.mzml_directory + '/' + mz_path + '.mzML'
-        mz_array, array_intensity = mzml.get_spectrum_from_scan(mz_path, int(scan))
-        return mz_array, array_intensity, 0
 
     @staticmethod
     def __split_start_or_end(value):
@@ -574,7 +541,7 @@ class FeatureInMemory:
         """
         res['id_scores'] = res['id_scores'].str.split(',')
         res['sequence'] = res['sequence'].astype(str)
-        res['protein_accessions'] = res['protein_accessions'].str.split(",")
+        res['protein_accessions'] = res['protein_accessions'].str.split(";")
         res['protein_start_positions'] = res['protein_start_positions'].apply(
             self.__split_start_or_end).to_list()
         res['protein_end_positions'] = res['protein_end_positions'].apply(
@@ -601,29 +568,12 @@ class FeatureInMemory:
         else:
             res.loc[:, 'retention_time'] = None
 
-        if 'num_peaks' not in res.columns:
-            res.loc[:, 'num_peaks'] = None
-            res.loc[:, 'mz_array'] = None
-            res.loc[:, 'intensity_array'] = None
+        
+        res.loc[:, 'num_peaks'] = None
+        res.loc[:, 'mz_array'] = None
+        res.loc[:, 'intensity_array'] = None
 
         res.loc[:, 'gene_accessions'] = None
         res.loc[:, 'gene_names'] = None
 
         return pa.Table.from_pandas(res, schema=self.schema)
-
-    def write_parquet(self, res_path, parquet_path, chunksize):
-        """
-        res_path: Merge files path
-        parquet_path: patquet output path
-        chunksize: batch size
-        """
-        pqwriter = None
-        for i, df in enumerate(pd.read_csv(res_path, sep='\t', chunksize=chunksize)):
-            table = self.convert_to_parquet(df)
-            if i == 0:
-                # create a parquet write object giving it an output file
-                pqwriter = pq.ParquetWriter(parquet_path, table.schema)
-            pqwriter.write_table(table)
-        # close the parquet writer
-        if pqwriter:
-            pqwriter.close()

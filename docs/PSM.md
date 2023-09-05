@@ -21,10 +21,10 @@ _* [Parquet](https://github.com/apache/parquet-format)_ file is a columnar stora
 The [Avro PSM schema](psm.avsc) is used to define the PSM table format. The following table describes the fields of the PSM table.
 
 - `sequence`: The peptide's sequence corresponding to the PSM -> `string`
-- `psm_id`: A unique identifier for a PSM within the file -> `integer`
 - `protein_accessions`: A list protein's accessions -> `list[string]` 
 - `protein_start_positions`: A list of protein's start positions -> `list[int]`
 - `protein_end_positions`: A list of protein's end positions -> `list[int]`
+- `protein_global_qvalue`: The global q-value of the associated protein or protein group -> `double`
 - `unique`: Indicates whether the peptide sequence (coming from the PSM) is unique for this protein in respect to the searched database -> `boolean (0/1)`
 - `modifications`: A list of modifications for a give peptide `[modification1, modification2, ...]`. A modification should be recorded as string like [modification definition](README.md#modifications)-> `list[string]`
 - `retention_time`: The retention time of the spectrum -> `float`
@@ -43,7 +43,7 @@ Optional fields:
 - `gene_accessions`: A list of gene accessions -> `list[string]`
 - `gene_names`: A list of gene names -> `list[string]`
 - `consensus_support`: Global consensus support scores for multiple search engines -> `float`
-- `mz`: A list of mz values for the spectrum -> `list[double]`
-- `intensity`: A list of intensity values for the spectrum ->  `list[float]`
+- `mz_array`: A list of mz values for the spectrum -> `list[double]`
+- `intensity_array`: A list of intensity values for the spectrum ->  `list[float]`
 - `num_peaks`: The number of peaks in the spectrum, this is the size of previous lists intensity and mz -> `integer`
 - `id_scores`: A list of identification scores, search engine, percolator etc. Each search engine score will be a key/value pair `(e.g. "MS-GF:RawScore": 78.9)` -> `list[string]`
