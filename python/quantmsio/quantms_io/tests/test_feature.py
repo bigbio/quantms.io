@@ -42,7 +42,7 @@ def generate_random_feature():
         "intensity_array": [random.uniform(0.0, 1000.0) for _ in range(10)],
         "num_peaks": random.randint(5, 20),
         "gene_accessions": ["G123", "G456"],
-        "gene_names": ["GeneA", "GeneB"]
+        "gene_names": ["GeneA", "GeneB"],
     }
 
 
@@ -58,29 +58,28 @@ def generate_million_features():
 
 
 class TestFeatureHandler(TestCase):
-
     @unittest.skip("Skipping test_write_an_example_feature_million")
     def test_write_an_example_feature_million(self):
         feature_list = generate_random_feature()  # Generate a list of features
         feature_manager = FeatureHandler()
-        feature_manager.parquet_path = 'example_feature.parquet'
+        feature_manager.parquet_path = "example_feature.parquet"
         table = feature_manager.create_feature_table(feature_list)
         feature_manager.write_single_file_parquet(table, write_metadata=True)
 
     def test_write_an_example_feature(self):
         feature_manager = FeatureHandler()
-        feature_manager.parquet_path = 'example_feature.parquet'
+        feature_manager.parquet_path = "example_feature.parquet"
         table = feature_manager.create_feature_table([generate_random_feature()])
         print(f"Number of rows: {table.num_rows}")
         feature_manager.write_single_file_parquet(table, write_metadata=True)
 
     def test_convert_mztab_msstats_to_feature(self):
         feature_manager = FeatureHandler()
-        feature_manager.parquet_path = 'example_feature.parquet'
+        feature_manager.parquet_path = "example_feature.parquet"
         feature_manager.convert_mztab_msstats_to_feature(
             mztab_file="data/raw_ae_example/PXD009219.sdrf_openms_design_openms.mzTab",
             msstats_file="data/raw_ae_example/PXD009219.sdrf_openms_design_msstats_in.csv",
             sdrf_file="data/raw_ae_example/PXD009219.sdrf.tsv",
             consesusxml_file="data/raw_ae_example/PXD009219.sdrf_openms_design_openms.consensusXML",
-            use_cache=True
+            use_cache=True,
         )
