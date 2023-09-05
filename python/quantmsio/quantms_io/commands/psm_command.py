@@ -4,9 +4,20 @@ from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.psm import PSMHandler
 
 
-@click.command("convert-psm-file", short_help="Convert psm from mzTab to parquet file in quantms io")
-@click.option("--mztab_file", help="the mzTab file, this will be used to extract the protein information", required=True)
-@click.option("--output_folder", help="Folder where the Json file will be generated", required=True)
+@click.command(
+    "convert-psm-file",
+    short_help="Convert psm from mzTab to parquet file in quantms io",
+)
+@click.option(
+    "--mztab_file",
+    help="the mzTab file, this will be used to extract the protein information",
+    required=True,
+)
+@click.option(
+    "--output_folder",
+    help="Folder where the Json file will be generated",
+    required=True,
+)
 @click.option("--output_file", help="Parquet file name", required=False)
 def convert_psm_file(mztab_file: str, output_folder: str, output_file: str):
     """
@@ -22,8 +33,6 @@ def convert_psm_file(mztab_file: str, output_folder: str, output_file: str):
 
     psm_manager = PSMHandler()
     psm_manager.parquet_path = output_folder + "/" + output_file
-    psm_manager.convert_mztab_to_feature(mztab_path=mztab_file,parquet_path=psm_manager.parquet_path)
-
-
-
-
+    psm_manager.convert_mztab_to_feature(
+        mztab_path=mztab_file, parquet_path=psm_manager.parquet_path
+    )

@@ -25,23 +25,29 @@ from quantms_io.utils.file_utils import delete_files_extension
 
 
 class DifferentialExpressionHandler:
-    PROTEIN_ACCESSION_COLUMN = {"msstats_column": "protein", "quantms_column": "protein"}
+    PROTEIN_ACCESSION_COLUMN = {
+        "msstats_column": "protein",
+        "quantms_column": "protein",
+    }
     LABEL_COLUMN = {"msstats_column": "label", "quantms_column": "label"}
     log2FC_COLUMN = {"msstats_column": "log2fc", "quantms_column": "log2FC"}
     SE_COLUMN = {"msstats_column": "se", "quantms_column": "se"}
     DF_COLUMN = {"msstats_column": "df", "quantms_column": "df"}
     PVALUE_COLUMN = {"msstats_column": "pvalue", "quantms_column": "pvalue"}
-    ADJUST_PVALUE_COLUMN = {"msstats_column": "adj.pvalue", "quantms_column": "adj.pvalue"}
+    ADJUST_PVALUE_COLUMN = {
+        "msstats_column": "adj.pvalue",
+        "quantms_column": "adj.pvalue",
+    }
     ISSUE_COLUMN = {"msstats_column": "issue", "quantms_column": "issue"}
 
-    DE_HEADER = '''#INFO=<ID=protein, Number=inf, Type=String, Description="Protein Accession">
+    DE_HEADER = """#INFO=<ID=protein, Number=inf, Type=String, Description="Protein Accession">
 #INFO=<ID=label,Number=1, Type=String, Description="Label for the Conditions combination">
 #INFO=<ID=log2fc, Number=1, Type=Double, Description="Log2 Fold Change">
 #INFO=<ID=se, Number=1, Type=Double, Description="Standard error of the log2 fold change">
 #INFO=<ID=df, Number=1, Type=Integer, Description="Degree of freedom of the Student test"> 
 #INFO=<ID=pvalue, Number=1, Type=Double, Description="Raw p-values">
 #INFO=<ID=adj.pvalue, Number=1, Type=Double, Description="P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg">
-#INFO=<ID=issue, Number=1, Type=String, Description="Issue column shows if there is any issue for inference in corresponding protein and comparison">\n'''
+#INFO=<ID=issue, Number=1, Type=String, Description="Issue column shows if there is any issue for inference in corresponding protein and comparison">\n"""
 
     DIFFERENTIAL_EXPRESSION_EXTENSION = ".differential.tsv"
 
@@ -52,7 +58,9 @@ class DifferentialExpressionHandler:
         https://github.com/bigbio/quantms.io/blob/main/docs/DE.md
         """
         # SDRF file information
-        self.fdr_threshold = 0.05  # FDR threshold to consider a protein as differentially expressed
+        self.fdr_threshold = (
+            0.05  # FDR threshold to consider a protein as differentially expressed
+        )
         self.sdrf_manager = None
         self.sdrf_file_path = None
 
@@ -73,7 +81,9 @@ class DifferentialExpressionHandler:
         self.de_file_path = msstats_file_path
 
         if not os.path.isfile(msstats_file_path):
-            raise FileNotFoundError("MSstats differential file not found: " + msstats_file_path)
+            raise FileNotFoundError(
+                "MSstats differential file not found: " + msstats_file_path
+            )
 
         self.msstats_df = pd.read_csv(msstats_file_path, sep="\t")
         # Rename columns to a lower case
@@ -94,8 +104,12 @@ class DifferentialExpressionHandler:
         self.project_manager = ProjectHandler()
         self.project_manager.load_project_info(project_file)
 
-    def convert_msstats_to_quantms(self, output_folder: str = None, output_file_prefix: str = None,
-                                   delete_existing: bool = False):
+    def convert_msstats_to_quantms(
+        self,
+        output_folder: str = None,
+        output_file_prefix: str = None,
+        delete_existing: bool = False,
+    ):
         """
         Convert a MSstats differential file to quantms.io format
         :return: none
@@ -103,21 +117,42 @@ class DifferentialExpressionHandler:
         if self.msstats_df is None or self.project_manager is None:
             raise Exception("MSstats file or project file not loaded")
 
-        quantms_df = self.msstats_df[[DifferentialExpressionHandler.PROTEIN_ACCESSION_COLUMN["msstats_column"],
-                                      DifferentialExpressionHandler.LABEL_COLUMN["msstats_column"],
-                                      DifferentialExpressionHandler.log2FC_COLUMN["msstats_column"],
-                                      DifferentialExpressionHandler.SE_COLUMN["msstats_column"],
-                                      DifferentialExpressionHandler.DF_COLUMN["msstats_column"],
-                                      DifferentialExpressionHandler.PVALUE_COLUMN["msstats_column"],
-                                      DifferentialExpressionHandler.ADJUST_PVALUE_COLUMN["msstats_column"],
-                                      DifferentialExpressionHandler.ISSUE_COLUMN["msstats_column"]]].copy()
+        quantms_df = self.msstats_df[
+            [
+                DifferentialExpressionHandler.PROTEIN_ACCESSION_COLUMN[
+                    "msstats_column"
+                ],
+                DifferentialExpressionHandler.LABEL_COLUMN["msstats_column"],
+                DifferentialExpressionHandler.log2FC_COLUMN["msstats_column"],
+                DifferentialExpressionHandler.SE_COLUMN["msstats_column"],
+                DifferentialExpressionHandler.DF_COLUMN["msstats_column"],
+                DifferentialExpressionHandler.PVALUE_COLUMN["msstats_column"],
+                DifferentialExpressionHandler.ADJUST_PVALUE_COLUMN["msstats_column"],
+                DifferentialExpressionHandler.ISSUE_COLUMN["msstats_column"],
+            ]
+        ].copy()
 
         # Add project information
-        output_lines = "#project_accession: " + self.project_manager.project.project_info["project_accession"] + "\n"
-        output_lines += "#project_title: " + self.project_manager.project.project_info["project_title"] + "\n"
-        output_lines += "#project_description: " + self.project_manager.project.project_info[
-            "project_description"] + "\n"
-        output_lines += "#quantms_version: " + self.project_manager.project.project_info["quantms_version"] + "\n"
+        output_lines = (
+            "#project_accession: "
+            + self.project_manager.project.project_info["project_accession"]
+            + "\n"
+        )
+        output_lines += (
+            "#project_title: "
+            + self.project_manager.project.project_info["project_title"]
+            + "\n"
+        )
+        output_lines += (
+            "#project_description: "
+            + self.project_manager.project.project_info["project_description"]
+            + "\n"
+        )
+        output_lines += (
+            "#quantms_version: "
+            + self.project_manager.project.project_info["quantms_version"]
+            + "\n"
+        )
         factor_value = self.get_factor_value()
         if factor_value is not None:
             output_lines += "#factor_value: " + factor_value + "\n"
@@ -128,7 +163,8 @@ class DifferentialExpressionHandler:
 
         # Combine comments and DataFrame into a single list
         output_lines += DifferentialExpressionHandler.DE_HEADER + str(
-            quantms_df.to_csv(sep='\t', index=False, header=True))
+            quantms_df.to_csv(sep="\t", index=False, header=True)
+        )
 
         # Create the output file name
         base_name = output_file_prefix
@@ -141,7 +177,10 @@ class DifferentialExpressionHandler:
 
         ## Delete existing SDRF file
         if delete_existing:
-            delete_files_extension(output_folder, DifferentialExpressionHandler.DIFFERENTIAL_EXPRESSION_EXTENSION)
+            delete_files_extension(
+                output_folder,
+                DifferentialExpressionHandler.DIFFERENTIAL_EXPRESSION_EXTENSION,
+            )
 
         output_filename = f"{base_name}-{str(uuid.uuid4())}{DifferentialExpressionHandler.DIFFERENTIAL_EXPRESSION_EXTENSION}"
         if output_folder is None:
@@ -150,11 +189,15 @@ class DifferentialExpressionHandler:
             output_filename_path = f"{output_folder}/{base_name}-{str(uuid.uuid4())}{DifferentialExpressionHandler.DIFFERENTIAL_EXPRESSION_EXTENSION}"
 
         # Save the combined lines to a TSV file
-        with open(output_filename_path, 'w') as f:
+        with open(output_filename_path, "w") as f:
             f.write(output_lines)
 
-        self.project_manager.add_quantms_file(file_category="differential_file", file_name=output_filename)
-        print(f"Differential expression file copied to {output_filename} and added to the project information")
+        self.project_manager.add_quantms_file(
+            file_category="differential_file", file_name=output_filename
+        )
+        print(
+            f"Differential expression file copied to {output_filename} and added to the project information"
+        )
 
     def update_project_file(self, project_file: str = None):
         """
@@ -193,7 +236,6 @@ class DifferentialExpressionHandler:
         return self.sdrf_manager.get_factor_value()
 
     def load_sdrf_file(self, sdrf_file: str):
-
         self.sdrf_file_path = sdrf_file
 
         if not os.path.isfile(sdrf_file):

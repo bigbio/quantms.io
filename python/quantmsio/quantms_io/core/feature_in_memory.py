@@ -1,14 +1,21 @@
-import os
-import pyarrow as pa
-import pandas as pd
-import numpy as np
-import re
-import pyarrow.parquet as pq
 import codecs
+<<<<<<< HEAD
 from quantms_io.core.mztab import fetch_modifications_from_mztab_line
 from quantms_io.utils.pride_utils import clean_peptidoform_sequence, get_petidoform_msstats_notation,get_quantmsio_modifications,get_peptidoform_proforma_version_in_mztab
+=======
+import os
+import re
+>>>>>>> c0510320e2c2ceeab279d43c88cc47c969996396
 
-from quantms_io.utils.constants import TMT_CHANNELS, ITRAQ_CHANNEL
+import numpy as np
+import pandas as pd
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+from quantms_io.core.mztab import fetch_modifications_from_mztab_line
+from quantms_io.utils.constants import ITRAQ_CHANNEL, TMT_CHANNELS
+from quantms_io.utils.pride_utils import (clean_peptidoform_sequence,
+                                          get_petidoform_msstats_notation)
 
 
 def get_modifications(mztab_path):
@@ -18,10 +25,10 @@ def get_modifications(mztab_path):
     """
     if os.stat(mztab_path).st_size == 0:
         raise ValueError("File is empty")
-    f = codecs.open(mztab_path, 'r', 'utf-8')
+    f = codecs.open(mztab_path, "r", "utf-8")
     line = f.readline()
     mod_dict = {}
-    while line.split("\t")[0] == 'MTD':
+    while line.split("\t")[0] == "MTD":
         if "_mod[" in line:
             mod_dict = fetch_modifications_from_mztab_line(line, mod_dict)
         line = f.readline()
@@ -30,7 +37,6 @@ def get_modifications(mztab_path):
 
 
 class FeatureInMemory:
-
     def __init__(self, experiment_type, schema):
         self.mzml_directory = None
         self.experiment_type = experiment_type
@@ -56,16 +62,39 @@ class FeatureInMemory:
         # ms_runs
         self._ms_runs = None
         # msstats_in usecols
-        self._tmt_msstats_usecols = ['ProteinName', 'PeptideSequence', 'Channel', 'Run', 'BioReplicate',
-                                     'Intensity', 'FragmentIon', 'IsotopeLabelType', 'Charge', 'Reference',
-                                     'protein_global_qvalue', 'sequence']
-        self._lfq_msstats_usecols = ['ProteinName', 'PeptideSequence', 'Channel', 'Reference',
-                                     'Run', 'BioReplicate', 'Intensity', 'FragmentIon', 'IsotopeLabelType',
-                                     'PrecursorCharge', 'protein_global_qvalue', 'sequence']
+        self._tmt_msstats_usecols = [
+            "ProteinName",
+            "PeptideSequence",
+            "Channel",
+            "Run",
+            "BioReplicate",
+            "Intensity",
+            "FragmentIon",
+            "IsotopeLabelType",
+            "Charge",
+            "Reference",
+            "protein_global_qvalue",
+            "sequence",
+        ]
+        self._lfq_msstats_usecols = [
+            "ProteinName",
+            "PeptideSequence",
+            "Channel",
+            "Reference",
+            "Run",
+            "BioReplicate",
+            "Intensity",
+            "FragmentIon",
+            "IsotopeLabelType",
+            "PrecursorCharge",
+            "protein_global_qvalue",
+            "sequence",
+        ]
         # score names
         self._score_names = None  # dict
         # map dict
         self._map_lfq = {
+<<<<<<< HEAD
             'ProteinName': 'protein_accessions',
             'Reference': 'reference_file_name',
             'Run': 'run',
@@ -93,6 +122,37 @@ class FeatureInMemory:
             'source name': 'sample_accession',
             'comment[fraction identifier]': 'fraction',
             'factor value[organism part]': 'condition',
+=======
+            "ProteinName": "protein_accessions",
+            "PeptideSequence": "peptidoform",
+            "Reference": "reference_file_name",
+            "Run": "run",
+            "BioReplicate": "biological_replicate",
+            "Intensity": "intensity",
+            "FragmentIon": "fragment_ion",
+            "IsotopeLabelType": "isotope_label_type",
+            "PrecursorCharge": "charge",
+            "Channel": "channel",
+            "source name": "sample_accession",
+            "comment[fraction identifier]": "fraction",
+            "factor value[organism part]": "condition",
+        }
+        self._map_tmt = {
+            "ProteinName": "protein_accessions",
+            "PeptideSequence": "peptidoform",
+            "Reference": "reference_file_name",
+            "Run": "run",
+            "BioReplicate": "biological_replicate",
+            "Intensity": "intensity",
+            "FragmentIon": "fragment_ion",
+            "IsotopeLabelType": "isotope_label_type",
+            "RetentionTime": "retention_time",
+            "Charge": "charge",
+            "Channel": "channel",
+            "source name": "sample_accession",
+            "comment[fraction identifier]": "fraction",
+            "factor value[organism part]": "condition",
+>>>>>>> c0510320e2c2ceeab279d43c88cc47c969996396
         }
 
     def __set_table_config(self, header, length, pos, file_name):
@@ -104,10 +164,10 @@ class FeatureInMemory:
         file_name: mzTab file name
         """
         self._mzTab_file = file_name
-        if header == 'PSH':
+        if header == "PSH":
             self._psm_pos = pos
             self._psm_len = length
-        elif header == 'PEH':
+        elif header == "PEH":
             self._pep_pos = pos
             self._pep_len = length
         else:
@@ -117,10 +177,10 @@ class FeatureInMemory:
     # second load
     def __load_second(self, fle, header, **kwargs):
         f = open(fle)
-        if header == 'PSH':
+        if header == "PSH":
             f.seek(self._psm_pos)
             return pd.read_csv(f, nrows=self._psm_len, **kwargs)
-        elif header == 'PEH':
+        elif header == "PEH":
             f.seek(self._pep_pos)
             return pd.read_csv(f, nrows=self._pep_len, **kwargs)
         else:
@@ -135,15 +195,11 @@ class FeatureInMemory:
         line = f.readline()
         while not line.startswith("PEH"):
             line = f.readline()
-        self._pep_columns = line.split('\n')[0].split('\t')
+        self._pep_columns = line.split("\n")[0].split("\t")
 
     # extract csv len
     def _extract_len(self, fle, header):
-        map_tag = {
-            "PSH": 'PSM',
-            "PEH": 'PEP',
-            'PRH': 'PRT'
-        }
+        map_tag = {"PSH": "PSM", "PEH": "PEP", "PRH": "PRT"}
         if os.stat(fle).st_size == 0:
             raise ValueError("File is empty")
         f = open(fle)
@@ -153,8 +209,8 @@ class FeatureInMemory:
             pos = f.tell()
             line = f.readline()
 
-        if header == 'PSH':
-            self._psms_columns = line.split('\n')[0].split('\t')
+        if header == "PSH":
+            self._psms_columns = line.split("\n")[0].split("\t")
 
         line = f.readline()
         fle_len = 0
@@ -170,11 +226,11 @@ class FeatureInMemory:
         :param fle: mzTab file
         :param header table tag #PSH PRH PEH
         """
-        if self._mzTab_file == fle and self._psm_pos is not None and header == 'PSH':
+        if self._mzTab_file == fle and self._psm_pos is not None and header == "PSH":
             return self.__load_second(fle, header, **kwargs)
-        if self._mzTab_file == fle and self._pep_pos is not None and header == 'PEH':
+        if self._mzTab_file == fle and self._pep_pos is not None and header == "PEH":
             return self.__load_second(fle, header, **kwargs)
-        if self._mzTab_file == fle and self._prt_pos is not None and header == 'PRH':
+        if self._mzTab_file == fle and self._prt_pos is not None and header == "PRH":
             return self.__load_second(fle, header, **kwargs)
         fle_len, pos = self._extract_len(fle, header)
         if os.stat(fle).st_size == 0:
@@ -191,13 +247,32 @@ class FeatureInMemory:
         return: a dict about piptie numbers
         """
         from collections import Counter
+
         counter = Counter()
         psms = self.skip_and_load_csv(
-            mztab_path, 'PSH', sep='\t', chunksize=psm_chunksize)
+            mztab_path, "PSH", sep="\t", chunksize=psm_chunksize
+        )
         for psm in psms:
-            psm['spectra_ref'] = psm['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
-            spectra_dict = psm[['opt_global_cv_MS:1000889_peptidoform_sequence', 'charge', 'spectra_ref']].groupby(
-                ['opt_global_cv_MS:1000889_peptidoform_sequence', 'charge', 'spectra_ref']).size()
+            psm["spectra_ref"] = psm["spectra_ref"].apply(
+                lambda x: self._ms_runs[x.split(":")[0]]
+            )
+            spectra_dict = (
+                psm[
+                    [
+                        "opt_global_cv_MS:1000889_peptidoform_sequence",
+                        "charge",
+                        "spectra_ref",
+                    ]
+                ]
+                .groupby(
+                    [
+                        "opt_global_cv_MS:1000889_peptidoform_sequence",
+                        "charge",
+                        "spectra_ref",
+                    ]
+                )
+                .size()
+            )
             counter.update(spectra_dict.to_dict())
         return counter
 
@@ -205,10 +280,14 @@ class FeatureInMemory:
         """
         return: a dict about protein score
         """
-        prt = self.skip_and_load_csv(mztab_path, 'PRH', sep='\t', usecols=[
-            'ambiguity_members', 'best_search_engine_score[1]'])
-        prt_score = prt.groupby('ambiguity_members').max()
-        protein_map = prt_score.to_dict()['best_search_engine_score[1]']
+        prt = self.skip_and_load_csv(
+            mztab_path,
+            "PRH",
+            sep="\t",
+            usecols=["ambiguity_members", "best_search_engine_score[1]"],
+        )
+        prt_score = prt.groupby("ambiguity_members").max()
+        protein_map = prt_score.to_dict()["best_search_engine_score[1]"]
         return protein_map
 
     @staticmethod
@@ -218,22 +297,21 @@ class FeatureInMemory:
         """
         if os.stat(fle).st_size == 0:
             raise ValueError("File is empty")
-        f = codecs.open(fle, 'r', 'utf-8')
+        f = codecs.open(fle, "r", "utf-8")
         line = f.readline()
         score_names = {}
-        while line.split("\t")[0] == 'MTD':
-            if 'search_engine_score' in line:
-                score_values = line.replace(
-                    "[", "").replace("]", "").split(",")
+        while line.split("\t")[0] == "MTD":
+            if "search_engine_score" in line:
+                score_values = line.replace("[", "").replace("]", "").split(",")
                 score_name = score_values[2].strip()
                 if ":" in score_name:
                     score_name = "'{}'".format(score_name)
-                if 'peptide' in line.split('\t')[1]:
-                    score_names['peptide_score'] = score_name
-                elif 'protein' in line.split('\t')[1]:
-                    score_names['protein_score'] = score_name
+                if "peptide" in line.split("\t")[1]:
+                    score_names["peptide_score"] = score_name
+                elif "protein" in line.split("\t")[1]:
+                    score_names["protein_score"] = score_name
                 else:
-                    score_names['psm_score'] = score_name
+                    score_names["psm_score"] = score_name
 
             line = f.readline()
         f.close()
@@ -244,9 +322,9 @@ class FeatureInMemory:
         """
         map protein score from accession
         """
-        key = key.replace(';',',')
+        key = key.replace(";", ",")
         if key not in protein_map.keys():
-            keys = key.split(';')
+            keys = key.split(";")
             for k in keys:
                 if k in protein_map.keys():
                     return protein_map[k]
@@ -259,49 +337,80 @@ class FeatureInMemory:
         return: dict about pep_msg
         """
         self.__extract_pep_columns(mztab_path)
-        pep_usecols = ['opt_global_cv_MS:1000889_peptidoform_sequence', 'charge', 'best_search_engine_score[1]',
-                       'spectra_ref']
+        pep_usecols = [
+            "opt_global_cv_MS:1000889_peptidoform_sequence",
+            "charge",
+            "best_search_engine_score[1]",
+            "spectra_ref",
+        ]
         live_cols = [col for col in pep_usecols if col in self._pep_columns]
         not_cols = [col for col in pep_usecols if col not in live_cols]
-        if 'opt_global_cv_MS:1000889_peptidoform_sequence' in not_cols:
-            if 'sequence' in self._pep_columns and 'modifications' in self._pep_columns:
-                live_cols.append('sequence')
-                live_cols.append('modifications')
+        if "opt_global_cv_MS:1000889_peptidoform_sequence" in not_cols:
+            if "sequence" in self._pep_columns and "modifications" in self._pep_columns:
+                live_cols.append("sequence")
+                live_cols.append("modifications")
             else:
-                raise Exception("The peptide table don't have opt_global_cv_MS:1000889_peptidoform_sequence columns")
-        if 'charge' in not_cols or 'best_search_engine_score[1]' in not_cols:
-            raise Exception("The peptide table don't have best_search_engine_score[1] or charge columns")
+                raise Exception(
+                    "The peptide table don't have opt_global_cv_MS:1000889_peptidoform_sequence columns"
+                )
+        if "charge" in not_cols or "best_search_engine_score[1]" in not_cols:
+            raise Exception(
+                "The peptide table don't have best_search_engine_score[1] or charge columns"
+            )
 
-        pep = self.skip_and_load_csv(mztab_path, 'PEH', sep='\t', usecols=live_cols)
+        pep = self.skip_and_load_csv(mztab_path, "PEH", sep="\t", usecols=live_cols)
 
         # check opt_global_cv_MS:1000889_peptidoform_sequence
-        if 'opt_global_cv_MS:1000889_peptidoform_sequence' not in pep.columns:
+        if "opt_global_cv_MS:1000889_peptidoform_sequence" not in pep.columns:
             modifications = get_modifications(mztab_path)
-            pep.loc[:, 'opt_global_cv_MS:1000889_peptidoform_sequence'] = pep[['modifications', 'sequence']].apply(
-                lambda row: get_petidoform_msstats_notation(row['sequence'], row['modifications'], modifications),
-                axis=1)
+            pep.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = pep[
+                ["modifications", "sequence"]
+            ].apply(
+                lambda row: get_petidoform_msstats_notation(
+                    row["sequence"], row["modifications"], modifications
+                ),
+                axis=1,
+            )
 
         # check spectra_ref
-        if 'spectra_ref' not in pep.columns:
-            pep.loc[:, 'scan_number'] = None
-            pep.loc[:, 'spectra_ref'] = None
+        if "spectra_ref" not in pep.columns:
+            pep.loc[:, "scan_number"] = None
+            pep.loc[:, "spectra_ref"] = None
         else:
-            pep.loc[:, 'scan_number'] = pep['spectra_ref'].apply(lambda x: re.findall(r'scan=(\d+)', x)[0])
-            pep['spectra_ref'] = pep['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
-        pep_msg = pep.iloc[pep.groupby(['opt_global_cv_MS:1000889_peptidoform_sequence', 'charge']).apply(
-            lambda row: row['best_search_engine_score[1]'].idxmin())]
-        pep_msg = pep_msg.set_index(['opt_global_cv_MS:1000889_peptidoform_sequence', 'charge'])
+            pep.loc[:, "scan_number"] = pep["spectra_ref"].apply(
+                lambda x: re.findall(r"scan=(\d+)", x)[0]
+            )
+            pep["spectra_ref"] = pep["spectra_ref"].apply(
+                lambda x: self._ms_runs[x.split(":")[0]]
+            )
+        pep_msg = pep.iloc[
+            pep.groupby(
+                ["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"]
+            ).apply(lambda row: row["best_search_engine_score[1]"].idxmin())
+        ]
+        pep_msg = pep_msg.set_index(
+            ["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"]
+        )
 
-        pep_msg.loc[:, 'pep_msg'] = pep_msg[['best_search_engine_score[1]', 'spectra_ref', 'scan_number']].apply(
-            lambda row: [row['best_search_engine_score[1]'], row['spectra_ref'], row['scan_number']], axis=1)
+        pep_msg.loc[:, "pep_msg"] = pep_msg[
+            ["best_search_engine_score[1]", "spectra_ref", "scan_number"]
+        ].apply(
+            lambda row: [
+                row["best_search_engine_score[1]"],
+                row["spectra_ref"],
+                row["scan_number"],
+            ],
+            axis=1,
+        )
 
-        map_dict = pep_msg.to_dict()['pep_msg']
+        map_dict = pep_msg.to_dict()["pep_msg"]
         return map_dict
 
     def _extract_from_psm_to_pep_msg(self, mztab_path, map_dict):
         """
         return dict about pep and psm msg
         """
+<<<<<<< HEAD
         psm = self.skip_and_load_csv(mztab_path, 'PSH', sep='\t')
         self._modifications = get_modifications(mztab_path)
         if 'opt_global_cv_MS:1000889_peptidoform_sequence' not in psm.columns:
@@ -330,18 +439,89 @@ class FeatureInMemory:
             map_dict[key].append(df['modifications'].values[0])
             if 'opt_global_Posterior_Error_Probability_score' in df.columns:
                 map_dict[key].append(df['opt_global_Posterior_Error_Probability_score'].min())
+=======
+        psm = self.skip_and_load_csv(mztab_path, "PSH", sep="\t")
+        modifications = get_modifications(mztab_path)
+        if "opt_global_cv_MS:1000889_peptidoform_sequence" not in psm.columns:
+            psm.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = psm[
+                ["modifications", "sequence"]
+            ].apply(
+                lambda row: get_petidoform_msstats_notation(
+                    row["sequence"], row["modifications"], modifications
+                ),
+                axis=1,
+            )
+        for key, df in psm.groupby(
+            ["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"]
+        ):
+            if key not in map_dict.keys():
+                map_dict[key] = [None, None, None]
+            df.loc[:, "scan_number"] = df["spectra_ref"].apply(
+                lambda x: re.findall(r"scan=(\d+)", x)[0]
+            )
+            df["spectra_ref"] = df["spectra_ref"].apply(
+                lambda x: self._ms_runs[x.split(":")[0]]
+            )
+            if pd.isna(map_dict[key][1]):
+                # df.loc[:, 'scan_number'] = df['spectra_ref'].apply(lambda x: re.findall(r'scan=(\d+)', x)[0])
+                # df['spectra_ref'] = df['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
+                if "opt_global_q-value_score" in df.columns:
+                    map_dict[key][1] = df[
+                        df["opt_global_q-value_score"]
+                        == df["opt_global_q-value_score"].max()
+                    ]["spectra_ref"].values[0]
+                    map_dict[key][2] = df[
+                        df["opt_global_q-value_score"]
+                        == df["opt_global_q-value_score"].max()
+                    ]["scan_number"].values[0]
+                elif "search_engine_score[1]" in df.columns:
+                    map_dict[key][1] = df[
+                        df["search_engine_score[1]"]
+                        == df["search_engine_score[1]"].max()
+                    ]["spectra_ref"].values[0]
+                    map_dict[key][2] = df[
+                        df["search_engine_score[1]"]
+                        == df["search_engine_score[1]"].max()
+                    ]["scan_number"].values[0]
+                else:
+                    raise Exception(
+                        "The psm table don't have opt_global_q-value_score or search_engine_score[1] columns"
+                    )
+            # else:
+            # df['spectra_ref'] = df['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
+            map_dict[key].append(df["start"].values[0])
+            map_dict[key].append(df["end"].values[0])
+            map_dict[key].append(df["unique"].values[0])
+            map_dict[key].append(df["modifications"].values[0])
+            if "opt_global_Posterior_Error_Probability_score" in df.columns:
+                map_dict[key].append(
+                    df["opt_global_Posterior_Error_Probability_score"].min()
+                )
+>>>>>>> c0510320e2c2ceeab279d43c88cc47c969996396
             else:
                 map_dict[key].append(None)
-            if 'opt_global_cv_MS:1002217_decoy_peptide' in df.columns:
-                map_dict[key].append(df['opt_global_cv_MS:1002217_decoy_peptide'].values[0])
+            if "opt_global_cv_MS:1002217_decoy_peptide" in df.columns:
+                map_dict[key].append(
+                    df["opt_global_cv_MS:1002217_decoy_peptide"].values[0]
+                )
             else:
                 map_dict[key].append(None)
-            if map_dict[key][1] not in df['spectra_ref'].values:
+            if map_dict[key][1] not in df["spectra_ref"].values:
                 map_dict[key].append(df["calc_mass_to_charge"].values[0])
                 map_dict[key].append(None)
             else:
-                map_dict[key].append(df[(df['spectra_ref'] == map_dict[key][1])&(df['scan_number']==map_dict[key][2])]["calc_mass_to_charge"].values[0])
-                map_dict[key].append(df[(df['spectra_ref'] == map_dict[key][1])&(df['scan_number']==map_dict[key][2])]["exp_mass_to_charge"].values[0])
+                map_dict[key].append(
+                    df[
+                        (df["spectra_ref"] == map_dict[key][1])
+                        & (df["scan_number"] == map_dict[key][2])
+                    ]["calc_mass_to_charge"].values[0]
+                )
+                map_dict[key].append(
+                    df[
+                        (df["spectra_ref"] == map_dict[key][1])
+                        & (df["scan_number"] == map_dict[key][2])
+                    ]["exp_mass_to_charge"].values[0]
+                )
 
         return map_dict
 
@@ -366,42 +546,81 @@ class FeatureInMemory:
         :param spectra_count_dict: dict about piptie numbers
         :return: msstats_in dataframe
         """
-        if self.experiment_type == 'LFQ':
-            msstats_in.loc[:, "spectral_count"] = (msstats_in[['PeptideSequence', 'PrecursorCharge', 'Reference']]
-                                                   .apply(lambda row: spectra_count_dict[(row['PeptideSequence'],
-                                                                                          row['PrecursorCharge'],
-                                                                                          row['Reference'])], axis=1))
+        if self.experiment_type == "LFQ":
+            msstats_in.loc[:, "spectral_count"] = msstats_in[
+                ["PeptideSequence", "PrecursorCharge", "Reference"]
+            ].apply(
+                lambda row: spectra_count_dict[
+                    (row["PeptideSequence"], row["PrecursorCharge"], row["Reference"])
+                ],
+                axis=1,
+            )
         else:
-            msstats_in.loc[:, "spectral_count"] = (msstats_in[['PeptideSequence', 'Charge', 'Reference']]
-                                                   .apply(lambda row: spectra_count_dict[(row['PeptideSequence'],
-                                                                                          row['Charge'],
-                                                                                          row['Reference'])], axis=1))
-        map_features = ["global_qvalue", "best_psm_reference_file_name", "best_psm_scan_number",
-                        "protein_start_positions", "protein_end_positions", 'unique', 'modifications',
-                        "posterior_error_probability", "is_decoy", "calc_mass_to_charge", "exp_mass_to_charge"]
+            msstats_in.loc[:, "spectral_count"] = msstats_in[
+                ["PeptideSequence", "Charge", "Reference"]
+            ].apply(
+                lambda row: spectra_count_dict[
+                    (row["PeptideSequence"], row["Charge"], row["Reference"])
+                ],
+                axis=1,
+            )
+        map_features = [
+            "global_qvalue",
+            "best_psm_reference_file_name",
+            "best_psm_scan_number",
+            "protein_start_positions",
+            "protein_end_positions",
+            "unique",
+            "modifications",
+            "posterior_error_probability",
+            "is_decoy",
+            "calc_mass_to_charge",
+            "exp_mass_to_charge",
+        ]
         for i, feature in enumerate(map_features):
-            if self.experiment_type == 'LFQ':
-                msstats_in.loc[:, feature] = (msstats_in[['PeptideSequence', 'PrecursorCharge']]
-                                              .apply(lambda row: map_dict[(row['PeptideSequence'],
-                                                                           row['PrecursorCharge'])][i], axis=1))
+            if self.experiment_type == "LFQ":
+                msstats_in.loc[:, feature] = msstats_in[
+                    ["PeptideSequence", "PrecursorCharge"]
+                ].apply(
+                    lambda row: map_dict[
+                        (row["PeptideSequence"], row["PrecursorCharge"])
+                    ][i],
+                    axis=1,
+                )
             else:
-                msstats_in.loc[:, feature] = (msstats_in[['PeptideSequence', 'Charge']]
-                                              .apply(lambda row: map_dict[(row['PeptideSequence'],
-                                                                           row['Charge'])][i], axis=1))
-        peptide_score_name = self._score_names['peptide_score']
-        msstats_in.loc[:, "id_scores"] = (msstats_in[["global_qvalue", "posterior_error_probability"]]
-                                          .apply(lambda row: peptide_score_name + ':' + str(row['global_qvalue']) +
-                                                             ',' + 'Best PSM PEP:' +
-                                                             str(row['posterior_error_probability']), axis=1))
+                msstats_in.loc[:, feature] = msstats_in[
+                    ["PeptideSequence", "Charge"]
+                ].apply(
+                    lambda row: map_dict[(row["PeptideSequence"], row["Charge"])][i],
+                    axis=1,
+                )
+        peptide_score_name = self._score_names["peptide_score"]
+        msstats_in.loc[:, "id_scores"] = msstats_in[
+            ["global_qvalue", "posterior_error_probability"]
+        ].apply(
+            lambda row: peptide_score_name
+            + ":"
+            + str(row["global_qvalue"])
+            + ","
+            + "Best PSM PEP:"
+            + str(row["posterior_error_probability"]),
+            axis=1,
+        )
         return msstats_in
 
-    def merge_mztab_and_sdrf_to_msstats_in(self, mztab_path, msstats_path, sdrf_path, output_path,
-                                           msstats_chunksize=1000000):
+    def merge_mztab_and_sdrf_to_msstats_in(
+        self,
+        mztab_path,
+        msstats_path,
+        sdrf_path,
+        output_path,
+        msstats_chunksize=1000000,
+    ):
         """
         mzTab_path: mzTab file path
         msstats_path: msstats_in file path
         sdrf_path: sdrf file path
-        output_path: output path of parquet file 
+        output_path: output path of parquet file
         msstats_chunksize: the large of msstats chunk
         """
         protein_map = self.__get_protein_map(mztab_path)
@@ -410,6 +629,7 @@ class FeatureInMemory:
         spectra_count_dict = self.__get_spectra_count(mztab_path, 500000)
         pqwriter = None
         for msstats_in in msstats_ins:
+<<<<<<< HEAD
             msstats_in['Reference'] = msstats_in['Reference'].apply(
                 lambda x: x.split(".")[0])
             msstats_in.loc[:, 'protein_global_qvalue'] = msstats_in['ProteinName'].apply(
@@ -418,26 +638,50 @@ class FeatureInMemory:
                                              .apply(lambda x: clean_peptidoform_sequence(x)))
             
             if self.experiment_type != 'LFQ':
+=======
+            msstats_in["Reference"] = msstats_in["Reference"].apply(
+                lambda x: x.split(".")[0]
+            )
+            msstats_in.loc[:, "protein_global_qvalue"] = msstats_in[
+                "ProteinName"
+            ].apply(lambda x: self.__handle_protein_map(protein_map, x))
+            msstats_in.loc[:, "sequence"] = msstats_in["PeptideSequence"].apply(
+                lambda x: clean_peptidoform_sequence(x)
+            )
+            if self.experiment_type != "LFQ":
+>>>>>>> c0510320e2c2ceeab279d43c88cc47c969996396
                 no_tmt_usecols = [
-                    col for col in self._tmt_msstats_usecols if col not in msstats_in.columns]
+                    col
+                    for col in self._tmt_msstats_usecols
+                    if col not in msstats_in.columns
+                ]
                 for col in no_tmt_usecols:
-                    if 'IsotopeLabelType' == col:
-                        msstats_in.loc[:, col] = 'L'
+                    if "IsotopeLabelType" == col:
+                        msstats_in.loc[:, col] = "L"
                     else:
                         msstats_in.loc[:, col] = None
-                if 'TMT' in self.experiment_type:
+                if "TMT" in self.experiment_type:
                     msstats_in["Channel"] = msstats_in["Channel"].apply(
-                        lambda row: TMT_CHANNELS[self.experiment_type][row - 1])
+                        lambda row: TMT_CHANNELS[self.experiment_type][row - 1]
+                    )
                 else:
                     msstats_in["Channel"] = msstats_in["Channel"].apply(
-                        lambda row: ITRAQ_CHANNEL[self.experiment_type][row - 1])
-                if 'RetentionTime' in msstats_in.columns:
-                    self._tmt_msstats_usecols.append('RetentionTime')
+                        lambda row: ITRAQ_CHANNEL[self.experiment_type][row - 1]
+                    )
+                if "RetentionTime" in msstats_in.columns:
+                    self._tmt_msstats_usecols.append("RetentionTime")
                 msstats_in = msstats_in[self._tmt_msstats_usecols]
+<<<<<<< HEAD
                 self._tmt_msstats_usecols.remove('RetentionTime')
                 msstats_in = self._map_msstats_in(msstats_in, map_dict, spectra_count_dict)
                 msstats_in.loc[:,'peptidoform'] = msstats_in[['sequence','modifications']].apply(lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'],row['modifications'],self._modifications),axis=1)
                 msstats_in.drop(['PeptideSequence'],inplace=True, axis=1)
+=======
+                self._tmt_msstats_usecols.remove("RetentionTime")
+                msstats_in = self._map_msstats_in(
+                    msstats_in, map_dict, spectra_count_dict
+                )
+>>>>>>> c0510320e2c2ceeab279d43c88cc47c969996396
                 table = self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
                 parquet_table = self.convert_to_parquet(table)
                 if not pqwriter:
@@ -446,16 +690,25 @@ class FeatureInMemory:
                 pqwriter.write_table(parquet_table)
             else:
                 no_lfq_usecols = [
-                    col for col in self._lfq_msstats_usecols if col not in msstats_in.columns]
+                    col
+                    for col in self._lfq_msstats_usecols
+                    if col not in msstats_in.columns
+                ]
                 for col in no_lfq_usecols:
-                    if col == 'Channel':
-                        msstats_in.loc[:, col] = 'LABEL FREE SAMPLE'
+                    if col == "Channel":
+                        msstats_in.loc[:, col] = "LABEL FREE SAMPLE"
                     else:
                         msstats_in.loc[:, col] = None
                 msstats_in = msstats_in[self._lfq_msstats_usecols]
+<<<<<<< HEAD
                 msstats_in = self._map_msstats_in(msstats_in, map_dict, spectra_count_dict)
                 msstats_in.loc[:,'peptidoform'] = msstats_in[['sequence','modifications']].apply(lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'],row['modifications'],self._modifications),axis=1)
                 msstats_in.drop(['PeptideSequence'],inplace=True, axis=1)
+=======
+                msstats_in = self._map_msstats_in(
+                    msstats_in, map_dict, spectra_count_dict
+                )
+>>>>>>> c0510320e2c2ceeab279d43c88cc47c969996396
                 table = self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
                 parquet_table = self.convert_to_parquet(table)
                 if not pqwriter:
@@ -472,25 +725,40 @@ class FeatureInMemory:
         output_path: output file path(csv)
         header: whether to write header
         """
-        sdrf = pd.read_csv(sdrf_path, sep='\t')
-        factor = "".join(
-            filter(lambda x: x.startswith('factor'), sdrf.columns))
-        sdrf = sdrf[['comment[data file]', 'source name', factor,
-                     'comment[fraction identifier]', 'comment[label]']]
-        sdrf['comment[data file]'] = sdrf['comment[data file]'].apply(
-            lambda x: x.split(".")[0])
-        if self.experiment_type != 'LFQ':
-            res = pd.merge(msstats_in, sdrf, left_on=['Reference', "Channel"], right_on=[
-                'comment[data file]', 'comment[label]'], how='left')
-            res.drop(['comment[data file]', 'comment[label]'],
-                     axis=1, inplace=True)
+        sdrf = pd.read_csv(sdrf_path, sep="\t")
+        factor = "".join(filter(lambda x: x.startswith("factor"), sdrf.columns))
+        sdrf = sdrf[
+            [
+                "comment[data file]",
+                "source name",
+                factor,
+                "comment[fraction identifier]",
+                "comment[label]",
+            ]
+        ]
+        sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(
+            lambda x: x.split(".")[0]
+        )
+        if self.experiment_type != "LFQ":
+            res = pd.merge(
+                msstats_in,
+                sdrf,
+                left_on=["Reference", "Channel"],
+                right_on=["comment[data file]", "comment[label]"],
+                how="left",
+            )
+            res.drop(["comment[data file]", "comment[label]"], axis=1, inplace=True)
             res.rename(columns=self._map_tmt, inplace=True)
             return res
         else:
-            res = pd.merge(msstats_in, sdrf, left_on=['Reference'], right_on=[
-                'comment[data file]'], how='left')
-            res.drop(['comment[data file]', 'comment[label]'],
-                     axis=1, inplace=True)
+            res = pd.merge(
+                msstats_in,
+                sdrf,
+                left_on=["Reference"],
+                right_on=["comment[data file]"],
+                how="left",
+            )
+            res.drop(["comment[data file]", "comment[label]"], axis=1, inplace=True)
             res.rename(columns=self._map_lfq, inplace=True)
             return res
 
@@ -502,13 +770,14 @@ class FeatureInMemory:
         """
         if os.stat(fle).st_size == 0:
             raise ValueError("File is empty")
-        f = codecs.open(fle, 'r', 'utf-8')
+        f = codecs.open(fle, "r", "utf-8")
         line = f.readline()
         ms_runs = {}
-        while line.split("\t")[0] == 'MTD':
-            if line.split("\t")[1].split("-")[-1] == 'location':
-                ms_runs[line.split("\t")[1].split(
-                    "-")[0]] = line.split("\t")[2].split("//")[-1].split(".")[0]
+        while line.split("\t")[0] == "MTD":
+            if line.split("\t")[1].split("-")[-1] == "location":
+                ms_runs[line.split("\t")[1].split("-")[0]] = (
+                    line.split("\t")[2].split("//")[-1].split(".")[0]
+                )
             line = f.readline()
         f.close()
         return ms_runs
@@ -521,8 +790,8 @@ class FeatureInMemory:
         """
         if pd.isna(value):
             return pd.NA
-        elif ',' in str(value):
-            return list(map(int, value.split(',')))
+        elif "," in str(value):
+            return list(map(int, value.split(",")))
         elif value is np.nan:
             return None
         else:
@@ -547,6 +816,7 @@ class FeatureInMemory:
         res: msstats_in dataframe
         return: parquet table
         """
+<<<<<<< HEAD
         res['id_scores'] = res['id_scores'].str.split(',')
         res['sequence'] = res['sequence'].astype(str)
         res['protein_accessions'] = res['protein_accessions'].str.split(";")
@@ -570,18 +840,56 @@ class FeatureInMemory:
         res['fragment_ion'] = res['fragment_ion'].astype(str)
         res['run'] = res['run'].astype(str)
         res['best_psm_scan_number'] = res['best_psm_scan_number'].astype(int).astype(str)
+=======
+        res["id_scores"] = res["id_scores"].str.split(",")
+        res["sequence"] = res["sequence"].astype(str)
+        res["protein_accessions"] = res["protein_accessions"].str.split(";")
+        res["protein_start_positions"] = (
+            res["protein_start_positions"].apply(self.__split_start_or_end).to_list()
+        )
+        res["protein_end_positions"] = (
+            res["protein_end_positions"].apply(self.__split_start_or_end).to_list()
+        )
+        res["protein_global_qvalue"] = res["protein_global_qvalue"].astype(float)
+        res["unique"] = (
+            res["unique"].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype("Int32")
+        )
+        res["modifications"] = res["modifications"].str.split(",")
+        res["charge"] = (
+            res["charge"].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype("Int32")
+        )
+        res["exp_mass_to_charge"] = res["exp_mass_to_charge"].astype(float)
+        res["calc_mass_to_charge"] = res["calc_mass_to_charge"].astype(float)
+        res["posterior_error_probability"] = res["posterior_error_probability"].astype(
+            float
+        )
+        res["global_qvalue"] = res["global_qvalue"].astype(float)
+        res["is_decoy"] = (
+            res["is_decoy"]
+            .map(lambda x: pd.NA if pd.isna(x) else int(x))
+            .astype("Int32")
+        )
+        res["intensity"] = res["intensity"].astype(float)
+        res["spectral_count"] = res["spectral_count"].astype(int)
+        res["fraction"] = res["fraction"].astype(int).astype(str)
+        res["biological_replicate"] = res["biological_replicate"].astype(str)
+        res["fragment_ion"] = res["fragment_ion"].astype(str)
+        res["run"] = res["run"].astype(str)
+        res["best_psm_scan_number"] = (
+            res["best_psm_scan_number"].astype(int).astype(str)
+        )
+>>>>>>> c0510320e2c2ceeab279d43c88cc47c969996396
 
-        if 'retention_time' in res.columns:
-            res['retention_time'] = res['retention_time'].astype(float)
+        if "retention_time" in res.columns:
+            res["retention_time"] = res["retention_time"].astype(float)
         else:
-            res.loc[:, 'retention_time'] = None
+            res.loc[:, "retention_time"] = None
 
-        
-        res.loc[:, 'num_peaks'] = None
-        res.loc[:, 'mz_array'] = None
-        res.loc[:, 'intensity_array'] = None
+        res.loc[:, "num_peaks"] = None
+        res.loc[:, "mz_array"] = None
+        res.loc[:, "intensity_array"] = None
 
-        res.loc[:, 'gene_accessions'] = None
-        res.loc[:, 'gene_names'] = None
+        res.loc[:, "gene_accessions"] = None
+        res.loc[:, "gene_names"] = None
 
         return pa.Table.from_pandas(res, schema=self.schema)

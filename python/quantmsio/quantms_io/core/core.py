@@ -3,6 +3,7 @@ Core classes for quantms_io provide utilitiy classes for the quantms.io format.
 """
 import shutil
 import uuid
+
 import diskcache as diskcache
 
 
@@ -16,7 +17,9 @@ class DiskCache:
         # Create a cache name using a hash and uuid
         if name_prefix is None:
             name_prefix = "generic"
-        self._cache_name = str("_cache_name_{}_{}".format(name_prefix, uuid.uuid4().hex))
+        self._cache_name = str(
+            "_cache_name_{}_{}".format(name_prefix, uuid.uuid4().hex)
+        )
         self.cache = diskcache.Cache(self._cache_name, statistics=True)
         self.cache.create_tag_index()
 
@@ -34,7 +37,6 @@ class DiskCache:
             if subkey in key:
                 return self.cache[key]
         return None
-
 
     def add_item(self, key, value):
         self.cache[key] = value
