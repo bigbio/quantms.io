@@ -6,7 +6,7 @@ import re
 import pyarrow.parquet as pq
 import codecs
 from quantms_io.core.mztab import fetch_modifications_from_mztab_line
-from quantms_io.utils.pride_utils import clean_peptidoform_sequence, get_petidoform_msstats_notation
+from quantms_io.utils.pride_utils import clean_peptidoform_sequence, get_petidoform_msstats_notation,get_quantmsio_modifications,get_peptidoform_proforma_version_in_mztab
 
 from quantms_io.utils.constants import TMT_CHANNELS, ITRAQ_CHANNEL
 
@@ -67,7 +67,6 @@ class FeatureInMemory:
         # map dict
         self._map_lfq = {
             'ProteinName': 'protein_accessions',
-            'PeptideSequence': 'peptidoform',
             'Reference': 'reference_file_name',
             'Run': 'run',
             'BioReplicate': 'biological_replicate',
@@ -82,7 +81,6 @@ class FeatureInMemory:
         }
         self._map_tmt = {
             'ProteinName': 'protein_accessions',
-            'PeptideSequence': 'peptidoform',
             'Reference': 'reference_file_name',
             'Run': 'run',
             'BioReplicate': 'biological_replicate',
@@ -305,36 +303,27 @@ class FeatureInMemory:
         return dict about pep and psm msg
         """
         psm = self.skip_and_load_csv(mztab_path, 'PSH', sep='\t')
-        modifications = get_modifications(mztab_path)
+        self._modifications = get_modifications(mztab_path)
         if 'opt_global_cv_MS:1000889_peptidoform_sequence' not in psm.columns:
             psm.loc[:, 'opt_global_cv_MS:1000889_peptidoform_sequence'] = psm[['modifications', 'sequence']].apply(
-                lambda row: get_petidoform_msstats_notation(row['sequence'], row['modifications'], modifications),
+                lambda row: get_petidoform_msstats_notation(row['sequence'], row['modifications'], self._modifications),
                 axis=1)
         for key, df in psm.groupby(['opt_global_cv_MS:1000889_peptidoform_sequence', 'charge']):
             if key not in map_dict.keys():
                 map_dict[key] = [None, None, None]
+            df = df.reset_index(drop=True)
             df.loc[:, 'scan_number'] = df['spectra_ref'].apply(lambda x: re.findall(r'scan=(\d+)', x)[0])
             df['spectra_ref'] = df['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
             if pd.isna(map_dict[key][1]):
-                #df.loc[:, 'scan_number'] = df['spectra_ref'].apply(lambda x: re.findall(r'scan=(\d+)', x)[0])
-                #df['spectra_ref'] = df['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
                 if 'opt_global_q-value_score' in df.columns:
-                    map_dict[key][1] = \
-                        df[df['opt_global_q-value_score'] == df['opt_global_q-value_score'].max()][
-                            'spectra_ref'].values[0]
-                    map_dict[key][2] = \
-                        df[df['opt_global_q-value_score'] == df['opt_global_q-value_score'].max()][
-                            'scan_number'].values[0]
+                    map_dict[key][1] = df.iloc[df['opt_global_q-value_score'].idxmin()]['spectra_ref']
+                    map_dict[key][2] = df.iloc[df['opt_global_q-value_score'].idxmin()]['scan_number']
                 elif 'search_engine_score[1]' in df.columns:
-                    map_dict[key][1] = \
-                        df[df['search_engine_score[1]'] == df['search_engine_score[1]'].max()]['spectra_ref'].values[0]
-                    map_dict[key][2] = \
-                        df[df['search_engine_score[1]'] == df['search_engine_score[1]'].max()]['scan_number'].values[0]
+                    map_dict[key][1] = df.iloc[df['search_engine_score[1]'].idxmin()]['spectra_ref']
+                    map_dict[key][2] = df.iloc[df['search_engine_score[1]'].idxmin()]['scan_number']
                 else:
                     raise Exception(
                         "The psm table don't have opt_global_q-value_score or search_engine_score[1] columns")
-            #else:
-                #df['spectra_ref'] = df['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
             map_dict[key].append(df['start'].values[0])
             map_dict[key].append(df['end'].values[0])
             map_dict[key].append(df['unique'].values[0])
@@ -427,6 +416,7 @@ class FeatureInMemory:
                 lambda x: self.__handle_protein_map(protein_map, x))
             msstats_in.loc[:, 'sequence'] = (msstats_in['PeptideSequence']
                                              .apply(lambda x: clean_peptidoform_sequence(x)))
+            
             if self.experiment_type != 'LFQ':
                 no_tmt_usecols = [
                     col for col in self._tmt_msstats_usecols if col not in msstats_in.columns]
@@ -446,6 +436,8 @@ class FeatureInMemory:
                 msstats_in = msstats_in[self._tmt_msstats_usecols]
                 self._tmt_msstats_usecols.remove('RetentionTime')
                 msstats_in = self._map_msstats_in(msstats_in, map_dict, spectra_count_dict)
+                msstats_in.loc[:,'peptidoform'] = msstats_in[['sequence','modifications']].apply(lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'],row['modifications'],self._modifications),axis=1)
+                msstats_in.drop(['PeptideSequence'],inplace=True, axis=1)
                 table = self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
                 parquet_table = self.convert_to_parquet(table)
                 if not pqwriter:
@@ -462,6 +454,8 @@ class FeatureInMemory:
                         msstats_in.loc[:, col] = None
                 msstats_in = msstats_in[self._lfq_msstats_usecols]
                 msstats_in = self._map_msstats_in(msstats_in, map_dict, spectra_count_dict)
+                msstats_in.loc[:,'peptidoform'] = msstats_in[['sequence','modifications']].apply(lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'],row['modifications'],self._modifications),axis=1)
+                msstats_in.drop(['PeptideSequence'],inplace=True, axis=1)
                 table = self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
                 parquet_table = self.convert_to_parquet(table)
                 if not pqwriter:
@@ -533,6 +527,20 @@ class FeatureInMemory:
             return None
         else:
             return [int(value)]
+    
+    def _generate_modification_list(self, modification_str:str):
+
+        if pd.isna(modification_str):
+            return pd.NA
+        modifications = get_quantmsio_modifications(modification_str,self._modifications)
+        modifications_string = ""
+        for key, value in modifications.items():
+            modifications_string += "|".join(map(str, value["position"]))
+            modifications_string = modifications_string + "-" + value["unimod_accession"] + ","
+        modifications_string = modifications_string[:-1]  # Remove last comma
+        modification_list =  modifications_string.split(",")
+
+        return modification_list
 
     def convert_to_parquet(self, res):
         """
@@ -548,7 +556,7 @@ class FeatureInMemory:
             self.__split_start_or_end).to_list()
         res['protein_global_qvalue'] = res['protein_global_qvalue'].astype(float)
         res['unique'] = res['unique'].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype('Int32')
-        res['modifications'] = res['modifications'].str.split(",")
+        res['modifications'] = res['modifications'].apply(lambda x: self._generate_modification_list(x))
         res['charge'] = res['charge'].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype('Int32')
         res['exp_mass_to_charge'] = res['exp_mass_to_charge'].astype(float)
         res['calc_mass_to_charge'] = res['calc_mass_to_charge'].astype(float)
