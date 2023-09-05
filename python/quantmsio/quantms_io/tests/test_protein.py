@@ -1,8 +1,8 @@
+import random
 import unittest
 from unittest import TestCase
 
 from quantms_io.core.protein import ProteinHandler
-import random
 
 
 class TestProteinHandler(TestCase):

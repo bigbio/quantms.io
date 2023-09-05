@@ -7,10 +7,10 @@ information is a column format that defines the protein quantification/identific
  - Protein description
  - Sample accession
 """
-import pyarrow as pa
-import pyarrow.parquet as pq
 import pandas as pd
 
+import pyarrow as pa
+import pyarrow.parquet as pq
 from quantms_io.core.parquet_handler import ParquetHandler
 
 

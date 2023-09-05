@@ -10,11 +10,10 @@ import os
 import re
 
 import pandas as pd
+from Bio import Entrez, SeqIO
+
 import pyarrow as pa
 import pyarrow.parquet as pq
-from Bio import Entrez
-from Bio import SeqIO
-
 from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.openms import OpenMSHandler
 

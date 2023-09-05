@@ -1,4 +1,4 @@
-from typing import Tuple, Any
+from typing import Any, Tuple
 
 import numpy as np
 import pyopenms as oms

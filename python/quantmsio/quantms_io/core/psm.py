@@ -1,16 +1,15 @@
+import os
+
 import numpy as np
 import pandas as pd
 
-from quantms_io.core.mztab import MztabHandler
 import pyarrow as pa
-import os
 import pyarrow.parquet as pq
+from quantms_io.core.mztab import MztabHandler
 from quantms_io.core.parquet_handler import ParquetHandler
-from quantms_io.utils.pride_utils import (
-    standardize_protein_list_accession,
-    get_quantmsio_modifications,
-)
 from quantms_io.core.tools import extract_len
+from quantms_io.utils.pride_utils import (get_quantmsio_modifications,
+                                          standardize_protein_list_accession)
 
 
 def get_psm_in_batches(mztab_file: str, batch_size: int) -> int:

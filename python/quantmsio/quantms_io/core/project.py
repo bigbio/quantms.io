@@ -8,10 +8,8 @@ import requests
 
 from quantms_io.core.sdrf import SDRFHandler
 from quantms_io.utils.file_utils import delete_files_extension
-from quantms_io.utils.pride_utils import (
-    get_pubmed_id_pride_json,
-    get_set_of_experiment_keywords,
-)
+from quantms_io.utils.pride_utils import (get_pubmed_id_pride_json,
+                                          get_set_of_experiment_keywords)
 
 
 class ProjectHandler:

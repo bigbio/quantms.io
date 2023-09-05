@@ -12,23 +12,21 @@ The feature file is a column format that defines the peptide quantification/iden
 sample in the experiment.
 """
 import numpy as np
-import pyarrow as pa
-import pyarrow.parquet as pq
 import pandas as pd
 
+import pyarrow as pa
+import pyarrow.parquet as pq
 from quantms_io.core.feature_in_memory import FeatureInMemory
 from quantms_io.core.mztab import MztabHandler
 from quantms_io.core.openms import OpenMSHandler
 from quantms_io.core.parquet_handler import ParquetHandler
 from quantms_io.core.sdrf import SDRFHandler
-from quantms_io.utils.constants import TMT_CHANNELS, ITRAQ_CHANNEL
-from quantms_io.utils.pride_utils import (
-    clean_peptidoform_sequence,
-    compare_protein_lists,
-    standardize_protein_list_accession,
-    standardize_protein_string_accession,
-    get_quantmsio_modifications,
-)
+from quantms_io.utils.constants import ITRAQ_CHANNEL, TMT_CHANNELS
+from quantms_io.utils.pride_utils import (clean_peptidoform_sequence,
+                                          compare_protein_lists,
+                                          get_quantmsio_modifications,
+                                          standardize_protein_list_accession,
+                                          standardize_protein_string_accession)
 
 
 def get_msstats_in_batches(msstats_file: str, batch_size: int) -> int:

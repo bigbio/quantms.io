@@ -2,17 +2,15 @@ import numpy as np
 
 from quantms_io.core.core import DiskCache
 from quantms_io.utils.constants import PROTEIN_DETAILS
-from quantms_io.utils.pride_utils import (
-    get_key_peptide_combination,
-    parse_score_name_in_mztab,
-    get_permutations_of_original_list,
-    fetch_ms_runs_from_mztab_line,
-    fetch_modifications_from_mztab_line,
-    fetch_protein_from_mztab_line,
-    fetch_peptide_from_mztab_line,
-    fetch_psm_from_mztab_line,
-    standardize_protein_string_accession,
-)
+from quantms_io.utils.pride_utils import (fetch_modifications_from_mztab_line,
+                                          fetch_ms_runs_from_mztab_line,
+                                          fetch_peptide_from_mztab_line,
+                                          fetch_protein_from_mztab_line,
+                                          fetch_psm_from_mztab_line,
+                                          get_key_peptide_combination,
+                                          get_permutations_of_original_list,
+                                          parse_score_name_in_mztab,
+                                          standardize_protein_string_accession)
 
 
 def create_peptide_for_index(

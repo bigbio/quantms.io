@@ -1,17 +1,16 @@
-import os
-import pyarrow as pa
-import pandas as pd
-import numpy as np
-import re
-import pyarrow.parquet as pq
 import codecs
-from quantms_io.core.mztab import fetch_modifications_from_mztab_line
-from quantms_io.utils.pride_utils import (
-    clean_peptidoform_sequence,
-    get_petidoform_msstats_notation,
-)
+import os
+import re
 
-from quantms_io.utils.constants import TMT_CHANNELS, ITRAQ_CHANNEL
+import numpy as np
+import pandas as pd
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+from quantms_io.core.mztab import fetch_modifications_from_mztab_line
+from quantms_io.utils.constants import ITRAQ_CHANNEL, TMT_CHANNELS
+from quantms_io.utils.pride_utils import (clean_peptidoform_sequence,
+                                          get_petidoform_msstats_notation)
 
 
 def get_modifications(mztab_path):

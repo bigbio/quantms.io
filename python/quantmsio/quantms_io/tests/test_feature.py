@@ -1,8 +1,8 @@
+import random
 import unittest
 from unittest import TestCase
 
 from quantms_io.core.feature import FeatureHandler
-import random
 
 
 def generate_random_feature():
