@@ -116,7 +116,7 @@ def extract_optional_gene_dict(mzTab_path):
     return: a dict, key is protein accessions, value is gene names
     '''
     PRT = load_PRT(mzTab_path,'PRH',sep='\t', usecols=['accession','description'])
-    PRT.loc[:,'gene_names'] = PRT['description'].fillna('unknow').apply(lambda x: re.findall(r'GN=(\w+)',x)if re.findall(r'GN=(\w+)',x) else pd.NA)
+    PRT.loc[:,'gene_names'] = PRT['description'].fillna('unknown').apply(lambda x: re.findall(r'GN=(\w+)',x)if re.findall(r'GN=(\w+)',x) else pd.NA)
     gene_map = PRT[["accession", "gene_names"]].set_index("accession").to_dict(orient='dict')["gene_names"]
 
     return gene_map
