@@ -17,7 +17,6 @@ import pyarrow.parquet as pq
 from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.openms import OpenMSHandler
 
-import datacompy
 
 
 def extract_len(fle, header):
@@ -54,7 +53,11 @@ def map_spectrum_mz(mz_path: str, scan: str, Mzml: OpenMSHandler, mzml_directory
     return mz_array, array_intensity, 0
 
 
-def generate_features_of_spectrum(parquet_path: str, mzml_directory: str):
+def generate_features_of_spectrum(parquet_path: str, mzml_directory: str,output_path:str):
+    '''
+    parquet_path: parquet file path
+    mzml_directory: mzml file directory path
+    '''
     table = pd.read_parquet(parquet_path)
     Mzml = OpenMSHandler()
 
@@ -72,12 +75,10 @@ def generate_features_of_spectrum(parquet_path: str, mzml_directory: str):
     )
     Feature = FeatureHandler()
     parquet_table = pa.Table.from_pandas(table, schema=Feature.schema)
-    pq.write_table(parquet_table, parquet_path, compression="snappy", store_schema=True)
+    pq.write_table(parquet_table, output_path, compression="snappy", store_schema=True)
 
 
 # option about gene
-
-
 def generate_gene_names(parquet_path: str, mzTab_path: str):
     """
     get gene names from mzTab into parquet.
@@ -148,13 +149,3 @@ def extract_optional_gene_dict(mzTab_path):
     )
 
     return gene_map
-
-#compare two vision featureConvert
-def compare_featureConvert(parquet_path_one:str,parquet_path_two:str,report_path:str):
-    parquet_one = pd.read_parquet(parquet_path_one)
-    parquet_two = pd.read_parquet(parquet_path_two)
-    parquet_one = parquet_one.astype(str)
-    parquet_two = parquet_two.astype(str)
-    compare = datacompy.Compare(parquet_one, parquet_two, join_columns='sequence')
-    with open(report_path,'w') as f:
-        f.write(compare.report())
