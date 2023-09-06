@@ -236,7 +236,7 @@ class FeatureInMemory:
             counter.update(spectra_dict.to_dict())
         return counter
 
-    def __get_protein_map(self, mztab_path):
+    def _get_protein_map(self, mztab_path):
         """
         return: a dict about protein score
         """
@@ -251,7 +251,7 @@ class FeatureInMemory:
         return protein_map
 
     @staticmethod
-    def __get_score_names(fle):
+    def _get_score_names(fle):
         """
         return: a dict about search engine
         """
@@ -432,7 +432,7 @@ class FeatureInMemory:
         """
         # load ms_runs
         self._ms_runs = self.extract_ms_runs(mztab_path)
-        self._score_names = self.__get_score_names(mztab_path)
+        self._score_names = self._get_score_names(mztab_path)
         map_dict = self._extract_from_pep(mztab_path)
         map_dict = self._extract_from_psm_to_pep_msg(mztab_path, map_dict)
 
@@ -523,7 +523,7 @@ class FeatureInMemory:
         output_path: output path of parquet file
         msstats_chunksize: the large of msstats chunk
         """
-        protein_map = self.__get_protein_map(mztab_path)
+        protein_map = self._get_protein_map(mztab_path)
         map_dict = self._extract_psm_pep_msg(mztab_path)
         msstats_ins = pd.read_csv(msstats_path, chunksize=msstats_chunksize)
         spectra_count_dict = self.__get_spectra_count(mztab_path, 500000)
