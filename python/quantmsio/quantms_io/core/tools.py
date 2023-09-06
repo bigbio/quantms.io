@@ -17,6 +17,8 @@ import pyarrow.parquet as pq
 from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.openms import OpenMSHandler
 
+import datacompy
+
 
 def extract_len(fle, header):
     map_tag = {"PSH": "PSM", "PEH": "PEP", "PRH": "PRT"}
@@ -146,3 +148,13 @@ def extract_optional_gene_dict(mzTab_path):
     )
 
     return gene_map
+
+#compare two vision featureConvert
+def compare_featureConvert(parquet_path_one:str,parquet_path_two:str,report_path:str):
+    parquet_one = pd.read_parquet(parquet_path_one)
+    parquet_two = pd.read_parquet(parquet_path_two)
+    parquet_one = parquet_one.astype(str)
+    parquet_two = parquet_two.astype(str)
+    compare = datacompy.Compare(parquet_one, parquet_two, join_columns='sequence')
+    with open(report_path,'w') as f:
+        f.write(compare.report())
