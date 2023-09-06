@@ -216,7 +216,6 @@ class PSMHandler(ParquetHandler):
 
             # feature_table = self._create_psm_table(psm_list)
             # self.write_single_file_parquet(feature_table, parquet_output=self.parquet_path, write_metadata=True)
-            print(it["sequence"] + "---" + it["accession"])
 
         feature_table = self._create_psm_table(psm_list)
         self.write_single_file_parquet(

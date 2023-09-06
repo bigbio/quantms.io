@@ -1,8 +1,6 @@
 import click
 
-from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.psm import PSMHandler
-
 
 @click.command(
     "convert-psm-file",
@@ -15,7 +13,7 @@ from quantms_io.core.psm import PSMHandler
 )
 @click.option(
     "--output_folder",
-    help="Folder where the Json file will be generated",
+    help="Folder where the parquet file will be generated",
     required=True,
 )
 @click.option("--output_file", help="Parquet file name", required=False)
