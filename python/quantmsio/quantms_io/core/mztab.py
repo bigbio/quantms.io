@@ -144,7 +144,12 @@ class MztabHandler:
         :return: None
         """
         if self._use_cache:
-            self._peptide_index.add_item(peptide_key, peptide_value)
+            if self._peptide_index.contains(peptide_key):
+                pep = self._peptide_index.get_item(peptide_key)
+                if float(peptide_value['peptide_qvalue']) < float(pep['peptide_qvalue']):
+                    self._peptide_index.add_item(peptide_key, peptide_value)
+            else:
+                self._peptide_index.add_item(peptide_key, peptide_value)
         else:
             self._peptide_index[peptide_key] = peptide_value
 

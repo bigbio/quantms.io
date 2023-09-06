@@ -4,7 +4,7 @@ This file contains utility functions for parsing PRIDE JSON files
 import itertools
 import re
 from builtins import sorted
-
+import pandas as pd
 
 def get_pubmed_id_pride_json(pride_json: dict) -> str:
     """
@@ -579,11 +579,7 @@ def get_peptidoform_proforma_version_in_mztab(
     :param modifications_definition: dictionary modifications definition
     :return: peptidoform in proforma
     """
-    if (
-        modification_string == "null"
-        or modification_string is None
-        or modification_string == ""
-    ):
+    if modification_string == "null" or modification_string is None or modification_string == "" or pd.isna(modification_string):
         return peptide_sequence
 
     modifications = get_modifications_object_from_mztab_line(
