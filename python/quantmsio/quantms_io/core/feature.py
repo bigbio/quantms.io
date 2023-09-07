@@ -28,6 +28,9 @@ from quantms_io.utils.pride_utils import (clean_peptidoform_sequence,
                                           standardize_protein_list_accession,
                                           standardize_protein_string_accession)
 
+import logging
+logging.basicConfig(level = logging.INFO)
+logger = logging.getLogger(__name__)
 
 def get_msstats_in_batches(msstats_file: str, batch_size: int) -> int:
     """
@@ -175,7 +178,7 @@ def _fetch_msstats_feature(
         spectral_count = spectral_count_list[feature_dict["Reference"]]
     else:
         reference_file = feature_dict["Reference"]
-        print(f"MBR peptide: {peptidoform}, {charge}, {reference_file}")
+        logger.debug(f"MBR peptide: {peptidoform}, {charge}, {reference_file}")
 
     # Find calculated mass and experimental mass in peptide_count. Here we are using the scan number and the
     # reference file name to find the calculated mass and the experimental mass.
@@ -200,7 +203,7 @@ def _fetch_msstats_feature(
         )
         protein_qvalue = protein_qvalue_object[0]  # Protein q-value index 0
     except:
-        print("Error in line: {}".format(feature_dict))
+        logger.error("Error in line: {}".format(feature_dict))
         return None
 
     # TODO: Importantly, the protein accessions in the peptide section of the mzTab files peptide_mztab_qvalue_accession
@@ -209,8 +212,8 @@ def _fetch_msstats_feature(
     if not compare_protein_lists(
         protein_accessions_list, peptide_mztab_qvalue_accession
     ):
-        print("Error in line: {}".format(feature_dict))
-        print(
+        logger.error("Error in line: {}".format(feature_dict))
+        logger.error(
             "Protein accessions: {}-{}".format(
                 protein_accessions_list, peptide_mztab_qvalue_accession
             )
@@ -572,8 +575,6 @@ class FeatureHandler(ParquetHandler):
                                 self.parquet_path, feature_table.schema
                             )
                         pqwriter.write_table(feature_table)
-                    # feature_table = self.create_feature_table([msstats_feature])
-                    # print(msstats_feature)
                     line = msstats_file_handler.readline()
                 # batches = 1
                 if batch_count == 1:
@@ -586,9 +587,6 @@ class FeatureHandler(ParquetHandler):
                     pqwriter.write_table(feature_table)
                 if pqwriter:
                     pqwriter.close()
-                    # Create a feature table
-            # feature_table = self.create_feature_table(feature_list)
-            # Write the feature table to a parquet file
             mztab_handler.close()
         else:
             convert = FeatureInMemory(experiment_type, self.schema)

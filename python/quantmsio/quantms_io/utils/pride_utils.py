@@ -6,6 +6,10 @@ import re
 from builtins import sorted
 import pandas as pd
 
+import logging
+logging.basicConfig(level = logging.INFO)
+logger = logging.getLogger(__name__)
+
 def get_pubmed_id_pride_json(pride_json: dict) -> str:
     """
     Parse the PubMed ID from the PRIDE JSON file

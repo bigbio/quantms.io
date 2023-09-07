@@ -23,6 +23,10 @@ from quantms_io.core.project import ProjectHandler
 from quantms_io.core.sdrf import SDRFHandler
 from quantms_io.utils.file_utils import delete_files_extension
 
+import logging
+logging.basicConfig(level = logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 class DifferentialExpressionHandler:
     PROTEIN_ACCESSION_COLUMN = {
@@ -195,7 +199,7 @@ class DifferentialExpressionHandler:
         self.project_manager.add_quantms_file(
             file_category="differential_file", file_name=output_filename
         )
-        print(
+        logger.info(
             f"Differential expression file copied to {output_filename} and added to the project information"
         )
 

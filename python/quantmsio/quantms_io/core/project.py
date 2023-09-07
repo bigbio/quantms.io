@@ -11,6 +11,10 @@ from quantms_io.utils.file_utils import delete_files_extension
 from quantms_io.utils.pride_utils import (get_pubmed_id_pride_json,
                                           get_set_of_experiment_keywords)
 
+import logging
+logging.basicConfig(level = logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 class ProjectHandler:
     PROJECT_EXTENSION = ".project.json"
@@ -69,9 +73,7 @@ class ProjectHandler:
                 "experiment_type"
             ] = get_set_of_experiment_keywords(pride_data)
         else:
-            print(
-                f"Error retrieving data from PRIDE Archive API. Status code: {response.status_code}"
-            )
+            logger.error(f"Error retrieving data from PRIDE Archive API. Status code: {response.status_code}")
 
     def add_quantms_version(self, quantms_version: str):
         """
@@ -142,7 +144,7 @@ class ProjectHandler:
 
         with open(output_filename, "w") as json_file:
             json.dump(self.project.project_info, json_file, indent=4)
-        print(f"Updated project information saved to {output_filename}")
+        logger.info(f"Updated project information saved to {output_filename}")
 
     def save_updated_project_info(self, output_file_name: str):
         """
@@ -152,7 +154,7 @@ class ProjectHandler:
         """
         with open(output_file_name, "w") as json_file:
             json.dump(self.project.project_info, json_file, indent=4)
-        print(f"Updated project information saved to {output_file_name}")
+        logger.info(f"Updated project information saved to {output_file_name}")
 
     def populate_from_sdrf(self, sdrf_file: str):
         """
@@ -192,7 +194,7 @@ class ProjectHandler:
 
         shutil.copyfile(sdrf_file_path, output_filename_path)
         self.project.project_info["sdrf_file"] = output_filename
-        print(
+        logger.info(
             f"SDRF file copied to {output_filename} and added to the project information"
         )
 

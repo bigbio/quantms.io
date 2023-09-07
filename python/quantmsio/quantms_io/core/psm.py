@@ -10,6 +10,9 @@ from quantms_io.core.parquet_handler import ParquetHandler
 from quantms_io.core.tools import extract_len
 from quantms_io.utils.pride_utils import (get_quantmsio_modifications,
                                           standardize_protein_list_accession)
+import logging
+logging.basicConfig(level = logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def get_psm_in_batches(mztab_file: str, batch_size: int) -> int:
@@ -164,13 +167,12 @@ class PSMHandler(ParquetHandler):
     def _create_psm_table(self, psm_list: list) -> pa.Table:
         return pa.Table.from_pandas(pd.DataFrame(psm_list), schema=self.schema)
 
-    def convert_mztab_to_feature(
-        self, mztab_path: str, parquet_path: str = None, batch_size: int = 100000
-    ):
+    def convert_mztab_to_psm(self, mztab_path: str, parquet_path: str = None, verbose: bool = False, batch_size: int = 100000):
         """
         convert a mzTab file to a feature file
         :param mztab_path: path to the mzTab file
         :param parquet_path: path to the feature file
+        :param verbose: Verbose the process of conversion
         :param batch_size: number of psm to write in a single batch
         :return: path to the feature file
         """
@@ -181,11 +183,13 @@ class PSMHandler(ParquetHandler):
         mztab_handler.create_mztab_psm_iterator(mztab_path)
         psm_list = []
         batches = get_psm_in_batches(mztab_path, batch_size)
+        logger.info(f"Number of batches: {batches}")
         batch_count = 1
         pq_writer = None
 
         for it in iter(mztab_handler.read_next_psm, None):
-            print(it["sequence"] + "---" + it["accession"])
+            if verbose:
+                logger.log(logging.INFO, "Sequence: {} -- Protein: {}".format(it["sequence"], it["accession"]))
             psm_list.append(self._transform_psm_from_mztab(psm=it, mztab_handler=mztab_handler))
             if len(psm_list) == batch_size and batch_count < batches:  # write in batches
                 feature_table = self._create_psm_table(psm_list)
@@ -205,6 +209,7 @@ class PSMHandler(ParquetHandler):
 
         if pq_writer:
             pq_writer.close()
+        logger.log(logging.INFO, "The parquet file was generated in: {}".format(self.parquet_path))
 
     @staticmethod
     def _transform_psm_from_mztab(psm, mztab_handler) -> dict:

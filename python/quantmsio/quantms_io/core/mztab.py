@@ -12,6 +12,10 @@ from quantms_io.utils.pride_utils import (fetch_modifications_from_mztab_line,
                                           parse_score_name_in_mztab,
                                           standardize_protein_string_accession)
 
+import logging
+logging.basicConfig(level = logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 def create_peptide_for_index(
     peptide_qvalue: str,
@@ -247,8 +251,6 @@ class MztabHandler:
                 psm["list_psms"] = list_psms
 
                 self._peptide_index.add_item(psm_key, psm)
-            # else:
-            # print("The psm key {} is not in the peptide index".format(psm_key))
         else:
             if psm_key in self._peptide_index:
                 psm = self._peptide_index[psm_key]
@@ -304,8 +306,6 @@ class MztabHandler:
                 psm["list_psms"] = list_psms
 
                 self._peptide_index[psm_key] = psm
-            # else:
-            #     print("The psm key {} is not in the peptide index".format(psm_key))
 
     def create_mztab_index(
         self, mztab_file: str, qvalue_index: bool = True, psm_count_index: bool = True
@@ -334,7 +334,7 @@ class MztabHandler:
                         line, self._modifications
                     )
                 elif line.startswith("PRH"):
-                    print("-- End of the Metadata section of the mztab file -- ")
+                    logger.info("-- End of the Metadata section of the mztab file -- ")
                     protein_columns = line.split("\t")
                     self._index["PRH"] = pos
                 elif line.startswith("PRT"):
@@ -348,9 +348,7 @@ class MztabHandler:
                             pos,
                         ]
                 elif line.startswith("PEH"):
-                    print(
-                        "-- All proteins have been read, starting peptide section -- "
-                    )
+                    logger.info("-- All proteins have been read, starting peptide section -- ")
                     self._index["PEH"] = pos
                     peptide_columns = line.split("\t")
                 elif line.startswith("PEP"):
@@ -379,7 +377,7 @@ class MztabHandler:
                     )
                     self.add_peptide_to_index(peptide_key, peptide_value)
                 elif line.startswith("PSH"):
-                    print("-- All peptides have been read, starting psm section -- ")
+                    logger.info("-- All peptides have been read, starting psm section -- ")
                     self._index["PSH"] = pos
                     psm_columns = line.split("\t")
                 elif line.startswith("PSM"):
@@ -427,22 +425,22 @@ class MztabHandler:
         """
         if self._use_cache:
             for key in self._peptide_index.get_all_keys():
-                print("Key {} Value {}".format(key, self._peptide_index.get_item(key)))
+                logger.debug("Key {} Value {}".format(key, self._peptide_index.get_item(key)))
         else:
             for peptide in self._peptide_index.keys():
-                print("Key {} Value {}".format(peptide, self._peptide_index[peptide]))
+                logger.debug("Key {} Value {}".format(peptide, self._peptide_index[peptide]))
 
     def print_mztab_stats(self):
         """
         print the mztab stats.
         """
-        print("Mztab stats")
-        print("Number of proteins {}".format(len(self._protein_details)))
-        print("Number of peptides {}".format(self._peptide_index.length()))
-        print("Number of ms runs {}".format(len(self._ms_runs)))
+        logger.info("Mztab stats")
+        logger.info("Number of proteins {}".format(len(self._protein_details)))
+        logger.info("Number of peptides {}".format(self._peptide_index.length()))
+        logger.info("Number of ms runs {}".format(len(self._ms_runs)))
 
         if self._use_cache:
-            print("stats {}".format(self._peptide_index.get_stats()))
+            logger.info("stats {}".format(self._peptide_index.get_stats()))
 
     def close(self):
         if self._use_cache:
@@ -553,7 +551,7 @@ class MztabHandler:
                     line, self._modifications
                 )
             elif line.startswith("PRH"):
-                print("-- End of the Metadata section of the mztab file -- ")
+                logger.info("-- End of the Metadata section of the mztab file -- ")
                 protein_columns = line.split("\t")
                 self._index["PRH"] = pos
             elif line.startswith("PRT"):
@@ -570,7 +568,7 @@ class MztabHandler:
                         pos,
                     ]
             elif line.startswith("PSH"):
-                print("-- All peptides have been read, starting psm section -- ")
+                logger.info("-- All peptides have been read, starting psm section -- ")
                 self._index["PSH"] = pos
                 self._psm_columns = line.split("\t")
                 return
