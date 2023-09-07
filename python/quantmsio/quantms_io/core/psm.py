@@ -190,7 +190,7 @@ class PSMHandler(ParquetHandler):
 
         for it in iter(mztab_handler.read_next_psm, None):
             if verbose:
-                logger.log(logging.INFO, "Sequence: {} -- Protein: {}".format(it["sequence"], it["accession"]))
+                logger.info("Sequence: {} -- Protein: {}".format(it["sequence"], it["accession"]))
             psm_list.append(self._transform_psm_from_mztab(psm=it, mztab_handler=mztab_handler))
             if len(psm_list) == batch_size and batch_count < batches:  # write in batches
                 feature_table = self._create_psm_table(psm_list)
@@ -210,7 +210,7 @@ class PSMHandler(ParquetHandler):
 
         if pq_writer:
             pq_writer.close()
-        logger.log(logging.INFO, "The parquet file was generated in: {}".format(self.parquet_path))
+        logger.info("The parquet file was generated in: {}".format(self.parquet_path))
 
 
         #project

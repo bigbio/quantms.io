@@ -14,15 +14,28 @@ import logging
 logging.basicConfig(level = logging.INFO)
 logger = logging.getLogger(__name__)
 
-def check_directory(output_folder:str,project_accession:str=None):
-    if os.path.exists(output_folder):
-        json_path = output_folder + '/' + 'project.json'
-        if os.path.exists(json_path):
-            Project = ProjectHandler(project_accession,json_path)
+def check_directory(output_folder:str, project_accession:str = None):
+    """
+    Check if the project file is present in the output folder, if not create it.
+    :param output_folder: Folder where the Json file will be generated
+    :param project_accession: Prefix of the Json file needed to generate the file name
+    """
+    if project_accession is None:
+        project_json = [f for f in os.listdir(output_folder) if f.endswith('.project.json')]
+        if len(project_json) == 1:
+            json_path = output_folder + '/' + project_json[0]
+            Project = ProjectHandler(project_json_file=json_path)
+            return Project
         else:
-            Project = ProjectHandler(project_accession)
-        return Project
+            raise Exception(f"More than one project json file found in {output_folder}")
     else:
+        project_json = [f for f in os.listdir(output_folder) if f.endswith('.project.json')]
+        for json_file in project_json:
+            json_path = output_folder + '/' + json_file
+            Project = ProjectHandler(project_json_file=json_path)
+            if Project.project_accession == project_accession:
+                return Project
+        # If the project file not present but accession available
         os.makedirs(output_folder)
         Project = ProjectHandler(project_accession)
         return Project
