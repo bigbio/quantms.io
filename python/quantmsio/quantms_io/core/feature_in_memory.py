@@ -1,6 +1,6 @@
 import codecs
 from quantms_io.core.mztab import fetch_modifications_from_mztab_line
-from quantms_io.utils.pride_utils import clean_peptidoform_sequence, get_petidoform_msstats_notation,get_quantmsio_modifications,get_peptidoform_proforma_version_in_mztab
+from quantms_io.utils.pride_utils import clean_peptidoform_sequence, get_petidoform_msstats_notation,get_quantmsio_modifications,get_peptidoform_proforma_version_in_mztab,generate_scan_number
 
 import numpy as np
 import pandas as pd
@@ -26,6 +26,7 @@ def get_modifications(mztab_path):
         line = f.readline()
     f.close()
     return mod_dict
+
 
 
 class FeatureInMemory:
@@ -97,7 +98,6 @@ class FeatureInMemory:
             'Channel': 'channel',
             'source name': 'sample_accession',
             'comment[fraction identifier]': 'fraction',
-            'factor value[organism part]': 'condition',
         }
         self._map_tmt = {
             'ProteinName': 'protein_accessions',
@@ -112,7 +112,6 @@ class FeatureInMemory:
             'Channel': 'channel',
             'source name': 'sample_accession',
             'comment[fraction identifier]': 'fraction',
-            'factor value[organism part]': 'condition',
         }
 
     def __set_table_config(self, header, length, pos, file_name):
@@ -338,7 +337,7 @@ class FeatureInMemory:
             pep.loc[:, "spectra_ref"] = None
         else:
             pep.loc[:, "scan_number"] = pep["spectra_ref"].apply(
-                lambda x: re.findall(r"scan=(\d+)", x)[0]
+                lambda x: generate_scan_number(x)
             )
             pep["spectra_ref"] = pep["spectra_ref"].apply(
                 lambda x: self._ms_runs[x.split(":")[0]]
@@ -380,7 +379,7 @@ class FeatureInMemory:
             if key not in map_dict.keys():
                 map_dict[key] = [None, None, None]
             df = df.reset_index(drop=True)
-            df.loc[:, 'scan_number'] = df['spectra_ref'].apply(lambda x: re.findall(r'scan=(\d+)', x)[0])
+            df.loc[:, 'scan_number'] = df['spectra_ref'].apply(lambda x: generate_scan_number(x))
             df['spectra_ref'] = df['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
             if pd.isna(map_dict[key][1]):
                 if 'opt_global_q-value_score' in df.columns:
@@ -422,7 +421,7 @@ class FeatureInMemory:
                         & (df["scan_number"] == map_dict[key][2])
                     ]["exp_mass_to_charge"].values[0]
                 )
-
+    
         return map_dict
 
     def _extract_psm_pep_msg(self, mztab_path):
@@ -623,6 +622,7 @@ class FeatureInMemory:
             )
             res.drop(["comment[data file]", "comment[label]"], axis=1, inplace=True)
             res.rename(columns=self._map_tmt, inplace=True)
+            res.rename(columns={factor: 'condition'},inplace=True)
             return res
         else:
             res = pd.merge(
@@ -634,6 +634,7 @@ class FeatureInMemory:
             )
             res.drop(["comment[data file]", "comment[label]"], axis=1, inplace=True)
             res.rename(columns=self._map_lfq, inplace=True)
+            res.rename(columns={factor: 'condition'},inplace=True)
             return res
 
     # extract ms runs
@@ -712,7 +713,7 @@ class FeatureInMemory:
         res['biological_replicate'] = res['biological_replicate'].astype(str)
         res['fragment_ion'] = res['fragment_ion'].astype(str)
         res['run'] = res['run'].astype(str)
-        res['best_psm_scan_number'] = res['best_psm_scan_number'].astype(int).astype(str)
+        res['best_psm_scan_number'] = res['best_psm_scan_number'].astype(str)
 
         if "retention_time" in res.columns:
             res["retention_time"] = res["retention_time"].astype(float)
