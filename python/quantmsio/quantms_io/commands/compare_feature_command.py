@@ -17,7 +17,7 @@ import pandas as pd
     help="report path",
     required=True,
 )
-def compare_featureConvert(parquet_path_one:str,parquet_path_two:str,report_path:str):
+def compare_feature_convert(parquet_path_one: str, parquet_path_two: str, report_path: str):
     parquet_one = pd.read_parquet(parquet_path_one)
     parquet_two = pd.read_parquet(parquet_path_two)
     parquet_one = parquet_one.astype(str)

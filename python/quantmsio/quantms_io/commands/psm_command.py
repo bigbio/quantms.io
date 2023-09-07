@@ -14,7 +14,7 @@ from quantms_io.core.project import create_uuid_filename,check_directory
 )
 @click.option(
     "--output_folder",
-    help="Folder where the Json file will be generated",
+    help="Folder where the parquet file will be generated",
     required=True,
 )
 @click.option("--output_prefix_file", help="Prefix of the Json file needed to generate the file name", required=False)
