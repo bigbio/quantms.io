@@ -1,7 +1,7 @@
 import click
 
 from quantms_io.core.project import ProjectHandler
-
+from quantms_io.core.project import check_directory
 
 @click.command(
     "generate-pride-project-json",
@@ -27,21 +27,22 @@ from quantms_io.core.project import ProjectHandler
     help="Folder where the Json file will be generated",
     required=True,
 )
-@click.option(
-    "--output_file",
-    help="Prefix of the Json file needed to generate the file name",
-    required=False,
-)
-@click.option(
-    "--delete_existing", help="Delete existing files in the output folder", is_flag=True
-)
+
+#@click.option(
+#    "--output_file",
+#    help="Prefix of the Json file needed to generate the file name",
+#    required=False,
+#)
+#@click.option(
+#    "--delete_existing", help="Delete existing files in the output folder", is_flag=True
+#)
 def generate_pride_project_json(
     project_accession: str,
     sdrf_file: str,
     quantms_version: str,
     output_folder: str,
-    output_file: str,
-    delete_existing: bool,
+    #output_file: str,
+    #delete_existing: bool,
 ):
     """
     Generate a json project file from the original PX accession and SDRF file. The Json file definition is available in the docs
@@ -64,19 +65,21 @@ def generate_pride_project_json(
         or output_folder is None
     ):
         raise click.UsageError("Please provide all the required parameters")
+    
+    
 
     if output_file is None:
         output_file = project_accession
 
-    project_handler = ProjectHandler(
-        project_accession=project_accession, project_json_file=None
-    )
+    project_handler = check_directory(output_folder,project_accession)
 
     # Populate the project handler with the metadata from Pride Archive and the SDRF file
     project_handler.populate_from_pride_archive()
     project_handler.populate_from_sdrf(sdrf_file)
     project_handler.add_quantms_version(quantms_version=quantms_version)
-
+    project_path = output_folder + '/' + 'project.json'
+    project_handler.save_updated_project_info(output_file_name=project_path)
+    '''
     project_handler.add_sdrf_file(
         sdrf_file_path=sdrf_file,
         output_folder=output_folder,
@@ -87,3 +90,4 @@ def generate_pride_project_json(
         output_folder=output_folder,
         delete_existing=delete_existing,
     )
+    '''

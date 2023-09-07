@@ -16,6 +16,8 @@ import pandas as pd
 
 import pyarrow as pa
 import pyarrow.parquet as pq
+from quantms_io.core.project import ProjectHandler
+from quantms_io.core.project import check_directory,cut_path
 from quantms_io.core.feature_in_memory import FeatureInMemory
 from quantms_io.core.mztab import MztabHandler
 from quantms_io.core.openms import OpenMSHandler
@@ -502,6 +504,7 @@ class FeatureHandler(ParquetHandler):
         msstats_file: str,
         sdrf_file: str,
         mztab_file: str,
+        output_folder: str,
         consesusxml_file: str = None,
         batch_size: int = 1000000,
         use_cache: bool = False,
@@ -599,6 +602,12 @@ class FeatureHandler(ParquetHandler):
                 self.parquet_path,
                 msstats_chunksize=batch_size,
             )
+        #project
+        Project = check_directory(output_folder)
+        Project.register_file(cut_path(self.parquet_path,output_folder),'.featrue.parquet')
+        Project.add_sdrf_file(sdrf_file,output_folder,False)
+        project_path = output_folder + '/' + 'project.json'
+        Project.save_updated_project_info(output_file_name=project_path)
 
     def describe_schema(self):
         """
