@@ -7,6 +7,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from quantms_io.core.mztab import MztabHandler
 from quantms_io.core.parquet_handler import ParquetHandler
+from quantms_io.core.project import check_directory,cut_path
 from quantms_io.core.tools import extract_len
 from quantms_io.utils.pride_utils import (get_quantmsio_modifications,
                                           standardize_protein_list_accession)
@@ -167,7 +168,7 @@ class PSMHandler(ParquetHandler):
     def _create_psm_table(self, psm_list: list) -> pa.Table:
         return pa.Table.from_pandas(pd.DataFrame(psm_list), schema=self.schema)
 
-    def convert_mztab_to_psm(self, mztab_path: str, parquet_path: str = None, verbose: bool = False, batch_size: int = 100000):
+    def convert_mztab_to_psm(self, mztab_path: str, output_folder:str, parquet_path: str = None, verbose: bool = False, batch_size: int = 100000):
         """
         convert a mzTab file to a feature file
         :param mztab_path: path to the mzTab file
@@ -210,6 +211,17 @@ class PSMHandler(ParquetHandler):
         if pq_writer:
             pq_writer.close()
         logger.log(logging.INFO, "The parquet file was generated in: {}".format(self.parquet_path))
+
+
+        #project
+        Project = check_directory(output_folder)
+        Project.register_file(cut_path(self.parquet_path,output_folder),'.psm.parquet')
+        project_path = output_folder + '/' + 'project.json'
+        Project.save_updated_project_info(output_file_name=project_path)
+
+        #feature_table = self._create_psm_table(psm_list)
+        #self.write_single_file_parquet(feature_table, parquet_output=self.parquet_path, write_metadata=True)
+            #print(it["sequence"] + "---" + it["accession"])
 
     @staticmethod
     def _transform_psm_from_mztab(psm, mztab_handler) -> dict:

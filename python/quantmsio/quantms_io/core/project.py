@@ -10,10 +10,40 @@ from quantms_io.core.sdrf import SDRFHandler
 from quantms_io.utils.file_utils import delete_files_extension
 from quantms_io.utils.pride_utils import (get_pubmed_id_pride_json,
                                           get_set_of_experiment_keywords)
-
 import logging
 logging.basicConfig(level = logging.INFO)
 logger = logging.getLogger(__name__)
+
+def check_directory(output_folder:str,project_accession:str=None):
+    if os.path.exists(output_folder):
+        json_path = output_folder + '/' + 'project.json'
+        if os.path.exists(json_path):
+            Project = ProjectHandler(project_accession,json_path)
+        else:
+            Project = ProjectHandler(project_accession)
+        return Project
+    else:
+        os.makedirs(output_folder)
+        Project = ProjectHandler(project_accession)
+        return Project
+
+def create_uuid_filename(project_accession,extension):
+
+    output_filename_path = f"{project_accession}-{str(uuid.uuid4())}{extension}"
+    return output_filename_path
+
+def get_project_accession(sdrf_path):
+    f = open(sdrf_path)
+    keys = f.readline().split('\t')
+    values = f.readline().split('\t')
+    sdrf_map = dict(zip(keys,values))
+    project_accession = sdrf_map['source name'].split('-')[0]
+    f.close()
+    return project_accession
+
+def cut_path(path,output_folder):
+    path = path.replace(output_folder+'/','')
+    return path
 
 
 class ProjectHandler:
@@ -115,6 +145,18 @@ class ProjectHandler:
             ]
 
         self.project.project_info["quantms_files"].append({file_category: file_name})
+
+    def register_file(self,output_path,extension):
+        extension_map = {
+            '.sdrf.tsv': 'sdrf_file',
+            '.protein.parquet': 'protein_file',
+            '.peptide.parquet': 'peptide_file',
+            '.psm.parquet': 'psm_file',
+            '.featrue.parquet': 'feature_file',
+            '.differential.tsv': 'differential_file',
+            '.absolute.tsv': 'absolute_file',
+        }
+        self.add_quantms_file(output_path,extension_map[extension])
 
     def save_project_info(
         self,
