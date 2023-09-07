@@ -234,7 +234,8 @@ class ProjectHandler:
             )
 
         shutil.copyfile(sdrf_file_path, output_filename_path)
-        self.project.project_info["sdrf_file"] = output_filename
+        #self.project.project_info["sdrf_file"] = output_filename
+        self.register_file(output_filename,'.sdrf.tsv')
         print(
             f"SDRF file copied to {output_filename} and added to the project information"
         )

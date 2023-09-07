@@ -68,8 +68,8 @@ def generate_pride_project_json(
     
     
 
-    if output_file is None:
-        output_file = project_accession
+    #if output_file is None:
+        #output_file = project_accession
 
     project_handler = check_directory(output_folder,project_accession)
 

@@ -6,6 +6,12 @@ import re
 from builtins import sorted
 import pandas as pd
 
+def generate_scan_number(spectra_ref:str):
+    if 'scan' in spectra_ref:
+        return re.findall(r"scan=(\d+)", spectra_ref)[0]
+    else:
+        return ",".join(re.findall(r'=(\d+)', spectra_ref))
+
 def get_pubmed_id_pride_json(pride_json: dict) -> str:
     """
     Parse the PubMed ID from the PRIDE JSON file
@@ -234,7 +240,8 @@ def fetch_peptide_spectra_ref(peptide_spectra_ref: str):
     :return: ms run and scan number
     """
     ms_run = peptide_spectra_ref.split(":")[0]
-    scan_number = peptide_spectra_ref.split(":")[1].split(" ")[-1].split("=")[-1]
+    #scan_number = peptide_spectra_ref.split(":")[1].split(" ")[-1].split("=")[-1]
+    scan_number = generate_scan_number(peptide_spectra_ref)
     return ms_run, scan_number
 
 
