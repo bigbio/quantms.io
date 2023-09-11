@@ -190,10 +190,10 @@ class DifferentialExpressionHandler:
         if output_folder is None:
             output_filename_path = output_filename
         else:
-            output_filename_path = f"{output_folder}/{base_name}-{str(uuid.uuid4())}{DifferentialExpressionHandler.DIFFERENTIAL_EXPRESSION_EXTENSION}"
+            output_filename_path = f"{output_folder}/{output_filename}"
 
         # Save the combined lines to a TSV file
-        with open(output_filename_path, "w") as f:
+        with open(output_filename_path, "w",encoding='utf8') as f:
             f.write(output_lines)
 
         self.project_manager.add_quantms_file(
