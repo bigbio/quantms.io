@@ -32,7 +32,7 @@ class AbsoluteExpressionHander:
     
     def init(self):
         self.ibaq_df = None
-        self.ae_filepath = None
+        self.ae_file_path = None
         self.project_manager = None
         
     
