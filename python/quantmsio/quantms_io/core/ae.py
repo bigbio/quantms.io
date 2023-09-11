@@ -60,7 +60,7 @@ class AbsoluteExpressionHander:
                 raise Exception(f"Not found {col} in ibaq file")
         ibaqs = pd.read_csv(path,usecols=usecols)
         ibaqs.rename(columns=AbsoluteExpressionHander.LABEL_MAP,inplace=True)
-        self.ae_filepath = path
+        self.ae_file_path = path
         self.ibaq_df = ibaqs
         
     def convert_ibaq_to_quantms(
@@ -97,7 +97,7 @@ class AbsoluteExpressionHander:
         # Create the output file name
         base_name = output_file_prefix
         if output_file_prefix is None:
-            base_name = os.path.basename(self.de_file_path).replace(".csv", "")
+            base_name = os.path.basename(self.ae_file_path).replace(".csv", "")
 
         # Create the output folder if it does not exist.
         if output_folder is not None and not os.path.exists(output_folder):
