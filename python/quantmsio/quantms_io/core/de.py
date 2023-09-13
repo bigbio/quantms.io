@@ -160,9 +160,9 @@ class DifferentialExpressionHandler:
         factor_value = self.get_factor_value()
         if factor_value is not None:
             output_lines += "#factor_value: " + factor_value + "\n"
-        first_contrast, second_contrast = self.get_contrast_labels(quantms_df)
-        output_lines += "#first_contrast: " + first_contrast + "\n"
-        output_lines += "#second_contrast: " + second_contrast + "\n"
+        #first_contrast, second_contrast = self.get_contrast_labels(quantms_df)
+        #output_lines += "#first_contrast: " + first_contrast + "\n"
+        #output_lines += "#second_contrast: " + second_contrast + "\n"
         output_lines += "#fdr_threshold: " + str(self.fdr_threshold) + "\n"
 
         # Combine comments and DataFrame into a single list
@@ -223,6 +223,7 @@ class DifferentialExpressionHandler:
         :param quantms_df: QuantMS file
         """
         unique_label = quantms_df["label"].unique()
+        quantms_df.to_csv('sss.csv',index=False)
         if len(unique_label) == 1:
             labels = unique_label[0].split("-")
             first_contrast = labels[0].strip()

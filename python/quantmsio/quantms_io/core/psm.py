@@ -28,6 +28,13 @@ def get_psm_in_batches(mztab_file: str, batch_size: int) -> int:
     else:
         return total_len // batch_size
 
+def check_start_or_end(value_str:str):
+    values = value_str.split(',')
+    if values[0].isdigit():
+        return [int(v) for v in values]
+    else:
+        return None
+
 
 class PSMHandler(ParquetHandler):
     PSM_FIELDS = [
@@ -234,8 +241,10 @@ class PSMHandler(ParquetHandler):
 
         sequence = psm["sequence"]
         protein_accessions = standardize_protein_list_accession(psm["accession"])
-        protein_start_positions = [int(i) for i in psm["start"].split(",")]
-        protein_end_positions = [int(i) for i in psm["end"].split(",")]
+        protein_start_positions = check_start_or_end(psm["start"])
+        #[int(i) for i in psm["start"].split(",")]
+        protein_end_positions = check_start_or_end(psm["end"])
+        #[int(i) for i in psm["end"].split(",")]
         unique = 1 if len(protein_accessions) == 1 else 0
 
         protein_accession_nredundant = list(dict.fromkeys(protein_accessions))
@@ -243,7 +252,7 @@ class PSMHandler(ParquetHandler):
             protein_accession_list=protein_accession_nredundant
         )
         protein_qvalue = (
-            None if protein_qvalue is None else np.float64(protein_qvalue[0])
+            None if (protein_qvalue is None or protein_qvalue[0] == 'null') else np.float64(protein_qvalue[0])
         )
 
         retention_time = (

@@ -245,7 +245,7 @@ class FeatureInMemory:
             sep="\t",
             usecols=["ambiguity_members", "best_search_engine_score[1]"],
         )
-        prt_score = prt.groupby("ambiguity_members").max()
+        prt_score = prt.groupby("ambiguity_members").min()
         protein_map = prt_score.to_dict()["best_search_engine_score[1]"]
         return protein_map
 

@@ -465,6 +465,9 @@ def fetch_psm_from_mztab_line(
 
     if "opt_global_consensus_support" not in es:
         keys.remove("opt_global_consensus_support")
+    
+    if "opt_global_Posterior_Error_Probability_score" not in es:
+        keys.remove("opt_global_Posterior_Error_Probability_score")
 
     psm = dict(zip(keys, [es[k] for k in keys]))
 

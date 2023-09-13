@@ -67,12 +67,12 @@ def convert_feature_file(
     ):
         raise click.UsageError("Please provide all the required parameters")
     
-    project_accession = get_project_accession(sdrf_file)
-    Project = check_directory(output_folder,project_accession)
-    Project.populate_from_sdrf(sdrf_file)
-    Project.populate_from_pride_archive()
-    project_path = output_folder + '/' + 'project.json'
-    Project.save_updated_project_info(output_file_name=project_path)
+    Project = check_directory(output_folder)
+    project_accession = Project.project.project_info["project_accession"]
+    #Project.populate_from_sdrf(sdrf_file)
+    #Project.populate_from_pride_archive()
+    #project_path = output_folder + '/' + 'project.json'
+    #Project.save_updated_project_info(output_file_name=project_path)
 
     if use_cache is None:
         use_cache = False
