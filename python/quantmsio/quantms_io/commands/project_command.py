@@ -13,7 +13,7 @@ from quantms_io.core.project import check_directory
     required=True,
 )
 @click.option(
-    "--sdrf_file",
+    "--sdrf",
     help="the SDRF file needed to extract some of the metadata",
     required=True,
 )
@@ -38,7 +38,7 @@ from quantms_io.core.project import check_directory
 #)
 def generate_pride_project_json(
     project_accession: str,
-    sdrf_file: str,
+    sdrf: str,
     quantms_version: str,
     output_folder: str,
     #output_file: str,
@@ -60,7 +60,7 @@ def generate_pride_project_json(
 
     if (
         project_accession is None
-        or sdrf_file is None
+        or sdrf is None
         or quantms_version is None
         or output_folder is None
     ):
@@ -75,7 +75,7 @@ def generate_pride_project_json(
 
     # Populate the project handler with the metadata from Pride Archive and the SDRF file
     project_handler.populate_from_pride_archive()
-    project_handler.populate_from_sdrf(sdrf_file)
+    project_handler.populate_from_sdrf(sdrf)
     project_handler.add_quantms_version(quantms_version=quantms_version)
     project_path = output_folder + '/' + 'project.json'
     project_handler.save_updated_project_info(output_file_name=project_path)

@@ -109,7 +109,7 @@
     ],
     "quantms_files": [
         {
-            "feature_file": "PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet"
+            "feature_file": "PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.feature.parquet"
         },
         {
             "sdrf_file": "PXD014414-f05eca35-9381-40d8-a7da-2fe57745afaf.sdrf.tsv"

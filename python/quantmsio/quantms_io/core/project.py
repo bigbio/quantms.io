@@ -24,8 +24,8 @@ def check_directory(output_folder:str, project_accession:str = None):
         project_json = [f for f in os.listdir(output_folder) if f.endswith('project.json')]
         if len(project_json) == 1:
             json_path = output_folder + '/' + project_json[0]
-            Project = ProjectHandler(project_json_file=json_path)
-            return Project
+            project = ProjectHandler(project_json_file=json_path)
+            return project
         else:
             raise Exception(f"More than one project json file found in {output_folder}")
     else:
@@ -33,14 +33,16 @@ def check_directory(output_folder:str, project_accession:str = None):
             project_json = [f for f in os.listdir(output_folder) if f.endswith('project.json')]
             for json_file in project_json:
                 json_path = output_folder + '/' + json_file
-                Project = ProjectHandler(project_json_file=json_path)
-                if Project.project_accession == project_accession:
-                    return Project
+                project = ProjectHandler(project_json_file=json_path)
+                if project.project_accession == project_accession:
+                    return project
+            project = ProjectHandler(project_accession=project_accession)
+            return project
         # If the project file not present but accession available
         else:
             os.makedirs(output_folder)
-            Project = ProjectHandler(project_accession)
-            return Project
+            project = ProjectHandler(project_accession = project_accession)
+            return project
 
 def create_uuid_filename(project_accession,extension):
 

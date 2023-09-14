@@ -166,9 +166,11 @@ class DifferentialExpressionHandler:
         output_lines += "#fdr_threshold: " + str(self.fdr_threshold) + "\n"
 
         # Combine comments and DataFrame into a single list
-        output_lines += DifferentialExpressionHandler.DE_HEADER + str(
-            quantms_df.to_csv(sep="\t", index=False, header=True)
-        )
+
+        output_lines += DifferentialExpressionHandler.DE_HEADER
+        output_lines += quantms_df.columns.str.cat(sep="\t") + "\n"
+        for index, row in quantms_df.iterrows():
+            output_lines += '\t'.join(map(str, row)).strip() + "\n"
 
         # Create the output file name
         base_name = output_file_prefix
