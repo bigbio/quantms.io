@@ -2,6 +2,8 @@ import click
 
 from quantms_io.core.psm import PSMHandler
 from quantms_io.core.project import create_uuid_filename,check_directory
+from quantms_io.core.tools import plot_peptidoform_charge_venn, plot_sequence_venn
+
 
 @click.command(
     "convert-psm-file",
@@ -49,3 +51,21 @@ def convert_psm_file(mztab_file: str, output_folder: str, output_prefix_file: st
     psm_manager.convert_mztab_to_psm(
         mztab_path=mztab_file, output_folder=output_folder, parquet_path=psm_manager.parquet_path, verbose=verbose
     )
+
+
+@click.command(
+    "compare-psm-parquet", short_help="plot venn for a set of Psms parquet"
+)
+@click.option('--parquets', type=str, help='List of psm parquet path', multiple=True)
+@click.option('--tags', type=str, help='List of parquet label', multiple=True)
+def compare_set_of_psms(parquets, tags):
+    """
+    Compare a set of psm parquet files
+    :param parquets: a set of psm parquet path
+    :param tags: a set of psm label
+    """
+    if len(parquets) != len(tags):
+        raise click.UsageError("Please provide same length of parquet_list and label_list")
+
+    plot_peptidoform_charge_venn(parquets, tags)
+    plot_sequence_venn(parquets, tags)

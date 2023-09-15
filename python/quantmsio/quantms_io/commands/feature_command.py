@@ -1,7 +1,11 @@
 import click
+import datacompy
+import pandas as pd
 
 from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.project import check_directory,get_project_accession,create_uuid_filename
+from quantms_io.core.tools import plot_peptidoform_charge_venn, plot_sequence_venn
+
 
 @click.command(
     "convert-feature-file", short_help="Convert msstats/mztab to parquet file"
@@ -98,3 +102,4 @@ def convert_feature_file(
             output_folder = output_folder,
             use_cache=use_cache,
         )
+
