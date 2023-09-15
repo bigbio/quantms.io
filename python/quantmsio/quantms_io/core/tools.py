@@ -5,12 +5,15 @@ intensity_array:
 num_peaks:
 gene_names:
 gene_accessions:
+compare parquet
+plot veen
 """
 import os
 import re
 
 import pandas as pd
-from Bio import Entrez, SeqIO
+import matplotlib.pyplot as plt
+from venn import venn
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -103,6 +106,7 @@ def query_accessions(gene_name, Email, species: str = "Homo sapiens", OX: str = 
     species: ''
     OX: 'Organism Taxonomy ID'
     """
+    from Bio import Entrez
     Entrez.email = Email
     q_name = gene_name + " AND " + species + "[porgn:__txid" + OX + "]"
     handle = Entrez.esearch(db="nucleotide", term=q_name)
@@ -113,6 +117,7 @@ def query_accessions(gene_name, Email, species: str = "Homo sapiens", OX: str = 
 
 
 def get_accessions(id_list):
+    from Bio import Entrez, SeqIO
     accessions = []
     for id_q in id_list:
         handle = Entrez.efetch(db="nucleotide", id=id_q, rettype="gb", retmode="text")
@@ -149,3 +154,33 @@ def extract_optional_gene_dict(mzTab_path):
     )
 
     return gene_map
+
+#plot venn
+def plot_peptidoform_charge_venn(parquet_path_list,labels):
+    data_map = {}
+    for parquet_path,label in zip(parquet_path_list,labels):
+        df = pd.read_parquet(parquet_path,columns=['peptidoform','charge'])
+        psm_message = 'Total number of PSM for ' + label + ': ' + str(len(df))
+        print(psm_message)
+        unique_pep_forms = set((df['peptidoform'] + df['charge'].astype(str)).to_list())
+        pep_form_message = 'Total number of Peptidoform for ' + label + ': ' + str(len(unique_pep_forms))
+        print(pep_form_message)
+        data_map[label] = unique_pep_forms
+    plt.figure(figsize=(16, 12), dpi=500)
+    venn(data_map, legend_loc="upper right",figsize=(16, 12))
+    plt.savefig('pep_form_compare_venn.png')
+    plt.show()
+
+def plot_sequence_venn(parquet_path_list,labels):
+    data_map = {}
+    for parquet_path,label in zip(parquet_path_list,labels):
+        sequence = pd.read_parquet(parquet_path,columns=['sequence'])
+        unique_seqs = set(sequence['sequence'].to_list())
+        pep_message = 'Total number of peptide for ' + label + ": " + str(unique_seqs)
+        print(pep_message)
+        data_map[label] = unique_seqs
+    plt.figure(figsize=(16, 12), dpi=500)
+    venn(data_map, legend_loc="upper right",figsize=(16, 12))
+    plt.savefig('sequence_compare_venn.png')
+    plt.show()
+    

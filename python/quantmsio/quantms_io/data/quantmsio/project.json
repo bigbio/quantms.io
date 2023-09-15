@@ -109,7 +109,7 @@
     ],
     "quantms_files": [
         {
-            "feature_file": "PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.feature.parquet"
+            "feature_file": "PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet"
         },
         {
             "sdrf_file": "PXD014414-f05eca35-9381-40d8-a7da-2fe57745afaf.sdrf.tsv"
@@ -118,7 +118,7 @@
             "psm_file": "PXD014414-f4fb88f6-0a45-451d-a8a6-b6d58fb83670.psm.parquet"
         },
         {
-            "differential_file": "PXD014414-48fc92e9-ffd2-4335-a6f5-ce7d5278b5ff.differential.tsv"
+            "differential_file": "PXD014414-3026e5d5-fb0e-45e9-a4f0-c97d86536716.differential.tsv"
         }
     ],
     "quantms_version": "1.1.1",
