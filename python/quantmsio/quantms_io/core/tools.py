@@ -19,7 +19,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.openms import OpenMSHandler
-
+from quantms_io.core.psm import PSMHandler
 
 
 def extract_len(fle, header):
@@ -183,4 +183,109 @@ def plot_sequence_venn(parquet_path_list,labels):
     venn(data_map, legend_loc="upper right",figsize=(16, 12))
     plt.savefig('sequence_compare_venn.png')
     plt.show()
-    
+
+# gei unqnimous name
+from collections import defaultdict
+def map_protein_for_parquet(parquet_path,fasta,output_path,map_parameter,label):
+    '''
+    according fasta database to map the proteins accessions to uniprot names.
+    :param parquet_path: psm_parquet_path or feature_parquet_path
+    :param fasta: Reference fasta database
+    :param output_path: output file path
+    :param map_parameter: map_protein_name or map_protein_accession
+    :param label: feature or psm 
+    retrun: None
+    '''
+    from Bio import SeqIO
+    map_protein_names = defaultdict(set)
+    if map_parameter == 'map_protein_name':
+        for seq_record in SeqIO.parse(fasta, "fasta"):
+            accession,name = seq_record.id.split("|")[1:]
+            map_protein_names[seq_record.id].add(name)
+            map_protein_names[accession].add(name)
+            map_protein_names[name].add(name)
+    else:
+        for seq_record in SeqIO.parse(fasta, "fasta"):
+            accession,name = seq_record.id.split("|")[1:]
+            map_protein_names[seq_record.id].add(accession)
+            map_protein_names[accession].add(accession)
+            map_protein_names[name].add(accession)
+    change_and_save_parquet(parquet_path,map_protein_names,output_path,label)
+
+def map_protein_for_tsv(path,fasta,output_path,map_parameter):
+    '''
+    according fasta database to map the proteins accessions to uniprot names.
+    :param path: de_path or ae_path
+    :param fasta: Reference fasta database
+    :param output_path: output file path
+    :param map_parameter: map_protein_name or map_protein_accession
+    :param label: feature or psm 
+    retrun: None
+    '''
+    from Bio import SeqIO
+    map_protein_names = defaultdict(set)
+    if map_parameter == 'map_protein_name':
+        for seq_record in SeqIO.parse(fasta, "fasta"):
+            accession,name = seq_record.id.split("|")[1:]
+            map_protein_names[seq_record.id].add(name)
+            map_protein_names[accession].add(name)
+            map_protein_names[name].add(name)
+    else:
+        for seq_record in SeqIO.parse(fasta, "fasta"):
+            accession,name = seq_record.id.split("|")[1:]
+            map_protein_names[seq_record.id].add(accession)
+            map_protein_names[accession].add(accession)
+            map_protein_names[name].add(accession)
+    df,content = load_de_or_ae(path)
+    df['protein'] = df['protein'].apply(lambda x: get_unanimous_name(x,map_protein_names))
+    content += df.columns.str.cat(sep="\t") + "\n"
+    for index, row in df.iterrows():
+        content += '\t'.join(map(str, row)).strip() + "\n"
+    with open(output_path, "w",encoding='utf8') as f:
+        f.write(content)
+
+def load_de_or_ae(path):
+    f = open(path,encoding='utf-8')
+    line = f.readline()
+    pos = 0 
+    content = ""
+    while line.startswith('#'):
+        pos = f.tell()
+        content += line
+        line = f.readline()
+    f.seek(pos-1)
+    return pd.read_csv(f,sep='\t'),content
+        
+def change_and_save_parquet(parquet_path,map_dict,output_path,label):
+    pqwriter = None
+    for df in read_large_parquet(parquet_path):
+        df['protein_accessions'] = df['protein_accessions'].apply(lambda x: get_unanimous_name(x,map_dict))
+        
+        if label == 'feature':
+            Hander = FeatureHandler()
+        elif label == 'psm':
+            Hander = PSMHandler()
+        parquet_table = pa.Table.from_pandas(df, schema=Hander.schema)
+        if not pqwriter:
+        # create a parquet write object giving it an output file
+            pqwriter = pq.ParquetWriter(output_path, parquet_table.schema)
+        pqwriter.write_table(parquet_table)
+    if pqwriter:
+        pqwriter.close()
+        
+def get_unanimous_name(protein_accessions,map_dict):
+    if not isinstance(protein_accessions,list):
+        if ';' in protein_accessions:
+            protein_accessions = protein_accessions.split(";")
+        else:
+            protein_accessions = protein_accessions.split(",")
+    unqnimous_names = []
+    for accession in protein_accessions:
+        unqnimous_names.append(list(map_dict[accession])[0])
+    return unqnimous_names
+        
+def read_large_parquet(parquet_path: str, batch_size: int = 500000):
+    parquet_file = pq.ParquetFile(parquet_path)
+    for batch in parquet_file.iter_batches(batch_size=batch_size):
+        batch_df = batch.to_pandas()
+        yield batch_df
