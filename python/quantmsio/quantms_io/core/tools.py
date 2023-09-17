@@ -164,7 +164,7 @@ def plot_peptidoform_charge_venn(parquet_path_list,labels):
         print(psm_message)
         unique_pep_forms = set((df['peptidoform'] + df['charge'].astype(str)).to_list())
         pep_form_message = 'Total number of Peptidoform for ' + label + ': ' + str(len(unique_pep_forms))
-        print(pep_form_message)
+        # print(pep_form_message)
         data_map[label] = unique_pep_forms
     plt.figure(figsize=(16, 12), dpi=500)
     venn(data_map, legend_loc="upper right",figsize=(16, 12))
@@ -177,7 +177,7 @@ def plot_sequence_venn(parquet_path_list,labels):
         sequence = pd.read_parquet(parquet_path,columns=['sequence'])
         unique_seqs = set(sequence['sequence'].to_list())
         pep_message = 'Total number of peptide for ' + label + ": " + str(unique_seqs)
-        print(pep_message)
+        # print(pep_message)
         data_map[label] = unique_seqs
     plt.figure(figsize=(16, 12), dpi=500)
     venn(data_map, legend_loc="upper right",figsize=(16, 12))
