@@ -8,7 +8,7 @@ import pyarrow.parquet as pq
 from quantms_io.core.mztab import MztabHandler
 from quantms_io.core.parquet_handler import ParquetHandler
 from quantms_io.core.project import check_directory,cut_path
-from quantms_io.core.tools import extract_len
+from quantms_io.utils.file_utils import extract_len
 from quantms_io.utils.pride_utils import (get_quantmsio_modifications,
                                           standardize_protein_list_accession)
 import logging
