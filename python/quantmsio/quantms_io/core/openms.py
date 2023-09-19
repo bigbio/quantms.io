@@ -3,6 +3,7 @@ from typing import Any, Tuple
 import numpy as np
 import pyopenms as oms
 from pyopenms import SpectrumLookup
+import warnings
 
 
 class OpenMSHandler:
@@ -25,7 +26,12 @@ class OpenMSHandler:
             oms.MzMLFile().load(mzml_path, self._mzml_exp)
             self._spec_lookup = SpectrumLookup()
             self._spec_lookup.readSpectra(self._mzml_exp, "scan=(?<SCAN>\\d+)")
-        index = self._spec_lookup.findByScanNumber(scan_number)
+        try:
+            index = self._spec_lookup.findByScanNumber(scan_number)
+        except:
+            message = 'scan_number' + str(scan_number) + 'not found in file: ' + mzml_path
+            warnings.warn(message, category=None, stacklevel=1, source=None)
+            return [],[]
         spectrum = self._mzml_exp.getSpectrum(index)
         spectrum_mz, spectrum_intensities = spectrum.get_peaks()
         return spectrum_mz, spectrum_intensities
