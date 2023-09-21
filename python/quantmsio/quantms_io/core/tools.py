@@ -195,7 +195,7 @@ def plot_peptidoform_charge_venn(parquet_path_list,labels):
         print(pep_form_message)
         data_map[label] = unique_pep_forms
     plt.figure(figsize=(16, 12), dpi=500)
-    venn(data_map, legend_loc="upper right",figsize=(16, 12))
+    venn(data_map, legend_loc="upper right",figsize=(16, 12),fmt="{size}({percentage:.1f}%)")
     plt.savefig('pep_form_compare_venn.png')
     plt.show()
 
@@ -204,11 +204,11 @@ def plot_sequence_venn(parquet_path_list,labels):
     for parquet_path,label in zip(parquet_path_list,labels):
         sequence = pd.read_parquet(parquet_path,columns=['sequence'])
         unique_seqs = set(sequence['sequence'].to_list())
-        pep_message = 'Total number of peptide for ' + label + ": " + str(unique_seqs)
+        pep_message = 'Total number of peptide for ' + label + ": " + str(len(unique_seqs))
         print(pep_message)
         data_map[label] = unique_seqs
     plt.figure(figsize=(16, 12), dpi=500)
-    venn(data_map, legend_loc="upper right",figsize=(16, 12))
+    venn(data_map, legend_loc="upper right",figsize=(16, 12),fmt="{size}({percentage:.1f}%)")
     plt.savefig('sequence_compare_venn.png')
     plt.show()
 
