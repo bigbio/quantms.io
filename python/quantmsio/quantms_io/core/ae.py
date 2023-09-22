@@ -30,7 +30,7 @@ class AbsoluteExpressionHander:
     
     ABSOLUTE_EXPRESSION_EXTENSION = ".absolute.tsv"
     
-    def init(self):
+    def __init__(self):
         self.ibaq_df = None
         self.ae_file_path = None
         self.project_manager = None
@@ -69,26 +69,28 @@ class AbsoluteExpressionHander:
         output_file_prefix: str = None,
         delete_existing: bool = False,
     ):
-        output_lines = (
-            "#project_accession: "
-            + self.project_manager.project.project_info["project_accession"]
-            + "\n"
-        )
-        output_lines += (
-            "#project_title: "
-            + self.project_manager.project.project_info["project_title"]
-            + "\n"
-        )
-        output_lines += (
-            "#project_description: "
-            + self.project_manager.project.project_info["project_description"]
-            + "\n"
-        )
-        output_lines += (
-            "#quantms_version: "
-            + self.project_manager.project.project_info["quantms_version"]
-            + "\n"
-        )
+        output_lines = ''
+        if self.project_manager:
+            output_lines += (
+                "#project_accession: "
+                + self.project_manager.project.project_info["project_accession"]
+                + "\n"
+            )
+            output_lines += (
+                "#project_title: "
+                + self.project_manager.project.project_info["project_title"]
+                + "\n"
+            )
+            output_lines += (
+                "#project_description: "
+                + self.project_manager.project.project_info["project_description"]
+                + "\n"
+            )
+            output_lines += (
+                "#quantms_version: "
+                + self.project_manager.project.project_info["quantms_version"]
+                + "\n"
+            )
         # Combine comments and DataFrame into a single list
         output_lines += AbsoluteExpressionHander.AE_HEADER + str(
             self.ibaq_df.to_csv(sep="\t", index=False, header=True)
@@ -119,10 +121,10 @@ class AbsoluteExpressionHander:
         # Save the combined lines to a TSV file
         with open(output_filename_path, "w",encoding='utf8') as f:
             f.write(output_lines)
-
-        self.project_manager.add_quantms_file(
-            file_category="absolute_file", file_name=output_filename
-        )
+        if self.project_manager:
+            self.project_manager.add_quantms_file(
+                file_category="absolute_file", file_name=output_filename
+            )
         logger.info(
             f"Absolute expression file copied to {output_filename} and added to the project information"
         )

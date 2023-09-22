@@ -8,7 +8,7 @@ from quantms_io.core.de import DifferentialExpressionHandler
     short_help="Convert a MSstats differential file into a quantms.io file " "format",
 )
 @click.option("--msstats_file", help="MSstats differential file", required=True)
-@click.option("--project_file", help="quantms.io project file", required=True)
+@click.option("--project_file", help="quantms.io project file", required=False)
 @click.option(
     "--sdrf_file",
     help="the SDRF file needed to extract some of the metadata",
@@ -25,16 +25,23 @@ from quantms_io.core.de import DifferentialExpressionHandler
 )
 @click.option("--output_file", help="Prefix of the df expression file", required=False)
 @click.option(
+    "--generate_project",
+    help="Generate project.json for pride project, Otherwise, False",
+    required=False,
+    is_flag=True,
+)
+@click.option(
     "--delete_existing", help="Delete existing files in the output folder", is_flag=True
 )
 def convert_msstats_differential(
     msstats_file: str,
-    project_file: str,
     sdrf_file: str,
     fdr_threshold: float,
     output_folder: str,
     output_file: str,
-    delete_existing: bool,
+    generate_project: bool= True,
+    delete_existing: bool=True,
+    project_file: str = None,
 ):
     """
     Convert a MSstats differential file into a quantms.io file format. The file definition is available in the docs
@@ -46,6 +53,7 @@ def convert_msstats_differential(
     :param output_file: Prefix of the df expression file
     :param delete_existing: Delete existing files in the output folder
     :param fdr_threshold: FDR threshold to use to filter the results
+    :param generate_project: "Generate project.json for pride project, Otherwise, False"
     :return: none
     """
 
@@ -53,7 +61,8 @@ def convert_msstats_differential(
         raise click.UsageError("Please provide all the required parameters")
 
     de_handler = DifferentialExpressionHandler()
-    de_handler.load_project_file(project_file)
+    if generate_project:
+        de_handler.load_project_file(project_file)
     de_handler.load_msstats_file(msstats_file)
     de_handler.load_sdrf_file(sdrf_file)
     de_handler.set_fdr_threshold(fdr_threshold=fdr_threshold)
@@ -62,4 +71,5 @@ def convert_msstats_differential(
         output_file_prefix=output_file,
         delete_existing=delete_existing,
     )
-    de_handler.update_project_file(project_file)
+    if generate_project:
+        de_handler.update_project_file(project_file)
