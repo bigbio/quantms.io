@@ -20,25 +20,9 @@ import pyarrow.parquet as pq
 from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.openms import OpenMSHandler
 from quantms_io.core.psm import PSMHandler
+from quantms_io.utils.file_utils import extract_len
 
 
-def extract_len(fle, header):
-    map_tag = {"PSH": "PSM", "PEH": "PEP", "PRH": "PRT"}
-    if os.stat(fle).st_size == 0:
-        raise ValueError("File is empty")
-    f = open(fle)
-    pos = 0
-    line = f.readline()
-    while line.split("\t")[0] != header:
-        pos = f.tell()
-        line = f.readline()
-    line = f.readline()
-    fle_len = 0
-    while line.split("\t")[0] == map_tag[header]:
-        fle_len += 1
-        line = f.readline()
-    f.close()
-    return fle_len, pos
 
 
 # optional about spectrum
@@ -56,29 +40,73 @@ def map_spectrum_mz(mz_path: str, scan: str, Mzml: OpenMSHandler, mzml_directory
     return mz_array, array_intensity, 0
 
 
-def generate_features_of_spectrum(parquet_path: str, mzml_directory: str,output_path:str):
+def generate_features_of_spectrum(parquet_path: str, mzml_directory: str,output_path:str,label,partition:str=None):
     '''
     parquet_path: parquet file path
     mzml_directory: mzml file directory path
     '''
-    table = pd.read_parquet(parquet_path)
-    Mzml = OpenMSHandler()
-
-    table[["mz", "array_intensity", "num_peaks"]] = table[
-        ["best_psm_reference_file_name", "best_psm_scan_number"]
-    ].apply(
-        lambda x: map_spectrum_mz(
-            x["best_psm_reference_file_name"],
-            x["best_psm_scan_number"],
-            Mzml,
-            mzml_directory,
-        ),
-        axis=1,
-        result_type="expand",
-    )
-    Feature = FeatureHandler()
-    parquet_table = pa.Table.from_pandas(table, schema=Feature.schema)
-    pq.write_table(parquet_table, output_path, compression="snappy", store_schema=True)
+    pqwriters = {}
+    pqwriter_no_part = None
+    for table in read_large_parquet(parquet_path):
+        #table = pd.read_parquet(parquet_path)
+        Mzml = OpenMSHandler()
+        if label == 'feature':
+            table[["mz_array", "intensity_array", "num_peaks"]] = table[
+                ["best_psm_reference_file_name", "best_psm_scan_number"]
+            ].apply(
+                lambda x: map_spectrum_mz(
+                    x["best_psm_reference_file_name"],
+                    x["best_psm_scan_number"],
+                    Mzml,
+                    mzml_directory,
+                ),
+                axis=1,
+                result_type="expand",
+            )
+            Hander = FeatureHandler()
+        else:
+            table[["mz_array", "intensity_array", "num_peaks"]] = table[
+                ["reference_file_name", "scan_number"]
+            ].apply(
+                lambda x: map_spectrum_mz(
+                    x["reference_file_name"],
+                    x["scan_number"],
+                    Mzml,
+                    mzml_directory,
+                ),
+                axis=1,
+                result_type="expand",
+            )
+            Hander = PSMHandler()
+        #save
+        if partition == 'charge':
+            for key, df in table.groupby(['charge']):
+                parquet_table = pa.Table.from_pandas(df, schema=Hander.schema)
+                save_path = output_path.split(".")[0] +"-" + str(key) + '.parquet'
+                if not os.path.exists(save_path):
+                    pqwriter = pq.ParquetWriter(save_path, parquet_table.schema)
+                    pqwriters[key] = pqwriter
+                pqwriters[key].write_table(parquet_table)
+        elif partition == 'reference_file_name':
+            for key, df in table.groupby(['reference_file_name']):
+                parquet_table = pa.Table.from_pandas(df, schema=Hander.schema)
+                save_path = output_path.split(".")[0] + "-" + str(key) + '.parquet'
+                if not os.path.exists(save_path):
+                    pqwriter = pq.ParquetWriter(save_path, parquet_table.schema)
+                    pqwriters[key] = pqwriter
+                pqwriters[key].write_table(parquet_table)
+        else:
+            parquet_table = pa.Table.from_pandas(table, schema=Hander.schema)
+            if not pqwriter_no_part:
+                pqwriter_no_part = pq.ParquetWriter(output_path, parquet_table.schema)
+            pqwriter_no_part.write_table(parquet_table)
+    #close f
+    if not partition:
+        if pqwriter_no_part:
+            pqwriter_no_part.close()
+    else:
+        for pqwriter in pqwriters.values():
+            pqwriter.close()
 
 
 # option about gene
@@ -164,10 +192,10 @@ def plot_peptidoform_charge_venn(parquet_path_list,labels):
         print(psm_message)
         unique_pep_forms = set((df['peptidoform'] + df['charge'].astype(str)).to_list())
         pep_form_message = 'Total number of Peptidoform for ' + label + ': ' + str(len(unique_pep_forms))
-        # print(pep_form_message)
+        print(pep_form_message)
         data_map[label] = unique_pep_forms
     plt.figure(figsize=(16, 12), dpi=500)
-    venn(data_map, legend_loc="upper right",figsize=(16, 12))
+    venn(data_map, legend_loc="upper right",figsize=(16, 12),fmt="{size}({percentage:.1f}%)")
     plt.savefig('pep_form_compare_venn.png')
     plt.show()
 
@@ -176,11 +204,11 @@ def plot_sequence_venn(parquet_path_list,labels):
     for parquet_path,label in zip(parquet_path_list,labels):
         sequence = pd.read_parquet(parquet_path,columns=['sequence'])
         unique_seqs = set(sequence['sequence'].to_list())
-        pep_message = 'Total number of peptide for ' + label + ": " + str(unique_seqs)
-        # print(pep_message)
+        pep_message = 'Total number of peptide for ' + label + ": " + str(len(unique_seqs))
+        print(pep_message)
         data_map[label] = unique_seqs
     plt.figure(figsize=(16, 12), dpi=500)
-    venn(data_map, legend_loc="upper right",figsize=(16, 12))
+    venn(data_map, legend_loc="upper right",figsize=(16, 12),fmt="{size}({percentage:.1f}%)")
     plt.savefig('sequence_compare_venn.png')
     plt.show()
 

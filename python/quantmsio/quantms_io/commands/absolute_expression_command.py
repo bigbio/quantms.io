@@ -4,7 +4,6 @@ import click
     "convert-ibaq-absolute",
     short_help="Convert a ibaq_absolute file into a quantms.io file " "format",
 )
-@click.option("--project_file", help="quantms.io project file", required=True)
 @click.option(
     "--ibaq_file",
     help="the ibaq file path",
@@ -15,14 +14,22 @@ import click
 )
 @click.option("--output_file", help="Prefix of the df expression file", required=False)
 @click.option(
+    "--generate_project",
+    help="Generate project.json for pride project, Otherwise, False",
+    required=False,
+    is_flag=True,
+)
+@click.option(
     "--delete_existing", help="Delete existing files in the output folder", is_flag=True
 )
+@click.option("--project_file", help="quantms.io project file", required=False)
 def convert_ibaq_absolute(
-    project_file:str,
     ibaq_file:str,
     output_folder: str,
     output_file: str,
-    delete_existing: bool,
+    generate_project: bool = True,
+    delete_existing: bool = True,
+    project_file:str = None,
     ):
     """
     Convert a IBAQ absolute file into a quantms.io file format. The file definition is available in the docs
@@ -35,11 +42,13 @@ def convert_ibaq_absolute(
     :return: none
     """
     de_handler = AbsoluteExpressionHander()
-    de_handler.load_project_file(project_file)
+    if generate_project:
+        de_handler.load_project_file(project_file)
     de_handler.load_ibaq_file(ibaq_file)
     de_handler.convert_ibaq_to_quantms(
         output_folder=output_folder,
         output_file_prefix=output_file,
         delete_existing=delete_existing,
     )
-    de_handler.update_project_file(project_file)
+    if generate_project:
+        de_handler.update_project_file(project_file)

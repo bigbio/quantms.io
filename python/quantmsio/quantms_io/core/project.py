@@ -224,7 +224,7 @@ class ProjectHandler:
         self.add_sdrf_project_properties(sdrf)
 
     def add_sdrf_file(
-        self, sdrf_file_path: str, output_folder: str, delete_existing: bool = True
+        self, sdrf_file_path: str, output_folder: str, delete_existing: bool = True,generate_project=True
     ) -> None:
         """
         Copy the given file to the project folder and add the file name to the project information.
@@ -253,7 +253,8 @@ class ProjectHandler:
 
         shutil.copyfile(sdrf_file_path, output_filename_path)
         #self.project.project_info["sdrf_file"] = output_filename
-        self.register_file(output_filename,'.sdrf.tsv')
+        if generate_project:
+            self.register_file(output_filename,'.sdrf.tsv')
         logger.info(
             f"SDRF file copied to {output_filename} and added to the project information"
         )

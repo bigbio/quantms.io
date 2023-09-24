@@ -511,6 +511,7 @@ class FeatureHandler(ParquetHandler):
         consesusxml_file: str = None,
         batch_size: int = 1000000,
         use_cache: bool = False,
+        generate_project: bool = True
     ):
         """
         convert a MSstats input file and mztab into a quantms.io file format.
@@ -601,11 +602,15 @@ class FeatureHandler(ParquetHandler):
                 msstats_chunksize=batch_size,
             )
         #project
-        Project = check_directory(output_folder)
-        Project.register_file(cut_path(self.parquet_path,output_folder),'.featrue.parquet')
-        Project.add_sdrf_file(sdrf_file,output_folder,False)
-        project_path = output_folder + '/' + 'project.json'
-        Project.save_updated_project_info(output_file_name=project_path)
+        if generate_project:
+            Project = check_directory(output_folder)
+            Project.register_file(cut_path(self.parquet_path,output_folder),'.featrue.parquet')
+            Project.add_sdrf_file(sdrf_file,output_folder,False)
+            project_path = output_folder + '/' + 'project.json'
+            Project.save_updated_project_info(output_file_name=project_path)
+        else:
+            Project = ProjectHandler()
+            Project.add_sdrf_file(sdrf_file,output_folder,False,generate_project=False)
 
     def describe_schema(self):
         """

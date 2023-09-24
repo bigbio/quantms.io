@@ -369,59 +369,96 @@ class FeatureInMemory:
         """
         return dict about pep and psm msg
         """
-        psm = self.skip_and_load_csv(mztab_path, 'PSH', sep='\t')
+        psms = self.skip_and_load_csv(mztab_path, 'PSH', sep='\t',chunksize=1000000)
         self._modifications = get_modifications(mztab_path)
-        if 'opt_global_cv_MS:1000889_peptidoform_sequence' not in psm.columns:
-            psm.loc[:, 'opt_global_cv_MS:1000889_peptidoform_sequence'] = psm[['modifications', 'sequence']].apply(
-                lambda row: get_petidoform_msstats_notation(row['sequence'], row['modifications'], self._modifications),
-                axis=1)
-        for key, df in psm.groupby(['opt_global_cv_MS:1000889_peptidoform_sequence', 'charge']):
-            if key not in map_dict.keys():
-                map_dict[key] = [None, None, None]
-            df = df.reset_index(drop=True)
-            df.loc[:, 'scan_number'] = df['spectra_ref'].apply(lambda x: generate_scan_number(x))
-            df['spectra_ref'] = df['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
-            if pd.isna(map_dict[key][1]):
-                if 'opt_global_q-value_score' in df.columns:
-                    map_dict[key][1] = df.iloc[df['opt_global_q-value_score'].idxmin()]['spectra_ref']
-                    map_dict[key][2] = df.iloc[df['opt_global_q-value_score'].idxmin()]['scan_number']
-                elif 'search_engine_score[1]' in df.columns:
-                    map_dict[key][1] = df.iloc[df['search_engine_score[1]'].idxmin()]['spectra_ref']
-                    map_dict[key][2] = df.iloc[df['search_engine_score[1]'].idxmin()]['scan_number']
+        psm_unique_keys =[]
+        for psm in psms:
+            if 'opt_global_cv_MS:1000889_peptidoform_sequence' not in psm.columns:
+                psm.loc[:, 'opt_global_cv_MS:1000889_peptidoform_sequence'] = psm[['modifications', 'sequence']].apply(
+                    lambda row: get_petidoform_msstats_notation(row['sequence'], row['modifications'], self._modifications),
+                    axis=1)
+            for key, df in psm.groupby(['opt_global_cv_MS:1000889_peptidoform_sequence', 'charge']):
+                if key not in map_dict.keys():
+                    map_dict[key] = [None, None, None]
+                    psm_unique_keys.append(key)
+                df = df.reset_index(drop=True)
+                df.loc[:, 'scan_number'] = df['spectra_ref'].apply(lambda x: generate_scan_number(x))
+                df['spectra_ref'] = df['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
+                if pd.isna(map_dict[key][1]):
+                    if 'opt_global_q-value_score' in df.columns:
+                        map_dict[key][0] = df.iloc[df['opt_global_q-value_score'].idxmin()]['opt_global_q-value_score']
+                        map_dict[key][1] = df.iloc[df['opt_global_q-value_score'].idxmin()]['spectra_ref']
+                        map_dict[key][2] = df.iloc[df['opt_global_q-value_score'].idxmin()]['scan_number']
+                    elif 'search_engine_score[1]' in df.columns:
+                        map_dict[key][0] = df.iloc[df['search_engine_score[1]'].idxmin()]['search_engine_score[1]']
+                        map_dict[key][1] = df.iloc[df['search_engine_score[1]'].idxmin()]['spectra_ref']
+                        map_dict[key][2] = df.iloc[df['search_engine_score[1]'].idxmin()]['scan_number']
+                    else:
+                        raise Exception(
+                            "The psm table don't have opt_global_q-value_score or search_engine_score[1] columns")
+                elif key in psm_unique_keys:
+                    if 'opt_global_q-value_score' in df.columns:
+                        best_qvalue = df.iloc[df['opt_global_q-value_score'].idxmin()]['opt_global_q-value_score']
+                        if float(map_dict[key][0]) > float(best_qvalue):
+                            map_dict[key][0] = best_qvalue
+                            map_dict[key][1] = df.iloc[df['opt_global_q-value_score'].idxmin()]['spectra_ref']
+                            map_dict[key][2] = df.iloc[df['opt_global_q-value_score'].idxmin()]['scan_number']
+                    elif 'search_engine_score[1]' in df.columns:
+                        best_qvalue = df.iloc[df['search_engine_score[1]'].idxmin()]['search_engine_score[1]']
+                        if float(map_dict[key][0]) > float(best_qvalue):
+                            map_dict[key][0] = best_qvalue
+                            map_dict[key][1] = df.iloc[df['search_engine_score[1]'].idxmin()]['spectra_ref']
+                            map_dict[key][2] = df.iloc[df['search_engine_score[1]'].idxmin()]['scan_number']
+                if len(map_dict[key]) == 3:
+                    map_dict[key].append(df['start'].values[0])
+                    map_dict[key].append(df['end'].values[0])
+                    map_dict[key].append(df['unique'].values[0])
+                    map_dict[key].append(df['modifications'].values[0])
+                if 'opt_global_Posterior_Error_Probability_score' in df.columns:
+                    if len(map_dict[key]) != 7:
+                        probability_score = df['opt_global_Posterior_Error_Probability_score'].min()
+                        if float(probability_score) < map_dict[key][7]:
+                            map_dict[key][7] = probability_score
+                    else:
+                        map_dict[key].append(df['opt_global_Posterior_Error_Probability_score'].min())
                 else:
-                    raise Exception(
-                        "The psm table don't have opt_global_q-value_score or search_engine_score[1] columns")
-            map_dict[key].append(df['start'].values[0])
-            map_dict[key].append(df['end'].values[0])
-            map_dict[key].append(df['unique'].values[0])
-            map_dict[key].append(df['modifications'].values[0])
-            if 'opt_global_Posterior_Error_Probability_score' in df.columns:
-                map_dict[key].append(df['opt_global_Posterior_Error_Probability_score'].min())
-            else:
-                map_dict[key].append(None)
-            if "opt_global_cv_MS:1002217_decoy_peptide" in df.columns:
-                map_dict[key].append(
-                    df["opt_global_cv_MS:1002217_decoy_peptide"].values[0]
-                )
-            else:
-                map_dict[key].append(None)
-            if map_dict[key][1] not in df["spectra_ref"].values:
-                map_dict[key].append(df["calc_mass_to_charge"].values[0])
-                map_dict[key].append(None)
-            else:
-                map_dict[key].append(
-                    df[
-                        (df["spectra_ref"] == map_dict[key][1])
-                        & (df["scan_number"] == map_dict[key][2])
-                    ]["calc_mass_to_charge"].values[0]
-                )
-                map_dict[key].append(
-                    df[
-                        (df["spectra_ref"] == map_dict[key][1])
-                        & (df["scan_number"] == map_dict[key][2])
-                    ]["exp_mass_to_charge"].values[0]
-                )
-    
+                    map_dict[key].append(None)
+                if len(map_dict[key]) == 8:
+                    if "opt_global_cv_MS:1002217_decoy_peptide" in df.columns:
+                        map_dict[key].append(
+                            df["opt_global_cv_MS:1002217_decoy_peptide"].values[0]
+                        )
+                    else:
+                        map_dict[key].append(None)
+                if len(map_dict[key]) != 11:
+                    if map_dict[key][1] not in df["spectra_ref"].values:
+                        map_dict[key].append(df["calc_mass_to_charge"].values[0])
+                        map_dict[key].append(None)
+                    else:
+                        map_dict[key].append(
+                            df[
+                                (df["spectra_ref"] == map_dict[key][1])
+                                & (df["scan_number"] == map_dict[key][2])
+                            ]["calc_mass_to_charge"].values[0]
+                        )
+                        map_dict[key].append(
+                            df[
+                                (df["spectra_ref"] == map_dict[key][1])
+                                & (df["scan_number"] == map_dict[key][2])
+                            ]["exp_mass_to_charge"].values[0]
+                        )
+                elif map_dict[key][-1] == None:
+                    if map_dict[key][1] in df["spectra_ref"].values:
+                        map_dict[key][-2] = df[
+                                (df["spectra_ref"] == map_dict[key][1])
+                                & (df["scan_number"] == map_dict[key][2])
+                            ]["calc_mass_to_charge"].values[0]
+
+                        map_dict[key][-1] = df[
+                                (df["spectra_ref"] == map_dict[key][1])
+                                & (df["scan_number"] == map_dict[key][2])
+                            ]["exp_mass_to_charge"].values[0]
+                        
         return map_dict
 
     def _extract_psm_pep_msg(self, mztab_path):
