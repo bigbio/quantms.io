@@ -1,0 +1,12 @@
+click
+setuptools
+pandas
+requests
+numpy
+pyarrow
+diskcache
+pyopenms
+scipy
+biopython
+datacompy
+venn

@@ -160,3 +160,6 @@ cython_debug/
 
 .idea/*
 .idea/.gitignore
+**.idea**
+**dump_psm.parquet**
+python/**/**_cache**
