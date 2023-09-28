@@ -4,12 +4,12 @@ Parquet is a column-based file format that can efficiently store and process lar
 ### Features
 - **Column storage format**: Compared with JSON or CSV or any other row storage format, the main characteristic of Parquet is its design of column storage. This method can achieve more efficient compression and encoding, and improve the query performance of analytical statements. In general, tables in big data systems are stored as wide tables; that is, a table has many columns(dozens, even hundreds). The general query statements, especially analytical statements, only involve a small number of column queries. In this case, Parquet can read only the required columns, significantly reducing I/O and speeding up query execution.
 <p align="center">
-<img src="query_time.png" width="200" />
+<img src="query_time.png" width="600" />
 </p>
 
 - **Efficient compression and coding**: Parquet's column storage format allows for better compression ratios because data in the same column tends to be more homogeneous. Parquet supports a variety of compression algorithms such as Snappy, Gzip, and LZO. In addition, Parquet uses advanced coding techniques such as RLE, bitpacking, and dictionary-encoding to further reduce storage requirements and improve query performance.
 <p align="center">
-<img src="size_comparison.png" width="200" />
+<img src="size_comparison.png" width="600" />
 </p>
 
 - **Schema evolutionary support**: Parquet aims to be able to handle changes in data schema over time, which is critical for big data systems. It supports schema evolution by allowing columns to be added, deleted, or modified without affecting existing data.
