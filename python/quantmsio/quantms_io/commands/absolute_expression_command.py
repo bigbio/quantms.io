@@ -38,6 +38,7 @@ def convert_ibaq_absolute(
     :param project_file: quantms.io project file
     :param output_folder: Folder to generate the df expression file.
     :param output_file: Prefix of the df expression file
+    :param generate_project: "Generate project.json for pride project, Otherwise, False"
     :param delete_existing: Delete existing files in the output folder
     :return: none
     """
