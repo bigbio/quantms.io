@@ -65,7 +65,7 @@ def convert_psm_file(mztab_file: str, output_folder: str,generate_project:bool =
 
 
 @click.command(
-    "compare-psm-parquet", short_help="plot venn for a set of Psms parquet"
+    "compare-set-of-psms", short_help="plot venn for a set of Psms parquet"
 )
 @click.option('--parquets', type=str, help='List of psm parquet path', multiple=True)
 @click.option('--tags', type=str, help='List of parquet label', multiple=True)
