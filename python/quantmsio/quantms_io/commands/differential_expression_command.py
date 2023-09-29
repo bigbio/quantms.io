@@ -23,7 +23,7 @@ from quantms_io.core.de import DifferentialExpressionHandler
 @click.option(
     "--output_folder", help="Folder to generate the df expression file.", required=True
 )
-@click.option("--output_file", help="Prefix of the df expression file", required=False)
+@click.option("--output_prefix_file", help="Prefix of the df expression file", required=False)
 @click.option(
     "--generate_project",
     help="Generate project.json for pride project, Otherwise, False",
@@ -38,7 +38,7 @@ def convert_msstats_differential(
     sdrf_file: str,
     fdr_threshold: float,
     output_folder: str,
-    output_file: str,
+    output_prefix_file: str,
     generate_project: bool= True,
     delete_existing: bool=True,
     project_file: str = None,
@@ -50,7 +50,7 @@ def convert_msstats_differential(
     :param project_file: quantms.io project file
     :param sdrf_file: the SDRF file needed to extract some of the metadata
     :param output_folder: Folder to generate the df expression file.
-    :param output_file: Prefix of the df expression file
+    :param output_prefix_file: Prefix of the df expression file
     :param delete_existing: Delete existing files in the output folder
     :param fdr_threshold: FDR threshold to use to filter the results
     :param generate_project: "Generate project.json for pride project, Otherwise, False"
@@ -68,7 +68,7 @@ def convert_msstats_differential(
     de_handler.set_fdr_threshold(fdr_threshold=fdr_threshold)
     de_handler.convert_msstats_to_quantms(
         output_folder=output_folder,
-        output_file_prefix=output_file,
+        output_file_prefix=output_prefix_file,
         delete_existing=delete_existing,
     )
     if generate_project:

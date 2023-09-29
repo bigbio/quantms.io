@@ -12,7 +12,7 @@ import click
 @click.option(
     "--output_folder", help="Folder to generate the df expression file.", required=True
 )
-@click.option("--output_file", help="Prefix of the df expression file", required=False)
+@click.option("--output_prefix_file", help="Prefix of the df expression file", required=False)
 @click.option(
     "--generate_project",
     help="Generate project.json for pride project, Otherwise, False",
@@ -26,7 +26,7 @@ import click
 def convert_ibaq_absolute(
     ibaq_file:str,
     output_folder: str,
-    output_file: str,
+    output_prefix_file: str,
     generate_project: bool = True,
     delete_existing: bool = True,
     project_file:str = None,
@@ -37,7 +37,8 @@ def convert_ibaq_absolute(
     :param ibaq_file: IBAQ file
     :param project_file: quantms.io project file
     :param output_folder: Folder to generate the df expression file.
-    :param output_file: Prefix of the df expression file
+    :param output_prefix_file: Prefix of the df expression file
+    :param generate_project: "Generate project.json for pride project, Otherwise, False"
     :param delete_existing: Delete existing files in the output folder
     :return: none
     """
@@ -47,7 +48,7 @@ def convert_ibaq_absolute(
     de_handler.load_ibaq_file(ibaq_file)
     de_handler.convert_ibaq_to_quantms(
         output_folder=output_folder,
-        output_file_prefix=output_file,
+        output_prefix_file_prefix=output_prefix_file,
         delete_existing=delete_existing,
     )
     if generate_project:

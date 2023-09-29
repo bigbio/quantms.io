@@ -3,7 +3,7 @@ from quantms_io.core.tools import map_protein_for_parquet,map_protein_for_tsv
 
 #parquet
 @click.command(
-    "map_protein_name_for_parquet", short_help="According fasta database to map the proteins accessions to uniprot names."
+    "map-unanimous-for-parquet", short_help="According fasta database to map the proteins accessions to uniprot names."
 )
 @click.option('--parquet_path',  help='Psm or feature parquet path')
 @click.option('--fasta', help='Reference fasta database')
@@ -27,7 +27,7 @@ def get_unanimous_for_parquet(parquet_path,fasta,output_path,map_parameter,label
 
 # tsv
 @click.command(
-    "map_protein_name_for_de_or_ae", short_help="According fasta database to map the proteins accessions to uniprot names."
+    "get-unanimous-for-tsv", short_help="According fasta database to map the proteins accessions to uniprot names."
 )
 @click.option('--path',  help='ae or de path')
 @click.option('--fasta', help='Reference fasta database')
