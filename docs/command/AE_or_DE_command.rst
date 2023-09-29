@@ -65,5 +65,5 @@ use case
 Optional parameter
 ~~~~~~~~~~~~~~~~~~
 
--  –output_prefix_file Prefix of the df expression file
--  –delete_existing Delete existing files in the output folder
+-  –-output_prefix_file Prefix of the df expression file
+-  –-delete_existing Delete existing files in the output folder

@@ -28,6 +28,6 @@ Use cases
 Optional parameter
 ~~~~~~~~~~~~~~~~~~
 
--  –use_cache Whether to use disk instead of memory.
--  –output_prefix_file The prefix of the result file.
--  –consensusxml_file The consensusXML file used to retrieve the mz/rt
+-  –-use_cache Whether to use disk instead of memory.
+-  –-output_prefix_file The prefix of the result file.
+-  –-consensusxml_file The consensusXML file used to retrieve the mz/rt

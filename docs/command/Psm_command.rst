@@ -27,8 +27,8 @@ Use cases
 Optional parameter
 ~~~~~~~~~~~~~~~~~~
 
--  –output_prefix_file The prefix of the result file.
--  –verbose Output debug information.
+-  –-output_prefix_file The prefix of the result file.
+-  –-verbose Output debug information.
 
 Compare psm.parquet
 -------------------
