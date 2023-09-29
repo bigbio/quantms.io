@@ -18,7 +18,7 @@ Format
 The differential expression format by quantms is based on the
 `MSstats <https://msstats.org/wp-content/uploads/2017/01/MSstats_v3.7.3_manual.pdf>`__
 output. The MSstats format is a tab-delimited file that contains the
-following fields - see example `file <include/PXD004683.csv>`__:
+following fields - see example `file <../include/PXD004683.csv>`__:
 
 -  ``protein`` -> Protein Accession
 -  ``label`` -> Label for the contrast on which the fold changes and
@@ -91,4 +91,4 @@ We suggest including the following properties in the header:
    (e.g. ``adj.pvalue < 0.05``)
 
 A complete example of a quantms output file can be seen
-`here <include/PXD004683-quantms.csv>`__.
+`here <../include/PXD004683-quantms.csv>`__.

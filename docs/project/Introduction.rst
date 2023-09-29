@@ -8,13 +8,9 @@ some outputs that are relevant for AI/ML models development. The
 relations between the file concepts and formats can be seen in this
 diagram:
 
-.. raw:: html
-
-   <p align="center">
-
-.. raw:: html
-
-   </p>
+.. image:: file-relation.png
+   :width: 800
+   :align: center
 
 The ``.qms`` folder will contain multiple metadata files that will be
 used to describe the project, the samples, the data acquisition and the
@@ -23,7 +19,7 @@ sections:
 
 -  `METADATA.md <METADATA.md>`__: A json file for metadata about the
    analyzed project
--  `AE.md <AE.md>`__ or `DE.md <DE.md>`__: A csv file based on the
+-  `AE <AE.rst>`__ or `DE <DE.rst>`__: A csv file based on the
    MSstats (TODO link) format for either absolute expression or
    differential expression.
 
@@ -48,9 +44,9 @@ Peptidoform
    specification <https://github.com/HUPO-PSI/ProForma>`__. This concept
    is used in the following outputs:
 
-   -  `PSM.md <PSM.md>`__
-   -  `FEATURES.md <FEATURES.md>`__
-   -  `PEPTIDE.md <PEPTIDE.md>`__
+   -  `PSM <PSM.rst>`__
+   -  `FEATURES <FEATURES.rst>`__
+   -  `PEPTIDE <PEPTIDE.rst>`__
 
 Modifications
 ~~~~~~~~~~~~~
@@ -91,6 +87,6 @@ For example:
 
 This concept is used in the following outputs:
 
--  `PSM.md <PSM.md>`__
--  `FEATURES.md <FEATURES.md>`__
--  `PEPTIDE.md <PEPTIDE.md>`__
+-  `PSM <PSM.rst>`__
+-  `FEATURES <FEATURES.rst>`__
+-  `PEPTIDE <PEPTIDE.rst>`__

@@ -32,7 +32,7 @@ Peptide properties and columns:
 -  ``modifications``: A list of modifications for a give peptide
    ``[modification1, modification2, ...]``. A modification should be
    recorded as string like `modification
-   definition <README.md#modifications>`__-> ``list[string]``
+   definition <README.rst#modifications>`__-> ``list[string]``
 -  ``charge``: The charge assigned by the search engine/software ->
    ``integer``
 -  ``calc_mass_to_charge``: The PSM’s calculated (theoretical) mass to
@@ -40,7 +40,7 @@ Peptide properties and columns:
 -  ``exp_mass_to_charge``: The PSM’s experimental mass to charge (m/z)
    -> ``double``
 -  ``peptidoform``: Peptidoform of the PSM. See more `documentation
-   here <README.md#peptidoform>`__. -> ``string``
+   here <Introduction.rst#peptidoform>`__. -> ``string``
 -  ``posterior_error_probability``: Posterior Error Probability score
    from quantms -> ``double``
 -  ``global_qvalue``: Global q-value for the feature for the peptide

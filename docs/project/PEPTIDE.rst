@@ -52,7 +52,7 @@ Optional fields:
 -  ``number_of_psms``: Number of PSMs for the peptide in the given
    sample ``sample_accession`` -> ``int``
 -  ``retention_time``: Retention time (seconds), it can be the median
-   across all retention times in the `Feature File <FEATURE.md>`__ ->
+   across all retention times in the `Feature File <FEATURE.rst>`__ ->
    ``float``
 -  ``gene_accessions``: A list of gene accessions ->
    ``list[string] (e.g. [ENSG00000139618, ENSG00000139618])``

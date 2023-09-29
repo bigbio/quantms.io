@@ -74,4 +74,4 @@ We suggest including the following properties in the header:
    (e.g. ``tissue``)
 
 Please check also the differential expression example for more
-information `DE <DE.md>`__
+information `DE <DE.rst>`__

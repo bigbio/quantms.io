@@ -108,12 +108,12 @@ clock sequence, and a node identifier.
 **file_sections**: File sections are used to identify the type of file.
 The file sections are the following:
 
--  ``protein`` -> `Protein file <PROTEIN.md>`__
--  ``peptide`` -> `Peptide file <PEPTIDE.md>`__
--  ``psm`` -> `PSM file <PSM.md>`__
--  ``feature`` -> `Feature file <FEATURE.md>`__
--  ``differential`` -> `Differential file <DE.md>`__
--  ``absolute`` -> `Absolute file <AE.md>`__
+-  ``protein`` -> `Protein file <PROTEIN.rst>`__
+-  ``peptide`` -> `Peptide file <PEPTIDE.rst>`__
+-  ``psm`` -> `PSM file <PSM.rst>`__
+-  ``feature`` -> `Feature file <FEATURE.rst>`__
+-  ``differential`` -> `Differential file <DE.rst>`__
+-  ``absolute`` -> `Absolute file <AE.rst>`__
 -  ``sdrf`` -> `Sample table <#sample-table>`__
 
 Sample table

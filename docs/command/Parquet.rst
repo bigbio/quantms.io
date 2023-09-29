@@ -19,13 +19,9 @@ Features
    read only the required columns, significantly reducing I/O and
    speeding up query execution.
 
-   .. raw:: html
-
-      <p align="center">
-
-   .. raw:: html
-
-      </p>
+.. image:: query_time.png
+   :width: 800
+   :align: center
 
 -  **Efficient compression and coding**: Parquet’s column storage format
    allows for better compression ratios because data in the same column
@@ -35,13 +31,9 @@ Features
    dictionary-encoding to further reduce storage requirements and
    improve query performance.
 
-   .. raw:: html
-
-      <p align="center">
-
-   .. raw:: html
-
-      </p>
+.. image:: size_comparision.png
+   :width: 800
+   :align: center
 
 -  **Schema evolutionary support**: Parquet aims to be able to handle
    changes in data schema over time, which is critical for big data
