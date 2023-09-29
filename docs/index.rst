@@ -4,7 +4,7 @@ The quantms output
 `quantms <https://github.com/bigbio/quantms>`__ is a nf-core workflow that allows to process and analyze mass spectrometry data. At the end of the workflow it provides multiple output files. Here this repo defines some outputs that are relevant for AI/ML models development. The relations between the file concepts and formats can be seen in this diagram:
 
 .. image:: file-relation.png
-   :width: 400
+   :width: 300
    :align: center
 
 Contents
