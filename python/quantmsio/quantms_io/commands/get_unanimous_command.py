@@ -22,9 +22,6 @@ def get_unanimous_for_parquet(parquet_path,fasta,output_path,map_parameter,label
     '''
     map_protein_for_parquet(parquet_path,fasta,output_path,map_parameter,label)
 
-
-
-
 # tsv
 @click.command(
     "get-unanimous-for-tsv", short_help="According fasta database to map the proteins accessions to uniprot names."

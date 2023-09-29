@@ -1,26 +1,14 @@
-The quantms output
-------------------
-
-`quantms <https://github.com/bigbio/quantms>`__ is a nf-core workflow
-that allows to process and analyze mass spectrometry data. At the end of
-the workflow it provides multiple output files. Here this repo defines
-some outputs that are relevant for AI/ML models development. The
-relations between the file concepts and formats can be seen in this
-diagram:
-
-.. image:: file-relation.png
-   :width: 800
-   :align: center
+Introduction to quantms.io
+======================================
 
 The ``.qms`` folder will contain multiple metadata files that will be
 used to describe the project, the samples, the data acquisition and the
 data processing. Each of these files will be described in the following
 sections:
 
--  `METADATA.md <METADATA.md>`__: A json file for metadata about the
+-  :doc:`metadata`: A json file for metadata about the
    analyzed project
--  `AE <AE.rst>`__ or `DE <DE.rst>`__: A csv file based on the
-   MSstats (TODO link) format for either absolute expression or
+-  :doc:`ae` or :doc:`ae`: A csv file based on the MSstats (TODO link) format for either absolute expression or
    differential expression.
 
 Some general rules for all the files:
@@ -44,9 +32,9 @@ Peptidoform
    specification <https://github.com/HUPO-PSI/ProForma>`__. This concept
    is used in the following outputs:
 
-   -  `PSM <PSM.rst>`__
-   -  `FEATURES <FEATURES.rst>`__
-   -  `PEPTIDE <PEPTIDE.rst>`__
+   -  :doc:`psm`
+   -  :doc:`feature`
+   -  :doc:`peptide`
 
 Modifications
 ~~~~~~~~~~~~~
@@ -87,6 +75,6 @@ For example:
 
 This concept is used in the following outputs:
 
--  `PSM <PSM.rst>`__
--  `FEATURES <FEATURES.rst>`__
--  `PEPTIDE <PEPTIDE.rst>`__
+-  :doc:`psm`
+-  :doc:`feature`
+-  :doc:`peptide`

@@ -1,5 +1,5 @@
-Peptide Features table format
-=============================
+Peptide quantification features
+==================================
 
 Use cases
 ---------
