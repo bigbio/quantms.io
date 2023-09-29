@@ -91,7 +91,6 @@ UUID-based file names:
 
 .. code:: python
 
-
    import uuid
 
    def generate_uuid_filename():
@@ -108,13 +107,13 @@ clock sequence, and a node identifier.
 **file_sections**: File sections are used to identify the type of file.
 The file sections are the following:
 
--  ``protein`` -> `Protein file <PROTEIN.rst>`__
--  ``peptide`` -> `Peptide file <PEPTIDE.rst>`__
--  ``psm`` -> `PSM file <PSM.rst>`__
--  ``feature`` -> `Feature file <FEATURE.rst>`__
--  ``differential`` -> `Differential file <DE.rst>`__
--  ``absolute`` -> `Absolute file <AE.rst>`__
--  ``sdrf`` -> `Sample table <#sample-table>`__
+-  Protein file -> :doc:`protein`
+-  Peptide file -> :doc:`peptide`
+-  Peptide features -> :doc:`feature`
+-  PSM file -> :doc:`psm`
+-  Differential file -> :doc:`de`
+-  Absolute file -> :doc:`ae`
+-  SDRF File -> `Sample table <#sample-table>`__
 
 Sample table
 ------------
