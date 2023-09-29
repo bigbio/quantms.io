@@ -18,7 +18,7 @@ def get_unanimous_for_parquet(parquet_path,fasta,output_path,map_parameter,label
     :param output_path: output file path
     :param map_parameter: map_protein_name or map_protein_accession
     :param label: feature or psm 
-    retrun: None
+    return: None
     '''
     map_protein_for_parquet(parquet_path,fasta,output_path,map_parameter,label)
 
