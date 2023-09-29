@@ -29,9 +29,7 @@ following fields - see example `file <../include/PXD004683.csv>`__:
 -  ``pvalue`` -> Raw p-values
 -  ``adj.pvalue`` -> P-values adjusted among all the proteins in the
    specific comparison using the approach by Benjamini and Hochberg
--  ``issue`` -> Issue column shows if there is any issue for inference
-   in corresponding protein and comparison, for example,
-   OneConditionMissing or CompleteMissing.
+-  ``issue`` -> Issue column shows if there is any issue for inference in corresponding protein and comparison, for example, OneConditionMissing or CompleteMissing.
 
 Example:
 
