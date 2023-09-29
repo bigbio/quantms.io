@@ -43,54 +43,30 @@ Format
 The `Avro PSM schema <psm.avsc>`__ is used to define the PSM table
 format. The following table describes the fields of the PSM table.
 
--  ``sequence``: The peptide’s sequence corresponding to the PSM ->
-   ``string``
--  ``protein_accessions``: A list protein’s accessions ->
-   ``list[string]``
--  ``protein_start_positions``: A list of protein’s start positions ->
-   ``list[int]``
--  ``protein_end_positions``: A list of protein’s end positions ->
-   ``list[int]``
--  ``protein_global_qvalue``: The global q-value of the associated
-   protein or protein group -> ``double``
--  ``unique``: Indicates whether the peptide sequence (coming from the
-   PSM) is unique for this protein in respect to the searched database
-   -> ``boolean (0/1)``
--  ``modifications``: A list of modifications for a give peptide
-   ``[modification1, modification2, ...]``. A modification should be
-   recorded as string like `modification
-   definition <README.md#modifications>`__-> ``list[string]``
+-  ``sequence``: The peptide’s sequence corresponding to the PSM -> ``string``
+-  ``protein_accessions``: A list protein’s accessions -> ``list[string]``
+-  ``protein_start_positions``: A list of protein’s start positions -> ``list[int]``
+-  ``protein_end_positions``: A list of protein’s end positions -> ``list[int]``
+-  ``protein_global_qvalue``: The global q-value of the associated protein or protein group -> ``double``
+-  ``unique``: Indicates whether the peptide sequence (coming from the PSM) is unique for this protein in respect to the searched database -> ``boolean (0/1)``
+-  ``modifications``: A list of modifications for a give peptide ``[modification1, modification2, ...]``. A modification should be recorded as string like `modification definition <README.md#modifications>`__-> ``list[string]``
 -  ``retention_time``: The retention time of the spectrum -> ``float``
--  ``charge``: The charge assigned by the search engine/software ->
-   ``integer``
--  ``exp_mass_to_charge``: The PSM’s experimental mass to charge (m/z)
-   -> ``double``
--  ``calc_mass_to_charge``: The PSM’s calculated (theoretical) mass to
-   charge (m/z) -> ``double``
--  ``reference_file_name``: The reference file name that contains the
-   spectrum. -> ``string``
--  ``scan_number``: The scan number of the spectrum. The scan number or
-   index of the spectrum in the file -> ``string``
--  ``peptidoform``: Peptidoform of the PSM. See more `documentation
-   here <README.md#peptidoform>`__. -> ``string``
--  ``posterior_error_probability``: Posterior Error Probability score
-   from quantms -> ``double``
+-  ``charge``: The charge assigned by the search engine/software -> ``integer``
+-  ``exp_mass_to_charge``: The PSM’s experimental mass to charge (m/z) -> ``double``
+-  ``calc_mass_to_charge``: The PSM’s calculated (theoretical) mass to charge (m/z) -> ``double``
+-  ``reference_file_name``: The reference file name that contains the spectrum. -> ``string``
+-  ``scan_number``: The scan number of the spectrum. The scan number or index of the spectrum in the file -> ``string``
+-  ``peptidoform``: Peptidoform of the PSM. See more `documentation here <README.md#peptidoform>`__. -> ``string``
+-  ``posterior_error_probability``: Posterior Error Probability score from quantms -> ``double``
 -  ``global_qvalue``: Global q-value from quantms -> ``double``
--  ``is_decoy``: Indicates whether the peptide sequence (coming from the
-   PSM) is decoy -> ``boolean (0/1)``
+-  ``is_decoy``: Indicates whether the peptide sequence (coming from the PSM) is decoy -> ``boolean (0/1)``
 
 Optional fields:
 
 -  ``gene_accessions``: A list of gene accessions -> ``list[string]``
 -  ``gene_names``: A list of gene names -> ``list[string]``
--  ``consensus_support``: Global consensus support scores for multiple
-   search engines -> ``float``
--  ``mz_array``: A list of mz values for the spectrum ->
-   ``list[double]``
--  ``intensity_array``: A list of intensity values for the spectrum ->
-   ``list[float]``
--  ``num_peaks``: The number of peaks in the spectrum, this is the size
-   of previous lists intensity and mz -> ``integer``
--  ``id_scores``: A list of identification scores, search engine,
-   percolator etc. Each search engine score will be a key/value pair
-   ``(e.g. "MS-GF:RawScore": 78.9)`` -> ``list[string]``
+-  ``consensus_support``: Global consensus support scores for multiple search engines -> ``float``
+-  ``mz_array``: A list of mz values for the spectrum -> ``list[double]``
+-  ``intensity_array``: A list of intensity values for the spectrum -> ``list[float]``
+-  ``num_peaks``: The number of peaks in the spectrum, this is the size of previous lists intensity and mz -> ``integer``
+-  ``id_scores``: A list of identification scores, search engine, percolator etc. Each search engine score will be a key/value pair ``(e.g. "MS-GF:RawScore": 78.9)`` -> ``list[string]``
