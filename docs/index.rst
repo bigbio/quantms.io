@@ -13,8 +13,8 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   project
    introduction
+   project
    de
    ae
    peptide
