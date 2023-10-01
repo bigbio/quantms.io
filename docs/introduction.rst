@@ -8,7 +8,7 @@ sections:
 
 -  :doc:`metadata`: A json file for metadata about the
    analyzed project
--  :doc:`ae` or :doc:`ae`: A csv file based on the MSstats (TODO link) format for either absolute expression or
+-  :doc:`ae` or :doc:`de`: A csv file based on the MSstats (TODO link) format for either absolute expression or
    differential expression.
 
 Some general rules for all the files:

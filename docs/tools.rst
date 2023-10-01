@@ -1,8 +1,17 @@
 quantms.io tools
 =================================
+quantms.io tools provides a standardized 
+set of commands to generate different files for your project.
+You can generate separate files or complete project files depending on your needs.
+A complete project file should contain 
+``absolute_expression.tsv`` or ``differential_expression.tsv``, ``feature.parquet``, ``psm.parquet``, ``sdrf.tsv``.
 
-project converter tool
+Project converter tool
 -------------------------
+If your project comes from the PRIDE database, 
+you can generate a ``project.json`` that contains 
+descriptive information about the entire project.
+If your project is not from PRIDE, you can skip this step.
 
 .. code:: python
 
@@ -13,9 +22,9 @@ project converter tool
       --output_folder result
 
 DE converter tool
--------------------------
+--------------------
 
-PRIDE project (make sure you have run the ``project_command.py``)
+-  pride projet (make sure you have run the ``project_command.py``)
 
 .. code:: python
 
@@ -26,7 +35,7 @@ PRIDE project (make sure you have run the ``project_command.py``)
       --output_folder result
 
 
-Non-PRIDE project(Don’t not need to run the ``project_command.py``)
+-  Non-PRIDE project(Don't not need to run the ``project_command.py``)
 
 .. code:: python
 
@@ -36,8 +45,8 @@ Non-PRIDE project(Don’t not need to run the ``project_command.py``)
       --sdrf_file PXD014414.sdrf.tsv
       --output_folder result
 
-Optional parameter
-~~~~~~~~~~~~~~~~~~
+- Optional parameter
+
 
 .. code:: python
    
@@ -46,9 +55,9 @@ Optional parameter
    --delete_existing Delete existing files in the output folder
 
 AE converter tool
--------------------------
+--------------------
 
-PRIDE project (make sure you have run the ``project_command.py``)
+-  pride projet (make sure you have run the ``project_command.py``)
 
 .. code:: python
 
@@ -57,7 +66,7 @@ PRIDE project (make sure you have run the ``project_command.py``)
       --project_file result/PXD004452.json
       --output_folder result
 
-Non-PRIDE project(Don’t not need to run the ``project_command.py``)
+-  Non-PRIDE project(Don't not need to run the ``project_command.py``)
 
 .. code:: python
 
@@ -67,8 +76,7 @@ Non-PRIDE project(Don’t not need to run the ``project_command.py``)
      --output_folder result
 
 
-Optional parameter
-~~~~~~~~~~~~~~~~~~
+- Optional parameter
 
 .. code:: python
 
@@ -76,7 +84,7 @@ Optional parameter
    --delete_existing Delete existing files in the output folder
 
 
-feature converter tool
+Feature converter tool
 -------------------------
 
 -  pride projet (make sure you have run the ``project_command.py``)
@@ -89,7 +97,8 @@ feature converter tool
       --mztab_file PXD014414.sdrf_openms_design_openms.mzTab
       --output_folder result
 
--  Non-PRIDE project(Don’t not need to run the ``project_command.py``)
+
+-  Non-PRIDE project(Don't not need to run the ``project_command.py``)
 
 .. code:: python
 
@@ -100,8 +109,7 @@ feature converter tool
      --generate_project False
      --output_folder result
 
-Optional parameter
-~~~~~~~~~~~~~~~~~~
+- Optional parameter
 
 .. code:: python
 
@@ -110,10 +118,10 @@ Optional parameter
    --consensusxml_file The consensusXML file used to retrieve the mz/rt
 
 
-psm converter tool
--------------------------
+Psm converter tool
+---------------------
 
-Note:: Make sure before generating the psm feature file that you generate the project.json
+-  pride projet(make sure you have run the ``project_command.py``)
     
 .. code:: python
 
@@ -121,7 +129,7 @@ Note:: Make sure before generating the psm feature file that you generate the pr
       --mztab_file PXD014414.sdrf_openms_design_openms.mzTab
       --output_folder result
 
--  Non-PRIDE project(Don’t not need to run the ``project_command.py``)
+-  Non-PRIDE project(Don't not need to run the ``project_command.py``)
 
 .. code:: python
 
@@ -130,15 +138,14 @@ Note:: Make sure before generating the psm feature file that you generate the pr
       --generate_project False
       --output_folder result
 
-Optional parameter
-~~~~~~~~~~~~~~~~~~
+- Optional parameter
 
 .. code:: python
 
    --output_prefix_file The prefix of the result file.
    --verbose Output debug information.
 
-compare psm.parquet
+Compare psm.parquet
 -------------------
 
 
@@ -148,8 +155,8 @@ compare psm.parquet
       --parquets PXD014414-comet.parquet PXD014414-sage.parquet PXD014414-msgf.parquet
       --tags comet sage msgf
 
-generate spectra message
-------------------------
+Generate spectra message
+-------------------------
 
 generate_spectra_message support psm and parquet. Since the result file
 is too large, you can specify –partition to split the result file.
@@ -163,12 +170,12 @@ is too large, you can specify –partition to split the result file.
       --label psm
       --partition charge
 
-map proteins accessions
-------------------
+Map proteins accessions
+------------------------
 
 
 get_unanimous_name support parquet and tsv. For parquet, map_parameter
-have two option (map_protein_name or map_protein_accession), and the
+have two option (``map_protein_name`` or ``map_protein_accession``), and the
 label controls whether it is PSM or Feature.
 
 -  parquet
@@ -191,7 +198,7 @@ label controls whether it is PSM or Feature.
       --output_path psm/PXD014414.de.tsv
       --map_parameter map_protein_name
 
-compare two parquet files
+Compare two parquet files
 --------------------------
 
 
