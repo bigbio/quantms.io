@@ -8,6 +8,8 @@ A completed project contains the following files:
 - ``project.json``
 ``project.json`` contains descriptive information about the entire project.
 
+Example:
+
 .. code:: json
 
    {
@@ -82,7 +84,6 @@ A completed project contains the following files:
     "comments": []
    }
 
-Example:
 
 - ``absolute_expression.tsv`` or ``differential_expression.tsv``
 The differential expression format by quantms is based on the
