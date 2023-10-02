@@ -8,6 +8,80 @@ A completed project contains the following files:
 - ``project.json``
 ``project.json`` contains descriptive information about the entire project.
 
+.. code:: json
+
+   {
+    "project_accession": "PXD014414",
+    "project_title": "",
+    "project_sample_description": "",
+    "project_data_description": "",
+    "project_pubmed_id": 32265444,
+    "organisms": [
+        "Homo sapiens"
+    ],
+    "organism_parts": [
+        "mammary gland",
+        "adjacent normal tissue"
+    ],
+    "diseases": [
+        "metaplastic breast carcinomas",
+        "Triple-negative breast cancer",
+        "Normal",
+        "not applicable"
+    ],
+    "cell_lines": [
+        "not applicable"
+    ],
+    "instruments": [
+        "Orbitrap Fusion"
+    ],
+    "enzymes": [
+        "Trypsin"
+    ],
+    "experiment_type": [
+        "Triple-negative breast cancer",
+        "Wisp3",
+        "Tandem mass tag (tmt) labeling",
+        "Ccn6",
+        "Metaplastic breast carcinoma",
+        "Precision therapy",
+        "Lc-ms/ms shotgun proteomics"
+    ],
+    "acquisition_properties": [
+        {
+            "proteomics data acquisition method": "TMT"
+        },
+        {
+            "proteomics data acquisition method": "Data-dependent acquisition"
+        },
+        {
+            "dissociation method": "HCD"
+        },
+        {
+            "precursor mass tolerance": "20 ppm"
+        },
+        {
+            "fragment mass tolerance": "0.6 Da"
+        }
+    ],
+    "quantms_files": [
+        {
+            "feature_file": "PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet"
+        },
+        {
+            "sdrf_file": "PXD014414-f05eca35-9381-40d8-a7da-2fe57745afaf.sdrf.tsv"
+        },
+        {
+            "psm_file": "PXD014414-f4fb88f6-0a45-451d-a8a6-b6d58fb83670.psm.parquet"
+        },
+        {
+            "differential_file": "PXD014414-3026e5d5-fb0e-45e9-a4f0-c97d86536716.differential.tsv"
+        }
+    ],
+    "quantms_version": "1.1.1",
+    "comments": []
+}
+
 Example:
 
 - ``absolute_expression.tsv`` or ``differential_expression.tsv``
@@ -44,7 +118,7 @@ Example:
 +------------+-------------------------------------------------------------------------+-------------------------+-----------------------+-----------------------+--------+--------------------------------+----------------+--------+--------------------+---------------------+-------------------------------+-----------------------------+---------------+----------+-----------+----------------+---------------------+-----------+----------+----------------------+--------------+--------------------+-------+---------+------------------------------------------------------------+---------------------+------------------------------+----------------------+----------+-----------------+-----------+-----------------+------------+
 | sequence   | protein_accessions                                                      | protein_start_positions | protein_end_positions | protein_global_qvalue | unique | modifications                  | retention_time | charge | exp_mass_to_charge | calc_mass_to_charge | peptidoform                   | posterior_error_probability | global_qvalue | is_decoy | intensity | spectral_count | sample_accession    | condition | fraction | biological_replicate | fragment_ion | isotope_label_type | run   | channel | id_scores                                                  | reference_file_name | best_psm_reference_file_name | best_psm_scan_number | mz_array | intensity_array | num_peaks | gene_accessions | gene_names |
 +============+=========================================================================+=========================+=======================+=======================+========+================================+================+========+====================+=====================+===============================+=============================+===============+==========+===========+================+=====================+===========+==========+======================+==============+====================+=======+=========+============================================================+=====================+==============================+======================+==========+=================+===========+=================+============+
-| ASPDWGYDDK | ['sp|CONTAMINANT_P00915|CONTAMINANT_CAH1_HUMAN' 'sp|P00915|CAH1_HUMAN'] | [1 2]                   | [10 11]               | 0.001882796           | 0      | ['0-UNIMOD:1' '10-UNIMOD:737'] | 7522.223146    | 2      | 712.831298         | 712.8302134         | [Acetyl]-ASPDWGYDDK[TMT6plex] | 4.97E-05                    | 0             | 0        | 454585.3  | 1              | PXD014414-Sample-10 | Norm      | 1        | 10                   | None         | L                  | 1_1_1 | TMT131  | ["'OpenMS:Best PSM Score':0.0" 'Best PSM PEP:4.96872e-05'] | UM_F_50cm_2019_0414 | UM_F_50cm_2019_0430          | 53434                |          |                 |           |                 |            |
+| ASPDWGYDDK | ['sp|CONTAMINANT_P00915|CONTAMINANT_CAH1_HUMAN','sp|P00915|CAH1_HUMAN'] | [1 2]                   | [10 11]               | 0.001882796           | 0      | ['0-UNIMOD:1' '10-UNIMOD:737'] | 7522.223146    | 2      | 712.831298         | 712.8302134         | [Acetyl]-ASPDWGYDDK[TMT6plex] | 4.97E-05                    | 0             | 0        | 454585.3  | 1              | PXD014414-Sample-10 | Norm      | 1        | 10                   | None         | L                  | 1_1_1 | TMT131  | ["'OpenMS:Best PSM Score':0.0",'Best PSM PEP:4.96872e-05'] | UM_F_50cm_2019_0414 | UM_F_50cm_2019_0430          | 53434                |          |                 |           |                 |            |
 +------------+-------------------------------------------------------------------------+-------------------------+-----------------------+-----------------------+--------+--------------------------------+----------------+--------+--------------------+---------------------+-------------------------------+-----------------------------+---------------+----------+-----------+----------------+---------------------+-----------+----------+----------------------+--------------+--------------------+-------+---------+------------------------------------------------------------+---------------------+------------------------------+----------------------+----------+-----------------+-----------+-----------------+------------+
 
 - ``psm.parquet``
@@ -56,7 +130,7 @@ Example:
 +----------+--------------------------+-------------------------+-----------------------+-----------------------+--------+------------------+----------------+--------+--------------------+---------------------+------------------+-----------------------------+---------------+----------+------------------------------------------------------------------------------------------------+-------------------+---------------------+-------------+----------+-----------------+-----------+-----------------+------------+
 | sequence | protein_accessions       | protein_start_positions | protein_end_positions | protein_global_qvalue | unique | modifications    | retention_time | charge | exp_mass_to_charge | calc_mass_to_charge | peptidoform      | posterior_error_probability | global_qvalue | is_decoy | id_scores                                                                                      | consensus_support | reference_file_name | scan_number | mz_array | intensity_array | num_peaks | gene_accessions | gene_names |
 +==========+==========================+=========================+=======================+=======================+========+==================+================+========+====================+=====================+==================+=============================+===============+==========+================================================================================================+===================+=====================+=============+==========+=================+===========+=================+============+
-| SSPGHR   | ['sp|P29692|EF1D_HUMAN'] | [118]                   | [123]                 | 0.001882796           | 1      | ['1-UNIMOD:737'] | 1258.2         | 2      | 435.2432855        | 435.2431809         | S[TMT6plex]SPGHR | 0.35875                     |               | 0        | ["'OpenMS:Target-decoy PSM q-value': 0.040626999360205"'Posterior error probability: 0.35875'] |                   | UM_F_50cm_2019_0428 | 2193        |          |                 |           |                 |            |
+| SSPGHR   | ['sp|P29692|EF1D_HUMAN'] | [118]                   | [123]                 | 0.001882796           | 1      | ['1-UNIMOD:737'] | 1258.2         | 2      | 435.2432855        | 435.2431809         | S[TMT6plex]SPGHR | 0.35875                     |               | 0        | ["'OpenMS:Target-decoy PSM q-value': 0.040626999360205",'Posterior error probability: 0.35875'] |                   | UM_F_50cm_2019_0428 | 2193        |          |                 |           |                 |            |
 +----------+--------------------------+-------------------------+-----------------------+-----------------------+--------+------------------+----------------+--------+--------------------+---------------------+------------------+-----------------------------+---------------+----------+------------------------------------------------------------------------------------------------+-------------------+---------------------+-------------+----------+-----------------+-----------+-----------------+------------+
 
 - ``sdrf.tsv``
