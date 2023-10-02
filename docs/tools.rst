@@ -80,7 +80,7 @@ A completed project contains the following files:
     ],
     "quantms_version": "1.1.1",
     "comments": []
-}
+   }
 
 Example:
 
