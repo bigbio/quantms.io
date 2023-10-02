@@ -1,14 +1,14 @@
 Introduction to quantms.io
 ======================================
 
-The ``.qms`` folder will contain multiple metadata files that will be
+The ``.qms`` folder will contain multiple files that will be
 used to describe the project, the samples, the data acquisition and the
-data processing. Each of these files will be described in the following
+data processing, in addition to the data files. Each of these files will be described in the following
 sections:
 
 -  :doc:`metadata`: A json file for metadata about the
    analyzed project
--  :doc:`ae` or :doc:`de`: A csv file based on the MSstats (TODO link) format for either absolute expression or
+-  :doc:`ae` or :doc:`de`: A csv file based on the `MSstats <https://github.com/Vitek-Lab/MSstats>`_ format for either absolute expression or
    differential expression.
 
 Some general rules for all the files:
