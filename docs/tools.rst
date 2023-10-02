@@ -9,81 +9,6 @@ A completed project contains the following files:
 ``project.json`` contains descriptive information about the entire project.
 
 Example:
-.. code:: json 
-
-
-   {
-    "project_accession": "PXD014414",
-    "project_title": "Quantitative proteomic landscape of metaplastic breast carcinoma pathological subtypes and their relationship to triple-negative tumors",
-    "project_description": "Metaplastic breast carcinoma (MBC) is the most aggressive form of triple-negative cancer (TNBC), defined by the presence of \u201cmetaplastic\u201d components of spindle, squamous, or sarcomatoid histology. The protein profiles underpinning the pathological subtypes and metastatic behavior of MBC are unknown. Using multiplex quantitative tandem mass tag-based proteomics we quantified 5,798 proteins in MBC, TNBC, and normal breast from 27 patients. MBC showed increased epithelial-to-mesenchymal transition and extracellular matrix, and reduced metabolic pathways compared to TNBC. MBC subtypes exhibited distinct upregulated profiles; translation and ribosomal events in spindle, inflammation and apical junctions in squamous, and extracellular matrix in sarcomatoid. Comparison of the proteomes of spindle MBC with MMTV-cre;Ccn6fl/fl spindle MBC tumors revealed a shared spindle-specific signature of 17 upregulated proteins involved in translation (e.g. RPL4,6,18, P3H1, PYCR1) and 19 downregulated proteins with roles in cell metabolism (e.g. ADH1B, ADH1C, LIPE, SOD1, FABP4). These data identify subtype specific MBC protein profiles providing biomarkers and therapeutic targets.",
-    "project_sample_description": "For sample processing, an Orbitrap Fusion (ThermoFisher) and RSLC Ultimate 3000 nano-UPLC (Dionex) was used to obtain raw data. To increase accuracy and confidence in protein abundance measurements, a multinotch-MS3 method was employed for MS data analysis. 2 \u03bcl from each fraction were resolved in 2D on a nanocapillary reverse phase column (Acclaim PepMap C18, 2 micron, 75 \u03bcm i.d. x 50 cm, ThermoFisher) using a 0.1% formic/acetonitrile gradient at 300 nl/m (2-22% acetonitrile in 150m, 22-32% acetonitrile in 40m, 20 min wash at 90% followed by 50 min reequilibration) and directly sprayed onto Orbitrap Fusion with EasySpray (ThermoFisher; Spray voltage (positive ion) = 1900V, Spray voltage (negative ion)= 600V, method duration= 180min, ion source type =NSI). The mass spectrometer was set to collect the MS1 scan (Orbitrap; 120 K resolution; AGC target 2x105; max IT 100 ms), and then data-dependent \u201cTop Speed\u201d (3 s) MS2 scans (collision induced dissociation; ion trap; NCD 35; AGC 5x103; max IT 100 ms). For multinotch-MS3, the top 10 precursor ions from each MS2 scan were fragmented by HCD followed by Orbitrap analysis (NCE 55; 60 K resolution; AGC 5x104; max IT 120 ms; 100-500 m/z scan range).",
-    "project_data_description": "Raw MS data were converted using msconvert in Proteowizard software suite36 to mzML format. MS/MS spectra were searched using the MSFragger (v20181128) database search tool37 against UniProt human protein database (UP000005640, last modified 2018-12-13; 73,928 proteins), appended with an equal number of decoy sequences and common contaminants. MS/MS spectra were searched using the following criteria: precursor-ion mass tolerance of 20 ppm, fragment mass tolerance of 0.6 Da (C12/C13 isotope errors (-1/0/1/2/3)), where cysteine carbamylation (+57.0215) and lysine TMT labeling (+229.1629) were specified as fixed modifications, and methionine oxidation (+15.9949), N-terminal protein acetylation (+42.0106), and TMT labeling of peptide N-terminus and serine residues were specified as variable modifications. The search was restricted to fully tryptic peptides, allowing up to two missed cleavage sites. MSFragger output files were processed using Philosopher toolkit (v20181128, github.com/Nesvilab/philosopher) as follows: The search results were first processed with PeptideProphet38 (high-mass accuracy binning, semi-parametric mixture modeling options); ProteinProphet39 was used to assemble peptides into proteins (protein inference) to create a combined file of high confidence proteins. Protein groups were filtered to 1% false discovery rate (FDR) using the target-decoy strategy and the best peptide approach40,41, picked FDR adjustment42. The individual PSM lists for each TMT 10-plex we assembled, with peptides assigned either as a unique peptide to a particular protein group or assigned as a razor peptide43 to a single protein group that had the most peptide evidence, and additionally filtered to 1% PSM-level FDR. For PSMs passing these filters, MS1 intensity of the corresponding precursor-ion was extracted using the Philosopher label-free quantification module based on the moFF method (10 ppm mass tolerance and 0.4 min retention time for extracted ion chromatogram peak tracing)44. For all PSMs corresponding to a TMT-labeled peptide, 10 TMT reporter ion intensities were extracted from the corresponding MS3 scans (using 0.002 Da window) and precursor ion purity scores were calculated using the intensity of the sequenced precursor ion and that of other interfering ions observed in MS1 data (within 0.7 Da isolation window). For normalization, three PSM tables from each TMT-10plex experiment generated as Philosopher output files were used as input to TMTIntegrator (v1.0.0; github.com/huiyinc/TMT-Integrator) for normalization and generation of integrative reports at the gene and protein level. For best quantitation quality, we only included PSMs (unique and razor peptides) that passed the following criteria: TMT label and quantification in the reference sample exist, minimum peptide probability 0.9, precursor ion purity >= 50%, minimum MS1 intensity 0.05%, summed MS2 intensity >= 5%. PSMs mapping to common contaminants were excluded, and for redundant PSMs, a single PSM of highest summed TMT intensity was kept. Then, intensities in each TMT channel were log2 transformed, and the reference channel intensity (pooled reference sample) was subtracted from that for the other nine channels (samples), thus converting the data into log2-based ratio to the reference scale. The master mix TMT channel (131) was used as the reference channel. PSMs were grouped by the corresponding gene/protein, and outlier removal using the interquartile range (1.5 IQR) algorithm was applied. The gene-level median was calculated from the remaining PSM ratios, and then normalized using the median absolute deviation (MAD), given the p by n table of ratios for entry j in sample i, Rij, the median ratio Mi = median(Rij, j=1,\u2026,p), and the global median across all n samples, M0 = median(Mi, i=1,\u2026,n). The ratios in each sample were median centered, RCij = Rij \u2013 Mi. The median absolute deviation of centered values in each sample was calculated, MADi = median(abs(RCij), j=1\u2026p), along with the global absolute deviation, MAD0=median(MADi, i=1,\u2026,n), and scaled to derive the final normalized ratios: RNij = (RCij/ MADi) \u00d7 MAD0. Finally, normalized ratios were converted back to the absolute intensity scale using the estimated intensity of each entry in the reference sample. The reference intensity was estimated using the weighted sum of MS1 intensities of the top 3 most intense peptide ions 45, and in computing REFi = mean(REFik, k = 1,\u2026,q), missing intensity values were imputed with a global minimum intensity value. The final abundance (intensity) of entry i in sample j (log2 transformed) was computed as Aij = RNij + log2(REFi).",
-    "project_pubmed_id": 32265444,
-    "organisms": [
-        "Homo sapiens"
-    ],
-    "organism_parts": [
-        "mammary gland",
-        "adjacent normal tissue"
-    ],
-    "diseases": [
-        "metaplastic breast carcinomas",
-        "Triple-negative breast cancer",
-        "Normal",
-        "not applicable"
-    ],
-    "cell_lines": [
-        "not applicable"
-    ],
-    "instruments": [
-        "Orbitrap Fusion"
-    ],
-    "enzymes": [
-        "Trypsin"
-    ],
-    "experiment_type": [
-        "Triple-negative breast cancer",
-        "Wisp3",
-        "Tandem mass tag (tmt) labeling",
-        "Ccn6",
-        "Metaplastic breast carcinoma",
-        "Precision therapy",
-        "Lc-ms/ms shotgun proteomics"
-    ],
-    "acquisition_properties": [
-        {
-            "proteomics data acquisition method": "TMT"
-        },
-        {
-            "proteomics data acquisition method": "Data-dependent acquisition"
-        },
-        {
-            "dissociation method": "HCD"
-        },
-        {
-            "precursor mass tolerance": "20 ppm"
-        },
-        {
-            "fragment mass tolerance": "0.6 Da"
-        }
-    ],
-    "quantms_files": [
-        {
-            "feature_file": "PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet"
-        },
-        {
-            "sdrf_file": "PXD014414-f05eca35-9381-40d8-a7da-2fe57745afaf.sdrf.tsv"
-        },
-        {
-            "psm_file": "PXD014414-f4fb88f6-0a45-451d-a8a6-b6d58fb83670.psm.parquet"
-        },
-        {
-            "differential_file": "PXD014414-3026e5d5-fb0e-45e9-a4f0-c97d86536716.differential.tsv"
-        }
-    ],
-    "quantms_version": "1.1.1",
-    "comments": []
-   }
 
 - ``absolute_expression.tsv`` or ``differential_expression.tsv``
 The differential expression format by quantms is based on the
@@ -116,7 +41,6 @@ The ``feature.parquet`` cover detail on peptide level.
 
 Example: 
 
-
 +------------+-------------------------------------------------------------------------+-------------------------+-----------------------+-----------------------+--------+--------------------------------+----------------+--------+--------------------+---------------------+-------------------------------+-----------------------------+---------------+----------+-----------+----------------+---------------------+-----------+----------+----------------------+--------------+--------------------+-------+---------+------------------------------------------------------------+---------------------+------------------------------+----------------------+----------+-----------------+-----------+-----------------+------------+
 | sequence   | protein_accessions                                                      | protein_start_positions | protein_end_positions | protein_global_qvalue | unique | modifications                  | retention_time | charge | exp_mass_to_charge | calc_mass_to_charge | peptidoform                   | posterior_error_probability | global_qvalue | is_decoy | intensity | spectral_count | sample_accession    | condition | fraction | biological_replicate | fragment_ion | isotope_label_type | run   | channel | id_scores                                                  | reference_file_name | best_psm_reference_file_name | best_psm_scan_number | mz_array | intensity_array | num_peaks | gene_accessions | gene_names |
 +============+=========================================================================+=========================+=======================+=======================+========+================================+================+========+====================+=====================+===============================+=============================+===============+==========+===========+================+=====================+===========+==========+======================+==============+====================+=======+=========+============================================================+=====================+==============================+======================+==========+=================+===========+=================+============+
@@ -124,12 +48,11 @@ Example:
 | ASPDWGYDDK | ['sp|CONTAMINANT_P00915|CONTAMINANT_CAH1_HUMAN' 'sp|P00915|CAH1_HUMAN'] | [1 2]                   | [10 11]               | 0.001882796           | 0      | ['0-UNIMOD:1' '10-UNIMOD:737'] | 7522.223146    | 2      | 712.831298         | 712.8302134         | [Acetyl]-ASPDWGYDDK[TMT6plex] | 4.97E-05                    | 0             | 0        | 1103075   | 1              | PXD014414-Sample-9  | Normal    | 1        | 8                    | None         | L                  | 1_1_1 | TMT130C | ["'OpenMS:Best PSM Score':0.0" 'Best PSM PEP:4.96872e-05'] | UM_F_50cm_2019_0414 | UM_F_50cm_2019_0430          | 53434                |
 +------------+-------------------------------------------------------------------------+-------------------------+-----------------------+-----------------------+--------+--------------------------------+----------------+--------+--------------------+---------------------+-------------------------------+-----------------------------+---------------+----------+-----------+----------------+---------------------+-----------+----------+----------------------+--------------+--------------------+-------+---------+------------------------------------------------------------+---------------------+------------------------------+----------------------+
 
-
 - ``psm.parquet``
+
 ``psm.parquet`` store details on PSM level including spectrum mz/intensity for specific use-cases such as AI/ML training.
 
 Example: 
-
 
 +----------+--------------------------+-------------------------+-----------------------+-----------------------+--------+------------------+----------------+--------+--------------------+---------------------+------------------+-----------------------------+---------------+----------+------------------------------------------------------------------------------------------------+-------------------+---------------------+-------------+----------+-----------------+-----------+-----------------+------------+
 | sequence | protein_accessions       | protein_start_positions | protein_end_positions | protein_global_qvalue | unique | modifications    | retention_time | charge | exp_mass_to_charge | calc_mass_to_charge | peptidoform      | posterior_error_probability | global_qvalue | is_decoy | id_scores                                                                                      | consensus_support | reference_file_name | scan_number | mz_array | intensity_array | num_peaks | gene_accessions | gene_names |
@@ -138,10 +61,10 @@ Example:
 +----------+--------------------------+-------------------------+-----------------------+-----------------------+--------+------------------+----------------+--------+--------------------+---------------------+------------------+-----------------------------+---------------+----------+------------------------------------------------------------------------------------------------+-------------------+---------------------+-------------+
 
 - ``sdrf.tsv``
+
 ``sdrf.tsv`` is a file used by quantMS to search the library.
 
 Example: 
-
 
 +--------------------+---------------------------+--------------------------------+--------------------------------------+-------------------------------+-------------------------------------+----------------------+----------------------+----------------------------+----------------------------+---------------------------------------+-----------------------------+---------------+------------+------------------------------------------+----------------+-------------------------+----------------------------------------------------------------------------------------+------------------------------+------------------------------+---------------------------------+----------------------------------+--------------------------------------------+-----------------------------------------------------+----------------------------------------------+-----------------------------------------+---------------------------------------------------------+--------------------------------------------+------------------------------+---------------------------+-----------------------------------+----------------------------------+-------------------------------+
 | source name        | characteristics[organism] | characteristics[organism part] | characteristics[developmental stage] | characteristics[disease]      | characteristics[histologic subtype] | characteristics[sex] | characteristics[age] | characteristics[cell type] | characteristics[cell line] | characteristics[biological replicate] | characteristics[individual] | Material Type | assay name | Technology Type                          | comment[label] | comment[data file]      | comment[file uri]                                                                      | comment[technical replicate] | comment[fraction identifier] | comment[cleavage agent details] | comment[instrument]              | comment[modification parameters]           | comment[modification parameters]                    | comment[modification parameters]             | comment[modification parameters]        | comment[modification parameters]                        | comment[modification parameters]           | comment[dissociation method] | comment[collision energy] | comment[precursor mass tolerance] | comment[fragment mass tolerance] | factor value[disease]         |
