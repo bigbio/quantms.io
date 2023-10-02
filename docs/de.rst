@@ -89,4 +89,4 @@ We suggest including the following properties in the header:
    (e.g. ``adj.pvalue < 0.05``)
 
 A complete example of a quantms output file can be seen
-`here <../include/PXD004683-quantms.csv>`__.
+`here <https://github.com/bigbio/quantms.io/blob/dev/docs/include/PXD004683-quantms.csv>`__.
