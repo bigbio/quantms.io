@@ -9,7 +9,9 @@ A completed project contains the following files:
 ``project.json`` contains descriptive information about the entire project.
 
 Example:
-.. code:: json
+.. code:: json 
+
+
    {
     "project_accession": "PXD014414",
     "project_title": "Quantitative proteomic landscape of metaplastic breast carcinoma pathological subtypes and their relationship to triple-negative tumors",
@@ -112,7 +114,8 @@ LV861_HUMAN Sample-1         heart     1234.1 12.34
 - ``feature.parquet``
 The ``feature.parquet`` cover detail on peptide level.
 
-Example:
+Example: 
+
 
 +------------+-------------------------------------------------------------------------+-------------------------+-----------------------+-----------------------+--------+--------------------------------+----------------+--------+--------------------+---------------------+-------------------------------+-----------------------------+---------------+----------+-----------+----------------+---------------------+-----------+----------+----------------------+--------------+--------------------+-------+---------+------------------------------------------------------------+---------------------+------------------------------+----------------------+----------+-----------------+-----------+-----------------+------------+
 | sequence   | protein_accessions                                                      | protein_start_positions | protein_end_positions | protein_global_qvalue | unique | modifications                  | retention_time | charge | exp_mass_to_charge | calc_mass_to_charge | peptidoform                   | posterior_error_probability | global_qvalue | is_decoy | intensity | spectral_count | sample_accession    | condition | fraction | biological_replicate | fragment_ion | isotope_label_type | run   | channel | id_scores                                                  | reference_file_name | best_psm_reference_file_name | best_psm_scan_number | mz_array | intensity_array | num_peaks | gene_accessions | gene_names |
@@ -126,6 +129,8 @@ Example:
 ``psm.parquet`` store details on PSM level including spectrum mz/intensity for specific use-cases such as AI/ML training.
 
 Example: 
+
+
 +----------+--------------------------+-------------------------+-----------------------+-----------------------+--------+------------------+----------------+--------+--------------------+---------------------+------------------+-----------------------------+---------------+----------+------------------------------------------------------------------------------------------------+-------------------+---------------------+-------------+----------+-----------------+-----------+-----------------+------------+
 | sequence | protein_accessions       | protein_start_positions | protein_end_positions | protein_global_qvalue | unique | modifications    | retention_time | charge | exp_mass_to_charge | calc_mass_to_charge | peptidoform      | posterior_error_probability | global_qvalue | is_decoy | id_scores                                                                                      | consensus_support | reference_file_name | scan_number | mz_array | intensity_array | num_peaks | gene_accessions | gene_names |
 +==========+==========================+=========================+=======================+=======================+========+==================+================+========+====================+=====================+==================+=============================+===============+==========+================================================================================================+===================+=====================+=============+
@@ -136,6 +141,8 @@ Example:
 ``sdrf.tsv`` is a file used by quantMS to search the library.
 
 Example: 
+
+
 +--------------------+---------------------------+--------------------------------+--------------------------------------+-------------------------------+-------------------------------------+----------------------+----------------------+----------------------------+----------------------------+---------------------------------------+-----------------------------+---------------+------------+------------------------------------------+----------------+-------------------------+----------------------------------------------------------------------------------------+------------------------------+------------------------------+---------------------------------+----------------------------------+--------------------------------------------+-----------------------------------------------------+----------------------------------------------+-----------------------------------------+---------------------------------------------------------+--------------------------------------------+------------------------------+---------------------------+-----------------------------------+----------------------------------+-------------------------------+
 | source name        | characteristics[organism] | characteristics[organism part] | characteristics[developmental stage] | characteristics[disease]      | characteristics[histologic subtype] | characteristics[sex] | characteristics[age] | characteristics[cell type] | characteristics[cell line] | characteristics[biological replicate] | characteristics[individual] | Material Type | assay name | Technology Type                          | comment[label] | comment[data file]      | comment[file uri]                                                                      | comment[technical replicate] | comment[fraction identifier] | comment[cleavage agent details] | comment[instrument]              | comment[modification parameters]           | comment[modification parameters]                    | comment[modification parameters]             | comment[modification parameters]        | comment[modification parameters]                        | comment[modification parameters]           | comment[dissociation method] | comment[collision energy] | comment[precursor mass tolerance] | comment[fragment mass tolerance] | factor value[disease]         |
 +====================+===========================+================================+======================================+===============================+=====================================+======================+======================+============================+============================+=======================================+=============================+===============+============+==========================================+================+=========================+========================================================================================+==============================+==============================+=================================+==================================+============================================+=====================================================+==============================================+=========================================+=========================================================+============================================+==============================+===========================+===================================+==================================+===============================+
