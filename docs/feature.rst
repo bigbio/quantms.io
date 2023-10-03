@@ -24,10 +24,10 @@ Format
 
 Peptide properties and columns:
 
--  ``sequence``: The peptide’s sequence corresponding to the feature, this peptide sequence do not includes posttraslational modifications -> ``string``
+-  ``sequence``: The peptide’s sequence corresponding to the feature, this peptide sequence do not includes post-translational modifications -> ``string``
 -  ``unique``: Indicates whether the peptide sequence is unique for this protein in respect to the searched database -> ``boolean (0/1)``
 -  ``modifications``: A list of modifications for a give peptide ``[modification1, modification2, ...]``. A modification should be
-   recorded as string like :doc:`introduction#modifications` -> ``list[string]``
+   recorded as string like :ref:`introduction <modifications>`_ -> ``list[string]``
 -  ``charge``: The charge assigned by the search engine/software -> ``integer``
 -  ``calc_mass_to_charge``: The PSM’s calculated (theoretical) mass to charge (m/z) -> ``double``
 -  ``exp_mass_to_charge``: The PSM’s experimental mass to charge (m/z) -> ``double``
