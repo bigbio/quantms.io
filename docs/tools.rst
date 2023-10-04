@@ -1,12 +1,9 @@
 quantms.io tools
 =================================
-quantms.io tools provides a standardized 
-set of commands to generate different files for your project.
-You can generate separate files or complete project files depending on your needs.
-A completed project contains the following files:
 
-- ``project.json``
-``project.json`` contains descriptive information about the entire project.
+quantms.io tools provides a standardized set of commands to generate different files for your project. You can generate separate files or complete project files depending on your needs. A completed project contains the following files:
+
+- ``project.json`` -> contains descriptive information about the entire project.
 
 Example:
 
@@ -50,35 +47,17 @@ Example:
         "Lc-ms/ms shotgun proteomics"
     ],
     "acquisition_properties": [
-        {
-            "proteomics data acquisition method": "TMT"
-        },
-        {
-            "proteomics data acquisition method": "Data-dependent acquisition"
-        },
-        {
-            "dissociation method": "HCD"
-        },
-        {
-            "precursor mass tolerance": "20 ppm"
-        },
-        {
-            "fragment mass tolerance": "0.6 Da"
-        }
+        {"proteomics data acquisition method": "TMT"},
+        {"proteomics data acquisition method": "Data-dependent acquisition"},
+        {"dissociation method": "HCD"},
+        {"precursor mass tolerance": "20 ppm"},
+        {"fragment mass tolerance": "0.6 Da"}
     ],
     "quantms_files": [
-        {
-            "feature_file": "PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet"
-        },
-        {
-            "sdrf_file": "PXD014414-f05eca35-9381-40d8-a7da-2fe57745afaf.sdrf.tsv"
-        },
-        {
-            "psm_file": "PXD014414-f4fb88f6-0a45-451d-a8a6-b6d58fb83670.psm.parquet"
-        },
-        {
-            "differential_file": "PXD014414-3026e5d5-fb0e-45e9-a4f0-c97d86536716.differential.tsv"
-        }
+        {"feature_file": "PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet"},
+        {"sdrf_file": "PXD014414-f05eca35-9381-40d8-a7da-2fe57745afaf.sdrf.tsv"},
+        {"psm_file": "PXD014414-f4fb88f6-0a45-451d-a8a6-b6d58fb83670.psm.parquet"},
+        {"differential_file": "PXD014414-3026e5d5-fb0e-45e9-a4f0-c97d86536716.differential.tsv"}
     ],
     "quantms_version": "1.1.1",
     "comments": []
