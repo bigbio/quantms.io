@@ -302,7 +302,7 @@ def change_and_save_parquet(parquet_path,map_dict,output_path,label):
         pqwriter.close()
         
 def get_unanimous_name(protein_accessions,map_dict):
-    if not isinstance(protein_accessions,list):
+    if isinstance(protein_accessions,str):
         if ';' in protein_accessions:
             protein_accessions = protein_accessions.split(";")
         else:
