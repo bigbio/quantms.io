@@ -163,10 +163,6 @@ Example:
       --sdrf_file PXD014414.sdrf.tsv
       --output_folder result
 
-
--  Non-PRIDE project(Don't not need to run the ``project_command.py``)
-
-
 - Optional parameter
 
 
@@ -340,6 +336,7 @@ If your project comes from the PRIDE database, You can use this command to add f
 Example: 
 
 .. code:: python
+   
    python attach_file_command.py
       --project_file PXD014414/project.json
       --attach_file PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet
