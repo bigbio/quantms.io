@@ -121,6 +121,7 @@ class AbsoluteExpressionHander:
         # Save the combined lines to a TSV file
         with open(output_filename_path, "w",encoding='utf8') as f:
             f.write(output_lines)
+    
         if self.project_manager:
             self.project_manager.add_quantms_file(
                 file_category="absolute_file", file_name=output_filename

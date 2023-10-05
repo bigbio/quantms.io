@@ -144,7 +144,7 @@ class ProjectHandler:
             "acquisition_properties"
         ] = sdrf.get_acquisition_properties()
 
-    def add_quantms_file(self, file_name: str, file_category: str):
+    def add_quantms_file(self, file_name: str, file_category: str,replace_existing:bool=True):
         """
         Add a quantms file to the project information. The file name will be generated automatically. Read more about the
         quantms file naming convention in the docs folder of this repository
@@ -154,14 +154,32 @@ class ProjectHandler:
         """
         if "quantms_files" not in self.project.project_info:
             self.project.project_info["quantms_files"] = []
+            self.project.project_info["quantms_files"].append({file_category: file_name})
+        elif replace_existing:
+            obj_index = None
+            for index, obj in enumerate(self.project.project_info["quantms_files"]):
+                if file_category in obj:
+                    obj_index = index
+            if obj_index != None:
+                self.project.project_info["quantms_files"][obj_index][file_category] = file_name
+            else:
+                self.project.project_info["quantms_files"].append({file_category: file_name})
         else:
-            self.project.project_info["quantms_files"] = [
-                d
-                for d in self.project.project_info["quantms_files"]
-                if file_category not in d
-            ]
+            obj_index = None
+            for obj in self.project.project_info["quantms_files"]:
+                for index, obj in enumerate(self.project.project_info["quantms_files"]):
+                    if file_category in obj:
+                        obj_index = index
+            if obj_index != None:
+                if isinstance(obj[file_category],list):
+                    obj[file_category].append(file_name)
+                else:
+                    obj[file_category] = obj[file_category].split()
+                    obj[file_category].append(file_name)
+            else:
+                obj[file_category] = file_name.split()
 
-        self.project.project_info["quantms_files"].append({file_category: file_name})
+
 
     def register_file(self,output_path,extension):
         extension_map = {
@@ -224,7 +242,7 @@ class ProjectHandler:
         self.add_sdrf_project_properties(sdrf)
 
     def add_sdrf_file(
-        self, sdrf_file_path: str, output_folder: str, delete_existing: bool = True,generate_project=True
+        self, sdrf_file_path: str, output_folder: str, delete_existing: bool = True
     ) -> None:
         """
         Copy the given file to the project folder and add the file name to the project information.
@@ -253,8 +271,7 @@ class ProjectHandler:
 
         shutil.copyfile(sdrf_file_path, output_filename_path)
         #self.project.project_info["sdrf_file"] = output_filename
-        if generate_project:
-            self.register_file(output_filename,'.sdrf.tsv')
+        self.register_file(output_filename,'.sdrf.tsv')
         logger.info(
             f"SDRF file copied to {output_filename} and added to the project information"
         )

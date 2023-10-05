@@ -175,7 +175,7 @@ class PSMHandler(ParquetHandler):
     def _create_psm_table(self, psm_list: list) -> pa.Table:
         return pa.Table.from_pandas(pd.DataFrame(psm_list), schema=self.schema)
 
-    def convert_mztab_to_psm(self, mztab_path: str, output_folder:str, parquet_path: str = None, verbose: bool = False, generate_project:bool = True,batch_size: int = 100000):
+    def convert_mztab_to_psm(self, mztab_path: str, output_folder:str, parquet_path: str = None, verbose: bool = False,batch_size: int = 100000):
         """
         convert a mzTab file to a feature file
         :param mztab_path: path to the mzTab file
@@ -220,16 +220,6 @@ class PSMHandler(ParquetHandler):
         logger.info("The parquet file was generated in: {}".format(self.parquet_path))
 
 
-        #project
-        if generate_project:
-            Project = check_directory(output_folder)
-            Project.register_file(cut_path(self.parquet_path,output_folder),'.psm.parquet')
-            project_path = output_folder + '/' + 'project.json'
-            Project.save_updated_project_info(output_file_name=project_path)
-
-        #feature_table = self._create_psm_table(psm_list)
-        #self.write_single_file_parquet(feature_table, parquet_output=self.parquet_path, write_metadata=True)
-            #print(it["sequence"] + "---" + it["accession"])
 
     @staticmethod
     def _transform_psm_from_mztab(psm, mztab_handler) -> dict:

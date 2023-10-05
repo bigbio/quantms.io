@@ -1,5 +1,4 @@
 import click
-import datacompy
 import pandas as pd
 
 from quantms_io.core.feature import FeatureHandler
@@ -37,12 +36,6 @@ from quantms_io.core.tools import plot_peptidoform_charge_venn, plot_sequence_ve
     is_flag=True,
 )
 @click.option(
-    "--generate_project",
-    help="Generate project.json for pride project, Otherwise, False",
-    required=False,
-    is_flag=True,
-)
-@click.option(
     "--output_folder",
     help="Folder where the Json file will be generated",
     required=True,
@@ -54,7 +47,6 @@ def convert_feature_file(
     mztab_file: str,
     consensusxml_file: str,
     use_cache: bool,
-    generate_project: bool,
     output_folder: str,
     output_prefix_file: str,
 ):
@@ -65,7 +57,6 @@ def convert_feature_file(
     :param mztab_file: the mzTab file, this will be used to extract the protein information
     :param consensusxml_file: the consensusXML file used to retrieve the mz/rt
     :param use_cache: Use cache instead of in memory conversion
-    :param generate_project: "Generate project.json for pride project, Otherwise, False"
     :param output_folder: Folder where the Json file will be generated
     :param output_prefix_file: Prefix of the Json file needed to generate the file name
     :return: none
@@ -78,20 +69,12 @@ def convert_feature_file(
         or output_folder is None
     ):
         raise click.UsageError("Please provide all the required parameters")
-    
-    if generate_project:
-        Project = check_directory(output_folder)
-        project_accession = Project.project.project_info["project_accession"]
-
     if use_cache is None:
         use_cache = False
 
     feature_manager = FeatureHandler()
     if not output_prefix_file:
-        if generate_project:
-            output_prefix_file = project_accession
-        else:
-            output_prefix_file = ''
+        output_prefix_file = ''
     feature_manager.parquet_path = output_folder + "/" + create_uuid_filename(output_prefix_file,'.feature.parquet')
     if consensusxml_file is not None:
         feature_manager.convert_mztab_msstats_to_feature(
@@ -101,7 +84,6 @@ def convert_feature_file(
             output_folder = output_folder,
             consesusxml_file=consensusxml_file,
             use_cache=use_cache,
-            generate_project = generate_project
         )
     else:
         feature_manager.convert_mztab_msstats_to_feature(
@@ -110,6 +92,5 @@ def convert_feature_file(
             sdrf_file=sdrf_file,
             output_folder = output_folder,
             use_cache=use_cache,
-            generate_project = generate_project
         )
 
