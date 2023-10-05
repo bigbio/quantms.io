@@ -6,6 +6,7 @@ Commandline interface for quantmsio package allows generating the quantms.io fil
 import click
 
 from quantms_io import __version__ as __version__
+from quantms_io.commands.attach_file_command import attach_file_to_json
 from quantms_io.commands.parquet_command import compare_feature_convert
 from quantms_io.commands.project_command import generate_pride_project_json
 from quantms_io.commands.differential_expression_command import (
@@ -23,7 +24,7 @@ CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 @click.group(context_settings=CONTEXT_SETTINGS)
 def cli():
     """
-    This is the main tool that gives access to all commands to convert SDRF files into pipelines specific configuration files
+    This is the main tool that gives access to all commands to convert SDRF files into pipeline-specific configuration files
     """
     pass
 
@@ -34,6 +35,7 @@ cli.add_command(convert_feature_file)
 cli.add_command(convert_psm_file)
 cli.add_command(compare_feature_convert)
 cli.add_command(compare_set_of_psms)
+cli.add_command(attach_file_to_json)
 
 
 def quantms_io_main():
