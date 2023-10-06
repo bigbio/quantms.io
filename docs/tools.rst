@@ -167,7 +167,7 @@ Example:
 
 
 .. code:: python
-   
+   --project_file   If you have generated project.json, you can use this parameter to add project information for DE files.
    --fdr_threshold   FDR threshold to use to filter the results(default 0.05)
    --output_prefix_file   Prefix of the df expression file(like {prefix}-{uu.id}-{extension})
    --delete_existing   Delete existing files in the output folder(default True)
@@ -190,7 +190,7 @@ Example:
 - Optional parameter
 
 .. code:: python
-
+   --project_file   If you have generated project.json, you can use this parameter to add project information for DE files.
    --output_prefix_file    Prefix of the df expression file(like {prefix}-{uu.id}-{extension})
    --delete_existing    Delete existing files in the output folder(default True)
 

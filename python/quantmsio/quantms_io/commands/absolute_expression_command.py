@@ -10,6 +10,16 @@ import click
     required=True,
 )
 @click.option(
+    "--sdrf_file",
+    help="the sdrf_file path",
+    required=True,
+)
+@click.option(
+    "--project_file",
+    help="quantms.io project file",
+    required=False,
+)
+@click.option(
     "--output_folder", help="Folder to generate the df expression file.", required=True
 )
 @click.option("--output_prefix_file", help="Prefix of the df expression file", required=False)
@@ -18,6 +28,8 @@ import click
 )
 def convert_ibaq_absolute(
     ibaq_file:str,
+    sdrf_file:str,
+    project_file: str,
     output_folder: str,
     output_prefix_file: str,
     delete_existing: bool = True,
@@ -26,13 +38,18 @@ def convert_ibaq_absolute(
     Convert a IBAQ absolute file into a quantms.io file format. The file definition is available in the docs
     https://github.com/bigbio/quantms.io/blob/main/docs/AE.md.
     :param ibaq_file: IBAQ file
+    :param sdrf_file: sdrf file
+    :param project_file: quantms.io project file
     :param output_folder: Folder to generate the df expression file.
     :param output_prefix_file: Prefix of the df expression file
     :param delete_existing: Delete existing files in the output folder
     :return: none
     """
     ae_handler = AbsoluteExpressionHander()
+    if project_file:
+        ae_handler.load_project_file(project_file)
     ae_handler.load_ibaq_file(ibaq_file)
+    ae_handler.load_sdrf_file(sdrf_file)
     ae_handler.convert_ibaq_to_quantms(
         output_folder=output_folder,
         output_file_prefix=output_prefix_file,

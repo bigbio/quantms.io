@@ -14,6 +14,11 @@ from quantms_io.core.de import DifferentialExpressionHandler
     required=True,
 )
 @click.option(
+    "--project_file",
+    help="quantms.io project file",
+    required=False,
+)
+@click.option(
     "--fdr_threshold",
     help="FDR threshold to use to filter the results",
     required=False,
@@ -29,6 +34,7 @@ from quantms_io.core.de import DifferentialExpressionHandler
 def convert_msstats_differential(
     msstats_file: str,
     sdrf_file: str,
+    project_file:str,
     fdr_threshold: float,
     output_folder: str,
     output_prefix_file: str,
@@ -39,6 +45,7 @@ def convert_msstats_differential(
     https://github.com/bigbio/quantms.io/blob/main/docs/DE.md.
     :param msstats_file: MSstats differential file
     :param sdrf_file: the SDRF file needed to extract some of the metadata
+    :param project_file: quantms.io project file
     :param output_folder: Folder to generate the df expression file.
     :param output_prefix_file: Prefix of the df expression file
     :param delete_existing: Delete existing files in the output folder
@@ -50,6 +57,8 @@ def convert_msstats_differential(
         raise click.UsageError("Please provide all the required parameters")
 
     de_handler = DifferentialExpressionHandler()
+    if project_file:
+        de_handler.load_project_file(project_file)
     de_handler.load_msstats_file(msstats_file)
     de_handler.load_sdrf_file(sdrf_file)
     de_handler.set_fdr_threshold(fdr_threshold=fdr_threshold)
