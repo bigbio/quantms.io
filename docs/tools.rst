@@ -166,8 +166,8 @@ Example:
 
 - Optional parameter
 
-
 .. code:: python
+
    --project_file   Descriptive information from project.json(project json path)
    --fdr_threshold   FDR threshold to use to filter the results(default 0.05)
    --output_prefix_file   Prefix of the df expression file(like {prefix}-{uu.id}-{extension})
@@ -178,7 +178,7 @@ AE converter tool
 The absolute expression format aims to visualize absolute expression (AE) results using
 iBAQ values and store the AE results of each protein on each sample.
 
-- If you have generated project.json, you can use this parameter to add project information for DE files.
+- If you have generated project.json, you can use this parameter to add project information for AE files.
 - If you want to know more, please read :doc:`ae`.
 
 Example: 
@@ -191,8 +191,8 @@ Example:
 
 - Optional parameter
 
-
 .. code:: python
+
    --project_file   Descriptive information from project.json(project json path)
    --output_prefix_file    Prefix of the df expression file(like {prefix}-{uu.id}-{extension})
    --delete_existing    Delete existing files in the output folder(default True)
