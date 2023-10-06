@@ -166,19 +166,17 @@ class ProjectHandler:
                 self.project.project_info["quantms_files"].append({file_category: file_name})
         else:
             obj_index = None
-            for obj in self.project.project_info["quantms_files"]:
-                for index, obj in enumerate(self.project.project_info["quantms_files"]):
-                    if file_category in obj:
-                        obj_index = index
+            for index, obj in enumerate(self.project.project_info["quantms_files"]):
+                if file_category in obj:
+                    obj_index = index
             if obj_index != None:
-                if isinstance(obj[file_category],list):
-                    obj[file_category].append(file_name)
+                if isinstance(self.project.project_info["quantms_files"][obj_index][file_category],list):
+                    self.project.project_info["quantms_files"][obj_index][file_category].append(file_name)
                 else:
-                    obj[file_category] = obj[file_category].split()
-                    obj[file_category].append(file_name)
+                    self.project.project_info["quantms_files"][obj_index][file_category] = self.project.project_info["quantms_files"][obj_index][file_category].split()
+                    self.project.project_info["quantms_files"][obj_index][file_category].append(file_name)
             else:
-                obj[file_category] = file_name.split()
-
+                self.project.project_info["quantms_files"].append({file_category: [file_name]})
 
 
     def register_file(self,output_path,extension):

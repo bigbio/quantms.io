@@ -325,7 +325,7 @@ Example:
       --parquet_path_two res_lfq2_no_cache.parquet
       --report_path report.txt
 
-Compare two parquet files
+Register file 
 --------------------------
 This tool is used to register the file to ``project.json``.
 If your project comes from the PRIDE database, You can use this command to add file information for ``project.json``.
