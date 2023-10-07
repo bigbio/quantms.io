@@ -187,6 +187,7 @@ Example:
 
    python absolute_expression_command.py
       --ibaq_file PXD004452-ibaq.csv
+      --sdrf_file PXD014414.sdrf.tsv
       --output_folder result
 
 - Optional parameter
@@ -255,6 +256,8 @@ Compare psm.parquet
 -------------------
 This tool is used to compare peptide information in result files obtained by different search engines.
 
+- ``--tags`` are used to specify the tags of the PSM table.
+
 Example: 
 
 .. code:: python
@@ -270,7 +273,7 @@ generate_spectra_message support psm and feature. It can be used directly for sp
 
 - ``--label`` contains two options: ``psm`` and ``feature``.
 - ``--partion`` contains two options: ``charge`` and ``reference_file_name``.
-Since the result file is too large, you can specify –partition to split the result file.
+Since the result file is too large, you can specify ``–-partition`` to split the result file.
 
 Example: 
 
