@@ -199,7 +199,6 @@ def plot_peptidoform_charge_venn(parquet_path_list,labels):
     plt.figure(figsize=(16, 12), dpi=500)
     venn(data_map, legend_loc="upper right",figsize=(16, 12),fmt="{size}({percentage:.1f}%)")
     plt.savefig('pep_form_compare_venn.png')
-    plt.show()
 
 def plot_sequence_venn(parquet_path_list,labels):
     data_map = {}
@@ -212,7 +211,6 @@ def plot_sequence_venn(parquet_path_list,labels):
     plt.figure(figsize=(16, 12), dpi=500)
     venn(data_map, legend_loc="upper right",figsize=(16, 12),fmt="{size}({percentage:.1f}%)")
     plt.savefig('sequence_compare_venn.png')
-    plt.show()
 
 # gei unqnimous name
 from collections import defaultdict

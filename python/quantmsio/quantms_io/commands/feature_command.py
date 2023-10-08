@@ -3,11 +3,17 @@ import pandas as pd
 
 from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.project import check_directory,get_project_accession,create_uuid_filename
-from quantms_io.core.tools import plot_peptidoform_charge_venn, plot_sequence_venn
+CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
+
+@click.group(context_settings=CONTEXT_SETTINGS)
+def cli():
+    """
+    This is the main tool that gives access to all commands.
+    """
 
 @click.command(
-    "convert-feature-file", short_help="Convert msstats/mztab to parquet file"
+    "convert_feature_file", short_help="Convert msstats/mztab to parquet file"
 )
 @click.option(
     "--sdrf_file",
@@ -41,7 +47,9 @@ from quantms_io.core.tools import plot_peptidoform_charge_venn, plot_sequence_ve
     required=True,
 )
 @click.option("--output_prefix_file", help="Prefix of the Json file needed to generate the file name", required=False)
+@click.pass_context
 def convert_feature_file(
+    ctx,
     sdrf_file: str,
     msstats_file: str,
     mztab_file: str,
@@ -94,3 +102,6 @@ def convert_feature_file(
             use_cache=use_cache,
         )
 
+cli.add_command(convert_feature_file)
+if __name__ == '__main__':
+    cli()

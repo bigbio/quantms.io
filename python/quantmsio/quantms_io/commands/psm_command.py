@@ -3,10 +3,17 @@ import click
 from quantms_io.core.psm import PSMHandler
 from quantms_io.core.project import create_uuid_filename,check_directory
 from quantms_io.core.tools import plot_peptidoform_charge_venn, plot_sequence_venn
+CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
+
+@click.group(context_settings=CONTEXT_SETTINGS)
+def cli():
+    """
+    This is the main tool that gives access to all commands.
+    """
 
 @click.command(
-    "convert-psm-file",
+    "convert_psm_file",
     short_help="Convert psm from mzTab to parquet file in quantms io",
 )
 @click.option(
@@ -27,7 +34,8 @@ from quantms_io.core.tools import plot_peptidoform_charge_venn, plot_sequence_ve
     "--verbose",
               help="Output debug information.",
     default=False, is_flag=True)
-def convert_psm_file(mztab_file: str, output_folder: str, output_prefix_file: str=None, verbose: bool = False):
+@click.pass_context
+def convert_psm_file(ctx,mztab_file: str, output_folder: str, output_prefix_file: str=None, verbose: bool = False):
     """
     Convert mztab psm section to a parquet file. The parquet file will contain the features and the metadata.
     :param mztab_file: the mzTab file, this will be used to extract the protein information
@@ -52,11 +60,12 @@ def convert_psm_file(mztab_file: str, output_folder: str, output_prefix_file: st
 
 
 @click.command(
-    "compare-set-of-psms", short_help="plot venn for a set of Psms parquet"
+    "compare_set_of_psms", short_help="plot venn for a set of Psms parquet"
 )
-@click.option('--parquets', type=str, help='List of psm parquet path', multiple=True)
-@click.option('--tags', type=str, help='List of parquet label', multiple=True)
-def compare_set_of_psms(parquets, tags):
+@click.option('-p','--parquets', type=str, help='List of psm parquet path', multiple=True)
+@click.option('-t','--tags', type=str, help='List of parquet label', multiple=True)
+@click.pass_context
+def compare_set_of_psms(ctx,parquets, tags):
     """
     Compare a set of psm parquet files
     :param parquets: a set of psm parquet path
@@ -67,3 +76,9 @@ def compare_set_of_psms(parquets, tags):
 
     plot_peptidoform_charge_venn(parquets, tags)
     plot_sequence_venn(parquets, tags)
+
+cli.add_command(convert_psm_file)
+cli.add_command(compare_set_of_psms)
+
+if __name__ == '__main__':
+    cli()

@@ -138,7 +138,7 @@ descriptive information about the entire project.
 
 .. code:: python
 
-   python project_command.py
+   python project_command.py generate_pride_project_json
       --project_accession PXD014414
       --sdrf PXD014414.sdrf.tsv
       --quantms_version 1.12
@@ -159,7 +159,7 @@ Example:
 
 .. code:: python
 
-   python differential_expression_command.py
+   python differential_expression_command.py convert_msstats_differential
       --msstats_file PXD014414.sdrf_openms_design_msstats_in_comparisons.csv
       --sdrf_file PXD014414.sdrf.tsv
       --output_folder result
@@ -185,7 +185,7 @@ Example:
 
 .. code:: python
 
-   python absolute_expression_command.py
+   python absolute_expression_command.py attach_file_to_json
       --ibaq_file PXD004452-ibaq.csv
       --sdrf_file PXD014414.sdrf.tsv
       --output_folder result
@@ -214,7 +214,7 @@ Example:
 
 .. code:: python
 
-   python feature_command.py
+   python feature_command.py convert_feature_file
       --sdrf_file PXD014414.sdrf.tsv
       --msstats_file PXD014414.sdrf_openms_design_msstats_in.csv
       --mztab_file PXD014414.sdrf_openms_design_openms.mzTab
@@ -240,7 +240,7 @@ Example:
     
 .. code:: python
 
-   python psm_command.py convert-psm-file
+   python psm_command.py convert_psm_file
       --mztab_file PXD014414.sdrf_openms_design_openms.mzTab
       --output_folder result
 
@@ -256,15 +256,19 @@ Compare psm.parquet
 -------------------
 This tool is used to compare peptide information in result files obtained by different search engines.
 
-- ``--tags`` are used to specify the tags of the PSM table.
+- ``--tags`` or ``-t`` are used to specify the tags of the PSM table.
 
 Example: 
 
 .. code:: python
 
-   python feature_command.py compare-set-of-psms
-      --parquets PXD014414-comet.parquet PXD014414-sage.parquet PXD014414-msgf.parquet
-      --tags comet sage msgf
+   python feature_command.py compare_set_of_psms
+      -p PXD014414-comet.parquet
+      -p PXD014414-sage.parquet
+      -p PXD014414-msgf.parquet
+      -t comet
+      -t sage
+      -t msgf
 
 Generate spectra message
 -------------------------
@@ -279,7 +283,7 @@ Example:
 
 .. code:: python
 
-   python generate_spectra_message_command.py 
+   python generate_spectra_message_command.py map_spectrum_message_to_parquet
       --parquet_path PXD014414-f4fb88f6-0a45-451d-a8a6-b6d58fb83670.psm.parquet
       --mzml_directory mzmls
       --output_path psm/PXD014414.parquet
@@ -299,7 +303,7 @@ Example:
 
 .. code:: python
 
-   python get_unanimous_command.py map-unanimous-for-parquet
+   python get_unanimous_command.py map_unanimous_for_parquet
       --parquet_path PXD014414-f4fb88f6-0a45-451d-a8a6-b6d58fb83670.psm.parquet
       --fasta Reference fasta database
       --output_path psm/PXD014414.psm.parquet
@@ -312,7 +316,7 @@ Example:
 
 .. code:: python
 
-   python get_unanimous_command.py get-unanimous-for-tsv
+   python get_unanimous_command.py get_unanimous_for_tsv
       --path PXD014414-c2a52d63-ea64-4a64-b241-f819a3157b77.differential.tsv
       --fasta Reference fasta database
       --output_path psm/PXD014414.de.tsv
@@ -326,7 +330,7 @@ Example:
 
 .. code:: python
 
-   python parquet_command.py
+   python parquet_command.py compare_two_parquet
       --parquet_path_one res_lfq2_discache.parquet
       --parquet_path_two res_lfq2_no_cache.parquet
       --report_path report.txt
@@ -343,7 +347,7 @@ Example:
 
 .. code:: python
    
-   python attach_file_command.py
+   python attach_file_command.py attach_file_to_json
       --project_file PXD014414/project.json
       --attach_file PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet
       --category feature_file
