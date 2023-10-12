@@ -164,7 +164,7 @@ class FeatureInMemory:
         f = open(fle)
         pos = 0
         line = f.readline()
-        while line.split("\t")[0] != header:
+        while not line.startswith(header):
             pos = f.tell()
             line = f.readline()
 
@@ -173,7 +173,7 @@ class FeatureInMemory:
 
         line = f.readline()
         fle_len = 0
-        while line.split("\t")[0] == map_tag[header]:
+        while line.startswith(map_tag[header]):
             fle_len += 1
             line = f.readline()
         f.close()
@@ -369,7 +369,7 @@ class FeatureInMemory:
         """
         return dict about pep and psm msg
         """
-        psms = self.skip_and_load_csv(mztab_path, 'PSH', sep='\t',chunksize=1000000)
+        psms = self.skip_and_load_csv(mztab_path, 'PSH', sep='\t',dtype={'start':str,'end':str},chunksize=1000000)
         self._modifications = get_modifications(mztab_path)
         psm_unique_keys =[]
         for psm in psms:
@@ -414,15 +414,22 @@ class FeatureInMemory:
                     map_dict[key].append(df['end'].values[0])
                     map_dict[key].append(df['unique'].values[0])
                     map_dict[key].append(df['modifications'].values[0])
-                if 'opt_global_Posterior_Error_Probability_score' in df.columns:
+                if 'opt_global_Posterior_Error_Probability_score' in df.columns or 'opt_global_Posterior_Error_Probability' in df.columns:
                     if len(map_dict[key]) != 7:
-                        probability_score = df['opt_global_Posterior_Error_Probability_score'].min()
+                        if 'opt_global_Posterior_Error_Probability_score' in df.columns:
+                            probability_score = df['opt_global_Posterior_Error_Probability_score'].min()
+                        else:
+                            probability_score = df['opt_global_Posterior_Error_Probability'].min()
                         if float(probability_score) < map_dict[key][7]:
                             map_dict[key][7] = probability_score
                     else:
-                        map_dict[key].append(df['opt_global_Posterior_Error_Probability_score'].min())
+                        if 'opt_global_Posterior_Error_Probability_score' in df.columns:
+                            map_dict[key].append(df['opt_global_Posterior_Error_Probability_score'].min())
+                        else:
+                            map_dict[key].append(df['opt_global_Posterior_Error_Probability'].min())
                 else:
-                    map_dict[key].append(None)
+                    if len(map_dict[key]) == 7:
+                        map_dict[key].append(None)
                 if len(map_dict[key]) == 8:
                     if "opt_global_cv_MS:1002217_decoy_peptide" in df.columns:
                         map_dict[key].append(
@@ -435,29 +442,33 @@ class FeatureInMemory:
                         map_dict[key].append(df["calc_mass_to_charge"].values[0])
                         map_dict[key].append(None)
                     else:
-                        map_dict[key].append(
-                            df[
+                        cals = df[
                                 (df["spectra_ref"] == map_dict[key][1])
                                 & (df["scan_number"] == map_dict[key][2])
-                            ]["calc_mass_to_charge"].values[0]
-                        )
-                        map_dict[key].append(
-                            df[
-                                (df["spectra_ref"] == map_dict[key][1])
-                                & (df["scan_number"] == map_dict[key][2])
-                            ]["exp_mass_to_charge"].values[0]
-                        )
+                                ]["calc_mass_to_charge"].values
+                        if len(cals) == 0:
+                            map_dict[key].append(None)
+                            map_dict[key].append(None)
+                        else:
+                            map_dict[key].append(cals[0])
+                            map_dict[key].append(
+                                df[
+                                    (df["spectra_ref"] == map_dict[key][1])
+                                    & (df["scan_number"] == map_dict[key][2])
+                                ]["exp_mass_to_charge"].values[0]
+                            )
                 elif map_dict[key][-1] == None:
                     if map_dict[key][1] in df["spectra_ref"].values:
-                        map_dict[key][-2] = df[
+                        cals = df[
                                 (df["spectra_ref"] == map_dict[key][1])
                                 & (df["scan_number"] == map_dict[key][2])
-                            ]["calc_mass_to_charge"].values[0]
-
-                        map_dict[key][-1] = df[
-                                (df["spectra_ref"] == map_dict[key][1])
-                                & (df["scan_number"] == map_dict[key][2])
-                            ]["exp_mass_to_charge"].values[0]
+                                ]["calc_mass_to_charge"].values
+                        if len(cals) != 0:
+                            map_dict[key][-2] = cals[0]
+                            map_dict[key][-1] = df[
+                                    (df["spectra_ref"] == map_dict[key][1])
+                                    & (df["scan_number"] == map_dict[key][2])
+                                ]["exp_mass_to_charge"].values[0]
                         
         return map_dict
 
