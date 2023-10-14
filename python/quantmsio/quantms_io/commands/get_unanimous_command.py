@@ -11,7 +11,7 @@ def cli():
     """
 #parquet
 @click.command(
-    "map_unanimous_for_parquet", short_help="According fasta database to map the proteins accessions to uniprot names."
+    "get_unanimous_for_parquet", short_help="According fasta database to map the proteins accessions to uniprot names."
 )
 @click.option('--parquet_path',  help='Psm or feature parquet path')
 @click.option('--fasta', help='Reference fasta database')
@@ -39,6 +39,7 @@ def get_unanimous_for_parquet(ctx,parquet_path,fasta,output_path,map_parameter,l
 @click.option('--fasta', help='Reference fasta database')
 @click.option('--output_path', help='output file path')
 @click.option('--map_parameter', type=click.Choice(['map_protein_name', 'map_protein_accession'], case_sensitive=False),help='map type')
+@click.pass_context
 def get_unanimous_for_tsv(ctx,path,fasta,output_path,map_parameter):
     '''
     according fasta database, to map the proteins accessions to uniprot names.
