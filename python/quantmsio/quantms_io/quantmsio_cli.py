@@ -7,8 +7,8 @@ import click
 
 from quantms_io import __version__ as __version__
 from quantms_io.commands.attach_file_command import attach_file_to_json
-from quantms_io.commands.parquet_command import compare_feature_convert
 from quantms_io.commands.project_command import generate_pride_project_json
+from quantms_io.commands.parquet_command import compare_two_parquet
 from quantms_io.commands.differential_expression_command import (
     convert_msstats_differential,
 )
@@ -33,7 +33,7 @@ cli.add_command(generate_pride_project_json)
 cli.add_command(convert_msstats_differential)
 cli.add_command(convert_feature_file)
 cli.add_command(convert_psm_file)
-cli.add_command(compare_feature_convert)
+cli.add_command(compare_two_parquet)
 cli.add_command(compare_set_of_psms)
 cli.add_command(attach_file_to_json)
 

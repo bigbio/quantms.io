@@ -37,7 +37,7 @@ def cli():
 @click.pass_context
 def convert_psm_file(ctx,mztab_file: str, output_folder: str, output_prefix_file: str=None, verbose: bool = False):
     """
-    Convert mztab psm section to a parquet file. The parquet file will contain the features and the metadata.
+    convert mztab psm section to a parquet file. The parquet file will contain the features and the metadata.
     :param mztab_file: the mzTab file, this will be used to extract the protein information
     :param output_folder: Folder where the Json file will be generated
     :param output_prefix_file: Prefix of the Json file needed to generate the file name
@@ -55,8 +55,7 @@ def convert_psm_file(ctx,mztab_file: str, output_folder: str, output_prefix_file
     psm_manager = PSMHandler()
     psm_manager.parquet_path = output_folder + "/" + create_uuid_filename(output_prefix_file,'.psm.parquet')
     psm_manager.convert_mztab_to_psm(
-        mztab_path=mztab_file, output_folder=output_folder, parquet_path=psm_manager.parquet_path, verbose=verbose, generate_project = generate_project
-    )
+        mztab_path=mztab_file, output_folder=output_folder, parquet_path=psm_manager.parquet_path, verbose=verbose)
 
 
 @click.command(

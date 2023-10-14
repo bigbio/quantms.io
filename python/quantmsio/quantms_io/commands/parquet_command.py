@@ -17,7 +17,7 @@ def cli():
 @click.pass_context
 def compare_two_parquet(ctx,parquet_path_one: str, parquet_path_two: str, report_path: str):
     """
-    Compare two parquet files generated from the same mztab psms files.
+    compare two parquet files generated from the same mztab psms files.
     :param parquet_path_one: the parquet file of discache version
     :param parquet_path_two: the parquet file of memory version
     :param report_path: report path
