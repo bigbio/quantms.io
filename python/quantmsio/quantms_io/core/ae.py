@@ -109,7 +109,7 @@ class AbsoluteExpressionHander:
         output_lines += AbsoluteExpressionHander.AE_HEADER + str(
             self.ibaq_df.to_csv(sep="\t", index=False, header=True)
         )
-
+        output_lines = output_lines.replace('\r','')
         # Create the output file name
         base_name = output_file_prefix
         if output_file_prefix is None:
