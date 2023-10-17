@@ -179,6 +179,7 @@ The absolute expression format aims to visualize absolute expression (AE) result
 iBAQ values and store the AE results of each protein on each sample.
 
 - If you have generated project.json, you can use this parameter ``--project_file`` to add project information for AE files.
+- IF you want to know ibaq, please read `ibaqpy <https://github.com/bigbio/ibaqpy>`__
 - If you want to know more, please read :doc:`ae`.
 
 Example: 
@@ -351,4 +352,4 @@ Example:
       --project_file PXD014414/project.json
       --attach_file PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet
       --category feature_file
-      --replace_existing True
+      --replace_existing
