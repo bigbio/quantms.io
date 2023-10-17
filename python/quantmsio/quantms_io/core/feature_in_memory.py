@@ -663,7 +663,7 @@ class FeatureInMemory:
                 axis=1,
                 result_type="expand",
                 )
-                if intensity_map is not None:
+                if intensity_map is not None and len(intensity_map)!=0:
                     msstats_in = self._extract_rt_from_consensus_xml(intensity_map,msstats_in)
                 table = self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
                 parquet_table = self.convert_to_parquet(table)
@@ -693,7 +693,7 @@ class FeatureInMemory:
                 axis=1,
                 result_type="expand",
                 )
-                if intensity_map is not None:
+                if intensity_map is not None and len(intensity_map)!=0:
                     msstats_in = self._extract_rt_from_consensus_xml(intensity_map,msstats_in)
                 table = self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
                 parquet_table = self.convert_to_parquet(table)
