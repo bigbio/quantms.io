@@ -485,6 +485,52 @@ class FeatureInMemory:
 
         return map_dict
 
+    def _extract_rt_from_consensus_xml(self,intensity_map,msstats_in):
+        if "RetentionTime" not in msstats_in.columns:
+            if self.experiment_type != 'LFQ':
+                msstats_in['retention_time'] = msstats_in[['peptidoform','Charge','Reference','Channel','Intensity']].apply(
+                    lambda row: self.__map_rt_or_exp_mass(row[:-1],intensity_map,row[-1:].values[0],label='rt'), axis=1
+                )
+            else:
+                msstats_in['retention_time'] = msstats_in[['peptidoform','PrecursorCharge','Reference','Intensity']].apply(
+                    lambda row: self.__map_rt_or_exp_mass(row[:-1],intensity_map,row[-1:].values[0],label='rt'), axis=1
+                )
+        if self.experiment_type != 'LFQ':
+            msstats_in['exp_mass_to_charge'] = msstats_in[['peptidoform','Charge','Reference','Channel','Intensity','exp_mass_to_charge']].apply(
+                    lambda row: self.__map_rt_or_exp_mass(row[:-2],intensity_map,row[-2:-1].values[0],label='exp',exp_mass=row[-1:].values[0]), axis=1
+            )
+        else:
+            msstats_in['exp_mass_to_charge'] = msstats_in[['peptidoform','PrecursorCharge','Reference','Intensity','exp_mass_to_charge']].apply(
+                    lambda row: self.__map_rt_or_exp_mass(row[:-2],intensity_map,row[-2:-1].values[0],label='exp',exp_mass=row[-1:].values[0]), axis=1
+            )
+        return msstats_in
+
+    def __map_rt_or_exp_mass(self,row,intensity_map,intensity,label=None,exp_mass=None):
+        row = [str(v)for v in row.tolist()]
+        key = ":_:".join(row)
+        if key in intensity_map:
+            if abs(intensity_map[key]["intensity"] - np.float64(intensity)) < 0.1:
+                if label == 'rt':
+                    return intensity_map[key]["rt"]
+                else:
+                    return intensity_map[key]["mz"]
+            else:
+                if label =='exp':
+                    return exp_mass
+                else:
+                    return None
+        else:
+            if label == 'exp':
+                return exp_mass
+            else:
+                return None
+
+    def __check_mbr_peptide(self,reference,scan,exp_mass):
+        if exp_mass is None:
+            return None,None
+        else:
+            return reference,scan
+
     def _map_msstats_in(self, msstats_in, map_dict, spectra_count_dict):
         """
         map key: PeptideSequence, charge
@@ -562,6 +608,7 @@ class FeatureInMemory:
         sdrf_path,
         output_path,
         msstats_chunksize=1000000,
+        intensity_map = None
     ):
         """
         mzTab_path: mzTab file path
@@ -609,6 +656,15 @@ class FeatureInMemory:
                 msstats_in = self._map_msstats_in(msstats_in, map_dict, spectra_count_dict)
                 msstats_in.loc[:,'peptidoform'] = msstats_in[['sequence','modifications']].apply(lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'],row['modifications'],self._modifications),axis=1)
                 msstats_in.drop(['PeptideSequence'],inplace=True, axis=1)
+                msstats_in[["best_psm_reference_file_name", "best_psm_scan_number"]] = msstats_in[
+                ["best_psm_reference_file_name", "best_psm_scan_number",'exp_mass_to_charge']
+                ].apply(
+                lambda row: self.__check_mbr_peptide(row["best_psm_reference_file_name"],row["best_psm_scan_number"],row['exp_mass_to_charge']),
+                axis=1,
+                result_type="expand",
+                )
+                if intensity_map is not None:
+                    msstats_in = self._extract_rt_from_consensus_xml(intensity_map,msstats_in)
                 table = self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
                 parquet_table = self.convert_to_parquet(table)
                 if not pqwriter:
@@ -630,6 +686,15 @@ class FeatureInMemory:
                 msstats_in = self._map_msstats_in(msstats_in, map_dict, spectra_count_dict)
                 msstats_in.loc[:,'peptidoform'] = msstats_in[['sequence','modifications']].apply(lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'],row['modifications'],self._modifications),axis=1)
                 msstats_in.drop(['PeptideSequence'],inplace=True, axis=1)
+                msstats_in[["best_psm_reference_file_name", "best_psm_scan_number"]] = msstats_in[
+                ["best_psm_reference_file_name", "best_psm_scan_number",'exp_mass_to_charge']
+                ].apply(
+                lambda row: self.__check_mbr_peptide(row["best_psm_reference_file_name"],row["best_psm_scan_number"],row['exp_mass_to_charge']),
+                axis=1,
+                result_type="expand",
+                )
+                if intensity_map is not None:
+                    msstats_in = self._extract_rt_from_consensus_xml(intensity_map,msstats_in)
                 table = self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
                 parquet_table = self.convert_to_parquet(table)
                 if not pqwriter:

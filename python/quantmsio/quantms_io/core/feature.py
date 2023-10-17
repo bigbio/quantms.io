@@ -524,19 +524,18 @@ class FeatureHandler(ParquetHandler):
         """
         sdrf_handler = SDRFHandler(sdrf_file)
         experiment_type = sdrf_handler.get_experiment_type_from_sdrf()
+        # Get the intensity map from the consensusxml file
+        intensity_map = {}
+        if consesusxml_file is not None:
+            consensus_handler = OpenMSHandler()
+            intensity_map = consensus_handler.get_intensity_map(
+                    consensusxml_path=consesusxml_file, experiment_type=experiment_type
+            )
         if use_cache:
             sdrf_samples = sdrf_handler.get_sample_map()
 
             mztab_handler = MztabHandler(mztab_file, use_cache=use_cache)
             mztab_handler.load_mztab_file(use_cache=use_cache)
-
-            # Get the intensity map from the consensusxml file
-            intensity_map = {}
-            if consesusxml_file is not None:
-                consensus_handler = OpenMSHandler()
-                intensity_map = consensus_handler.get_intensity_map(
-                    consensusxml_path=consesusxml_file, experiment_type=experiment_type
-                )
 
             feature_list = []
 
