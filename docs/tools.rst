@@ -299,6 +299,7 @@ have two option (``map_protein_name`` or ``map_protein_accession``), and the
 label controls whether it is PSM or Feature.
 
 -  parquet
+- ``--label`` contains two options: ``psm`` and ``feature``
 
 Example: 
 
