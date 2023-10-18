@@ -511,7 +511,6 @@ class FeatureHandler(ParquetHandler):
         consesusxml_file: str = None,
         batch_size: int = 1000000,
         use_cache: bool = False,
-        generate_project: bool = True
     ):
         """
         convert a MSstats input file and mztab into a quantms.io file format.
@@ -525,19 +524,18 @@ class FeatureHandler(ParquetHandler):
         """
         sdrf_handler = SDRFHandler(sdrf_file)
         experiment_type = sdrf_handler.get_experiment_type_from_sdrf()
+        # Get the intensity map from the consensusxml file
+        intensity_map = {}
+        if consesusxml_file is not None:
+            consensus_handler = OpenMSHandler()
+            intensity_map = consensus_handler.get_intensity_map(
+                    consensusxml_path=consesusxml_file, experiment_type=experiment_type
+            )
         if use_cache:
             sdrf_samples = sdrf_handler.get_sample_map()
 
             mztab_handler = MztabHandler(mztab_file, use_cache=use_cache)
             mztab_handler.load_mztab_file(use_cache=use_cache)
-
-            # Get the intensity map from the consensusxml file
-            intensity_map = {}
-            if consesusxml_file is not None:
-                consensus_handler = OpenMSHandler()
-                intensity_map = consensus_handler.get_intensity_map(
-                    consensusxml_path=consesusxml_file, experiment_type=experiment_type
-                )
 
             feature_list = []
 
@@ -601,16 +599,6 @@ class FeatureHandler(ParquetHandler):
                 self.parquet_path,
                 msstats_chunksize=batch_size,
             )
-        #project
-        if generate_project:
-            Project = check_directory(output_folder)
-            Project.register_file(cut_path(self.parquet_path,output_folder),'.featrue.parquet')
-            Project.add_sdrf_file(sdrf_file,output_folder,False)
-            project_path = output_folder + '/' + 'project.json'
-            Project.save_updated_project_info(output_file_name=project_path)
-        else:
-            Project = ProjectHandler()
-            Project.add_sdrf_file(sdrf_file,output_folder,False,generate_project=False)
 
     def describe_schema(self):
         """

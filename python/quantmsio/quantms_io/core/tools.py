@@ -7,6 +7,7 @@ gene_names:
 gene_accessions:
 compare parquet
 plot veen
+...
 """
 import os
 import re
@@ -20,6 +21,7 @@ import pyarrow.parquet as pq
 from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.openms import OpenMSHandler
 from quantms_io.core.psm import PSMHandler
+from quantms_io.core.project import ProjectHandler
 from quantms_io.utils.file_utils import extract_len
 
 
@@ -197,7 +199,6 @@ def plot_peptidoform_charge_venn(parquet_path_list,labels):
     plt.figure(figsize=(16, 12), dpi=500)
     venn(data_map, legend_loc="upper right",figsize=(16, 12),fmt="{size}({percentage:.1f}%)")
     plt.savefig('pep_form_compare_venn.png')
-    plt.show()
 
 def plot_sequence_venn(parquet_path_list,labels):
     data_map = {}
@@ -210,7 +211,6 @@ def plot_sequence_venn(parquet_path_list,labels):
     plt.figure(figsize=(16, 12), dpi=500)
     venn(data_map, legend_loc="upper right",figsize=(16, 12),fmt="{size}({percentage:.1f}%)")
     plt.savefig('sequence_compare_venn.png')
-    plt.show()
 
 # gei unqnimous name
 from collections import defaultdict
@@ -302,7 +302,7 @@ def change_and_save_parquet(parquet_path,map_dict,output_path,label):
         pqwriter.close()
         
 def get_unanimous_name(protein_accessions,map_dict):
-    if not isinstance(protein_accessions,list):
+    if isinstance(protein_accessions,str):
         if ';' in protein_accessions:
             protein_accessions = protein_accessions.split(";")
         else:
@@ -317,3 +317,9 @@ def read_large_parquet(parquet_path: str, batch_size: int = 500000):
     for batch in parquet_file.iter_batches(batch_size=batch_size):
         batch_df = batch.to_pandas()
         yield batch_df
+
+#register_file
+def register_file_to_json(project_file,attach_file,category,replace_existing):
+    Register= ProjectHandler(project_json_file=project_file)
+    Register.add_quantms_file(attach_file,category,replace_existing)
+    Register.save_updated_project_info(output_file_name=project_file)

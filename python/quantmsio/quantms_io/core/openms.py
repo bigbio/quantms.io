@@ -53,7 +53,6 @@ class OpenMSHandler:
         self._consensus_xml_path = consensusxml_path
         consensus_map = oms.ConsensusMap()
         oms.ConsensusXMLFile().load(self._consensus_xml_path, consensus_map)
-
         df = consensus_map.get_df()
         df = df[df.sequence != "None"]
 

@@ -3,6 +3,7 @@ import uuid
 from pathlib import Path
 import pandas as pd
 from quantms_io.core.project import ProjectHandler
+from quantms_io.core.sdrf import SDRFHandler
 from quantms_io.utils.file_utils import delete_files_extension
 import logging
 logging.basicConfig(level = logging.INFO)
@@ -34,6 +35,8 @@ class AbsoluteExpressionHander:
         self.ibaq_df = None
         self.ae_file_path = None
         self.project_manager = None
+        self.sdrf_manager = None
+        self.sdrf_file_path = None
         
     
     def load_project_file(self, project_file: str):
@@ -62,7 +65,15 @@ class AbsoluteExpressionHander:
         ibaqs.rename(columns=AbsoluteExpressionHander.LABEL_MAP,inplace=True)
         self.ae_file_path = path
         self.ibaq_df = ibaqs
-        
+    
+    def load_sdrf_file(self, sdrf_file: str):
+        self.sdrf_file_path = sdrf_file
+
+        if not os.path.isfile(sdrf_file):
+            raise FileNotFoundError("SDRF file not found: " + sdrf_file)
+
+        self.sdrf_manager = SDRFHandler(sdrf_file=sdrf_file)
+
     def convert_ibaq_to_quantms(
         self,
         output_folder: str = None,
@@ -91,11 +102,14 @@ class AbsoluteExpressionHander:
                 + self.project_manager.project.project_info["quantms_version"]
                 + "\n"
             )
+        factor_value = self.get_factor_value()
+        if factor_value is not None:
+            output_lines += "#factor_value: " + factor_value + "\n"
         # Combine comments and DataFrame into a single list
         output_lines += AbsoluteExpressionHander.AE_HEADER + str(
             self.ibaq_df.to_csv(sep="\t", index=False, header=True)
         )
-
+        output_lines = output_lines.replace('\r','')
         # Create the output file name
         base_name = output_file_prefix
         if output_file_prefix is None:
@@ -121,6 +135,7 @@ class AbsoluteExpressionHander:
         # Save the combined lines to a TSV file
         with open(output_filename_path, "w",encoding='utf8') as f:
             f.write(output_lines)
+    
         if self.project_manager:
             self.project_manager.add_quantms_file(
                 file_category="absolute_file", file_name=output_filename
@@ -128,7 +143,15 @@ class AbsoluteExpressionHander:
         logger.info(
             f"Absolute expression file copied to {output_filename} and added to the project information"
         )
-    
+
+    def get_factor_value(self):
+        """
+        Get the factor value from the SDRF file
+        """
+        if self.sdrf_manager is None:
+            return None
+        return self.sdrf_manager.get_factor_value()
+
     def update_project_file(self, project_file: str = None):
         """
         Update the project file with the differential expression file

@@ -1,18 +1,29 @@
 import click
 
 from quantms_io.core.de import DifferentialExpressionHandler
+CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
+
+@click.group(context_settings=CONTEXT_SETTINGS)
+def cli():
+    """
+    This is the main tool that gives access to all commands.
+    """
 
 @click.command(
-    "convert-msstats-differential",
+    "convert_msstats_differential",
     short_help="Convert a MSstats differential file into a quantms.io file " "format",
 )
 @click.option("--msstats_file", help="MSstats differential file", required=True)
-@click.option("--project_file", help="quantms.io project file", required=False)
 @click.option(
     "--sdrf_file",
     help="the SDRF file needed to extract some of the metadata",
     required=True,
+)
+@click.option(
+    "--project_file",
+    help="quantms.io project file",
+    required=False,
 )
 @click.option(
     "--fdr_threshold",
@@ -25,43 +36,37 @@ from quantms_io.core.de import DifferentialExpressionHandler
 )
 @click.option("--output_prefix_file", help="Prefix of the df expression file", required=False)
 @click.option(
-    "--generate_project",
-    help="Generate project.json for pride project, Otherwise, False",
-    required=False,
-    is_flag=True,
-)
-@click.option(
     "--delete_existing", help="Delete existing files in the output folder", is_flag=True
 )
+@click.pass_context
 def convert_msstats_differential(
+    ctx,
     msstats_file: str,
     sdrf_file: str,
+    project_file:str,
     fdr_threshold: float,
     output_folder: str,
     output_prefix_file: str,
-    generate_project: bool= True,
     delete_existing: bool=True,
-    project_file: str = None,
 ):
     """
     Convert a MSstats differential file into a quantms.io file format. The file definition is available in the docs
     https://github.com/bigbio/quantms.io/blob/main/docs/DE.md.
     :param msstats_file: MSstats differential file
-    :param project_file: quantms.io project file
     :param sdrf_file: the SDRF file needed to extract some of the metadata
+    :param project_file: quantms.io project file
     :param output_folder: Folder to generate the df expression file.
     :param output_prefix_file: Prefix of the df expression file
     :param delete_existing: Delete existing files in the output folder
     :param fdr_threshold: FDR threshold to use to filter the results
-    :param generate_project: "Generate project.json for pride project, Otherwise, False"
     :return: none
     """
 
-    if msstats_file is None or project_file is None or output_folder is None:
+    if msstats_file is None or sdrf_file is None or output_folder is None:
         raise click.UsageError("Please provide all the required parameters")
 
     de_handler = DifferentialExpressionHandler()
-    if generate_project:
+    if project_file:
         de_handler.load_project_file(project_file)
     de_handler.load_msstats_file(msstats_file)
     de_handler.load_sdrf_file(sdrf_file)
@@ -71,5 +76,7 @@ def convert_msstats_differential(
         output_file_prefix=output_prefix_file,
         delete_existing=delete_existing,
     )
-    if generate_project:
-        de_handler.update_project_file(project_file)
+
+cli.add_command(convert_msstats_differential)
+if __name__ == '__main__':
+    cli()
