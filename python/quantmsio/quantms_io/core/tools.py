@@ -42,14 +42,14 @@ def map_spectrum_mz(mz_path: str, scan: str, Mzml: OpenMSHandler, mzml_directory
     return mz_array, array_intensity, 0
 
 
-def generate_features_of_spectrum(parquet_path: str, mzml_directory: str,output_path:str,label,partition:str=None):
+def generate_features_of_spectrum(parquet_path: str, mzml_directory: str,output_path:str,label,chunksize,partition:str=None):
     '''
     parquet_path: parquet file path
     mzml_directory: mzml file directory path
     '''
     pqwriters = {}
     pqwriter_no_part = None
-    for table in read_large_parquet(parquet_path):
+    for table in read_large_parquet(parquet_path,batch_size=chunksize):
         #table = pd.read_parquet(parquet_path)
         Mzml = OpenMSHandler()
         if label == 'feature':

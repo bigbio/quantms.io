@@ -289,6 +289,7 @@ Example:
       --mzml_directory mzmls
       --output_path psm/PXD014414.parquet
       --label psm
+      --chunksize(default 100000)
       --partition charge
 
 Map proteins accessions
