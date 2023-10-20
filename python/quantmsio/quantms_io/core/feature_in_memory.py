@@ -215,6 +215,10 @@ class FeatureInMemory:
             psm["spectra_ref"] = psm["spectra_ref"].apply(
                 lambda x: self._ms_runs[x.split(":")[0]]
             )
+            if "opt_global_cv_MS:1000889_peptidoform_sequence" not in psm.columns:
+                psm.loc[:, 'opt_global_cv_MS:1000889_peptidoform_sequence'] = psm[['modifications', 'sequence']].apply(
+                    lambda row: get_petidoform_msstats_notation(row['sequence'], row['modifications'], self._modifications),
+                    axis=1)
             spectra_dict = (
                 psm[
                     [
