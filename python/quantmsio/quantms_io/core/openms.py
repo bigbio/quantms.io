@@ -59,8 +59,9 @@ class OpenMSHandler:
         if experiment_type is not None and "LABEL FREE" in experiment_type.upper():
             return self._get_intensity_map_lfq(df)
         elif experiment_type is not None and "TMT" in experiment_type.upper():
-            return self._get_intensity_map_tmt(df)
-
+            return self._get_intensity_map_tmt_or_itraq(df,experiment_type)
+        elif experiment_type is not None and 'ITRAQ' in experiment_type.upper():
+            return self._get_intensity_map_tmt_or_itraq(df,experiment_type)
         return self._get_intensity_map_lfq(
             df
         )  # If not experiment type is provided, we assume it is label free
@@ -100,7 +101,7 @@ class OpenMSHandler:
         return intensity_map
 
     @staticmethod
-    def _get_intensity_map_tmt(df):
+    def _get_intensity_map_tmt_or_itraq(df,experiment_type):
         """
         Get the intensity map for TMT experiments
         :param df: pandas dataframe with the consensusxml data
@@ -115,10 +116,15 @@ class OpenMSHandler:
             for column in intensity_columns:
                 if np.float64(row[f"{column}"]) > 0.0:
                     reference_file = row.file.split(".")[0]
-                    channel = (
-                        "TMT" + column.split("_")[1]
-                    )  # A TMT channel has in consesusXML the following format:
-                    # tmt10plex_129N -> TMT129N
+                    if "TMT" in experiment_type.upper():
+                        channel = (
+                            "TMT" + column.split("_")[1]
+                        )  # A TMT channel has in consesusXML the following format:
+                        # tmt10plex_129N -> TMT129N
+                    else:
+                        channel = (
+                            "ITRAQ" + column.split("_")[1]
+                        ) 
                     key = (
                         row.sequence
                         + ":_:"

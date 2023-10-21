@@ -239,7 +239,7 @@ def _fetch_msstats_feature(
         key = None
         if "LABEL FREE" in feature_dict["Channel"]:
             key = peptidoform + ":_:" + str(charge) + ":_:" + feature_dict["Reference"]
-        elif "TMT" in feature_dict["Channel"]:
+        elif "TMT" in feature_dict["Channel"] or "ITRAQ" in feature_dict["Channel"]:
             key = (
                 peptidoform
                 + ":_:"
