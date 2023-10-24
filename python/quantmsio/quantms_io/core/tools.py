@@ -23,7 +23,7 @@ from quantms_io.core.openms import OpenMSHandler
 from quantms_io.core.psm import PSMHandler
 from quantms_io.core.project import ProjectHandler
 from quantms_io.utils.file_utils import extract_len
-
+from quantms_io.core.project import create_uuid_filename
 
 
 
@@ -323,3 +323,45 @@ def register_file_to_json(project_file,attach_file,category,replace_existing):
     Register= ProjectHandler(project_json_file=project_file)
     Register.add_quantms_file(attach_file,category,replace_existing)
     Register.save_updated_project_info(output_file_name=project_file)
+
+#check result of psms or features
+def generate_report_of_psms_or_features(check_dir,label):
+    if not os.path.exists(check_dir):
+        raise Exception("not file path")
+    file_list = os.listdir(check_dir)
+    if label == 'psm':
+        check_list = [file for file in file_list if file.endswith(".psm.parquet")]
+    elif label == 'feature':
+        check_list = [file for file in file_list if file.endswith(".feature.parquet")]
+    
+    output_lines = ''
+    for file_path in check_list:
+        output_lines += 'Name: ' + file_path + '\n'
+        file_path = check_dir + "/" + file_path
+        file_size = getFileSize(file_path)
+        output_lines += 'File size: ' + file_size + '\n'
+        df = pd.read_parquet(file_path,columns=['protein_accessions','peptidoform','charge'])
+        output_lines += 'Total number of Peptides: ' + str(len(df.groupby(['peptidoform','charge']))) + '\n'
+        proteins = set()
+        df['protein_accessions'].apply(lambda x: proteins.update(set(x)))
+        output_lines += 'Total number of Proteins: ' + str(len(proteins)) + '\n\n'
+
+    output_path =  create_uuid_filename(label+'s_report','.txt')
+    with open(output_path, "w",encoding='utf8') as f:
+            f.write(output_lines)
+
+def getFileSize(filePath):
+    fsize = os.path.getsize(filePath)
+    if fsize < 1024:
+        return str(round(fsize,2)) + 'Byte'
+    else: 
+        KBX = fsize/1024
+        if KBX < 1024:
+            return str(round(KBX,2)) + 'K'
+        else:
+            MBX = KBX /1024
+            if MBX < 1024:
+                return str(round(MBX,2)) + 'M'
+            else:
+                return str(round(MBX/1024)) + 'G'
+                

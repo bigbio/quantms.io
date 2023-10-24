@@ -179,7 +179,7 @@ The absolute expression format aims to visualize absolute expression (AE) result
 iBAQ values and store the AE results of each protein on each sample.
 
 - If you have generated project.json, you can use this parameter ``--project_file`` to add project information for AE files.
-- IF you want to know ibaq, please read `ibaqpy <https://github.com/bigbio/ibaqpy>`__
+- If you want to know ibaq, please read `ibaqpy <https://github.com/bigbio/ibaqpy>`__
 - If you want to know more, please read :doc:`ae`.
 
 Example: 
@@ -337,6 +337,21 @@ Example:
       --parquet_path_one res_lfq2_discache.parquet
       --parquet_path_two res_lfq2_no_cache.parquet
       --report_path report.txt
+
+Generate report about files 
+-----------------------------
+This tool is used to generate report about all feature files or psm files.
+You can build ``psm parquet`` or ``feature parquet`` multiple times for the same project and use this command to verify its consistency.
+
+- ``--label`` contains two options: ``psm`` and ``feature`
+
+Example: 
+
+.. code:: python
+
+   python generate_report_command.py generate_report_about_files
+      --check_dir file_path
+      --label psm
 
 Register file 
 --------------------------
