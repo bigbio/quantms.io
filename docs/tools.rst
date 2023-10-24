@@ -343,7 +343,7 @@ Generate report about files
 This tool is used to generate report about all feature files or psm files.
 You can build ``psm parquet`` or ``feature parquet`` multiple times for the same project and use this command to verify its consistency.
 
-- ``--label`` contains two options: ``psm`` and ``feature`
+- ``--label`` contains two options: ``psm`` and ``feature``
 
 Example: 
 
