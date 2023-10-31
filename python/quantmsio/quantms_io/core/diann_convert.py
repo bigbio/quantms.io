@@ -582,7 +582,7 @@ class DiaNNConvert():
 
   
             spectra_count_dict = self.__get_spectra_count(out_mztab_PSH,spectra_count_dict)
-            map_dict = self.__extract_from_psm_to_pep_msg(out_mztab_PSH,map_dict,psm_unique_keys)
+            map_dict,psm_unique_keys = self.__extract_from_psm_to_pep_msg(out_mztab_PSH,map_dict,psm_unique_keys)
 
 
         return map_dict,spectra_count_dict
@@ -598,7 +598,6 @@ class DiaNNConvert():
 
             return files[0]
 
-        psm_unique_keys =[]
         for report in self.main_report_df(report_path,qvalue_threshold,chunksize,uniq_masses):
             report = report.merge(index_ref[["ms_run", "Run", "study_variable"]], on="Run", validate="many_to_one")
 
@@ -794,7 +793,7 @@ class DiaNNConvert():
                                 & (df["scan_number"] == map_dict[key][2])
                             ]["exp_mass_to_charge"].values[0]
 
-        return map_dict
+        return map_dict,psm_unique_keys
     
     def __get_spectra_count(self, psm, counter):
         """
