@@ -25,7 +25,7 @@ def cli():
 )
 @click.option(
     "--fasta_path",
-    help="Reference fasta database file",
+    help="reference fasta database file",
     required=True,
 )
 @click.option(
@@ -72,8 +72,21 @@ def cli():
     default = 100000
 )
 @click.pass_context
-def diann_convert_to_parquet(report_path:str,design_file:str,fasta_path:str,modifications:List,pg_path:str,pr_path:str,qvalue_threshold: float,mzml_info_folder:str,sdrf_path:str,output_folder:str,output_prefix_file:str,chunksize:int):
-    
+def diann_convert_to_parquet(ctx,report_path:str,design_file:str,fasta_path:str,modifications:List,pg_path:str,pr_path:str,qvalue_threshold: float,mzml_info_folder:str,sdrf_path:str,output_folder:str,output_prefix_file:str,chunksize:int):
+    '''
+    report_path: diann report file path
+    design_file: the disign file path
+    fasta_path: reference fasta database file
+    modifications: a list contains fix modifications and variable modifications
+    pg_path: pg_matrix file
+    pr_path: pr_matrix file
+    qvalue_threshold: qvalue threshold
+    mzml_info_folder: mzml info file folder
+    sdrf_path: sdrf file path
+    output_folder: Folder where the Json file will be generated
+    output_prefix_file: Prefix of the Json file needed to generate the file name
+    chunksize: batch size
+    '''
     if os.path.exists(output_folder):
         os.makedirs(output_folder)
     

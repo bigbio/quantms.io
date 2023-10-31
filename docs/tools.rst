@@ -253,6 +253,31 @@ Example:
    --output_prefix_file   The prefix of the result file(like {prefix}-{uu.id}-{extension})
    --verbose  Output debug information(default True)
 
+DiaNN convert 
+--------------------------
+For DiaNN, the command supports generating ``feature.parquet`` and ``psm.parquet`` directly from diann_report files.
+
+- ``--modifications`` is a list of 2 lengths containing both fixed and variable modifications. The different modifications in each modification are separated by ``;``.
+
+Example: 
+
+.. code:: python
+
+   python diann_convert_command.py diann_convert_to_parquet
+      --report_path diann_report.tsv
+      --design_file PXD037682.sdrf_openms_design.tsv
+      --fasta_path Homo-sapiens-uniprot-reviewed-contaminants-decoy-202210.fasta
+      --modifications ['null','null']
+      --pg_path diann_report.pg_matrix.tsv
+      --pr_path diann_report.pr_matrix.tsv
+      --qvalue_threshold 0.05
+      --mzml_info_folder mzml
+      --sdrf_path PXD037682.sdrf.tsv
+      --output_folder result
+      --output_prefix_file PXD037682
+      --chunksize 100000
+
+
 Compare psm.parquet
 -------------------
 This tool is used to compare peptide information in result files obtained by different search engines.
