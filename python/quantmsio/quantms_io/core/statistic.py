@@ -47,7 +47,7 @@ class Statistic():
         self.feature_db = self.load_db(feature_path)
         self.ibaq_db = self.load_db(ibaq_path)
         
-    def load_db(self,path:str):
+    def load_db(self, path: str):
         if path is not None:
             if os.path.exists(path):
                 if path.endswith(".parquet"):

@@ -16,6 +16,7 @@ from quantms_io.commands.get_unanimous_command import get_unanimous_for_parquet,
 from quantms_io.commands.feature_command import convert_feature_file
 from quantms_io.commands.psm_command import convert_psm_file, compare_set_of_psms
 from quantms_io.commands.generate_report_command import generate_report_about_files
+from quantms_io.commands.parquet_to_json import convert_parquet_to_json
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -41,6 +42,7 @@ cli.add_command(attach_file_to_json)
 cli.add_command(get_unanimous_for_parquet)
 cli.add_command(get_unanimous_for_tsv)
 cli.add_command(generate_report_about_files)
+cli.add_command(convert_parquet_to_json)
 
 def quantms_io_main():
     """
