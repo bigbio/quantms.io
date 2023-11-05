@@ -3,14 +3,11 @@ import numpy as np
 import pandas as pd
 from quantms_io.core.database import Database
 import os
+import random
 from st_aggrid import AgGrid,ColumnsAutoSizeMode
 from st_aggrid.grid_options_builder import GridOptionsBuilder
 
-#os.chdir(r'D:\converter\AE\PXD010154\PXD010154')
-
-
 st.set_page_config(page_title="quantms_analyze", layout="wide")
-#st.title("quantms_io")
 workdir = st.sidebar.text_input('workdir',value='')
 
 def load_unique_list(file_type,View):
@@ -19,6 +16,8 @@ def load_unique_list(file_type,View):
     else:
         return View.get_unique_proteins(index)
 
+def refresh_keys(query_list):
+    random.shuffle(query_list)
 
 if os.path.exists(workdir):
     os.chdir(workdir)
@@ -46,12 +45,13 @@ if os.path.exists(workdir):
         index = parquet_file_list.index(file_type)
     else:
         index = ibaq_list.index(file_type)
-
+    
     query_list = load_unique_list(file_type,View)
     query_key = st.sidebar.selectbox(
         "query peptide or protein",
-        query_list
+        query_list[:10]
     )
+    st.sidebar.button("Refresh", on_click=refresh_keys(query_list))
 
     if file_type.endswith('.parquet'):
         df = View.query_peptide(query_key, index)
@@ -61,11 +61,12 @@ if os.path.exists(workdir):
     gb = GridOptionsBuilder.from_dataframe(df)
     gb.configure_pagination(paginationAutoPageSize=False,paginationPageSize=15)
     gb.configure_side_bar()
-    gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, editable=False)
+    gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, aggFunc="sum", editable=False)
     gridOptions = gb.build()
     if file_type.endswith('.parquet'):
         AgGrid(df,gridOptions,columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,theme='alpine')
     else:
         AgGrid(df,gridOptions,columns_auto_size_mode=ColumnsAutoSizeMode.FIT_ALL_COLUMNS_TO_VIEW,theme='alpine')
+    
 
 
