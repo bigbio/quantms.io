@@ -395,3 +395,19 @@ Example:
       --attach_file PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet
       --category feature_file
       --replace_existing
+
+Data preview
+--------------------------
+This tool is used to preview your feature files and AE files.
+You can run ``streamlit run .\visualize_web_commond.py`` start a web service.
+Then set up your working directory to preview the data.
+
+.. image:: data_view.png
+   :width: 800
+   :align: center
+
+* If you want to manipulate data on NoteBook, you can introduce the ``Statistic`` class.
+
+.. code:: python
+
+   from quantms_io.core.statistic import Statistic

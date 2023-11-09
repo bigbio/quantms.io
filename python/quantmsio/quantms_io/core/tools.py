@@ -11,6 +11,7 @@ plot veen
 """
 import os
 import re
+import json
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -365,3 +366,24 @@ def getFileSize(filePath):
             else:
                 return str(round(MBX/1024)) + 'G'
                 
+#covert ae or de to json
+def convert_to_json(file_path):
+    '''
+    By providing the json format of AE and DE files for retrieval.
+    return json
+    '''
+    table,content = load_de_or_ae(file_path)
+    output = {}
+    pattern = r'[\\|\|//|/]'
+    file_name = re.split(pattern,file_path)[-1]
+    output['id'] = file_name
+    output['metadata'] = content
+    records = {}
+    for col in table.columns:
+        records[col] = table.loc[:,col].to_list()
+    output['records'] = records
+    b = json.dumps(output)
+    output_path = ".".join(file_name.split('.')[:-1]) + '.json'
+    f = open(output_path, 'w')
+    f.write(b)
+    f.close()
