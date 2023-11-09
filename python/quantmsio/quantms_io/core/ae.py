@@ -29,7 +29,7 @@ class AbsoluteExpressionHander:
 #INFO=<ID=ibaq, Number=1, Type=Float, Description="Intensity based absolute quantification">
 #INFO=<ID=ribaq, Number=1, Type=Float, Description="relative iBAQ">\n"""
     
-    ABSOLUTE_EXPRESSION_EXTENSION = ".ae.absolute.tsv"
+    ABSOLUTE_EXPRESSION_EXTENSION = ".absolute.tsv"
     
     def __init__(self):
         self.ibaq_df = None

@@ -11,6 +11,7 @@ plot veen
 """
 import os
 import re
+import json
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -374,11 +375,15 @@ def convert_to_json(file_path):
     table,content = load_de_or_ae(file_path)
     output = {}
     pattern = r'[\\|\|//|/]'
-    output['id'] = re.split(pattern,file_path)[-1]
+    file_name = re.split(pattern,file_path)[-1]
+    output['id'] = file_name
     output['metadata'] = content
     records = {}
     for col in table.columns:
         records[col] = table.loc[:,col].to_list()
     output['records'] = records
-
-    return output
+    b = json.dumps(output)
+    output_path = ".".join(file_name.split('.')[:-1]) + '.json'
+    f = open(output_path, 'w')
+    f.write(b)
+    f.close()
