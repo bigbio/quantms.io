@@ -38,7 +38,7 @@ def check_exist(label):
         return wrapper
     return check_db_exist
     
-class Statistic():
+class Statistic:
     
     __slot__ = ['feature_db','ibaq_db']
     
@@ -48,9 +48,9 @@ class Statistic():
         self.ibaq_db = self.load_db(ibaq_path)
         
     def load_db(self,path:str):
-        '''
+        """
         Load the database.
-        '''
+        """
         if path is not None:
             if os.path.exists(path):
                 if path.endswith(".parquet"):

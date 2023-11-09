@@ -1,17 +1,16 @@
 import json
 import logging
-import re
 
 import numpy as np
 import pyarrow.parquet as pq
 
-class npEncoder(json.JSONEncoder):
+class Npencoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.int32):
             return int(obj)
         return json.JSONEncoder.default(self, obj)
 
-def read_large_parquet(parquet_path: str, batch_size: int = 100000):
+def read_large_parquet(parquet_path: str, batch_size: int = 1000000):
     """_summary_
 
     :param parquet_path: _description_
@@ -47,7 +46,7 @@ def scores_to_json(scores_row) -> list:
 
 def feature_json(feature_row) -> dict:
     """
-    This function converts a feature row in parquet to json dictionary.
+    this function converts a feature row in parquet to json dictionary.
     :param feature_row: a row in feature parquet file
     :return: a json dictionary
     """
@@ -59,7 +58,7 @@ def feature_json(feature_row) -> dict:
         "protein_start_positions"].any() else []
     feature_dic["protein_end_positions"] = list(feature_dic["protein_end_positions"]) if feature_dic[
         "protein_end_positions"].any() else []
-    feature_dic["modifications"] = list(feature_dic["modifications"]) if feature_dic["modifications"].any() else []
+    feature_dic["modifications"] = list(feature_dic["modifications"]) if "modifications" in feature_dic and feature_dic["modifications"] is not None and feature_dic["modifications"].any() else []
     feature_dic["gene_names"] = list(feature_dic["gene_names"]) if feature_dic["gene_names"] is not None and feature_dic[
         "gene_names"].any() else []
     feature_dic["gene_accessions"] = list(feature_dic["gene_accessions"]) if (feature_dic["gene_accessions"] is not None and
@@ -77,8 +76,8 @@ class JsonConverter:
 
     def feature_to_json(self, parquet_feature_path: str, json_feature_path: str):
         """
-        Convert the feature file to json format.
-        The method uses an iterative method to convert the feature file to json in batches.
+        convert the feature file to json format.
+        the method uses an iterative method to convert the feature file to json in batches.
         :param parquet_feature_path: the path of feature file
         :param json_feature_path: the path of json file
         :return: None
@@ -88,7 +87,7 @@ class JsonConverter:
         for feature_df in chunks:
             for index, row in feature_df.iterrows():
                 json_obj = feature_json(row)
-                json.dump(json_obj, json_file, cls=npEncoder)
+                json.dump(json_obj, json_file, cls=Npencoder)
                 json_file.write('\n')
             logging.info(f"Finished converting {len(feature_df)} rows")
         json_file.close()

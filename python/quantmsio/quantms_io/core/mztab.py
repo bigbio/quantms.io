@@ -89,7 +89,7 @@ def create_peptide_for_index(
 
 class MztabHandler:
     """
-    mztab handler class for quantms.io. This class is used to load mztab files and create indexes for the mztab files.
+    mztab handler class for quantms.io. this class is used to load mztab files and create indexes for the mztab files.
     the mztab handler has multiple indexes to access the mztab content: protein, peptide and psm.
     - Protein index: contains the position and the qvalue of each protein in the mztab file.
     - Peptide index: contains the position and the qvalue/modifications of each peptide in the mztab file.
@@ -412,7 +412,7 @@ class MztabHandler:
 
     def load_mztab_file(self, use_cache: bool = False):
         """
-        load a mztab file it can be in memory or in cache. If the file is in cache, it will be loaded from there.
+        load a mztab file it can be in memory or in cache. if the file is in cache, it will be loaded from there.
         :param use_cache: use cache
         """
         if self._mztab_file is None:
@@ -532,7 +532,7 @@ class MztabHandler:
 
     def create_mztab_psm_iterator(self, mztab_file: str):
         """
-        create an iterator for the mztab file. The iterator is used to read the psm in the mztab file.
+        create an iterator for the mztab file. the iterator is used to read the psm in the mztab file.
         :param mztab_file: mztab file
         :return: None
         """
@@ -577,7 +577,7 @@ class MztabHandler:
 
     def read_next_psm(self):
         """
-        read the next psm in the mztab file. A precondition of the method is that the mztab file has been loaded and
+        read the next psm in the mztab file. a precondition of the method is that the mztab file has been loaded and
         the iterator has been created using the method create_mztab_psm_iterator.
         :return: psm dictionary
         """

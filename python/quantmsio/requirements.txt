@@ -11,3 +11,5 @@ biopython
 datacompy
 venn
 seaborn
+matplotlib
+duckdb

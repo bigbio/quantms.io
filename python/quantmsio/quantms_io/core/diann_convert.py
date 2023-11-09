@@ -31,9 +31,9 @@ def get_exp_design_dfs(exp_design_file):
 
         s_table = [i.replace("\n", "").split("\t") for i in data[empty_row + 1 :]][1:]
         s_header = data[empty_row + 1].replace("\n", "").split("\t")
-        s_DataFrame = pd.DataFrame(s_table, columns=s_header)
+        s_data_frame = pd.DataFrame(s_table, columns=s_header)
 
-    return s_DataFrame, f_table
+    return s_data_frame, f_table
 
 def _true_stem(x):
     """
@@ -111,7 +111,7 @@ def handle_protein_map(protein_map, key):
     else:
         return protein_map[key]
     
-def MTD_mod_info(fix_mod, var_mod):
+def mtd_mod_info(fix_mod, var_mod):
     """
     Convert fixed and variable modifications to the format required by the MTD sub-table.
 
@@ -155,7 +155,7 @@ def MTD_mod_info(fix_mod, var_mod):
 
 def get_modifications(fix_modifications:str,variable_modifications:str):
     
-    (fixed_mods, variable_mods, fix_flag, var_flag) = MTD_mod_info(fix_modifications, variable_modifications)
+    (fixed_mods, variable_mods, fix_flag, var_flag) = mtd_mod_info(fix_modifications, variable_modifications)
     
     modifications_list = []
     if fix_flag == 1:
@@ -181,7 +181,7 @@ def get_modifications(fix_modifications:str,variable_modifications:str):
     return mod_dict
     
 
-class DiaNNConvert():
+class DiaNNConvert:
     
     def __init__(self):
         
@@ -317,7 +317,7 @@ class DiaNNConvert():
             #report["precursor.Index"] = report["Precursor.Id"].map(precursor_index_map)
             yield report
     
-    def get_msstats_in(self,report,unique_reference_map,s_DataFrame,f_table):
+    def get_msstats_in(self, report, unique_reference_map, s_data_frame, f_table):
         msstats_columns_keep = [
         "Protein.Names",
         "Modified.Sequence",
@@ -336,7 +336,7 @@ class DiaNNConvert():
         out_msstats["Reference"] = out_msstats["Reference"].map(unique_reference_map)
         out_msstats = out_msstats.merge(
                 (
-                    s_DataFrame[["Sample", "MSstats_Condition", "MSstats_BioReplicate"]]
+                    s_data_frame[["Sample", "MSstats_Condition", "MSstats_BioReplicate"]]
                     .merge(f_table[["Fraction", "Sample", "run"]], on="Sample")
                     .rename(columns={"run": "Run", "MSstats_BioReplicate": "BioReplicate", "MSstats_Condition": "Condition"})
                     .drop(columns=["Sample"])
@@ -378,27 +378,27 @@ class DiaNNConvert():
         
         pg.loc[pg["Protein.Ids"].str.contains(";"), "opt_global_result_type"] = "indistinguishable_protein_group"
 
-        out_mztab_PRH = pg.drop(["Protein.Names"], axis=1)
-        out_mztab_PRH.rename(
+        out_mztab_prh = pg.drop(["Protein.Names"], axis=1)
+        out_mztab_prh.rename(
             columns={"Protein.Group": "accession", "First.Protein.Description": "description"}, inplace=True
         )
-        out_mztab_PRH.loc[:, "accession"] = out_mztab_PRH.apply(lambda x: x["accession"].split(";")[0], axis=1)
+        out_mztab_prh.loc[:, "accession"] = out_mztab_prh.apply(lambda x: x["accession"].split(";")[0], axis=1)
 
-        protein_details_df = out_mztab_PRH[out_mztab_PRH["opt_global_result_type"] == "indistinguishable_protein_group"]
+        protein_details_df = out_mztab_prh[out_mztab_prh["opt_global_result_type"] == "indistinguishable_protein_group"]
         prh_series = protein_details_df["Protein.Ids"].str.split(";", expand=True).stack().reset_index(level=1, drop=True)
         prh_series.name = "accession"
         protein_details_df = (
             protein_details_df.drop("accession", axis=1).join(prh_series).reset_index().drop(columns="index")
         )
-        out_mztab_PRH = pd.concat([out_mztab_PRH, protein_details_df]).reset_index(drop=True)
-        out_mztab_PRH.loc[:, "ambiguity_members"] = out_mztab_PRH.apply(
+        out_mztab_prh = pd.concat([out_mztab_prh, protein_details_df]).reset_index(drop=True)
+        out_mztab_prh.loc[:, "ambiguity_members"] = out_mztab_prh.apply(
             lambda x: x["Protein.Ids"] if x["opt_global_result_type"] == "indistinguishable_protein_group" else "null",
             axis=1,
         )
-        out_mztab_PRH[["modifiedSequence", "best_search_engine_score[1]"]] = out_mztab_PRH.apply(
+        out_mztab_prh[["modifiedSequence", "best_search_engine_score[1]"]] = out_mztab_prh.apply(
             lambda x: best_score_dict.get(x["Protein.Ids"],(np.nan, np.nan)), axis=1, result_type="expand"
         )
-        prt_score = out_mztab_PRH[["ambiguity_members","best_search_engine_score[1]"]].groupby("ambiguity_members").min()
+        prt_score = out_mztab_prh[["ambiguity_members","best_search_engine_score[1]"]].groupby("ambiguity_members").min()
         protein_map = prt_score.to_dict()["best_search_engine_score[1]"]
         
         return protein_map
@@ -414,16 +414,16 @@ class DiaNNConvert():
                        'Modified.Sequence',
                        'Precursor.Charge',
                        'Precursor.Id']
-        out_matab_PEH = pd.read_csv(
+        out_matab_peh = pd.read_csv(
                             pr_path,
                             sep="\t",
                             header=0,
                             usecols=pep_usecols)
         
-        out_matab_PEH.drop(
+        out_matab_peh.drop(
             ["Protein.Group", "Protein.Names", "First.Protein.Description", "Proteotypic"], axis=1, inplace=True
         )
-        out_matab_PEH.rename(
+        out_matab_peh.rename(
             columns={
                 "Stripped.Sequence": "sequence",
                 "Protein.Ids": "accession",
@@ -432,15 +432,15 @@ class DiaNNConvert():
             },
             inplace=True,
         )
-        out_matab_PEH.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = out_matab_PEH.apply(
+        out_matab_peh.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = out_matab_peh.apply(
             lambda x: AASequence.fromString(x["opt_global_cv_MS:1000889_peptidoform_sequence"]).toString(), axis=1
         )
 
-        out_matab_PEH["best_search_engine_score[1]"] = out_matab_PEH["Precursor.Id"].map(bset_score_map)
-        out_matab_PEH.fillna("null", inplace=True)
-        out_matab_PEH.loc[:, "scan_number"] = None
-        out_matab_PEH.loc[:, "spectra_ref"] = None
-        pep = out_matab_PEH[['charge','opt_global_cv_MS:1000889_peptidoform_sequence','best_search_engine_score[1]',"scan_number","spectra_ref"]]
+        out_matab_peh["best_search_engine_score[1]"] = out_matab_peh["Precursor.Id"].map(bset_score_map)
+        out_matab_peh.fillna("null", inplace=True)
+        out_matab_peh.loc[:, "scan_number"] = None
+        out_matab_peh.loc[:, "spectra_ref"] = None
+        pep = out_matab_peh[['charge','opt_global_cv_MS:1000889_peptidoform_sequence','best_search_engine_score[1]',"scan_number","spectra_ref"]]
 
         pep_msg = pep.iloc[
             pep.groupby(
@@ -483,7 +483,7 @@ class DiaNNConvert():
         for report in self.main_report_df(report_path,qvalue_threshold,chunksize,uniq_masses):
             report = report.merge(index_ref[["ms_run", "Run", "study_variable"]], on="Run", validate="many_to_one")
 
-            out_mztab_PSH = pd.DataFrame()
+            out_mztab_psh = pd.DataFrame()
             for n, group in report.groupby(["Run"]):
                 if isinstance(n, tuple) and len(n) == 1:
                     # This is here only to support versions of pandas where the groupby
@@ -498,11 +498,11 @@ class DiaNNConvert():
                 target.columns = ["RT.Start", "opt_global_spectrum_reference", "exp_mass_to_charge"]
                 # TODO seconds returned from precursor.getRT()
                 target.loc[:, "RT.Start"] = target.apply(lambda x: x["RT.Start"] / 60, axis=1)
-                out_mztab_PSH = pd.concat([out_mztab_PSH, pd.merge_asof(group, target, on="RT.Start", direction="nearest")])
+                out_mztab_psh = pd.concat([out_mztab_psh, pd.merge_asof(group, target, on="RT.Start", direction="nearest")])
 
 
             ## Score at PSM level: Q.Value
-            out_mztab_PSH = out_mztab_PSH[
+            out_mztab_psh = out_mztab_psh[
                 [
                     "Stripped.Sequence",
                     "Protein.Ids",
@@ -519,7 +519,7 @@ class DiaNNConvert():
                     "ms_run",
                 ]
             ]
-            out_mztab_PSH.columns = [
+            out_mztab_psh.columns = [
                 "sequence",
                 "accession",
                 "search_engine_score[1]",
@@ -535,9 +535,9 @@ class DiaNNConvert():
                 "ms_run",
             ]
 
-            out_mztab_PSH.loc[:, "opt_global_cv_MS:1002217_decoy_peptide"] = "0"
-            out_mztab_PSH.loc[:, "PSM_ID"] = out_mztab_PSH.index
-            out_mztab_PSH.loc[:, "unique"] = out_mztab_PSH.apply(
+            out_mztab_psh.loc[:, "opt_global_cv_MS:1002217_decoy_peptide"] = "0"
+            out_mztab_psh.loc[:, "PSM_ID"] = out_mztab_psh.index
+            out_mztab_psh.loc[:, "unique"] = out_mztab_psh.apply(
                 lambda x: "0" if ";" in str(x["accession"]) else "1", axis=1, result_type="expand"
             )
 
@@ -552,37 +552,37 @@ class DiaNNConvert():
                 "opt_global_map_index",
             ]
             for i in null_col:
-                out_mztab_PSH.loc[:, i] = "null"
+                out_mztab_psh.loc[:, i] = "null"
 
-            out_mztab_PSH.loc[:, "modifications"] = out_mztab_PSH.apply(
+            out_mztab_psh.loc[:, "modifications"] = out_mztab_psh.apply(
                 lambda x: find_modification(x["opt_global_cv_MS:1000889_peptidoform_sequence"]), axis=1, result_type="expand"
             )
 
-            out_mztab_PSH.loc[:, "spectra_ref"] = out_mztab_PSH.apply(
+            out_mztab_psh.loc[:, "spectra_ref"] = out_mztab_psh.apply(
                 lambda x: "ms_run[{}]:".format(x["ms_run"]) + x["opt_global_spectrum_reference"], axis=1, result_type="expand"
             )
 
-            out_mztab_PSH.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = out_mztab_PSH.apply(
+            out_mztab_psh.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = out_mztab_psh.apply(
                 lambda x: AASequence.fromString(x["opt_global_cv_MS:1000889_peptidoform_sequence"]).toString(),
                 axis=1,
                 result_type="expand",
             )
 
-            out_mztab_PSH.loc[:, "PSH"] = "PSM"
-            index = out_mztab_PSH.loc[:, "PSH"]
-            out_mztab_PSH.drop(["PSH", "ms_run"], axis=1, inplace=True)
-            out_mztab_PSH.insert(0, "PSH", index)
-            out_mztab_PSH.fillna("null", inplace=True)
-            new_cols = [col for col in out_mztab_PSH.columns if not col.startswith("opt_")] + [
-                col for col in out_mztab_PSH.columns if col.startswith("opt_")
+            out_mztab_psh.loc[:, "PSH"] = "PSM"
+            index = out_mztab_psh.loc[:, "PSH"]
+            out_mztab_psh.drop(["PSH", "ms_run"], axis=1, inplace=True)
+            out_mztab_psh.insert(0, "PSH", index)
+            out_mztab_psh.fillna("null", inplace=True)
+            new_cols = [col for col in out_mztab_psh.columns if not col.startswith("opt_")] + [
+                col for col in out_mztab_psh.columns if col.startswith("opt_")
             ]
-            out_mztab_PSH = out_mztab_PSH[new_cols]
-            out_mztab_PSH.loc[:, 'scan_number'] = out_mztab_PSH['spectra_ref'].apply(lambda x: generate_scan_number(x))
-            out_mztab_PSH['spectra_ref'] = out_mztab_PSH['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
+            out_mztab_psh = out_mztab_psh[new_cols]
+            out_mztab_psh.loc[:, 'scan_number'] = out_mztab_psh['spectra_ref'].apply(lambda x: generate_scan_number(x))
+            out_mztab_psh['spectra_ref'] = out_mztab_psh['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
 
   
-            spectra_count_dict = self.__get_spectra_count(out_mztab_PSH,spectra_count_dict)
-            map_dict,psm_unique_keys = self.__extract_from_psm_to_pep_msg(out_mztab_PSH,map_dict,psm_unique_keys)
+            spectra_count_dict = self.__get_spectra_count(out_mztab_psh,spectra_count_dict)
+            map_dict,psm_unique_keys = self.__extract_from_psm_to_pep_msg(out_mztab_psh,map_dict,psm_unique_keys)
 
 
         return map_dict,spectra_count_dict
@@ -601,7 +601,7 @@ class DiaNNConvert():
         for report in self.main_report_df(report_path,qvalue_threshold,chunksize,uniq_masses):
             report = report.merge(index_ref[["ms_run", "Run", "study_variable"]], on="Run", validate="many_to_one")
 
-            out_mztab_PSH = pd.DataFrame()
+            out_mztab_psh = pd.DataFrame()
             for n, group in report.groupby(["Run"]):
                 if isinstance(n, tuple) and len(n) == 1:
                     # This is here only to support versions of pandas where the groupby
@@ -616,11 +616,11 @@ class DiaNNConvert():
                 target.columns = ["RT.Start", "opt_global_spectrum_reference", "exp_mass_to_charge"]
                 # TODO seconds returned from precursor.getRT()
                 target.loc[:, "RT.Start"] = target.apply(lambda x: x["RT.Start"] / 60, axis=1)
-                out_mztab_PSH = pd.concat([out_mztab_PSH, pd.merge_asof(group, target, on="RT.Start", direction="nearest")])
+                out_mztab_psh = pd.concat([out_mztab_psh, pd.merge_asof(group, target, on="RT.Start", direction="nearest")])
 
 
             ## Score at PSM level: Q.Value
-            out_mztab_PSH = out_mztab_PSH[
+            out_mztab_psh = out_mztab_psh[
                 [
                     "Stripped.Sequence",
                     "Protein.Ids",
@@ -637,7 +637,7 @@ class DiaNNConvert():
                     "ms_run",
                 ]
             ]
-            out_mztab_PSH.columns = [
+            out_mztab_psh.columns = [
                 "sequence",
                 "accession",
                 "search_engine_score[1]",
@@ -653,9 +653,9 @@ class DiaNNConvert():
                 "ms_run",
             ]
 
-            out_mztab_PSH.loc[:, "opt_global_cv_MS:1002217_decoy_peptide"] = "0"
-            out_mztab_PSH.loc[:, "PSM_ID"] = out_mztab_PSH.index
-            out_mztab_PSH.loc[:, "unique"] = out_mztab_PSH.apply(
+            out_mztab_psh.loc[:, "opt_global_cv_MS:1002217_decoy_peptide"] = "0"
+            out_mztab_psh.loc[:, "PSM_ID"] = out_mztab_psh.index
+            out_mztab_psh.loc[:, "unique"] = out_mztab_psh.apply(
                 lambda x: "0" if ";" in str(x["accession"]) else "1", axis=1, result_type="expand"
             )
 
@@ -670,35 +670,35 @@ class DiaNNConvert():
                 "opt_global_map_index",
             ]
             for i in null_col:
-                out_mztab_PSH.loc[:, i] = "null"
+                out_mztab_psh.loc[:, i] = "null"
 
-            out_mztab_PSH.loc[:, "modifications"] = out_mztab_PSH.apply(
+            out_mztab_psh.loc[:, "modifications"] = out_mztab_psh.apply(
                 lambda x: find_modification(x["opt_global_cv_MS:1000889_peptidoform_sequence"]), axis=1, result_type="expand"
             )
 
-            out_mztab_PSH.loc[:, "spectra_ref"] = out_mztab_PSH.apply(
+            out_mztab_psh.loc[:, "spectra_ref"] = out_mztab_psh.apply(
                 lambda x: "ms_run[{}]:".format(x["ms_run"]) + x["opt_global_spectrum_reference"], axis=1, result_type="expand"
             )
 
-            out_mztab_PSH.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = out_mztab_PSH.apply(
+            out_mztab_psh.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = out_mztab_psh.apply(
                 lambda x: AASequence.fromString(x["opt_global_cv_MS:1000889_peptidoform_sequence"]).toString(),
                 axis=1,
                 result_type="expand",
             )
 
-            out_mztab_PSH.loc[:, "PSH"] = "PSM"
-            index = out_mztab_PSH.loc[:, "PSH"]
-            out_mztab_PSH.drop(["PSH", "ms_run"], axis=1, inplace=True)
-            out_mztab_PSH.insert(0, "PSH", index)
-            out_mztab_PSH.fillna("null", inplace=True)
-            new_cols = [col for col in out_mztab_PSH.columns if not col.startswith("opt_")] + [
-                col for col in out_mztab_PSH.columns if col.startswith("opt_")
+            out_mztab_psh.loc[:, "PSH"] = "PSM"
+            index = out_mztab_psh.loc[:, "PSH"]
+            out_mztab_psh.drop(["PSH", "ms_run"], axis=1, inplace=True)
+            out_mztab_psh.insert(0, "PSH", index)
+            out_mztab_psh.fillna("null", inplace=True)
+            new_cols = [col for col in out_mztab_psh.columns if not col.startswith("opt_")] + [
+                col for col in out_mztab_psh.columns if col.startswith("opt_")
             ]
-            out_mztab_PSH = out_mztab_PSH[new_cols]
-            out_mztab_PSH.loc[:, 'scan_number'] = out_mztab_PSH['spectra_ref'].apply(lambda x: generate_scan_number(x))
-            out_mztab_PSH['spectra_ref'] = out_mztab_PSH['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
+            out_mztab_psh = out_mztab_psh[new_cols]
+            out_mztab_psh.loc[:, 'scan_number'] = out_mztab_psh['spectra_ref'].apply(lambda x: generate_scan_number(x))
+            out_mztab_psh['spectra_ref'] = out_mztab_psh['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
 
-            yield out_mztab_PSH
+            yield out_mztab_psh
 
 
     def __extract_from_psm_to_pep_msg(self,psm, map_dict,psm_unique_keys):
@@ -829,7 +829,7 @@ class DiaNNConvert():
     
     def generate_feature_file(self,report_path:str,design_file:str,fasta_path:str,modifications:List,pg_path:str,pr_path:str,qvalue_threshold: float,mzml_info_folder:str,sdrf_path:str,output_path:str,chunksize:int):
         
-        s_DataFrame, f_table = get_exp_design_dfs(design_file)
+        s_data_frame, f_table = get_exp_design_dfs(design_file)
         _ , index_ref = self.generete_fasta_msg(fasta_path,f_table)
         if not self.uniq_masses_map:
             self.uniq_masses_map,self.unique_reference_map,self.protein_best_score_dict,self.peptide_best_score_dict = self.get_uniq_and_index_and_reference_map(report_path,chunksize=chunksize)
@@ -841,13 +841,13 @@ class DiaNNConvert():
         
         map_dict = self.extract_dict_from_pep(pr_path,self.peptide_best_score_dict)
         map_dict,spectra_count_dict = self.extract_from_psm_to_pep_msg(report_path,qvalue_threshold, mzml_info_folder,self.uniq_masses_map,index_ref,map_dict,chunksize)
-        Schema = FeatureHandler()
-        Feature = FeatureInMemory('LFQ',Schema.schema)
-        Feature._modifications = self._modifications
-        Feature._score_names = self._score_names
+        schema = FeatureHandler()
+        feature = FeatureInMemory('LFQ',schema.schema)
+        feature._modifications = self._modifications
+        feature._score_names = self._score_names
         pqwriter = None
         for report in self.main_report_df(report_path,qvalue_threshold,chunksize,self.uniq_masses_map):
-            msstats_in = self.get_msstats_in(report,self.unique_reference_map,s_DataFrame,f_table)
+            msstats_in = self.get_msstats_in(report,self.unique_reference_map,s_data_frame,f_table)
             msstats_in['Reference'] = msstats_in['Reference'].apply(lambda x: x.split(".")[0])
             msstats_in.loc[:, 'protein_global_qvalue'] = msstats_in['ProteinName'].apply(lambda x: handle_protein_map(self._protein_map, x))
             msstats_in.loc[:, 'sequence'] = msstats_in['PeptideSequence'].apply(lambda x: clean_peptidoform_sequence(x))
@@ -865,7 +865,7 @@ class DiaNNConvert():
                     msstats_in.loc[:, col] = None
             msstats_in = msstats_in[self._lfq_msstats_usecols]
             
-            msstats_in = Feature._map_msstats_in(msstats_in, map_dict, spectra_count_dict)
+            msstats_in = feature._map_msstats_in(msstats_in, map_dict, spectra_count_dict)
             msstats_in.loc[:,'peptidoform'] = msstats_in[['sequence','modifications']].apply(lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'],row['modifications'],self._modifications),axis=1)
             msstats_in.drop(['PeptideSequence'],inplace=True, axis=1)
             msstats_in[["best_psm_reference_file_name", "best_psm_scan_number"]] = msstats_in[
@@ -875,8 +875,8 @@ class DiaNNConvert():
             axis=1,
             result_type="expand",
             )
-            table = Feature._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
-            parquet_table = Feature.convert_to_parquet(table)
+            table = feature._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
+            parquet_table = feature.convert_to_parquet(table)
             if not pqwriter:
                 # create a parquet write object giving it an output file
                 pqwriter = pq.ParquetWriter(output_path, parquet_table.schema)
@@ -955,10 +955,10 @@ class DiaNNConvert():
             res: msstats_in dataframe
             return: parquet table
             """
-            Psm = PSMHandler()
-            Feature = FeatureInMemory('LFQ',None)
-            Feature._modifications = self._modifications
-            Feature._score_names = self._score_names
+            psm = PSMHandler()
+            feature = FeatureInMemory('LFQ',None)
+            feature._modifications = self._modifications
+            feature._score_names = self._score_names
             res['sequence'] = res['sequence'].astype(str)
             res['protein_accessions'] = res['protein_accessions'].str.split(";")
             res['protein_start_positions'] = res['protein_start_positions'].apply(
@@ -967,7 +967,7 @@ class DiaNNConvert():
                 self.__split_start_or_end).to_list()
             res['protein_global_qvalue'] = res['protein_global_qvalue'].astype(float)
             res['unique'] = res['unique'].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype('Int32')
-            res['modifications'] = res['modifications'].apply(lambda x: Feature._generate_modification_list(x))
+            res['modifications'] = res['modifications'].apply(lambda x: feature._generate_modification_list(x))
             res['retention_time'] = res['retention_time'].astype(float)
             res['charge'] = res['charge'].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype('Int32')
             res['exp_mass_to_charge'] = res['exp_mass_to_charge'].astype(float)
@@ -983,4 +983,4 @@ class DiaNNConvert():
             res.loc[:, "gene_accessions"] = None
             res.loc[:, "gene_names"] = None
 
-            return pa.Table.from_pandas(res, schema=Psm._create_schema())
+            return pa.Table.from_pandas(res, schema=psm._create_schema())
