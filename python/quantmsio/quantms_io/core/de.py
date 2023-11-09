@@ -53,7 +53,7 @@ class DifferentialExpressionHandler:
 #INFO=<ID=adj.pvalue, Number=1, Type=Double, Description="P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg">
 #INFO=<ID=issue, Number=1, Type=String, Description="Issue column shows if there is any issue for inference in corresponding protein and comparison">\n"""
 
-    DIFFERENTIAL_EXPRESSION_EXTENSION = ".differential.tsv"
+    DIFFERENTIAL_EXPRESSION_EXTENSION = ".de.differential.tsv"
 
     def __init__(self):
         """

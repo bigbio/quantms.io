@@ -365,3 +365,20 @@ def getFileSize(filePath):
             else:
                 return str(round(MBX/1024)) + 'G'
                 
+#covert ae or de to json
+def convert_to_json(file_path):
+    '''
+    By providing the json format of AE and DE files for retrieval.
+    return json
+    '''
+    table,content = load_de_or_ae(file_path)
+    output = {}
+    pattern = r'[\\|\|//|/]'
+    output['id'] = re.split(pattern,file_path)[-1]
+    output['metadata'] = content
+    records = {}
+    for col in table.columns:
+        records[col] = table.loc[:,col].to_list()
+    output['records'] = records
+
+    return output
