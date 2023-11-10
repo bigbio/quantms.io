@@ -36,7 +36,7 @@ setup(
     url="https://github.com/bigbio/quantms.io",
     packages=find_packages(),
     install_requires=["click", "pandas", "pandas_schema", "requests", "pytest", "pyyaml", "pyarrow",
-                      "diskcache", "pyopenms", "scipy", "biopython"],
+                      "diskcache", "pyopenms", "scipy", "biopython", "seaborn"],
     entry_points={"console_scripts": ["quantmsio_cli = quantms_io.quantmsio_cli:quantms_io_main"]},
     platforms=["any"],
     classifiers=[

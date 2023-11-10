@@ -179,7 +179,7 @@ The absolute expression format aims to visualize absolute expression (AE) result
 iBAQ values and store the AE results of each protein on each sample.
 
 - If you have generated project.json, you can use this parameter ``--project_file`` to add project information for AE files.
-- IF you want to know ibaq, please read `ibaqpy <https://github.com/bigbio/ibaqpy>`__
+- If you want to know ibaq, please read `ibaqpy <https://github.com/bigbio/ibaqpy>`__
 - If you want to know more, please read :doc:`ae`.
 
 Example: 
@@ -252,6 +252,31 @@ Example:
 
    --output_prefix_file   The prefix of the result file(like {prefix}-{uu.id}-{extension})
    --verbose  Output debug information(default True)
+
+DiaNN convert 
+--------------------------
+For DiaNN, the command supports generating ``feature.parquet`` and ``psm.parquet`` directly from diann_report files.
+
+- ``--modifications`` is a list of 2 lengths containing both fixed and variable modifications. The different modifications in each modification are separated by ``;``.
+
+Example: 
+
+.. code:: python
+
+   python diann_convert_command.py diann_convert_to_parquet
+      --report_path diann_report.tsv
+      --design_file PXD037682.sdrf_openms_design.tsv
+      --fasta_path Homo-sapiens-uniprot-reviewed-contaminants-decoy-202210.fasta
+      --modifications ['null','null']
+      --pg_path diann_report.pg_matrix.tsv
+      --pr_path diann_report.pr_matrix.tsv
+      --qvalue_threshold 0.05
+      --mzml_info_folder mzml
+      --sdrf_path PXD037682.sdrf.tsv
+      --output_folder result
+      --output_prefix_file PXD037682
+      --chunksize 100000
+
 
 Compare psm.parquet
 -------------------
@@ -338,6 +363,21 @@ Example:
       --parquet_path_two res_lfq2_no_cache.parquet
       --report_path report.txt
 
+Generate report about files 
+-----------------------------
+This tool is used to generate report about all feature files or psm files.
+You can build ``psm parquet`` or ``feature parquet`` multiple times for the same project and use this command to verify its consistency.
+
+- ``--label`` contains two options: ``psm`` and ``feature``
+
+Example: 
+
+.. code:: python
+
+   python generate_report_command.py generate_report_about_files
+      --check_dir file_path
+      --label psm
+
 Register file 
 --------------------------
 This tool is used to register the file to ``project.json``.
@@ -355,3 +395,19 @@ Example:
       --attach_file PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet
       --category feature_file
       --replace_existing
+
+Data preview
+--------------------------
+This tool is used to preview your feature files and AE files.
+You can run ``streamlit run .\visualize_web_commond.py`` start a web service.
+Then set up your working directory to preview the data.
+
+.. image:: data_view.png
+   :width: 800
+   :align: center
+
+* If you want to manipulate data on NoteBook, you can introduce the ``Statistic`` class.
+
+.. code:: python
+
+   from quantms_io.core.statistic import Statistic

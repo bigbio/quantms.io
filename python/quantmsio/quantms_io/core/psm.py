@@ -224,7 +224,7 @@ class PSMHandler(ParquetHandler):
     @staticmethod
     def _transform_psm_from_mztab(psm, mztab_handler) -> dict:
         """
-        Transform a an mztab psm to quantms io psm.
+        transform a an mztab psm to quantms io psm.
         :param psm mztab psm
         :param mztab_handler the mztab handler with all information about scores, ms_runs, modification
         :return: dictionary of psm following the schema defined in PSMHandler.PSM_FIELDS

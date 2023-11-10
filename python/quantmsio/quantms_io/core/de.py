@@ -24,7 +24,8 @@ from quantms_io.core.sdrf import SDRFHandler
 from quantms_io.utils.file_utils import delete_files_extension
 
 import logging
-logging.basicConfig(level = logging.INFO)
+
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -109,10 +110,10 @@ class DifferentialExpressionHandler:
         self.project_manager.load_project_info(project_file)
 
     def convert_msstats_to_quantms(
-        self,
-        output_folder: str = None,
-        output_file_prefix: str = None,
-        delete_existing: bool = False,
+            self,
+            output_folder: str = None,
+            output_file_prefix: str = None,
+            delete_existing: bool = False,
     ):
         """
         Convert a MSstats differential file to quantms.io format
@@ -140,24 +141,24 @@ class DifferentialExpressionHandler:
         output_lines = ''
         if self.project_manager:
             output_lines += (
-                "#project_accession: "
-                + self.project_manager.project.project_info["project_accession"]
-                + "\n"
+                    "#project_accession: "
+                    + self.project_manager.project.project_info["project_accession"]
+                    + "\n"
             )
             output_lines += (
-                "#project_title: "
-                + self.project_manager.project.project_info["project_title"]
-                + "\n"
+                    "#project_title: "
+                    + self.project_manager.project.project_info["project_title"]
+                    + "\n"
             )
             output_lines += (
-                "#project_description: "
-                + self.project_manager.project.project_info["project_description"]
-                + "\n"
+                    "#project_description: "
+                    + self.project_manager.project.project_info["project_description"]
+                    + "\n"
             )
             output_lines += (
-                "#quantms_version: "
-                + self.project_manager.project.project_info["quantms_version"]
-                + "\n"
+                    "#quantms_version: "
+                    + self.project_manager.project.project_info["quantms_version"]
+                    + "\n"
             )
         factor_value = self.get_factor_value()
         if factor_value is not None:
@@ -197,7 +198,7 @@ class DifferentialExpressionHandler:
             output_filename_path = f"{output_folder}/{output_filename}"
 
         # Save the combined lines to a TSV file
-        with open(output_filename_path, "w",encoding='utf8') as f:
+        with open(output_filename_path, "w", encoding='utf8') as f:
             f.write(output_lines)
         if self.project_manager:
             self.project_manager.add_quantms_file(
@@ -228,7 +229,7 @@ class DifferentialExpressionHandler:
         """
         unique_labels = []
         for label in quantms_df["label"].unique():
-            for condition in label.split("-",1):
+            for condition in label.split("-", 1):
                 unique_labels.append(condition)
         '''
         if len(unique_label) == 1:

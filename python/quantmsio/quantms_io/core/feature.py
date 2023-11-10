@@ -301,7 +301,7 @@ def _fetch_msstats_feature(
 class FeatureHandler(ParquetHandler):
     """
     this class handle protein tables in column format.
-    The main serialization format is Apache Parquet.
+    the main serialization format is Apache Parquet.
     """
 
     FEATURE_FIELDS = [

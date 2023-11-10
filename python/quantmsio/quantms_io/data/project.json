@@ -1,0 +1,66 @@
+{
+    "project_accession": "PXD020187",
+    "project_title": "Proteomic evaluation of decellularized human umbilical artery",
+    "project_description": "Currently the use of tissue engineered small diameter vascular grafts (d< 6 mm) as substitutes in vascular reconstruction has gained significant attention by the cardiovascular surgeons. Cardiovascular disease (CVD) is among the leading causes of death, worldwide. It is estimated that more than 17 million people have been diagnosed with CVD. As vascular substitutes autologous vessels such as saphenous vein, radial and mammary arteries, are currently used. Although that these vessels are used in an autologous manner, avoiding thrombus formation and immune rejection, suitable grafts can be found in less than 40% of the patients. During the last years, synthetic polymer grafts derived either from Dacron or expanded tetrafluoroethylene (ePTFE) have been developed and applied in vascular bypass surgeries. These grafts also have received FDA approval for their use in CVD. As large diameter vascular grafts (d > 6 mm), the synthetic conduits have shown promising results. On the other hand, significant adverse reactions have been reported, when are used as small diameter vascular grafts (SDVGs, d< 6 mm). The most important adverse reaction is the low patency rate that is observed, within the first year of implantation (< 70%). The lack of the endothelium layer makes these grafts susceptible to platelets aggregation and thrombus formation. Also, mismatch compliance could result to intima hyperplasia, activation of Th1/ Th2 response, calcification and overall graft failure. Taking into consideration the above data, alternative sources of SDVGs must be established. In this way, the human umbilical arteries (hUAs) may represent significant candidates for SDVGs development. HUAs, are muscular arteries, responsible for transportation of non-oxygenated blood from the fetus to mother. Their inner diameter is approximately 2-4 mm, while their length can be varied and it is dependent to the length of the human umbilical cord (hUC) . The length of a typical hUC is 30- 60 cm. HUAs can be isolated non-invasively from the hUC, a material which is discarded after the gestation. These muscular arteries are characterized by three distinct layers, tunica intima, media and adventitia, where specific cellular populations such as endothelial cells (ECs) and vascular smooth muscle cells (VSMCs) are located. Decellularization approach, a tissue engineering method, can be applied in hUAs, in order acellular non-imunogenic SDVGs to be developed. Decellularization approach uses a combination of physical, chemical and enzymatic methods, to remove the cellular populations, while at the same time preserve the extracellular matrix (ECM) and tissue\u2019s ultrastructure. Then, these vascular conduits can be repopulated with recipient\u2019s ECs and VSMCs, in order to be fully compatible and functional. The aim of the current project is mainly focused to the proteomic identification and characterization of hUAs, before and after the application of the decellularization approach. The preservation of the ECM proteins like collagen, fibronectin, laminin in the decellularized hUAs, are of major importance for their key mechanical and functional properties. Until date, only a few studies have performed a broad proteomic approach in decellularized SDVGs such as the hUAs. Also, the proteomic data will be compared with the histological, biochemical and biomechanical analysis results. For this project, the hUAs were isolated from the delivered human umbilical cords to Hellenic Cord Blood Bank (HCBB) of Biomedical Research Foundation Academy of Athens (BRFAA). Human umbilical cords were obtained from end term gestations (38-40 weeks), either with normal or caesarian delivery. Each hUC was accompanied by signed informed consent by the mother before the gestation. The informed consent was in accordance with the Helsinki declaration and fulfilled the ethical standards of the Greek National Ethical Committee. After the isolation of hUAs, the decellularization approach was performed. Specifically, the hUAs were incubated in decellularization buffer 1 (DB1), consisted of 8 mM CHAPS, 1 M NaCl and 25 mM EDTA in PBS 1x, for 12 hours (h) at room temperature (RT). Briefly washes of hUAs for removal of the excess of DB1 with PBS 1x, was performed. Then, the hUAs were placed in DB2, consisted of 1.8 mM SDS, 1 M NaCl and 25 mM EDTA in PBS 1x for another 12 h at RT, followed by briefly washes with PBS 1x. Finally, the hUAs were incubated at 37o C for 12 h in \u03b1-\u039cinimum Essentials Medium (\u03b1-\u039c\u0395\u039c) with 40% v/v Fetal Bovine Serum (FBS), ensuring the complete removal of genetic material remnants. To evaluate the impact of the current decellularization protocol in hUAs, histological analysis, biochemically, biomechanically evaluation and full spectrum proteomic analysis were performed.",
+    "project_sample_description": "Native (n=5) and decellularized (n=5) hUAs were digested with sample buffer (7 M urea, 2 M thiourea, 4% CHAPS, 1% DTE and 3.6% Protease inhibitors). Bradford assay was performed for the determination of samples concentration. Then, samples were reduced with 10mM DTE for 20 min, RT and buffer exchange was performed in Amicon Ultra Centrifugal filter devices (0.5 mL, 30 kDa MWCO; Merck Millipore) at 16,000 rcf for 15 min at room temperature. Each sample was diluted with urea buffer (8M urea in 0.1M Tris-HCl pH 8.5) and centrifuged. The concentrate was diluted again with urea buffer and centrifugation was repeated. Alkylation of proteins was performed with 0.05M iodoacetamide in urea buffer for 20 min in the dark, RT, followed by a centrifugation at 16,000 rcf for 10 min at RT. Additional series of washes were conducted with urea buffer (2 times) and ammonium bicarbonate buffer (50 mM NH4HCO3 pH 8.5, 2 times). Tryptic digestion was performed overnight at RT in the dark, using a trypsin to protein ratio of 1:100. Peptides were eluted by centrifugation at 16,000 rcf for 10 min, lyophilized and stored at \u201380\u00b0C until further use. LC-MS/MS Analysis All LC-MS/MS experiments were performed on the Dionex Ultimate 3000 UHPLC system coupled with the high resolution nano-ESI Orbitrap-Elite mass spectrometer (Thermo Scientific). Each sample was reconstituted in 200 \u03bcL loading solution composed of 0.1 % v/v formic acid. A 5 \u03bcL volume was injected and loaded on the Acclaim PepMap 100, 100 \u03bcm \u00d7 2 cm C18, 5 \u03bcm, 100 \u0226 trapping column with the ulPickUp Injection mode with the loading pump operating at flow rate 5 \u03bcL/min. For the peptide separation the Acclaim PepMap RSLC, 75 \u03bcm \u00d7 50 cm, nanoViper, C18, 2 \u03bcm, 100 \u0226 column retrofitted to a PicoTip emitter was used for multi-step gradient elution. Mobile phase (A) was composed of 0.1 % formic acid and mobile phase (B) was composed of 100% acetonitrile, 0.1% formic acid. The peptides were eluted under a 240 minute gradient from 2% (B) to 33% (B). Flow rate was 300 nL/min and column temperature was set at 35 \u00b0C. Gaseous phase transition of the separated peptides was achieved with positive ion electrospray ionization applying a voltage of 2.5 kV. For every MS survey scan, the top 10 most abundant multiply charged precursor ions between m/z ratio 300 and 2200 and intensity threshold 500 counts were selected with FT mass resolution of 60,000 and subjected to HCD fragmentation. Tandem mass spectra were acquired with FT resolution of 15,000. Normalized collision energy was set to 33 and already targeted precursors were dynamically excluded for further isolation and activation for 45 sec with 5 ppm mass tolerance.",
+    "project_data_description": "MS data processing Raw files were analyzed with Proteome Discoverer 1.4 software package (Thermo Finnigan), using the Sequest search engine and the Uniprot human (Homo sapiens) reviewed database, downloaded on December 15, 2017, including 20,243 entries. The search was performed using carbamidomethylation of cysteine as static and oxidation of methionine as dynamic modifications. Two missed cleavage sites, a precursor mass tolerance of 10 ppm and fragment mass tolerance of 0.05 Da were allowed. False discovery rate (FDR) validation was based on q value: target FDR (strict): 0.01, target FDR (relaxed): 0.05.",
+    "project_pubmed_id": 32785189,
+    "organisms": [
+        "homo sapiens"
+    ],
+    "organism_parts": [
+        "umbilical cord"
+    ],
+    "diseases": [
+        "not available"
+    ],
+    "cell_lines": [],
+    "instruments": [
+        "LTQ Orbitrap Elite"
+    ],
+    "enzymes": [
+        "Trypsin"
+    ],
+    "experiment_type": [
+        "Cytoskeletal proteins",
+        "Cardiovascular (b/d-hpp)",
+        "Biology/disease-driven human proteome project (b/d-hpp)",
+        "Human umbilical arteries",
+        "Biomechanical analysis",
+        "Fibronectin",
+        "Decellularization",
+        "Collagen",
+        "Extracellular matrix proteins",
+        "Proteomics",
+        "Lc/ms",
+        "Enzymes",
+        "Cardiovascular disease"
+    ],
+    "acquisition_properties": [
+        {
+            "proteomics data acquisition method": "Label free"
+        },
+        {
+            "proteomics data acquisition method": "Data-dependent acquisition"
+        },
+        {
+            "dissociation method": "HCD"
+        },
+        {
+            "precursor mass tolerance": "10 ppm"
+        },
+        {
+            "fragment mass tolerance": "0.05 Da"
+        }
+    ],
+    "quantms_files": [
+        {
+            "differential_file": "PXD020187-8bfd12b9-7fcd-4340-b416-8de9124f5639.differential.tsv"
+        },
+        {
+            "psm_file": "PXD009219-PSM.parquet-d50c65fb-c0f6-4801-a3e2-61ce02cb0130.psm.parquet"
+        }
+    ],
+    "quantms_version": "",
+    "comments": []
+}

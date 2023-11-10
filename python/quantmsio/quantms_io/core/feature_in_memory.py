@@ -780,7 +780,7 @@ class FeatureInMemory:
         split start or end
         :param value: start or end
         """
-        if pd.isna(value):
+        if pd.isna(value) or value=='null':
             return pd.NA
         elif "," in str(value):
             return list(map(int, value.split(",")))

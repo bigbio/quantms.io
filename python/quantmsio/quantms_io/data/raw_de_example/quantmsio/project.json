@@ -1,0 +1,50 @@
+{
+    "project_accession": "PXD033169",
+    "project_title": "Novel Diagnostic Biomarkers for High-Grade Serous Ovarian Cancer Uncovered by Data-Independent Acquisition Mass Spectrometry",
+    "project_description": "High-grade serous ovarian cancer (HGSOC) represents the major histological type of ovarian cancer (OC), and lack of effective screening tools and early detection methods significantly contributes to the poor prognosis of HGSOC. Currently, there is no reliable diagnostic biomarkers for HGSOC. In this study, we performed liquid chromatography data-independent acquisition tandem-mass spectrometry on depleted serum samples from 26 HGSOC cases and 24 healthy controls (HCs) to discover potential HGSOC diagnostic biomarkers. A total of 1,847 proteins were identified across all samples, among which 116 proteins showed differential expressions between HGSOC patients and HCs. Network modeling showed activations of coagulation and complement cascades, platelet activation and aggregation, NET formation, TLR4, IGF, and TGF-\u03b2 signaling, and suppression of lipoprotein assembly and Fc\u03b3R activation in HGSOC. Based on the network model, we prioritized 28 biomarker candidates, and validated 18 of them using targeted MS assays in an independent cohort. Predictive modeling showed a sensitivity of 1 and specificity of 0.91 in the validation cohort. Finally, in vitro functional assays on four potential biomarkers (FGA, VWF, ARHGDIB, and SERPINF2) suggested that they may play an important role in cancer cell proliferation and migration in HGSOC.",
+    "project_sample_description": "Comprehensive Serum Proteome Profiling Experiments for Serum Spectral Library Generation A previously developed dual online noncontiguous fractionating and concatenating reverse phase/reverse phase liquid chromatography (DO-NCFC-RP/RPLC) system was modified to generate 24 NCFC fractions. Briefly, the online NCFC device consisted of a mid-pH RP column (150 \u03bcm \u00d7 50 cm) and two NCFC valves (25-port, 1-channel, C5M-66024D, VICI) that were interconnected by 24 fraction loops (200 \u03bcm \u00d7 22 cm). For the dual online liquid chromatography system, two SPE columns (150 \u03bcm \u00d7 3 cm) and two analytical columns (75 \u03bcm \u00d7 150 cm) were manufactured in-house packed with Jupiter C18 materials (3 \u03bcm, 300 \u00c5, Phenomenex) and were heated at 60 \u00baC.  The serum peptides (25 \u03bcg, 40 \u03bcg or 50 \u03bcg) from each pooled sample group were injected and separated on the mid-pH column for the online 1st dimensional separation (Table S2). A mid-pH solvent A (10 mM TEAB in water, pH 7.5) and a mid-pH solvent B (10 mM TEAB in 99 % ACN, pH 7.5) were used to generate a gradient (1-50 % Solvent B for 120 min at a flow rate of 1 \u03bcL/min). During the mRP gradient elution, two NCFC valves were synchronously rotated with a 1-minute interval for 5 cycles so that each of 24 fraction loops contained five 1-minute eluates that are noncontiguously concatenated. For the 2nd dimensional separation, each of 24 online NCFC fractions was transferred to a SPE column while acidified and diluted 10 times with dilution buffer (0.2 % TFA in water). A low-pH solvent A (0.1 % formic acid in water) and a low-pH solvent B (0.1 % formic acid in ACN) were used to generate gradient (10-37.5 % Sol B for 160 min, 37.5-80 % Sol B for 5 min, 80 % Sol B for 13 min, 10 % Sol B for 2 min) at a flow rate of 0.3 \u03bcL/min. DO-NCFC-RP/RPLC was online coupled to an Orbitrap Exploris\u2122 480 mass spectrometer (Thermo Fisher Scientific, Bremen, Germany) with high field asymmetric waveform ion mobility spectrometry (FAIMS ProTM, Thermo Fisher Scientific, Bremen, Germany). The peptides were ionized by an in-house nanoelectrospray source at 3 kV of spray voltage and the temperature of the desolvation capillary was set at 250 \u2103. Three compensation voltages (CVs) of -35 V, -50 V and -60 V were used with 1 second cycle time. The temperatures of both inner and outer electrodes were set at 100 \u2103. For each CV, full MS scans (300-1400 Th) were obtained at a resolution of 60,000 and full MS AGC target was 500 with an IT of 20 ms. The isolation window of 1.2 Th and normalized collision energy (NCE) of 28 were used for higher-energy collisional dissociation (HCD). The MS/MS spectra were obtained at a resolution of 15,000 and AGC target of 1000 and IT of 32 ms.  Data-Independent Acquisition Analysis Digested peptides were separated using a Dionex UltiMate 3000 RSLCnano system (Thermo Fisher Scientific). The tryptic peptides were reconstituted in 0.1% TFA and separated on an Acclaim\u2122 Pepmap RSLC C18 column (150 mm \u00d7 150 \u03bcm i.d., 2 \u03bcm, 100 \u00c5) equipped with a C18 Pepmap trap column (20 mm \u00d7 100 \u03bcm i.d., 5 \u03bcm, 100 \u00c5; Thermo Scientific) over 60 min (1 \u03bcL/min) using a 5\u201340% acetonitrile gradient in 0.1% formic acid and 5% DMSO at 50 \u00b0C. The LC was coupled to a Orbitrap Exploris\u2122 480 mass spectrometer with EASY-SPRAY\u2122 source (Thermo Fisher Scientific). Mass spectrometry runs were operated in DIA mode. For DIA experiments, full MS resolutions were set to 60,000 and full MS AGC target was 300% with an IT of 25 ms. m/z range was set to 300-1,400. AGC target value for MS2 spectra was set to 1000%. Forty-four windows of 24 Da were used with an overlap of 1 Da. Resolution was set to 15,000 and IT to 22 ms. NCE was set at 27. Default settings were used for FAIMS with dual CV of -35 V and -45 V, except the gas flow was not applied and spray voltage was set to 2.5 kV.",
+    "project_data_description": "Comprehensive Serum Proteome Profiling Experiments for Serum Spectral Library Generation The MS/MS data were subjected to Post-Experiment Monoisotopic Mass Refinement (mPE-MMR) and the resultant MS/MS data (e.g., mgf files) were searched against a protein database consisting of SwissProt human reference database (released January2022, including 20,376 entries) and common contaminants (179 entries) using the MS-GF+ search engine (v9949, http://proteomics.ucsd.edu/software-tools/ms-gf/). The search parameters were semi-tryptic cleavage and a precursor mass tolerance of 10 ppm. Carbamidomethylation on cysteine was used for static modification while oxidation on methionine and deamidation on asparagine and glutamine were used as variable modifications. The search results were filtered by the target-decoy analysis at a false discovery rate (FDR) of 1% at peptide spectrum match (PSM) level. A bipartite graph analysis was used for protein inference as described previously. The protein with the highest number of sibling peptides was selected as the representative protein from each protein group. When more than one protein had the same number of sibling peptides, the protein with the highest sequence coverage was chosen as the representative protein. In addition, a protein that has unique peptides was considered as a separate representative protein.    The representative MS/MS spectra of the final peptides were used to construct a spectral library database. Briefly, the MS2 spectrum with the highest search score (i.e., \u2013log(SpecE-value)) from each peptide ion was selected as the representative MS/MS spectrum. For each peptide, fragment peaks from the representative MS/MS spectra were matched with theoretical fragments (b- and y-type) within 0.01 Da. Resulting annotated fragments were obtained while other fragments of no annotation were discarded. Finally, the representative MS/MS spectra having more than five annotated fragments were included in the spectral library with experimental mass information and retention time information. The experimental retention time was converted to the normalized elution time using the iRT peptide (Ki-3002-2, Biognosys) which was spiked in each NCFC fraction.  Data-Independent Acquisition Analysis and Data Processing The LC-DIA-MS/MS data were processed using DIA-NN (ver. 1.7.10) with the in-house serum spectral library. Spectra were searched with default settings, except m/z ranges were 300-1,300 for precursor and 200-1,300 for fragment ions. Identification results were filtered at FDR of 1% at precursor level. Peptide and protein quantities were obtained using the MS2-based peak intensities generated by DIA-NN (\u2018Precursor.Normalised\u2019 quantities in the main output of DIA-NN), which were subsequently processed using the MaxLFQ algorithm and column normalized by quantile normalization method.",
+    "project_pubmed_id": 35939567,
+    "organisms": [
+        "Homo sapiens"
+    ],
+    "organism_parts": [
+        "Blood serum"
+    ],
+    "diseases": [
+        "normal",
+        "high grade ovarian serous adenocarcinoma"
+    ],
+    "cell_lines": [],
+    "instruments": [
+        "Orbitrap Exploris 480"
+    ],
+    "enzymes": [
+        "Trypsin"
+    ],
+    "experiment_type": [
+        "High-grade serous ovarian cancer",
+        "Proteomics",
+        "Serum biomarker",
+        "Mass spectrometry",
+        "Data-independent acquisition"
+    ],
+    "acquisition_properties": [
+        {
+            "proteomics data acquisition method": "Data-Independent Acquisition"
+        },
+        {
+            "precursor mass tolerance": "10 ppm"
+        },
+        {
+            "fragment mass tolerance": "10 ppm"
+        }
+    ],
+    "quantms_files": [
+        {
+            "differential_file": "PXD033169-c5b3cc76-df07-4ede-85dd-cd3eed832f75.differential.tsv"
+        }
+    ],
+    "quantms_version": "1.2",
+    "comments": []
+}
