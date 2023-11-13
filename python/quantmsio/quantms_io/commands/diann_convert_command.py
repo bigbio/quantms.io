@@ -87,7 +87,7 @@ def diann_convert_to_parquet(ctx,report_path:str,design_file:str,fasta_path:str,
     output_prefix_file: Prefix of the Json file needed to generate the file name
     chunksize: batch size
     '''
-    if os.path.exists(output_folder):
+    if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     
     if not output_prefix_file:
