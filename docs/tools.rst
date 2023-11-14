@@ -267,7 +267,7 @@ Example:
       --report_path diann_report.tsv
       --design_file PXD037682.sdrf_openms_design.tsv
       --fasta_path Homo-sapiens-uniprot-reviewed-contaminants-decoy-202210.fasta
-      --modifications ['null','null']
+      --modifications 'Carbamidomethyl (C)' 'null'
       --pg_path diann_report.pg_matrix.tsv
       --pr_path diann_report.pr_matrix.tsv
       --qvalue_threshold 0.05

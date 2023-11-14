@@ -3,6 +3,7 @@ import click
 from quantms_io.core.project import create_uuid_filename
 from typing import List
 import os
+
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 @click.group(context_settings=CONTEXT_SETTINGS)
 def cli():
@@ -30,6 +31,8 @@ def cli():
 )
 @click.option(
     "--modifications",
+    nargs=2, 
+    type=str,
     help="a list contains fix modifications and variable modifications",
     required=True,
 )
