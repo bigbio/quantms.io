@@ -14,7 +14,7 @@ from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.feature_in_memory import FeatureInMemory
 from quantms_io.core.psm import PSMHandler
 from collections import Counter
-from typing import List
+from typing import List, Tuple
 
 MODIFICATION_PATTERN = re.compile(r"\((.*?)\)")
 
@@ -126,44 +126,34 @@ def handle_protein_map(protein_map, key):
     return None
 
 
-def mtd_mod_info(fix_mod, var_mod):
+def mtd_mod_info(fix_mod: str, var_mod: str) -> Tuple[List[str], List[str], int, int]:
     """
     Convert fixed and variable modifications to the format required by the MTD sub-table.
 
     :param fix_mod: Fixed modifications from DIA parameter list
-    :type fix_mod: str
     :param var_mod: Variable modifications from DIA parameter list
-    :type var_mod: str
     :return: A tuple contains fixed and variable modifications, and flags indicating whether they are null
-    :rtype: tuple
     """
-    var_ptm = []
-    fix_ptm = []
     mods_db = ModificationsDB()
-
-    if fix_mod != "null":
+    if fix_mod is not None and fix_mod != "":
         fix_flag = 1
-        for mod in fix_mod.split(","):
-            mod_obj = mods_db.getModification(mod)
-            mod_name = mod_obj.getId()
-            mod_accession = mod_obj.getUniModAccession()
-            site = mod_obj.getOrigin()
-            fix_ptm.append(("[UNIMOD, " + mod_accession.upper() + ", " + mod_name + ", ]", site))
+        fix_ptm = [
+            "[UNIMOD, {}, {}, ]".format(mods_db.getModification(mod).getUniModAccession().upper(), mods_db.getModification(mod).getId())
+            for mod in fix_mod.split(",")
+        ]
     else:
         fix_flag = 0
-        fix_ptm.append("[MS, MS:1002453, No fixed modifications searched, ]")
+        fix_ptm = ["[MS, MS:1002453, No fixed modifications searched, ]"]
 
-    if var_mod != "null":
+    if var_mod is not None and var_mod != "":
         var_flag = 1
-        for mod in var_mod.split(","):
-            mod_obj = mods_db.getModification(mod)
-            mod_name = mod_obj.getId()
-            mod_accession = mod_obj.getUniModAccession()
-            site = mod_obj.getOrigin()
-            var_ptm.append(("[UNIMOD, " + mod_accession.upper() + ", " + mod_name + ", ]", site))
+        var_ptm = [
+            "[UNIMOD, {}, {}, ]".format(mods_db.getModification(mod).getUniModAccession().upper(), mods_db.getModification(mod).getId())
+            for mod in var_mod.split(",")
+        ]
     else:
         var_flag = 0
-        var_ptm.append("[MS, MS:1002454, No variable modifications searched, ]")
+        var_ptm = ["[MS, MS:1002454, No variable modifications searched, ]"]
 
     return fix_ptm, var_ptm, fix_flag, var_flag
 
@@ -196,6 +186,17 @@ def get_modifications(fix_modifications: str, variable_modifications: str):
 
 
 class DiaNNConvert:
+    """
+    The DiaNNConvert class is responsible for converting and processing data from a DIA-NN analysis.
+    It includes methods for generating feature and PSM files in the mzTab format.
+
+    Example Usage:
+    converter = DiaNNConvert()
+    converter.generate_feature_file(report_path, design_file, fasta_path, modifications, pg_path, pr_path,
+                                    qvalue_threshold, mzml_info_folder, sdrf_path, output_path, chunksize)
+    converter.generate_psm_file(report_path, design_file, fasta_path, modifications, pg_path, qvalue_threshold,
+                                    mzml_info_folder, output_path, chunksize)
+    """
 
     def __init__(self):
 
@@ -283,23 +284,44 @@ class DiaNNConvert:
         return uniq_masses_map, unique_reference_map, protein_best_score_dict, peptide_best_score_dict
 
     def __update_dict(self, map_dict, temporary_dict, n):
-        if len(map_dict) == 0:
+        """
+        The __update_dict method is used to update a dictionary with new key-value pairs from a temporary dictionary.
+        It compares the values of the keys in the temporary dictionary with the existing values in the main dictionary
+        and updates them if necessary.
+        :param map_dict: The main dictionary
+        :param temporary_dict: The temporary dictionary
+        :n The index of the value to compare
+        """
+        if not map_dict:
             map_dict.update(temporary_dict)
-        else:
-            for key in temporary_dict.keys():
-                if key in map_dict:
-                    if n != 0:
-                        if float(map_dict[key][n]) > float(temporary_dict[key][n]):
-                            map_dict[key] = temporary_dict[key]
-                    else:
-                        if float(map_dict[key]) > float(temporary_dict[key]):
-                            map_dict[key] = temporary_dict[key]
+            return map_dict
+
+        for key in temporary_dict:
+            if map_dict.get(key):
+                if n != 0:
+                    if float(map_dict[key][n]) > float(temporary_dict[key][n]):
+                        map_dict[key] = temporary_dict[key]
                 else:
-                    map_dict[key] = temporary_dict[key]
+                    if float(map_dict[key]) > float(temporary_dict[key]):
+                        map_dict[key] = temporary_dict[key]
+            else:
+                map_dict[key] = temporary_dict[key]
         return map_dict
 
     def main_report_df(self, report_path: str, qvalue_threshold: float, chunksize: int,
                        uniq_masses: dict) -> pd.DataFrame:
+        """
+        The main_report_df method is a generator function that processes a report file and filters the data based on
+        a specified q-value threshold. It replaces modified sequences in the report with their corresponding unique
+        masses. It also calculates the precursor m/z values and yields the filtered report.
+
+        :param report_path The path to the report file.
+        :param qvalue_threshold The threshold value for filtering the data based on q-value.
+        :param chunksize The number of rows to read at a time from the report file.
+        :param uniq_masses (dict): A dictionary mapping modified sequences to their corresponding unique masses.
+        :return: A pandas DataFrame containing the filtered report.
+        """
+
         remain_cols = [
             "File.Name",
             "Run",
@@ -323,13 +345,12 @@ class DiaNNConvert:
         ]
         reports = pd.read_csv(report_path, sep="\t", header=0, usecols=remain_cols, chunksize=chunksize)
         for report in reports:
-            report = report[report["Q.Value"] < qvalue_threshold]
-            mass_vector = report["Modified.Sequence"].map(uniq_masses)
-            report["Calculate.Precursor.Mz"] = (mass_vector + (PROTON_MASS_U * report["Precursor.Charge"])) / report[
+            filtered_report = report[report["Q.Value"] < qvalue_threshold]
+            filtered_report["Modified.Sequence"].replace(uniq_masses, inplace=True)
+            filtered_report["Calculate.Precursor.Mz"] = (filtered_report["Modified.Sequence"] + (PROTON_MASS_U * filtered_report["Precursor.Charge"])) / filtered_report[
                 "Precursor.Charge"
             ]
-            # report["precursor.Index"] = report["Precursor.Id"].map(precursor_index_map)
-            yield report
+            yield filtered_report
 
     def get_msstats_in(self, report, unique_reference_map, s_data_frame, f_table):
         msstats_columns_keep = [
@@ -387,11 +408,18 @@ class DiaNNConvert:
         return ms_runs
 
     def get_protein_map(self, pg_path: str, best_score_dict: dict):
-        pg = pd.read_csv(
-            pg_path,
-            sep="\t",
-            header=0,
-        )
+        """
+        The get_protein_map method is responsible for generating a protein map from a protein group file.
+        It extracts relevant information from the file, such as protein IDs, protein group descriptions,
+        and protein group types. It also calculates the best search engine score for each protein group and creates
+        a dictionary mapping protein group IDs to their corresponding best search engine scores.
+
+        :param pg_path: The path to the protein group file.
+        :best_score_dict: A dictionary mapping protein IDs to their corresponding best search engine scores.
+
+        """
+
+        pg = pd.read_csv(pg_path, sep="\t", header=0,)
 
         pg.loc[pg["Protein.Ids"].str.contains(";"), "opt_global_result_type"] = "indistinguishable_protein_group"
 
@@ -399,7 +427,7 @@ class DiaNNConvert:
         out_mztab_prh.rename(
             columns={"Protein.Group": "accession", "First.Protein.Description": "description"}, inplace=True
         )
-        out_mztab_prh.loc[:, "accession"] = out_mztab_prh.apply(lambda x: x["accession"].split(";")[0], axis=1)
+        out_mztab_prh.loc[:, "accession"] = out_mztab_prh["accession"].str.split(";", expand=True)[0]
 
         protein_details_df = out_mztab_prh[out_mztab_prh["opt_global_result_type"] == "indistinguishable_protein_group"]
         prh_series = protein_details_df["Protein.Ids"].str.split(";", expand=True).stack().reset_index(level=1,
@@ -408,16 +436,11 @@ class DiaNNConvert:
         protein_details_df = (
             protein_details_df.drop("accession", axis=1).join(prh_series).reset_index().drop(columns="index")
         )
-        out_mztab_prh = pd.concat([out_mztab_prh, protein_details_df]).reset_index(drop=True)
-        out_mztab_prh.loc[:, "ambiguity_members"] = out_mztab_prh.apply(
-            lambda x: x["Protein.Ids"] if x["opt_global_result_type"] == "indistinguishable_protein_group" else "null",
-            axis=1,
-        )
-        out_mztab_prh[["modifiedSequence", "best_search_engine_score[1]"]] = out_mztab_prh.apply(
-            lambda x: best_score_dict.get(x["Protein.Ids"], (np.nan, np.nan)), axis=1, result_type="expand"
-        )
-        prt_score = out_mztab_prh[["ambiguity_members", "best_search_engine_score[1]"]].groupby(
-            "ambiguity_members").min()
+        out_mztab_prh = pd.concat([out_mztab_prh, protein_details_df], ignore_index=True)
+        out_mztab_prh["ambiguity_members"] = np.where(out_mztab_prh["opt_global_result_type"] == "indistinguishable_protein_group", out_mztab_prh["Protein.Ids"], "null")
+        out_mztab_prh["modifiedSequence"] = out_mztab_prh["Protein.Ids"].map(best_score_dict.get).str[0]
+        out_mztab_prh["best_search_engine_score[1]"] = out_mztab_prh["Protein.Ids"].map(best_score_dict.get).str[1]
+        prt_score = out_mztab_prh.groupby("ambiguity_members")["best_search_engine_score[1]"].min()
         protein_map = prt_score.to_dict()["best_search_engine_score[1]"]
 
         return protein_map
@@ -726,11 +749,11 @@ class DiaNNConvert:
 
     def __extract_from_psm_to_pep_msg(self, psm, map_dict, psm_unique_keys):
         for key, df in psm.groupby(['opt_global_cv_MS:1000889_peptidoform_sequence', 'charge']):
-            if key not in map_dict.keys():
+            if key not in map_dict:
                 map_dict[key] = [None, None, None]
                 psm_unique_keys.append(key)
             df = df.reset_index(drop=True)
-            if pd.isna(map_dict[key][1]):
+            if pd.isnull(map_dict[key][1]):
                 if 'opt_global_q-value_score' in df.columns:
                     map_dict[key][0] = df.iloc[df['opt_global_q-value_score'].idxmin()]['opt_global_q-value_score']
                     map_dict[key][1] = df.iloc[df['opt_global_q-value_score'].idxmin()]['spectra_ref']
@@ -755,13 +778,13 @@ class DiaNNConvert:
                         map_dict[key][0] = best_qvalue
                         map_dict[key][1] = df.iloc[df['search_engine_score[1]'].idxmin()]['spectra_ref']
                         map_dict[key][2] = df.iloc[df['search_engine_score[1]'].idxmin()]['scan_number']
-            if len(map_dict[key]) == 3:
+            if map_dict[key].__len__() == 3:
                 map_dict[key].append(df['start'].values[0])
                 map_dict[key].append(df['end'].values[0])
                 map_dict[key].append(df['unique'].values[0])
                 map_dict[key].append(df['modifications'].values[0])
-            if 'opt_global_Posterior_Error_Probability_score' in df.columns or 'opt_global_Posterior_Error_Probability' in df.columns:
-                if len(map_dict[key]) != 7:
+            if df.columns.isin(['opt_global_Posterior_Error_Probability_score', 'opt_global_Posterior_Error_Probability']).any():
+                if map_dict[key].__len__() != 7:
                     if 'opt_global_Posterior_Error_Probability_score' in df.columns:
                         probability_score = df['opt_global_Posterior_Error_Probability_score'].min()
                     else:
@@ -774,16 +797,16 @@ class DiaNNConvert:
                     else:
                         map_dict[key].append(df['opt_global_Posterior_Error_Probability'].min())
             else:
-                if len(map_dict[key]) == 7:
+                if map_dict[key].__len__() == 7:
                     map_dict[key].append(None)
-            if len(map_dict[key]) == 8:
+            if map_dict[key].__len__() == 8:
                 if "opt_global_cv_MS:1002217_decoy_peptide" in df.columns:
                     map_dict[key].append(
                         df["opt_global_cv_MS:1002217_decoy_peptide"].values[0]
                     )
                 else:
                     map_dict[key].append(None)
-            if len(map_dict[key]) != 11:
+            if map_dict[key].__len__() != 11:
                 if map_dict[key][1] not in df["spectra_ref"].values:
                     map_dict[key].append(df["calc_mass_to_charge"].values[0])
                     map_dict[key].append(None)

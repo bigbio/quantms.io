@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import pandas as pd
 from quantms_io.core.diann_convert import get_exp_design_dfs, find_modification, generate_scan_number, \
-    handle_protein_map
+    handle_protein_map, mtd_mod_info, DiaNNConvert
 import time
 
 class Test(TestCase):
@@ -51,3 +51,13 @@ class Test(TestCase):
         key = "key1"
         result = handle_protein_map(protein_map, key)
         assert result == "value1"
+
+    def test_update_dict_with_new_key_value_pairs(self):
+        map_dict = {'A': 1.2, 'B': 3.2}
+        temporary_dict = {'A': 2.8, 'C': 3.3}
+
+        converter = DiaNNConvert()
+        updated_dict = converter._DiaNNConvert__update_dict(map_dict, temporary_dict, 0)
+
+        assert updated_dict == {'A': 1.2, 'B': 3.2, 'C': 3.3}
+
