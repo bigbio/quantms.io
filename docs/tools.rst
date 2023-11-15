@@ -257,7 +257,7 @@ DiaNN convert
 --------------------------
 For DiaNN, the command supports generating ``feature.parquet`` and ``psm.parquet`` directly from diann_report files.
 
-- ``--modifications`` is a list of 2 lengths containing both fixed and variable modifications. The different modifications in each modification are separated by ``;``.
+- ``--modifications`` is a list of 2 lengths containing both fixed and variable modifications. The different modifications in each modification are separated by ``,``.
 
 Example: 
 
@@ -267,7 +267,7 @@ Example:
       --report_path diann_report.tsv
       --design_file PXD037682.sdrf_openms_design.tsv
       --fasta_path Homo-sapiens-uniprot-reviewed-contaminants-decoy-202210.fasta
-      --modifications 'Carbamidomethyl (C)' 'null'
+      --modifications "Carbamidomethyl (C)" "null"
       --pg_path diann_report.pg_matrix.tsv
       --pr_path diann_report.pr_matrix.tsv
       --qvalue_threshold 0.05
