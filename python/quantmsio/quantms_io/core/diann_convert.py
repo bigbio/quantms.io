@@ -19,15 +19,29 @@ from typing import List
 MODIFICATION_PATTERN = re.compile(r"\((.*?)\)")
 
 
-def get_exp_design_dfs(exp_design_file):
+def get_exp_design_dfs(exp_design_file: str):
+    """
+    It retrieves the experimental design file as a pandas DataFrame and returns a tuple containing the sample and
+    fraction tables.
+
+    Example Usage
+        exp_design_file = "PXD030304.sdrf_openms_design.tsv"
+        sample_table, fraction_table = get_exp_design_dfs(exp_design_file)
+
+    :param exp_design_file: The path to the experimental design file.
+    :return: A tuple containing the sample and fraction tables as pandas DataFrames.
+    """
+
     # logger.info(f"Reading experimental design file: {exp_design_file}")
+    # Todo: Why this code is not loading using pandas read_csv?
+
     with open(exp_design_file, "r") as f:
         data = f.readlines()
         empty_row = data.index("\n")
         f_table = [i.replace("\n", "").split("\t") for i in data[1:empty_row]]
         f_header = data[0].replace("\n", "").split("\t")
         f_table = pd.DataFrame(f_table, columns=f_header)
-        f_table.loc[:, "run"] = f_table.apply(lambda x: _true_stem(x["Spectra_Filepath"]), axis=1)
+        f_table["run"] = f_table["Spectra_Filepath"].apply(_true_stem)
 
         s_table = [i.replace("\n", "").split("\t") for i in data[empty_row + 1:]][1:]
         s_header = data[empty_row + 1].replace("\n", "").split("\t")
@@ -36,27 +50,20 @@ def get_exp_design_dfs(exp_design_file):
     return s_data_frame, f_table
 
 
-def _true_stem(x):
+def _true_stem(x: str):
     """
-    Return the true stem of a file name, i.e. the
-    file name without the extension.
+    Return the true stem of a file name, i.e. the file name without the extension.
 
     :param x: The file name
-    :type x: str
     :return: The true stem of the file name
-    :rtype: str
 
     Examples:
     >>> _true_stem("foo.mzML")
     'foo'
     >>> _true_stem("foo.d.tar")
     'foo'
-
-    These examples can be tested with pytest:
-    $ pytest -v --doctest-modules
     """
-    split = os.path.basename(x).split(".")
-    stem = split[0]
+    stem = os.path.splitext(os.path.basename(x))[0]
 
     # Should I check here that the extensions are
     # allowed? I can see how this would break if the
@@ -80,40 +87,43 @@ def find_modification(peptide):
     '2-UNIMOD:35,9-UNIMOD:21'
     """
     peptide = str(peptide)
+
     original_mods = MODIFICATION_PATTERN.findall(peptide)
-    peptide = MODIFICATION_PATTERN.sub(".", peptide)
-    position = [i for i, x in enumerate(peptide) if x == "."]
-    for j in range(1, len(position)):
-        position[j] -= j
+    matches = MODIFICATION_PATTERN.finditer(peptide)
+    positions = [match.start() for match in matches]
 
-    for k in range(0, len(original_mods)):
-        original_mods[k] = str(position[k]) + "-" + original_mods[k].upper()
-
-    original_mods = ",".join(str(i) for i in original_mods) if len(original_mods) > 0 else "null"
+    original_mods = [str(positions[k]) + "-" + original_mods[k].upper() for k in range(len(original_mods))]
+    original_mods = ",".join(str(i) for i in original_mods) or "null"
 
     return original_mods
 
 
 def generate_scan_number(spectra_ref: str):
-    if 'scan' in spectra_ref:
-        return re.findall(r"scan=(\d+)", spectra_ref)[0]
-    else:
-        return ",".join(re.findall(r'=(\d+)', spectra_ref))
+    """
+    The generate_scan_number function takes a string as input and extracts the scan number from it using regular expressions.
+    :param spectra_ref: The spectra reference
+    :return scan_number: The scan number
+    """
+    return re.search(r"(?:scan=)?(\d+)", spectra_ref).group(1)
 
 
 def handle_protein_map(protein_map, key):
     """
-    map protein score from accession
+    Handle a protein map and return the corresponding value for the given key.
+    
+    :param: protein_map - a dictionary representing the protein map.
+    :param: key - a string representing the key to search in the protein map.
+    :return: The value corresponding to the key in the protein map, or None if the key is not found.
     """
     key = key.replace(";", ",")
-    if key not in protein_map.keys():
-        keys = key.split(";")
+    if key not in protein_map:
+        keys = key.split(",")
         for k in keys:
-            if k in protein_map.keys():
+            if k in protein_map:
                 return protein_map[k]
-        return None
     else:
         return protein_map[key]
+    return None
 
 
 def mtd_mod_info(fix_mod, var_mod):
