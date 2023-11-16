@@ -286,6 +286,17 @@ class DiaNNConvert():
         return map_dict
 
     def main_report_df(self,report_path:str, qvalue_threshold: float,chunksize:int,uniq_masses:dict) -> pd.DataFrame:
+        """
+        The main_report_df method is a part of the DiaNNConvert class and is used to process a report file and filter
+        the data based on a given q-value threshold. It returns a pandas DataFrame containing the filtered data.
+
+        :param report_path (str): The path to the report file.
+        :param qvalue_threshold (float): The q-value threshold for filtering the data.
+        :param chunksize (int): The number of rows to read from the report file at a time.
+        :param uniq_masses (dict): A dictionary containing unique masses for modified sequences.
+        :return (pd.DataFrame): A pandas DataFrame containing the filtered data.
+        """
+
         remain_cols = [
             "File.Name",
             "Run",
@@ -308,13 +319,16 @@ class DiaNNConvert():
             "Global.PG.Q.Value",
         ]
         reports = pd.read_csv(report_path, sep="\t", header=0, usecols=remain_cols,chunksize=chunksize)
+
         for report in reports:
+            st = time.time()
             report = report[report["Q.Value"] < qvalue_threshold]
             mass_vector = report["Modified.Sequence"].map(uniq_masses)
             report["Calculate.Precursor.Mz"] = (mass_vector + (PROTON_MASS_U * report["Precursor.Charge"])) / report[
                 "Precursor.Charge"
             ]
             #report["precursor.Index"] = report["Precursor.Id"].map(precursor_index_map)
+            print_estimated_time(st, "{} create report chunksize".format(chunksize))
             yield report
 
     def get_msstats_in(self,report,unique_reference_map,s_DataFrame,f_table):
@@ -466,7 +480,7 @@ class DiaNNConvert():
 
         return map_dict
 
-    def extract_from_psm_to_pep_msg(self,report_path,qvalue_threshold, folder,uniq_masses,index_ref,map_dict,chunksize):
+    def extract_from_psm_to_pep_msg(self, report_path,qvalue_threshold, folder,uniq_masses,index_ref,map_dict,chunksize):
 
         def __find_info(folder, n):
             files = list(Path(folder).glob(f"*{n}_mzml_info.tsv"))
@@ -478,9 +492,11 @@ class DiaNNConvert():
 
             return files[0]
 
-        psm_unique_keys =[]
+        psm_unique_keys = []
         spectra_count_dict = Counter()
+
         for report in self.main_report_df(report_path,qvalue_threshold,chunksize,uniq_masses):
+
             report = report.merge(index_ref[["ms_run", "Run", "study_variable"]], on="Run", validate="many_to_one")
 
             out_mztab_PSH = pd.DataFrame()
@@ -851,7 +867,10 @@ class DiaNNConvert():
 
         st = time.time()
         map_dict = self.extract_dict_from_pep(pr_path,self.peptide_best_score_dict)
-        map_dict,spectra_count_dict = self.extract_from_psm_to_pep_msg(report_path,qvalue_threshold, mzml_info_folder,self.uniq_masses_map,index_ref,map_dict,chunksize)
+        map_dict, spectra_count_dict = self.extract_from_psm_to_pep_msg(report_path,
+                                                                       qvalue_threshold,
+                                                                       mzml_info_folder,self.uniq_masses_map,
+                                                                       index_ref,map_dict,chunksize)
         print_estimated_time(st, "extract_from_psm_to_pep_msg")
 
         Schema = FeatureHandler()
