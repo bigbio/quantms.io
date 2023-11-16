@@ -5,6 +5,7 @@ import itertools
 import re
 from builtins import sorted
 import pandas as pd
+import time
 
 import logging
 logging.basicConfig(level = logging.INFO)
@@ -637,3 +638,12 @@ def get_permutations_of_original_list(original_elems: list):
             continue
         else:
             yield permutation
+
+def print_estimated_time(original_time, step: str):
+    """
+    Print the estimated time of a step
+    :param original_time: original time
+    :param step: step
+    """
+    end = time.time() - original_time
+    logger.info("Estimated time for {} is {} seconds".format(step, str(end)))

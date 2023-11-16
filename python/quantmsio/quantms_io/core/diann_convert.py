@@ -1,75 +1,66 @@
 import pandas as pd
 import os
+import time
 from pyopenms import AASequence, FASTAFile, ModificationsDB
 from pyopenms.Constants import PROTON_MASS_U
 from pathlib import Path
 import numpy as np
 import re
 from quantms_io.core.mztab import fetch_modifications_from_mztab_line
-from quantms_io.utils.pride_utils import clean_peptidoform_sequence, get_peptidoform_proforma_version_in_mztab, \
-    generate_scan_number
+from quantms_io.utils.pride_utils import (clean_peptidoform_sequence, get_peptidoform_proforma_version_in_mztab,
+                                          generate_scan_number, print_estimated_time)
 import pyarrow as pa
 import pyarrow.parquet as pq
 from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.feature_in_memory import FeatureInMemory
 from quantms_io.core.psm import PSMHandler
 from collections import Counter
-from typing import List, Tuple
+from typing import Any, List, Tuple, Dict, Set
 
 MODIFICATION_PATTERN = re.compile(r"\((.*?)\)")
 
-
-def get_exp_design_dfs(exp_design_file: str):
-    """
-    It retrieves the experimental design file as a pandas DataFrame and returns a tuple containing the sample and
-    fraction tables.
-
-    Example Usage
-        exp_design_file = "PXD030304.sdrf_openms_design.tsv"
-        sample_table, fraction_table = get_exp_design_dfs(exp_design_file)
-
-    :param exp_design_file: The path to the experimental design file.
-    :return: A tuple containing the sample and fraction tables as pandas DataFrames.
-    """
-
-    # logger.info(f"Reading experimental design file: {exp_design_file}")
-    # Todo: Why this code is not loading using pandas read_csv?
-
+def get_exp_design_dfs(exp_design_file):
+    #logger.info(f"Reading experimental design file: {exp_design_file}")
     with open(exp_design_file, "r") as f:
         data = f.readlines()
         empty_row = data.index("\n")
         f_table = [i.replace("\n", "").split("\t") for i in data[1:empty_row]]
         f_header = data[0].replace("\n", "").split("\t")
         f_table = pd.DataFrame(f_table, columns=f_header)
-        f_table["run"] = f_table["Spectra_Filepath"].apply(_true_stem)
+        f_table.loc[:, "run"] = f_table.apply(lambda x: _true_stem(x["Spectra_Filepath"]), axis=1)
 
-        s_table = [i.replace("\n", "").split("\t") for i in data[empty_row + 1:]][1:]
+        s_table = [i.replace("\n", "").split("\t") for i in data[empty_row + 1 :]][1:]
         s_header = data[empty_row + 1].replace("\n", "").split("\t")
-        s_data_frame = pd.DataFrame(s_table, columns=s_header)
+        s_DataFrame = pd.DataFrame(s_table, columns=s_header)
 
-    return s_data_frame, f_table
+    return s_DataFrame, f_table
 
-
-def _true_stem(x: str):
+def _true_stem(x):
     """
-    Return the true stem of a file name, i.e. the file name without the extension.
+    Return the true stem of a file name, i.e. the
+    file name without the extension.
 
     :param x: The file name
+    :type x: str
     :return: The true stem of the file name
+    :rtype: str
 
     Examples:
     >>> _true_stem("foo.mzML")
     'foo'
     >>> _true_stem("foo.d.tar")
     'foo'
+
+    These examples can be tested with pytest:
+    $ pytest -v --doctest-modules
     """
-    stem = os.path.splitext(os.path.basename(x))[0]
+    split = os.path.basename(x).split(".")
+    stem = split[0]
 
     # Should I check here that the extensions are
     # allowed? I can see how this would break if the
     # file name contains a period.
     return stem
-
 
 def find_modification(peptide):
     """
@@ -87,79 +78,84 @@ def find_modification(peptide):
     '2-UNIMOD:35,9-UNIMOD:21'
     """
     peptide = str(peptide)
-
     original_mods = MODIFICATION_PATTERN.findall(peptide)
-    matches = MODIFICATION_PATTERN.finditer(peptide)
-    positions = [match.start() for match in matches]
+    peptide = MODIFICATION_PATTERN.sub(".", peptide)
+    position = [i for i, x in enumerate(peptide) if x == "."]
+    for j in range(1, len(position)):
+        position[j] -= j
 
-    original_mods = [str(positions[k]) + "-" + original_mods[k].upper() for k in range(len(original_mods))]
-    original_mods = ",".join(str(i) for i in original_mods) or "null"
+    for k in range(0, len(original_mods)):
+        original_mods[k] = str(position[k]) + "-" + original_mods[k].upper()
+
+    original_mods = ",".join(str(i) for i in original_mods) if len(original_mods) > 0 else "null"
 
     return original_mods
 
-
-def generate_scan_number(spectra_ref: str):
-    """
-    The generate_scan_number function takes a string as input and extracts the scan number from it using regular expressions.
-    :param spectra_ref: The spectra reference
-    :return scan_number: The scan number
-    """
-    return re.search(r"(?:scan=)?(\d+)", spectra_ref).group(1)
-
+def generate_scan_number(spectra_ref:str):
+    if 'scan' in spectra_ref:
+        return re.findall(r"scan=(\d+)", spectra_ref)[0]
+    else:
+        return ",".join(re.findall(r'=(\d+)', spectra_ref))
 
 def handle_protein_map(protein_map, key):
     """
-    Handle a protein map and return the corresponding value for the given key.
-    
-    :param: protein_map - a dictionary representing the protein map.
-    :param: key - a string representing the key to search in the protein map.
-    :return: The value corresponding to the key in the protein map, or None if the key is not found.
+    map protein score from accession
     """
     key = key.replace(";", ",")
-    if key not in protein_map:
-        keys = key.split(",")
+    if key not in protein_map.keys():
+        keys = key.split(";")
         for k in keys:
-            if k in protein_map:
+            if k in protein_map.keys():
                 return protein_map[k]
+        return None
     else:
         return protein_map[key]
-    return None
 
-
-def mtd_mod_info(fix_mod: str, var_mod: str) -> Tuple[List[str], List[str], int, int]:
+def MTD_mod_info(fix_mod, var_mod):
     """
     Convert fixed and variable modifications to the format required by the MTD sub-table.
 
     :param fix_mod: Fixed modifications from DIA parameter list
+    :type fix_mod: str
     :param var_mod: Variable modifications from DIA parameter list
+    :type var_mod: str
     :return: A tuple contains fixed and variable modifications, and flags indicating whether they are null
+    :rtype: tuple
     """
+    var_ptm = []
+    fix_ptm = []
     mods_db = ModificationsDB()
-    if fix_mod is not None and fix_mod != "":
+
+    if fix_mod != "null":
         fix_flag = 1
-        fix_ptm = [
-            "[UNIMOD, {}, {}, ]".format(mods_db.getModification(mod).getUniModAccession().upper(), mods_db.getModification(mod).getId())
-            for mod in fix_mod.split(",")
-        ]
+        for mod in fix_mod.split(","):
+            mod_obj = mods_db.getModification(mod)
+            mod_name = mod_obj.getId()
+            mod_accession = mod_obj.getUniModAccession()
+            site = mod_obj.getOrigin()
+            fix_ptm.append(("[UNIMOD, " + mod_accession.upper() + ", " + mod_name + ", ]", site))
     else:
         fix_flag = 0
-        fix_ptm = ["[MS, MS:1002453, No fixed modifications searched, ]"]
+        fix_ptm.append("[MS, MS:1002453, No fixed modifications searched, ]")
 
-    if var_mod is not None and var_mod != "":
+    if var_mod != "null":
         var_flag = 1
-        var_ptm = [
-            "[UNIMOD, {}, {}, ]".format(mods_db.getModification(mod).getUniModAccession().upper(), mods_db.getModification(mod).getId())
-            for mod in var_mod.split(",")
-        ]
+        for mod in var_mod.split(","):
+            mod_obj = mods_db.getModification(mod)
+            mod_name = mod_obj.getId()
+            mod_accession = mod_obj.getUniModAccession()
+            site = mod_obj.getOrigin()
+            var_ptm.append(("[UNIMOD, " + mod_accession.upper() + ", " + mod_name + ", ]", site))
     else:
         var_flag = 0
-        var_ptm = ["[MS, MS:1002454, No variable modifications searched, ]"]
+        var_ptm.append("[MS, MS:1002454, No variable modifications searched, ]")
 
     return fix_ptm, var_ptm, fix_flag, var_flag
 
 
-def get_modifications(fix_modifications: str, variable_modifications: str):
-    (fixed_mods, variable_mods, fix_flag, var_flag) = mtd_mod_info(fix_modifications, variable_modifications)
+def get_modifications(fix_modifications:str,variable_modifications:str):
+
+    (fixed_mods, variable_mods, fix_flag, var_flag) = MTD_mod_info(fix_modifications, variable_modifications)
 
     modifications_list = []
     if fix_flag == 1:
@@ -185,18 +181,7 @@ def get_modifications(fix_modifications: str, variable_modifications: str):
     return mod_dict
 
 
-class DiaNNConvert:
-    """
-    The DiaNNConvert class is responsible for converting and processing data from a DIA-NN analysis.
-    It includes methods for generating feature and PSM files in the mzTab format.
-
-    Example Usage:
-    converter = DiaNNConvert()
-    converter.generate_feature_file(report_path, design_file, fasta_path, modifications, pg_path, pr_path,
-                                    qvalue_threshold, mzml_info_folder, sdrf_path, output_path, chunksize)
-    converter.generate_psm_file(report_path, design_file, fasta_path, modifications, pg_path, qvalue_threshold,
-                                    mzml_info_folder, output_path, chunksize)
-    """
+class DiaNNConvert():
 
     def __init__(self):
 
@@ -225,19 +210,19 @@ class DiaNNConvert:
             "sequence",
         ]
         self.map_psm = {
-            "accession": "protein_accessions",
-            "start": "protein_start_positions",
-            "end": "protein_end_positions",
-            "spectra_ref": "reference_file_name",
-            "opt_global_q-value": "global_qvalue",
-            "opt_global_cv_MS:1002217_decoy_peptide": "is_decoy"
-        }
+                "accession":"protein_accessions",
+                "start":"protein_start_positions",
+                "end":"protein_end_positions",
+                "spectra_ref":"reference_file_name",
+                "opt_global_q-value":"global_qvalue",
+                "opt_global_cv_MS:1002217_decoy_peptide":"is_decoy"
+            }
 
-    def get_uniq_and_index_and_reference_map(self, report_path, chunksize: int):
-        use_cols = ["Modified.Sequence", "Precursor.Id", "File.Name", "Protein.Ids", "Global.PG.Q.Value", "Q.Value"]
-        reports = pd.read_csv(report_path, sep="\t", header=0, usecols=use_cols, chunksize=chunksize)
+    def get_uniq_and_index_and_reference_map(self,report_path,chunksize:int):
+        use_cols = ["Modified.Sequence","Precursor.Id","File.Name","Protein.Ids", "Global.PG.Q.Value","Q.Value"]
+        reports = pd.read_csv(report_path, sep="\t", header=0, usecols=use_cols,chunksize=chunksize)
         uniq_set = set()
-        # precursor_indexs = set()
+        #precursor_indexs = set()
         reference_set = set()
 
         protein_best_score_dict = {}
@@ -245,7 +230,7 @@ class DiaNNConvert:
 
         for report in reports:
             uniq_set.update(report["Modified.Sequence"].unique())
-            # precursor_indexs.update(report["Precursor.Id"].unique())
+            #precursor_indexs.update(report["Precursor.Id"].unique())
             reference_set.update(report["File.Name"].unique())
 
             grouped_df = (
@@ -255,73 +240,52 @@ class DiaNNConvert:
                 .head(1)
             )
             out = {
-                row["Protein.Ids"]: (row["Modified.Sequence"], row["Global.PG.Q.Value"]) for _, row in
-                grouped_df.iterrows()
+                row["Protein.Ids"]: (row["Modified.Sequence"], row["Global.PG.Q.Value"]) for _, row in grouped_df.iterrows()
             }
-            protein_best_score_dict = self.__update_dict(protein_best_score_dict, out, 1)
+            protein_best_score_dict = self.__update_dict(protein_best_score_dict,out,1)
 
             aggtable = (report.groupby(["Precursor.Id"])
-            .agg(
-                {
-                    "Q.Value": "min",
-                }
-            )
-            .reset_index()
-            .rename(
-                columns={
-                    "Q.Value": "best_search_engine_score[1]",
-                }
-            )
+                .agg(
+                    {
+                        "Q.Value": "min",
+                    }
+                )
+                .reset_index()
+                .rename(
+                    columns={
+                        "Q.Value": "best_search_engine_score[1]",
+                    }
+                )
             )
             aggtable.index = aggtable["Precursor.Id"]
             pr_dict = aggtable.to_dict()['best_search_engine_score[1]']
-            peptide_best_score_dict = self.__update_dict(peptide_best_score_dict, pr_dict, 0)
+            peptide_best_score_dict = self.__update_dict(peptide_best_score_dict,pr_dict,0)
+
+
 
         uniq_masses_map = {k: AASequence.fromString(k).getMonoWeight() for k in uniq_set}
-        # precursor_index_map = {k: i for i, k in enumerate(list(precursor_indexs))}
+        #precursor_index_map = {k: i for i, k in enumerate(list(precursor_indexs))}
         unique_reference_map = {k: os.path.basename(k) for k in reference_set}
 
-        return uniq_masses_map, unique_reference_map, protein_best_score_dict, peptide_best_score_dict
+        return uniq_masses_map,unique_reference_map,protein_best_score_dict,peptide_best_score_dict
 
-    def __update_dict(self, map_dict, temporary_dict, n):
-        """
-        The __update_dict method is used to update a dictionary with new key-value pairs from a temporary dictionary.
-        It compares the values of the keys in the temporary dictionary with the existing values in the main dictionary
-        and updates them if necessary.
-        :param map_dict: The main dictionary
-        :param temporary_dict: The temporary dictionary
-        :n The index of the value to compare
-        """
-        if not map_dict:
+    def __update_dict(self, map_dict,temporary_dict,n):
+        if len(map_dict) == 0:
             map_dict.update(temporary_dict)
-            return map_dict
-
-        for key in temporary_dict:
-            if map_dict.get(key):
-                if n != 0:
-                    if float(map_dict[key][n]) > float(temporary_dict[key][n]):
-                        map_dict[key] = temporary_dict[key]
+        else:
+            for key in temporary_dict.keys():
+                if key in map_dict:
+                    if n != 0:
+                        if float(map_dict[key][n]) > float(temporary_dict[key][n]):
+                            map_dict[key] = temporary_dict[key]
+                    else:
+                        if float(map_dict[key]) > float(temporary_dict[key]):
+                            map_dict[key] = temporary_dict[key]
                 else:
-                    if float(map_dict[key]) > float(temporary_dict[key]):
-                        map_dict[key] = temporary_dict[key]
-            else:
-                map_dict[key] = temporary_dict[key]
+                    map_dict[key] = temporary_dict[key]
         return map_dict
 
-    def main_report_df(self, report_path: str, qvalue_threshold: float, chunksize: int,
-                       uniq_masses: dict) -> pd.DataFrame:
-        """
-        The main_report_df method is a generator function that processes a report file and filters the data based on
-        a specified q-value threshold. It replaces modified sequences in the report with their corresponding unique
-        masses. It also calculates the precursor m/z values and yields the filtered report.
-
-        :param report_path The path to the report file.
-        :param qvalue_threshold The threshold value for filtering the data based on q-value.
-        :param chunksize The number of rows to read at a time from the report file.
-        :param uniq_masses (dict): A dictionary mapping modified sequences to their corresponding unique masses.
-        :return: A pandas DataFrame containing the filtered report.
-        """
-
+    def main_report_df(self,report_path:str, qvalue_threshold: float,chunksize:int,uniq_masses:dict) -> pd.DataFrame:
         remain_cols = [
             "File.Name",
             "Run",
@@ -343,47 +307,46 @@ class DiaNNConvert:
             "Precursor.Quantity",
             "Global.PG.Q.Value",
         ]
-        reports = pd.read_csv(report_path, sep="\t", header=0, usecols=remain_cols, chunksize=chunksize)
+        reports = pd.read_csv(report_path, sep="\t", header=0, usecols=remain_cols,chunksize=chunksize)
         for report in reports:
-            filtered_report = report[report["Q.Value"] < qvalue_threshold]
-            filtered_report["Modified.Sequence"].replace(uniq_masses, inplace=True)
-            filtered_report["Calculate.Precursor.Mz"] = (filtered_report["Modified.Sequence"] + (PROTON_MASS_U * filtered_report["Precursor.Charge"])) / filtered_report[
+            report = report[report["Q.Value"] < qvalue_threshold]
+            mass_vector = report["Modified.Sequence"].map(uniq_masses)
+            report["Calculate.Precursor.Mz"] = (mass_vector + (PROTON_MASS_U * report["Precursor.Charge"])) / report[
                 "Precursor.Charge"
             ]
-            yield filtered_report
+            #report["precursor.Index"] = report["Precursor.Id"].map(precursor_index_map)
+            yield report
 
-    def get_msstats_in(self, report, unique_reference_map, s_data_frame, f_table):
+    def get_msstats_in(self,report,unique_reference_map,s_DataFrame,f_table):
         msstats_columns_keep = [
-            "Protein.Names",
-            "Modified.Sequence",
-            "Precursor.Charge",
-            "Precursor.Quantity",
-            "File.Name",
-            "Run",
+        "Protein.Names",
+        "Modified.Sequence",
+        "Precursor.Charge",
+        "Precursor.Quantity",
+        "File.Name",
+        "Run",
         ]
         out_msstats = report[msstats_columns_keep]
         out_msstats.columns = ["ProteinName", "PeptideSequence", "PrecursorCharge", "Intensity", "Reference", "Run"]
         out_msstats = out_msstats[out_msstats["Intensity"] != 0]
-        out_msstats.loc[:, "PeptideSequence"] = out_msstats.apply(
-            lambda x: AASequence.fromString(x["PeptideSequence"]).toString(), axis=1)
+        out_msstats.loc[:, "PeptideSequence"] = out_msstats.apply(lambda x: AASequence.fromString(x["PeptideSequence"]).toString(), axis=1)
         out_msstats["FragmentIon"] = "NA"
         out_msstats["ProductCharge"] = "0"
         out_msstats["IsotopeLabelType"] = "L"
         out_msstats["Reference"] = out_msstats["Reference"].map(unique_reference_map)
         out_msstats = out_msstats.merge(
-            (
-                s_data_frame[["Sample", "MSstats_Condition", "MSstats_BioReplicate"]]
-                .merge(f_table[["Fraction", "Sample", "run"]], on="Sample")
-                .rename(
-                    columns={"run": "Run", "MSstats_BioReplicate": "BioReplicate", "MSstats_Condition": "Condition"})
-                .drop(columns=["Sample"])
-            ),
-            on="Run",
-            validate="many_to_one",
-        )
+                (
+                    s_DataFrame[["Sample", "MSstats_Condition", "MSstats_BioReplicate"]]
+                    .merge(f_table[["Fraction", "Sample", "run"]], on="Sample")
+                    .rename(columns={"run": "Run", "MSstats_BioReplicate": "BioReplicate", "MSstats_Condition": "Condition"})
+                    .drop(columns=["Sample"])
+                ),
+                on="Run",
+                validate="many_to_one",
+            )
         return out_msstats
 
-    def generete_fasta_msg(self, fasta_path: str, f_table: pd.DataFrame):
+    def generete_fasta_msg(self,fasta_path:str,f_table:pd.DataFrame):
         entries = []
         f = FASTAFile()
         f.load(fasta_path, entries)
@@ -395,57 +358,52 @@ class DiaNNConvert:
         index_ref["ms_run"] = index_ref["ms_run"].astype("int")
         index_ref["study_variable"] = index_ref["study_variable"].astype("int")
 
-        return fasta_df, index_ref
+        return fasta_df,index_ref
 
-    def __map_ms_runs(self, ms_run, spectra, ms_runs):
+    def __map_ms_runs(self,ms_run,spectra,ms_runs):
         run = f"ms_run[{ms_run}]"
         ms_runs[run] = spectra.split('.')[0]
 
-    def get_ms_runs(self, index_ref):
+    def get_ms_runs(self,index_ref):
         ms_runs = {}
-        index_ref[['ms_run', "Spectra_Filepath"]].apply(
-            lambda row: self.__map_ms_runs(row['ms_run'], row["Spectra_Filepath"], ms_runs), axis=1)
+        index_ref[['ms_run',"Spectra_Filepath"]].apply(lambda row:self.__map_ms_runs(row['ms_run'],row["Spectra_Filepath"],ms_runs),axis=1)
         return ms_runs
 
-    def get_protein_map(self, pg_path: str, best_score_dict: dict):
-        """
-        The get_protein_map method is responsible for generating a protein map from a protein group file.
-        It extracts relevant information from the file, such as protein IDs, protein group descriptions,
-        and protein group types. It also calculates the best search engine score for each protein group and creates
-        a dictionary mapping protein group IDs to their corresponding best search engine scores.
-
-        :param pg_path: The path to the protein group file.
-        :best_score_dict: A dictionary mapping protein IDs to their corresponding best search engine scores.
-
-        """
-
-        pg = pd.read_csv(pg_path, sep="\t", header=0,)
+    def get_protein_map(self,pg_path:str,best_score_dict:dict):
+        pg = pd.read_csv(
+        pg_path,
+        sep="\t",
+        header=0,
+        )
 
         pg.loc[pg["Protein.Ids"].str.contains(";"), "opt_global_result_type"] = "indistinguishable_protein_group"
 
-        out_mztab_prh = pg.drop(["Protein.Names"], axis=1)
-        out_mztab_prh.rename(
+        out_mztab_PRH = pg.drop(["Protein.Names"], axis=1)
+        out_mztab_PRH.rename(
             columns={"Protein.Group": "accession", "First.Protein.Description": "description"}, inplace=True
         )
-        out_mztab_prh.loc[:, "accession"] = out_mztab_prh["accession"].str.split(";", expand=True)[0]
+        out_mztab_PRH.loc[:, "accession"] = out_mztab_PRH.apply(lambda x: x["accession"].split(";")[0], axis=1)
 
-        protein_details_df = out_mztab_prh[out_mztab_prh["opt_global_result_type"] == "indistinguishable_protein_group"]
-        prh_series = protein_details_df["Protein.Ids"].str.split(";", expand=True).stack().reset_index(level=1,
-                                                                                                       drop=True)
+        protein_details_df = out_mztab_PRH[out_mztab_PRH["opt_global_result_type"] == "indistinguishable_protein_group"]
+        prh_series = protein_details_df["Protein.Ids"].str.split(";", expand=True).stack().reset_index(level=1, drop=True)
         prh_series.name = "accession"
         protein_details_df = (
             protein_details_df.drop("accession", axis=1).join(prh_series).reset_index().drop(columns="index")
         )
-        out_mztab_prh = pd.concat([out_mztab_prh, protein_details_df], ignore_index=True)
-        out_mztab_prh["ambiguity_members"] = np.where(out_mztab_prh["opt_global_result_type"] == "indistinguishable_protein_group", out_mztab_prh["Protein.Ids"], "null")
-        out_mztab_prh["modifiedSequence"] = out_mztab_prh["Protein.Ids"].map(best_score_dict.get).str[0]
-        out_mztab_prh["best_search_engine_score[1]"] = out_mztab_prh["Protein.Ids"].map(best_score_dict.get).str[1]
-        prt_score = out_mztab_prh.groupby("ambiguity_members")["best_search_engine_score[1]"].min()
+        out_mztab_PRH = pd.concat([out_mztab_PRH, protein_details_df]).reset_index(drop=True)
+        out_mztab_PRH.loc[:, "ambiguity_members"] = out_mztab_PRH.apply(
+            lambda x: x["Protein.Ids"] if x["opt_global_result_type"] == "indistinguishable_protein_group" else "null",
+            axis=1,
+        )
+        out_mztab_PRH[["modifiedSequence", "best_search_engine_score[1]"]] = out_mztab_PRH.apply(
+            lambda x: best_score_dict.get(x["Protein.Ids"],(np.nan, np.nan)), axis=1, result_type="expand"
+        )
+        prt_score = out_mztab_PRH[["ambiguity_members","best_search_engine_score[1]"]].groupby("ambiguity_members").min()
         protein_map = prt_score.to_dict()["best_search_engine_score[1]"]
 
         return protein_map
 
-    def extract_dict_from_pep(self, pr_path: str, bset_score_map: dict) -> dict:
+    def extract_dict_from_pep(self,pr_path:str,bset_score_map: dict) -> dict:
         pep_usecols = ['Protein.Group',
                        'Protein.Ids',
                        'Protein.Names',
@@ -456,16 +414,16 @@ class DiaNNConvert:
                        'Modified.Sequence',
                        'Precursor.Charge',
                        'Precursor.Id']
-        out_matab_peh = pd.read_csv(
-            pr_path,
-            sep="\t",
-            header=0,
-            usecols=pep_usecols)
+        out_matab_PEH = pd.read_csv(
+                            pr_path,
+                            sep="\t",
+                            header=0,
+                            usecols=pep_usecols)
 
-        out_matab_peh.drop(
+        out_matab_PEH.drop(
             ["Protein.Group", "Protein.Names", "First.Protein.Description", "Proteotypic"], axis=1, inplace=True
         )
-        out_matab_peh.rename(
+        out_matab_PEH.rename(
             columns={
                 "Stripped.Sequence": "sequence",
                 "Protein.Ids": "accession",
@@ -474,17 +432,15 @@ class DiaNNConvert:
             },
             inplace=True,
         )
-        out_matab_peh.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = out_matab_peh.apply(
+        out_matab_PEH.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = out_matab_PEH.apply(
             lambda x: AASequence.fromString(x["opt_global_cv_MS:1000889_peptidoform_sequence"]).toString(), axis=1
         )
 
-        out_matab_peh["best_search_engine_score[1]"] = out_matab_peh["Precursor.Id"].map(bset_score_map)
-        out_matab_peh.fillna("null", inplace=True)
-        out_matab_peh.loc[:, "scan_number"] = None
-        out_matab_peh.loc[:, "spectra_ref"] = None
-        pep = out_matab_peh[
-            ['charge', 'opt_global_cv_MS:1000889_peptidoform_sequence', 'best_search_engine_score[1]', "scan_number",
-             "spectra_ref"]]
+        out_matab_PEH["best_search_engine_score[1]"] = out_matab_PEH["Precursor.Id"].map(bset_score_map)
+        out_matab_PEH.fillna("null", inplace=True)
+        out_matab_PEH.loc[:, "scan_number"] = None
+        out_matab_PEH.loc[:, "spectra_ref"] = None
+        pep = out_matab_PEH[['charge','opt_global_cv_MS:1000889_peptidoform_sequence','best_search_engine_score[1]',"scan_number","spectra_ref"]]
 
         pep_msg = pep.iloc[
             pep.groupby(
@@ -510,8 +466,7 @@ class DiaNNConvert:
 
         return map_dict
 
-    def extract_from_psm_to_pep_msg(self, report_path, qvalue_threshold, folder, uniq_masses, index_ref, map_dict,
-                                    chunksize):
+    def extract_from_psm_to_pep_msg(self,report_path,qvalue_threshold, folder,uniq_masses,index_ref,map_dict,chunksize):
 
         def __find_info(folder, n):
             files = list(Path(folder).glob(f"*{n}_mzml_info.tsv"))
@@ -523,12 +478,12 @@ class DiaNNConvert:
 
             return files[0]
 
-        psm_unique_keys = []
+        psm_unique_keys =[]
         spectra_count_dict = Counter()
-        for report in self.main_report_df(report_path, qvalue_threshold, chunksize, uniq_masses):
+        for report in self.main_report_df(report_path,qvalue_threshold,chunksize,uniq_masses):
             report = report.merge(index_ref[["ms_run", "Run", "study_variable"]], on="Run", validate="many_to_one")
 
-            out_mztab_psh = pd.DataFrame()
+            out_mztab_PSH = pd.DataFrame()
             for n, group in report.groupby(["Run"]):
                 if isinstance(n, tuple) and len(n) == 1:
                     # This is here only to support versions of pandas where the groupby
@@ -543,11 +498,11 @@ class DiaNNConvert:
                 target.columns = ["RT.Start", "opt_global_spectrum_reference", "exp_mass_to_charge"]
                 # TODO seconds returned from precursor.getRT()
                 target.loc[:, "RT.Start"] = target.apply(lambda x: x["RT.Start"] / 60, axis=1)
-                out_mztab_psh = pd.concat(
-                    [out_mztab_psh, pd.merge_asof(group, target, on="RT.Start", direction="nearest")])
+                out_mztab_PSH = pd.concat([out_mztab_PSH, pd.merge_asof(group, target, on="RT.Start", direction="nearest")])
+
 
             ## Score at PSM level: Q.Value
-            out_mztab_psh = out_mztab_psh[
+            out_mztab_PSH = out_mztab_PSH[
                 [
                     "Stripped.Sequence",
                     "Protein.Ids",
@@ -564,7 +519,7 @@ class DiaNNConvert:
                     "ms_run",
                 ]
             ]
-            out_mztab_psh.columns = [
+            out_mztab_PSH.columns = [
                 "sequence",
                 "accession",
                 "search_engine_score[1]",
@@ -580,9 +535,9 @@ class DiaNNConvert:
                 "ms_run",
             ]
 
-            out_mztab_psh.loc[:, "opt_global_cv_MS:1002217_decoy_peptide"] = "0"
-            out_mztab_psh.loc[:, "PSM_ID"] = out_mztab_psh.index
-            out_mztab_psh.loc[:, "unique"] = out_mztab_psh.apply(
+            out_mztab_PSH.loc[:, "opt_global_cv_MS:1002217_decoy_peptide"] = "0"
+            out_mztab_PSH.loc[:, "PSM_ID"] = out_mztab_PSH.index
+            out_mztab_PSH.loc[:, "unique"] = out_mztab_PSH.apply(
                 lambda x: "0" if ";" in str(x["accession"]) else "1", axis=1, result_type="expand"
             )
 
@@ -597,42 +552,42 @@ class DiaNNConvert:
                 "opt_global_map_index",
             ]
             for i in null_col:
-                out_mztab_psh.loc[:, i] = "null"
+                out_mztab_PSH.loc[:, i] = "null"
 
-            out_mztab_psh.loc[:, "modifications"] = out_mztab_psh.apply(
-                lambda x: find_modification(x["opt_global_cv_MS:1000889_peptidoform_sequence"]), axis=1,
-                result_type="expand"
+            out_mztab_PSH.loc[:, "modifications"] = out_mztab_PSH.apply(
+                lambda x: find_modification(x["opt_global_cv_MS:1000889_peptidoform_sequence"]), axis=1, result_type="expand"
             )
 
-            out_mztab_psh.loc[:, "spectra_ref"] = out_mztab_psh.apply(
-                lambda x: "ms_run[{}]:".format(x["ms_run"]) + x["opt_global_spectrum_reference"], axis=1,
-                result_type="expand"
+            out_mztab_PSH.loc[:, "spectra_ref"] = out_mztab_PSH.apply(
+                lambda x: "ms_run[{}]:".format(x["ms_run"]) + x["opt_global_spectrum_reference"], axis=1, result_type="expand"
             )
 
-            out_mztab_psh.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = out_mztab_psh.apply(
+            out_mztab_PSH.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = out_mztab_PSH.apply(
                 lambda x: AASequence.fromString(x["opt_global_cv_MS:1000889_peptidoform_sequence"]).toString(),
                 axis=1,
                 result_type="expand",
             )
 
-            out_mztab_psh.loc[:, "PSH"] = "PSM"
-            index = out_mztab_psh.loc[:, "PSH"]
-            out_mztab_psh.drop(["PSH", "ms_run"], axis=1, inplace=True)
-            out_mztab_psh.insert(0, "PSH", index)
-            out_mztab_psh.fillna("null", inplace=True)
-            new_cols = [col for col in out_mztab_psh.columns if not col.startswith("opt_")] + [
-                col for col in out_mztab_psh.columns if col.startswith("opt_")
+            out_mztab_PSH.loc[:, "PSH"] = "PSM"
+            index = out_mztab_PSH.loc[:, "PSH"]
+            out_mztab_PSH.drop(["PSH", "ms_run"], axis=1, inplace=True)
+            out_mztab_PSH.insert(0, "PSH", index)
+            out_mztab_PSH.fillna("null", inplace=True)
+            new_cols = [col for col in out_mztab_PSH.columns if not col.startswith("opt_")] + [
+                col for col in out_mztab_PSH.columns if col.startswith("opt_")
             ]
-            out_mztab_psh = out_mztab_psh[new_cols]
-            out_mztab_psh.loc[:, 'scan_number'] = out_mztab_psh['spectra_ref'].apply(lambda x: generate_scan_number(x))
-            out_mztab_psh['spectra_ref'] = out_mztab_psh['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
+            out_mztab_PSH = out_mztab_PSH[new_cols]
+            out_mztab_PSH.loc[:, 'scan_number'] = out_mztab_PSH['spectra_ref'].apply(lambda x: generate_scan_number(x))
+            out_mztab_PSH['spectra_ref'] = out_mztab_PSH['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
 
-            spectra_count_dict = self.__get_spectra_count(out_mztab_psh, spectra_count_dict)
-            map_dict, psm_unique_keys = self.__extract_from_psm_to_pep_msg(out_mztab_psh, map_dict, psm_unique_keys)
 
-        return map_dict, spectra_count_dict
+            spectra_count_dict = self.__get_spectra_count(out_mztab_PSH,spectra_count_dict)
+            map_dict,psm_unique_keys = self.__extract_from_psm_to_pep_msg(out_mztab_PSH,map_dict,psm_unique_keys)
 
-    def get_psm_chunk(self, report_path, qvalue_threshold, folder, uniq_masses, index_ref, chunksize):
+
+        return map_dict,spectra_count_dict
+
+    def get_psm_chunk(self,report_path,qvalue_threshold, folder,uniq_masses,index_ref,chunksize):
         def __find_info(folder, n):
             files = list(Path(folder).glob(f"*{n}_mzml_info.tsv"))
             # Check that it matches one and only one file
@@ -643,10 +598,10 @@ class DiaNNConvert:
 
             return files[0]
 
-        for report in self.main_report_df(report_path, qvalue_threshold, chunksize, uniq_masses):
+        for report in self.main_report_df(report_path,qvalue_threshold,chunksize,uniq_masses):
             report = report.merge(index_ref[["ms_run", "Run", "study_variable"]], on="Run", validate="many_to_one")
 
-            out_mztab_psh = pd.DataFrame()
+            out_mztab_PSH = pd.DataFrame()
             for n, group in report.groupby(["Run"]):
                 if isinstance(n, tuple) and len(n) == 1:
                     # This is here only to support versions of pandas where the groupby
@@ -661,11 +616,11 @@ class DiaNNConvert:
                 target.columns = ["RT.Start", "opt_global_spectrum_reference", "exp_mass_to_charge"]
                 # TODO seconds returned from precursor.getRT()
                 target.loc[:, "RT.Start"] = target.apply(lambda x: x["RT.Start"] / 60, axis=1)
-                out_mztab_psh = pd.concat(
-                    [out_mztab_psh, pd.merge_asof(group, target, on="RT.Start", direction="nearest")])
+                out_mztab_PSH = pd.concat([out_mztab_PSH, pd.merge_asof(group, target, on="RT.Start", direction="nearest")])
+
 
             ## Score at PSM level: Q.Value
-            out_mztab_psh = out_mztab_psh[
+            out_mztab_PSH = out_mztab_PSH[
                 [
                     "Stripped.Sequence",
                     "Protein.Ids",
@@ -682,7 +637,7 @@ class DiaNNConvert:
                     "ms_run",
                 ]
             ]
-            out_mztab_psh.columns = [
+            out_mztab_PSH.columns = [
                 "sequence",
                 "accession",
                 "search_engine_score[1]",
@@ -698,9 +653,9 @@ class DiaNNConvert:
                 "ms_run",
             ]
 
-            out_mztab_psh.loc[:, "opt_global_cv_MS:1002217_decoy_peptide"] = "0"
-            out_mztab_psh.loc[:, "PSM_ID"] = out_mztab_psh.index
-            out_mztab_psh.loc[:, "unique"] = out_mztab_psh.apply(
+            out_mztab_PSH.loc[:, "opt_global_cv_MS:1002217_decoy_peptide"] = "0"
+            out_mztab_PSH.loc[:, "PSM_ID"] = out_mztab_PSH.index
+            out_mztab_PSH.loc[:, "unique"] = out_mztab_PSH.apply(
                 lambda x: "0" if ";" in str(x["accession"]) else "1", axis=1, result_type="expand"
             )
 
@@ -715,45 +670,44 @@ class DiaNNConvert:
                 "opt_global_map_index",
             ]
             for i in null_col:
-                out_mztab_psh.loc[:, i] = "null"
+                out_mztab_PSH.loc[:, i] = "null"
 
-            out_mztab_psh.loc[:, "modifications"] = out_mztab_psh.apply(
-                lambda x: find_modification(x["opt_global_cv_MS:1000889_peptidoform_sequence"]), axis=1,
-                result_type="expand"
+            out_mztab_PSH.loc[:, "modifications"] = out_mztab_PSH.apply(
+                lambda x: find_modification(x["opt_global_cv_MS:1000889_peptidoform_sequence"]), axis=1, result_type="expand"
             )
 
-            out_mztab_psh.loc[:, "spectra_ref"] = out_mztab_psh.apply(
-                lambda x: "ms_run[{}]:".format(x["ms_run"]) + x["opt_global_spectrum_reference"], axis=1,
-                result_type="expand"
+            out_mztab_PSH.loc[:, "spectra_ref"] = out_mztab_PSH.apply(
+                lambda x: "ms_run[{}]:".format(x["ms_run"]) + x["opt_global_spectrum_reference"], axis=1, result_type="expand"
             )
 
-            out_mztab_psh.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = out_mztab_psh.apply(
+            out_mztab_PSH.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = out_mztab_PSH.apply(
                 lambda x: AASequence.fromString(x["opt_global_cv_MS:1000889_peptidoform_sequence"]).toString(),
                 axis=1,
                 result_type="expand",
             )
 
-            out_mztab_psh.loc[:, "PSH"] = "PSM"
-            index = out_mztab_psh.loc[:, "PSH"]
-            out_mztab_psh.drop(["PSH", "ms_run"], axis=1, inplace=True)
-            out_mztab_psh.insert(0, "PSH", index)
-            out_mztab_psh.fillna("null", inplace=True)
-            new_cols = [col for col in out_mztab_psh.columns if not col.startswith("opt_")] + [
-                col for col in out_mztab_psh.columns if col.startswith("opt_")
+            out_mztab_PSH.loc[:, "PSH"] = "PSM"
+            index = out_mztab_PSH.loc[:, "PSH"]
+            out_mztab_PSH.drop(["PSH", "ms_run"], axis=1, inplace=True)
+            out_mztab_PSH.insert(0, "PSH", index)
+            out_mztab_PSH.fillna("null", inplace=True)
+            new_cols = [col for col in out_mztab_PSH.columns if not col.startswith("opt_")] + [
+                col for col in out_mztab_PSH.columns if col.startswith("opt_")
             ]
-            out_mztab_psh = out_mztab_psh[new_cols]
-            out_mztab_psh.loc[:, 'scan_number'] = out_mztab_psh['spectra_ref'].apply(lambda x: generate_scan_number(x))
-            out_mztab_psh['spectra_ref'] = out_mztab_psh['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
+            out_mztab_PSH = out_mztab_PSH[new_cols]
+            out_mztab_PSH.loc[:, 'scan_number'] = out_mztab_PSH['spectra_ref'].apply(lambda x: generate_scan_number(x))
+            out_mztab_PSH['spectra_ref'] = out_mztab_PSH['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
 
-            yield out_mztab_psh
+            yield out_mztab_PSH
 
-    def __extract_from_psm_to_pep_msg(self, psm, map_dict, psm_unique_keys):
+
+    def __extract_from_psm_to_pep_msg(self,psm, map_dict,psm_unique_keys):
         for key, df in psm.groupby(['opt_global_cv_MS:1000889_peptidoform_sequence', 'charge']):
-            if key not in map_dict:
+            if key not in map_dict.keys():
                 map_dict[key] = [None, None, None]
                 psm_unique_keys.append(key)
             df = df.reset_index(drop=True)
-            if pd.isnull(map_dict[key][1]):
+            if pd.isna(map_dict[key][1]):
                 if 'opt_global_q-value_score' in df.columns:
                     map_dict[key][0] = df.iloc[df['opt_global_q-value_score'].idxmin()]['opt_global_q-value_score']
                     map_dict[key][1] = df.iloc[df['opt_global_q-value_score'].idxmin()]['spectra_ref']
@@ -778,13 +732,13 @@ class DiaNNConvert:
                         map_dict[key][0] = best_qvalue
                         map_dict[key][1] = df.iloc[df['search_engine_score[1]'].idxmin()]['spectra_ref']
                         map_dict[key][2] = df.iloc[df['search_engine_score[1]'].idxmin()]['scan_number']
-            if map_dict[key].__len__() == 3:
+            if len(map_dict[key]) == 3:
                 map_dict[key].append(df['start'].values[0])
                 map_dict[key].append(df['end'].values[0])
                 map_dict[key].append(df['unique'].values[0])
                 map_dict[key].append(df['modifications'].values[0])
-            if df.columns.isin(['opt_global_Posterior_Error_Probability_score', 'opt_global_Posterior_Error_Probability']).any():
-                if map_dict[key].__len__() != 7:
+            if 'opt_global_Posterior_Error_Probability_score' in df.columns or 'opt_global_Posterior_Error_Probability' in df.columns:
+                if len(map_dict[key]) != 7:
                     if 'opt_global_Posterior_Error_Probability_score' in df.columns:
                         probability_score = df['opt_global_Posterior_Error_Probability_score'].min()
                     else:
@@ -797,24 +751,24 @@ class DiaNNConvert:
                     else:
                         map_dict[key].append(df['opt_global_Posterior_Error_Probability'].min())
             else:
-                if map_dict[key].__len__() == 7:
+                if len(map_dict[key]) == 7:
                     map_dict[key].append(None)
-            if map_dict[key].__len__() == 8:
+            if len(map_dict[key]) == 8:
                 if "opt_global_cv_MS:1002217_decoy_peptide" in df.columns:
                     map_dict[key].append(
                         df["opt_global_cv_MS:1002217_decoy_peptide"].values[0]
                     )
                 else:
                     map_dict[key].append(None)
-            if map_dict[key].__len__() != 11:
+            if len(map_dict[key]) != 11:
                 if map_dict[key][1] not in df["spectra_ref"].values:
                     map_dict[key].append(df["calc_mass_to_charge"].values[0])
                     map_dict[key].append(None)
                 else:
                     cals = df[
-                        (df["spectra_ref"] == map_dict[key][1])
-                        & (df["scan_number"] == map_dict[key][2])
-                        ]["calc_mass_to_charge"].values
+                            (df["spectra_ref"] == map_dict[key][1])
+                            & (df["scan_number"] == map_dict[key][2])
+                            ]["calc_mass_to_charge"].values
                     if len(cals) == 0:
                         map_dict[key].append(None)
                         map_dict[key].append(None)
@@ -824,22 +778,22 @@ class DiaNNConvert:
                             df[
                                 (df["spectra_ref"] == map_dict[key][1])
                                 & (df["scan_number"] == map_dict[key][2])
-                                ]["exp_mass_to_charge"].values[0]
+                            ]["exp_mass_to_charge"].values[0]
                         )
             elif map_dict[key][-1] == None:
                 if map_dict[key][1] in df["spectra_ref"].values:
                     cals = df[
-                        (df["spectra_ref"] == map_dict[key][1])
-                        & (df["scan_number"] == map_dict[key][2])
-                        ]["calc_mass_to_charge"].values
+                            (df["spectra_ref"] == map_dict[key][1])
+                            & (df["scan_number"] == map_dict[key][2])
+                            ]["calc_mass_to_charge"].values
                     if len(cals) != 0:
                         map_dict[key][-2] = cals[0]
                         map_dict[key][-1] = df[
-                            (df["spectra_ref"] == map_dict[key][1])
-                            & (df["scan_number"] == map_dict[key][2])
+                                (df["spectra_ref"] == map_dict[key][1])
+                                & (df["scan_number"] == map_dict[key][2])
                             ]["exp_mass_to_charge"].values[0]
 
-        return map_dict, psm_unique_keys
+        return map_dict,psm_unique_keys
 
     def __get_spectra_count(self, psm, counter):
         """
@@ -867,48 +821,55 @@ class DiaNNConvert:
         counter.update(spectra_dict.to_dict())
         return counter
 
-    def __check_mbr_peptide(self, reference, scan, exp_mass):
+    def __check_mbr_peptide(self,reference,scan,exp_mass):
         if exp_mass is None:
-            return None, None
+            return None,None
         else:
-            return reference, scan
+            return reference,scan
 
-    def generate_feature_file(self, report_path: str, design_file: str, fasta_path: str, modifications: List,
-                              pg_path: str, pr_path: str, qvalue_threshold: float, mzml_info_folder: str,
-                              sdrf_path: str, output_path: str, chunksize: int):
+    def generate_feature_file(self,report_path:str,design_file:str,fasta_path:str,modifications:List,pg_path:str,pr_path:str,qvalue_threshold: float,mzml_info_folder:str,sdrf_path:str,output_path:str,chunksize:int):
 
-        s_data_frame, f_table = get_exp_design_dfs(design_file)
-        _, index_ref = self.generete_fasta_msg(fasta_path, f_table)
+        st = time.time()
+        s_DataFrame, f_table = get_exp_design_dfs(design_file)
+        print_estimated_time(st, "get_exp_design_dfs")
+
+        st = time.time()
+        _ , index_ref = self.generete_fasta_msg(fasta_path,f_table)
+        print_estimated_time(st, "generete_fasta_msg")
+
+        st = time.time()
         if not self.uniq_masses_map:
-            self.uniq_masses_map, self.unique_reference_map, self.protein_best_score_dict, self.peptide_best_score_dict = self.get_uniq_and_index_and_reference_map(
-                report_path, chunksize=chunksize)
+            self.uniq_masses_map,self.unique_reference_map,self.protein_best_score_dict,self.peptide_best_score_dict = self.get_uniq_and_index_and_reference_map(report_path,chunksize=chunksize)
+        print_estimated_time(st, "get_uniq_and_index_and_reference_map")
 
+        st = time.time()
         if not self._ms_runs:
-            self._ms_runs = self.get_ms_runs(index_ref)
-            self._modifications = get_modifications(modifications[0], modifications[1])
-            self._protein_map = self.get_protein_map(pg_path, self.protein_best_score_dict)
+            self._ms_runs =  self.get_ms_runs(index_ref)
+            self._modifications = get_modifications(modifications[0],modifications[1])
+            self._protein_map = self.get_protein_map(pg_path,self.protein_best_score_dict)
+        print_estimated_time(st, "get_ms_runs, modifications and protein_map")
 
-        map_dict = self.extract_dict_from_pep(pr_path, self.peptide_best_score_dict)
-        map_dict, spectra_count_dict = self.extract_from_psm_to_pep_msg(report_path, qvalue_threshold, mzml_info_folder,
-                                                                        self.uniq_masses_map, index_ref, map_dict,
-                                                                        chunksize)
-        schema = FeatureHandler()
-        feature = FeatureInMemory('LFQ', schema.schema)
-        feature._modifications = self._modifications
-        feature._score_names = self._score_names
+        st = time.time()
+        map_dict = self.extract_dict_from_pep(pr_path,self.peptide_best_score_dict)
+        map_dict,spectra_count_dict = self.extract_from_psm_to_pep_msg(report_path,qvalue_threshold, mzml_info_folder,self.uniq_masses_map,index_ref,map_dict,chunksize)
+        print_estimated_time(st, "extract_from_psm_to_pep_msg")
+
+        Schema = FeatureHandler()
+        Feature = FeatureInMemory('LFQ',Schema.schema)
+        Feature._modifications = self._modifications
+        Feature._score_names = self._score_names
         pqwriter = None
-        for report in self.main_report_df(report_path, qvalue_threshold, chunksize, self.uniq_masses_map):
-            msstats_in = self.get_msstats_in(report, self.unique_reference_map, s_data_frame, f_table)
+        for report in self.main_report_df(report_path,qvalue_threshold,chunksize,self.uniq_masses_map):
+            msstats_in = self.get_msstats_in(report,self.unique_reference_map,s_DataFrame,f_table)
             msstats_in['Reference'] = msstats_in['Reference'].apply(lambda x: x.split(".")[0])
-            msstats_in.loc[:, 'protein_global_qvalue'] = msstats_in['ProteinName'].apply(
-                lambda x: handle_protein_map(self._protein_map, x))
+            msstats_in.loc[:, 'protein_global_qvalue'] = msstats_in['ProteinName'].apply(lambda x: handle_protein_map(self._protein_map, x))
             msstats_in.loc[:, 'sequence'] = msstats_in['PeptideSequence'].apply(lambda x: clean_peptidoform_sequence(x))
 
             no_lfq_usecols = [
-                col
-                for col in self._lfq_msstats_usecols
-                if col not in msstats_in.columns
-            ]
+                    col
+                    for col in self._lfq_msstats_usecols
+                    if col not in msstats_in.columns
+                ]
             for col in no_lfq_usecols:
                 if col == "Channel":
                     msstats_in.loc[:, col] = "LABEL FREE SAMPLE"
@@ -916,21 +877,18 @@ class DiaNNConvert:
                     msstats_in.loc[:, col] = None
             msstats_in = msstats_in[self._lfq_msstats_usecols]
 
-            msstats_in = feature._map_msstats_in(msstats_in, map_dict, spectra_count_dict)
-            msstats_in.loc[:, 'peptidoform'] = msstats_in[['sequence', 'modifications']].apply(
-                lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'], row['modifications'],
-                                                                      self._modifications), axis=1)
-            msstats_in.drop(['PeptideSequence'], inplace=True, axis=1)
+            msstats_in = Feature._map_msstats_in(msstats_in, map_dict, spectra_count_dict)
+            msstats_in.loc[:,'peptidoform'] = msstats_in[['sequence','modifications']].apply(lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'],row['modifications'],self._modifications),axis=1)
+            msstats_in.drop(['PeptideSequence'],inplace=True, axis=1)
             msstats_in[["best_psm_reference_file_name", "best_psm_scan_number"]] = msstats_in[
-                ["best_psm_reference_file_name", "best_psm_scan_number", 'exp_mass_to_charge']
+            ["best_psm_reference_file_name", "best_psm_scan_number",'exp_mass_to_charge']
             ].apply(
-                lambda row: self.__check_mbr_peptide(row["best_psm_reference_file_name"], row["best_psm_scan_number"],
-                                                     row['exp_mass_to_charge']),
-                axis=1,
-                result_type="expand",
+            lambda row: self.__check_mbr_peptide(row["best_psm_reference_file_name"],row["best_psm_scan_number"],row['exp_mass_to_charge']),
+            axis=1,
+            result_type="expand",
             )
-            table = feature._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
-            parquet_table = feature.convert_to_parquet(table)
+            table = Feature._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
+            parquet_table = Feature.convert_to_parquet(table)
             if not pqwriter:
                 # create a parquet write object giving it an output file
                 pqwriter = pq.ParquetWriter(output_path, parquet_table.schema)
@@ -938,21 +896,19 @@ class DiaNNConvert:
         if pqwriter:
             pqwriter.close()
 
-    def generate_psm_file(self, report_path: str, design_file: str, fasta_path: str, modifications: List, pg_path: str,
-                          qvalue_threshold: float, mzml_info_folder: str, output_path: str, chunksize: int):
+
+    def generate_psm_file(self,report_path:str,design_file:str,fasta_path:str,modifications:List,pg_path:str,qvalue_threshold: float,mzml_info_folder:str,output_path:str,chunksize:int):
 
         _, f_table = get_exp_design_dfs(design_file)
-        _, index_ref = self.generete_fasta_msg(fasta_path, f_table)
+        _ , index_ref = self.generete_fasta_msg(fasta_path,f_table)
         if not self.uniq_masses_map:
-            self.uniq_masses_map, self.unique_reference_map, self.protein_best_score_dict, self.peptide_best_score_dict = self.get_uniq_and_index_and_reference_map(
-                report_path, chunksize=chunksize)
+            self.uniq_masses_map,self.unique_reference_map,self.protein_best_score_dict,self.peptide_best_score_dict = self.get_uniq_and_index_and_reference_map(report_path,chunksize=chunksize)
         if not self._ms_runs:
-            self._ms_runs = self.get_ms_runs(index_ref)
-            self._modifications = get_modifications(modifications[0], modifications[1])
-            self._protein_map = self.get_protein_map(pg_path, self.protein_best_score_dict)
+            self._ms_runs =  self.get_ms_runs(index_ref)
+            self._modifications = get_modifications(modifications[0],modifications[1])
+            self._protein_map = self.get_protein_map(pg_path,self.protein_best_score_dict)
         pqwriter = None
-        for psm in self.get_psm_chunk(report_path, qvalue_threshold, mzml_info_folder, self.uniq_masses_map, index_ref,
-                                      chunksize):
+        for psm in self.get_psm_chunk(report_path,qvalue_threshold, mzml_info_folder,self.uniq_masses_map,index_ref,chunksize):
             use_cols = [
                 "sequence",
                 "accession",
@@ -971,19 +927,16 @@ class DiaNNConvert:
                 "opt_global_cv_MS:1002217_decoy_peptide"
             ]
             psm = psm[use_cols].copy()
-            psm.loc[:, 'protein_global_qvalue'] = psm['accession'].apply(
-                lambda x: handle_protein_map(self._protein_map, x))
-            psm.loc[:, 'peptidoform'] = psm[['sequence', 'modifications']].apply(
-                lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'], row['modifications'],
-                                                                      self._modifications), axis=1)
-            psm.loc[:, 'id_scores'] = psm['search_engine_score[1]'].apply(lambda x: [
+            psm.loc[:,'protein_global_qvalue'] = psm['accession'].apply(lambda x: handle_protein_map(self._protein_map, x))
+            psm.loc[:,'peptidoform'] = psm[['sequence','modifications']].apply(lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'],row['modifications'],self._modifications),axis=1)
+            psm.loc[:,'id_scores'] = psm['search_engine_score[1]'].apply(lambda x:[
                 f"protein-level q-value: {x}",
                 f"Posterior error probability: ",
             ])
-            psm.drop(["search_engine_score[1]"], inplace=True, axis=1)
+            psm.drop(["search_engine_score[1]"],inplace=True, axis=1)
 
-            psm.loc[:, "posterior_error_probability"] = None
-            psm.loc[:, "consensus_support"] = None
+            psm.loc[:,"posterior_error_probability"] = None
+            psm.loc[:,"consensus_support"] = None
 
             psm.rename(columns=self.map_psm, inplace=True)
             parquet_table = self.convert_psm_format_to_parquet(psm)
@@ -1000,7 +953,7 @@ class DiaNNConvert:
         split start or end
         :param value: start or end
         """
-        if pd.isna(value) or value == 'null':
+        if pd.isna(value) or value=='null':
             return pd.NA
         elif "," in str(value):
             return list(map(int, value.split(",")))
@@ -1010,36 +963,36 @@ class DiaNNConvert:
             return [int(value)]
 
     def convert_psm_format_to_parquet(self, res):
-        """
+            """
             res: msstats_in dataframe
             return: parquet table
             """
-        psm = PSMHandler()
-        feature = FeatureInMemory('LFQ', None)
-        feature._modifications = self._modifications
-        feature._score_names = self._score_names
-        res['sequence'] = res['sequence'].astype(str)
-        res['protein_accessions'] = res['protein_accessions'].str.split(";")
-        res['protein_start_positions'] = res['protein_start_positions'].apply(
-            self.__split_start_or_end).to_list()
-        res['protein_end_positions'] = res['protein_end_positions'].apply(
-            self.__split_start_or_end).to_list()
-        res['protein_global_qvalue'] = res['protein_global_qvalue'].astype(float)
-        res['unique'] = res['unique'].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype('Int32')
-        res['modifications'] = res['modifications'].apply(lambda x: feature._generate_modification_list(x))
-        res['retention_time'] = res['retention_time'].astype(float)
-        res['charge'] = res['charge'].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype('Int32')
-        res['exp_mass_to_charge'] = res['exp_mass_to_charge'].astype(float)
-        res['calc_mass_to_charge'] = res['calc_mass_to_charge'].astype(float)
-        res['posterior_error_probability'] = res['posterior_error_probability'].astype(float)
+            Psm = PSMHandler()
+            Feature = FeatureInMemory('LFQ',None)
+            Feature._modifications = self._modifications
+            Feature._score_names = self._score_names
+            res['sequence'] = res['sequence'].astype(str)
+            res['protein_accessions'] = res['protein_accessions'].str.split(";")
+            res['protein_start_positions'] = res['protein_start_positions'].apply(
+                self.__split_start_or_end).to_list()
+            res['protein_end_positions'] = res['protein_end_positions'].apply(
+                self.__split_start_or_end).to_list()
+            res['protein_global_qvalue'] = res['protein_global_qvalue'].astype(float)
+            res['unique'] = res['unique'].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype('Int32')
+            res['modifications'] = res['modifications'].apply(lambda x: Feature._generate_modification_list(x))
+            res['retention_time'] = res['retention_time'].astype(float)
+            res['charge'] = res['charge'].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype('Int32')
+            res['exp_mass_to_charge'] = res['exp_mass_to_charge'].astype(float)
+            res['calc_mass_to_charge'] = res['calc_mass_to_charge'].astype(float)
+            res['posterior_error_probability'] = res['posterior_error_probability'].astype(float)
 
-        res['is_decoy'] = res['is_decoy'].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype('Int32')
+            res['is_decoy'] = res['is_decoy'].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype('Int32')
 
-        res.loc[:, "num_peaks"] = None
-        res.loc[:, "mz_array"] = None
-        res.loc[:, "intensity_array"] = None
+            res.loc[:, "num_peaks"] = None
+            res.loc[:, "mz_array"] = None
+            res.loc[:, "intensity_array"] = None
 
-        res.loc[:, "gene_accessions"] = None
-        res.loc[:, "gene_names"] = None
+            res.loc[:, "gene_accessions"] = None
+            res.loc[:, "gene_names"] = None
 
-        return pa.Table.from_pandas(res, schema=psm._create_schema())
+            return pa.Table.from_pandas(res, schema=Psm._create_schema())

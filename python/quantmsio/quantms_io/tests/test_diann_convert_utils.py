@@ -1,11 +1,55 @@
+import os
 from unittest import TestCase
 
+import click
 import pandas as pd
+from click.testing import CliRunner
+
+from quantms_io.commands.diann_convert_command import diann_convert_to_parquet
 from quantms_io.core.diann_convert import get_exp_design_dfs, find_modification, generate_scan_number, \
-    handle_protein_map, mtd_mod_info, DiaNNConvert
+    handle_protein_map, DiaNNConvert
 import time
 
+from quantms_io.core.project import create_uuid_filename
+
+
 class Test(TestCase):
+
+
+    def test_all_required_arguments(self):
+        st = time.time()
+
+        # Initialize input arguments
+        report_path = "/Users/yperez/work/quantms-data/PXD037340.2/diann_report.tsv"
+        design_file = "/Users/yperez/work/quantms-data/PXD037340.2/PXD037340-DIA.sdrf_openms_design.tsv"
+        fasta_path = "/Users/yperez/work/multiomics-configs/databases/Homo-sapiens-uniprot-reviewed-contaminants-202210.fasta"
+        modifications = ["Carbamidomethyl (C)", "Oxidation (M)"]
+        pg_path = "/Users/yperez/work/quantms-data/PXD037340.2/diann_report.pg_matrix.tsv"
+        pr_path = "/Users/yperez/work/quantms-data/PXD037340.2/diann_report.pr_matrix.tsv"
+        qvalue_threshold = 0.01
+        mzml_info_folder = "/Users/yperez/work/quantms-data/PXD037340.2/mzmlstatistics"
+        sdrf_path = "/Users/yperez/work/quantms-data/PXD037340.2/PXD037340-DIA.sdrf.tsv"
+        output_folder = "/Users/yperez/work/quantms-data/PXD037340.2/"
+        output_prefix_file = "PXD037340.2"
+        chunksize = 100000
+
+        # Invoke the function
+        # Assert that the feature and psm files are generated in the specified output folder
+        feature_output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, '.feature.parquet')
+        psm_output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, '.psm.parquet')
+
+        DiaNN = DiaNNConvert()
+
+        DiaNN.generate_feature_file(report_path, design_file, fasta_path, modifications, pg_path, pr_path,
+                                    qvalue_threshold, mzml_info_folder, sdrf_path, feature_output_path, chunksize)
+        DiaNN.generate_psm_file(report_path, design_file, fasta_path, modifications, pg_path, qvalue_threshold,
+                                mzml_info_folder, psm_output_path, chunksize)
+
+        et = time.time()
+
+        # get the execution time
+        elapsed_time = et - st
+        print('Execution time:', elapsed_time, 'seconds')
 
     def test_read_experimental_design_file(self):
         # Measure the time to read the file
