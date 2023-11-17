@@ -31,7 +31,7 @@ class Test(TestCase):
         sdrf_path = "/Users/yperez/work/quantms-data/PXD037340.2/PXD037340-DIA.sdrf.tsv"
         output_folder = "/Users/yperez/work/quantms-data/PXD037340.2/"
         output_prefix_file = "PXD037340.2"
-        chunksize = 1000000
+        chunksize = 3000000
 
         # Invoke the function
         # Assert that the feature and psm files are generated in the specified output folder
