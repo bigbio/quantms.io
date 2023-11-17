@@ -509,8 +509,8 @@ class FeatureInMemory:
             )
         return msstats_in
 
-    def __map_rt_or_exp_mass(self,row,intensity_map,intensity,label=None,exp_mass=None):
-        row = [str(v)for v in row.tolist()]
+    def __map_rt_or_exp_mass(self, row, intensity_map, intensity, label=None, exp_mass=None):
+        row = list(map(str, row.tolist()))
         key = ":_:".join(row)
         if key in intensity_map:
             if abs(intensity_map[key]["intensity"] - np.float64(intensity)) < 0.1:
@@ -592,16 +592,9 @@ class FeatureInMemory:
                     axis=1,
                 )
         peptide_score_name = self._score_names["peptide_score"]
-        msstats_in.loc[:, "id_scores"] = msstats_in[
-            ["global_qvalue", "posterior_error_probability"]
-        ].apply(
-            lambda row: peptide_score_name
-            + ":"
-            + str(row["global_qvalue"])
-            + ","
-            + "Best PSM PEP:"
-            + str(row["posterior_error_probability"]),
-            axis=1,
+        msstats_in["id_scores"] = (
+            peptide_score_name + ":" + msstats_in["global_qvalue"].astype(str) + ","
+            + "Best PSM PEP:" + msstats_in["posterior_error_probability"].astype(str)
         )
         return msstats_in
 
