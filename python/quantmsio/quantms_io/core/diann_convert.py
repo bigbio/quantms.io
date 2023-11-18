@@ -537,7 +537,8 @@ class DiaNNConvert:
                 target.rename(columns={"Retention_Time": "RT.Start", "SpectrumID": "opt_global_spectrum_reference",
                                        "Exp_Mass_To_Charge": "exp_mass_to_charge"}, inplace=True)
                 # TODO seconds returned from precursor.getRT()
-                target.loc[:, "RT.Start"] = target.apply(lambda x: x["RT.Start"] / 60, axis=1)
+                target["RT.Start"] = target["RT.Start"] / 60
+                #target.loc[:, "RT.Start"] = target.apply(lambda x: x["RT.Start"] / 60, axis=1)
                 out_mztab_psh = pd.concat(
                     [out_mztab_psh, pd.merge_asof(group, target, on="RT.Start", direction="nearest")])
 
