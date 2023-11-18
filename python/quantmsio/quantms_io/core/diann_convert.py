@@ -32,9 +32,9 @@ def get_exp_design_dfs(exp_design_file):
 
         s_table = [i.replace("\n", "").split("\t") for i in data[empty_row + 1:]][1:]
         s_header = data[empty_row + 1].replace("\n", "").split("\t")
-        s_data_frame = pd.DataFrame(s_table, columns=s_header)
+        s_DataFrame = pd.DataFrame(s_table, columns=s_header)
 
-    return s_data_frame, f_table
+    return s_DataFrame, f_table
 
 
 def _true_stem(x):
@@ -216,10 +216,10 @@ class DiaNNConvert:
             "end": "protein_end_positions",
             "spectra_ref": "reference_file_name",
             "opt_global_q-value": "global_qvalue",
-            "decoy_peptide": "is_decoy"
+            "opt_global_cv_MS:1002217_decoy_peptide": "is_decoy"
         }
 
-    def get_uniq_and_index_and_reference_map(self, report_path: str, chunksize: int):
+    def get_uniq_and_index_and_reference_map(self, report_path, chunksize: int):
         use_cols = ["Modified.Sequence", "Precursor.Id", "File.Name", "Protein.Ids", "Global.PG.Q.Value", "Q.Value"]
         reports = pd.read_csv(report_path, sep="\t", header=0, usecols=use_cols, chunksize=chunksize)
         uniq_set = set()
@@ -255,12 +255,12 @@ class DiaNNConvert:
             .reset_index()
             .rename(
                 columns={
-                    "Q.Value": "best_search_engine_score",
+                    "Q.Value": "best_search_engine_score[1]",
                 }
             )
             )
             aggtable.index = aggtable["Precursor.Id"]
-            pr_dict = aggtable.to_dict()['best_search_engine_score']
+            pr_dict = aggtable.to_dict()['best_search_engine_score[1]']
             peptide_best_score_dict = self.__update_dict(peptide_best_score_dict, pr_dict, 0)
 
         uniq_masses_map = {k: AASequence.fromString(k).getMonoWeight() for k in uniq_set}
@@ -291,11 +291,11 @@ class DiaNNConvert:
         The main_report_df method is a part of the DiaNNConvert class and is used to process a report file and filter
         the data based on a given q-value threshold. It returns a pandas DataFrame containing the filtered data.
 
-        :param report_path The path to the report file.
-        :param qvalue_threshold The q-value threshold for filtering the data.
-        :param chunksize The number of rows to read from the report file at a time.
-        :param uniq_masses A dictionary containing unique masses for modified sequences.
-        :return (pd.DataFrame) A pandas DataFrame containing the filtered data.
+        :param report_path (str): The path to the report file.
+        :param qvalue_threshold (float): The q-value threshold for filtering the data.
+        :param chunksize (int): The number of rows to read from the report file at a time.
+        :param uniq_masses (dict): A dictionary containing unique masses for modified sequences.
+        :return (pd.DataFrame): A pandas DataFrame containing the filtered data.
         """
 
         remain_cols = [
@@ -322,12 +322,14 @@ class DiaNNConvert:
         reports = pd.read_csv(report_path, sep="\t", header=0, usecols=remain_cols, chunksize=chunksize)
 
         for report in reports:
+            st = time.time()
             report = report[report["Q.Value"] < qvalue_threshold]
             mass_vector = report["Modified.Sequence"].map(uniq_masses)
             report["Calculate.Precursor.Mz"] = (mass_vector + (PROTON_MASS_U * report["Precursor.Charge"])) / report[
                 "Precursor.Charge"
             ]
             # report["precursor.Index"] = report["Precursor.Id"].map(precursor_index_map)
+            print_estimated_time(st, "{} create report chunksize".format(chunksize))
             yield report
 
     def get_msstats_in(self, report, unique_reference_map, s_data_frame, f_table):
@@ -342,8 +344,8 @@ class DiaNNConvert:
         out_msstats = report[msstats_columns_keep]
         out_msstats.columns = ["ProteinName", "PeptideSequence", "PrecursorCharge", "Intensity", "Reference", "Run"]
         out_msstats = out_msstats[out_msstats["Intensity"] != 0]
-        out_msstats["PeptideSequence"] = out_msstats["PeptideSequence"].map(
-            lambda x: AASequence.fromString(x).toString())
+        out_msstats.loc[:, "PeptideSequence"] = out_msstats.apply(
+            lambda x: AASequence.fromString(x["PeptideSequence"]).toString(), axis=1)
         out_msstats["FragmentIon"] = "NA"
         out_msstats["ProductCharge"] = "0"
         out_msstats["IsotopeLabelType"] = "L"
@@ -412,12 +414,12 @@ class DiaNNConvert:
             lambda x: x["Protein.Ids"] if x["opt_global_result_type"] == "indistinguishable_protein_group" else "null",
             axis=1,
         )
-        out_mztab_prh[["modifiedSequence", "best_search_engine_score"]] = out_mztab_prh.apply(
+        out_mztab_prh[["modifiedSequence", "best_search_engine_score[1]"]] = out_mztab_prh.apply(
             lambda x: best_score_dict.get(x["Protein.Ids"], (np.nan, np.nan)), axis=1, result_type="expand"
         )
-        prt_score = out_mztab_prh[["ambiguity_members", "best_search_engine_score"]].groupby(
+        prt_score = out_mztab_prh[["ambiguity_members", "best_search_engine_score[1]"]].groupby(
             "ambiguity_members").min()
-        protein_map = prt_score.to_dict()["best_search_engine_score"]
+        protein_map = prt_score.to_dict()["best_search_engine_score[1]"]
 
         return protein_map
 
@@ -445,37 +447,37 @@ class DiaNNConvert:
             columns={
                 "Stripped.Sequence": "sequence",
                 "Protein.Ids": "accession",
-                "Modified.Sequence": "peptidoform_sequence",
+                "Modified.Sequence": "opt_global_cv_MS:1000889_peptidoform_sequence",
                 "Precursor.Charge": "charge",
             },
             inplace=True,
         )
-        out_matab_peh.loc[:, "peptidoform_sequence"] = out_matab_peh.apply(
-            lambda x: AASequence.fromString(x["peptidoform_sequence"]).toString(), axis=1
+        out_matab_peh.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = out_matab_peh.apply(
+            lambda x: AASequence.fromString(x["opt_global_cv_MS:1000889_peptidoform_sequence"]).toString(), axis=1
         )
 
-        out_matab_peh["best_search_engine_score"] = out_matab_peh["Precursor.Id"].map(bset_score_map)
+        out_matab_peh["best_search_engine_score[1]"] = out_matab_peh["Precursor.Id"].map(bset_score_map)
         out_matab_peh.fillna("null", inplace=True)
         out_matab_peh.loc[:, "scan_number"] = None
         out_matab_peh.loc[:, "spectra_ref"] = None
         pep = out_matab_peh[
-            ['charge', 'peptidoform_sequence', 'best_search_engine_score', "scan_number",
+            ['charge', 'opt_global_cv_MS:1000889_peptidoform_sequence', 'best_search_engine_score[1]', "scan_number",
              "spectra_ref"]]
 
         pep_msg = pep.iloc[
             pep.groupby(
-                ["peptidoform_sequence", "charge"]
-            ).apply(lambda row: row["best_search_engine_score"].idxmin())
+                ["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"]
+            ).apply(lambda row: row["best_search_engine_score[1]"].idxmin())
         ]
         pep_msg = pep_msg.set_index(
-            ["peptidoform_sequence", "charge"]
+            ["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"]
         )
 
         pep_msg.loc[:, "pep_msg"] = pep_msg[
-            ["best_search_engine_score", "spectra_ref", "scan_number"]
+            ["best_search_engine_score[1]", "spectra_ref", "scan_number"]
         ].apply(
             lambda row: [
-                row["best_search_engine_score"],
+                row["best_search_engine_score[1]"],
                 row["spectra_ref"],
                 row["scan_number"],
             ],
@@ -487,7 +489,7 @@ class DiaNNConvert:
         return map_dict
 
     def extract_from_psm_to_pep_msg(self, report_path: str, qvalue_threshold: float, folder: str,
-                                    uniq_masses: Dict, index_ref: pd.DataFrame, map_dict: Dict, chunksize: int):
+                                    uniq_masses: Dict, index_ref: Dict, map_dict: Dict, psm_output_path:str, chunksize: int):
         """
         The extract_from_psm_to_pep_msg method is part of the DiaNNConvert class and is responsible for extracting
         relevant information from a PSM (Peptide-Spectrum Match) report and converting it into a peptide message format.
@@ -500,7 +502,6 @@ class DiaNNConvert:
         :param map_dict: A dictionary used for mapping values.
         :param chunksize: The number of rows to read at a time from the PSM report file.
         :return: A pandas DataFrame containing the extracted information.
-
         """
 
         def __find_info(folder, n):
@@ -516,8 +517,9 @@ class DiaNNConvert:
         psm_unique_keys = []
         spectra_count_dict = Counter()
 
+        pqwriter = None
         for report in self.main_report_df(report_path, qvalue_threshold, chunksize, uniq_masses):
-            st = time.time()
+
             report = report.merge(index_ref[["ms_run", "Run", "study_variable"]], on="Run", validate="many_to_one")
 
             out_mztab_psh = pd.DataFrame()
@@ -535,7 +537,8 @@ class DiaNNConvert:
                 target.rename(columns={"Retention_Time": "RT.Start", "SpectrumID": "opt_global_spectrum_reference",
                                        "Exp_Mass_To_Charge": "exp_mass_to_charge"}, inplace=True)
                 # TODO seconds returned from precursor.getRT()
-                target.loc[:, "RT.Start"] = target.apply(lambda x: x["RT.Start"] / 60, axis=1)
+                target["RT.Start"] = target["RT.Start"] / 60
+                #target.loc[:, "RT.Start"] = target.apply(lambda x: x["RT.Start"] / 60, axis=1)
                 out_mztab_psh = pd.concat(
                     [out_mztab_psh, pd.merge_asof(group, target, on="RT.Start", direction="nearest")])
 
@@ -565,7 +568,7 @@ class DiaNNConvert:
                 "charge",
                 "calc_mass_to_charge",
                 "exp_mass_to_charge",
-                "peptidoform_sequence",
+                "opt_global_cv_MS:1000889_peptidoform_sequence",
                 "opt_global_SpecEValue_score",
                 "opt_global_q-value",
                 "opt_global_q-value_score",
@@ -573,7 +576,7 @@ class DiaNNConvert:
                 "ms_run",
             ]
 
-            out_mztab_psh.loc[:, "decoy_peptide"] = "0"
+            out_mztab_psh.loc[:, "opt_global_cv_MS:1002217_decoy_peptide"] = "0"
             out_mztab_psh.loc[:, "PSM_ID"] = out_mztab_psh.index
             out_mztab_psh.loc[:, "unique"] = out_mztab_psh.apply(lambda x: "0" if ";" in str(x["accession"]) else "1",
                                                                  axis=1, result_type="expand")
@@ -587,7 +590,7 @@ class DiaNNConvert:
             out_mztab_psh.loc[:, null_col] = "null"
 
             out_mztab_psh.loc[:, "modifications"] = out_mztab_psh.apply(
-                lambda x: find_modification(x["peptidoform_sequence"]), axis=1,
+                lambda x: find_modification(x["opt_global_cv_MS:1000889_peptidoform_sequence"]), axis=1,
                 result_type="expand"
             )
 
@@ -596,149 +599,34 @@ class DiaNNConvert:
                 result_type="expand"
             )
 
-            out_mztab_psh.loc[:, "peptidoform_sequence"] = out_mztab_psh.apply(
-                lambda x: AASequence.fromString(x["peptidoform_sequence"]).toString(),
+            out_mztab_psh.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = out_mztab_psh.apply(
+                lambda x: AASequence.fromString(x["opt_global_cv_MS:1000889_peptidoform_sequence"]).toString(),
                 axis=1,
                 result_type="expand",
             )
 
-            out_mztab_psh.loc[:, "PSH"] = "PSM"
-            index = out_mztab_psh.loc[:, "PSH"]
-            out_mztab_psh.drop(["PSH", "ms_run"], axis=1, inplace=True)
-            out_mztab_psh.insert(0, "PSH", index)
-            out_mztab_psh.fillna("null", inplace=True)
             new_cols = [col for col in out_mztab_psh.columns if not col.startswith("opt_")] + [
                 col for col in out_mztab_psh.columns if col.startswith("opt_")
             ]
             out_mztab_psh = out_mztab_psh[new_cols]
             out_mztab_psh.loc[:, 'scan_number'] = out_mztab_psh['spectra_ref'].apply(lambda x: generate_scan_number(x))
             out_mztab_psh['spectra_ref'] = out_mztab_psh['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
+            parquet_table = self.generate_psm_file(out_mztab_psh)
+            
+            if not pqwriter:
+                # create a parquet write object giving it an output file
+                pqwriter = pq.ParquetWriter(psm_output_path, parquet_table.schema)
+            pqwriter.write_table(parquet_table)
 
             spectra_count_dict = self.__get_spectra_count(out_mztab_psh, spectra_count_dict)
             map_dict, psm_unique_keys = self.__extract_from_psm_to_pep_msg(out_mztab_psh, map_dict, psm_unique_keys)
-
-            print_estimated_time(st, "{} create report chunksize".format(chunksize))
-
+        if pqwriter:
+            pqwriter.close()
         return map_dict, spectra_count_dict
-
-    def get_psm_chunk(self, report_path, qvalue_threshold, folder, uniq_masses, index_ref, chunksize):
-        def __find_info(folder, n):
-            files = list(Path(folder).glob(f"*{n}_mzml_info.tsv"))
-            # Check that it matches one and only one file
-            if not files:
-                raise ValueError(f"Could not find {n} info file in {dir}")
-            if len(files) > 1:
-                raise ValueError(f"Found multiple {n} info files in {dir}: {files}")
-
-            return files[0]
-
-        for report in self.main_report_df(report_path, qvalue_threshold, chunksize, uniq_masses):
-            report = report.merge(index_ref[["ms_run", "Run", "study_variable"]], on="Run", validate="many_to_one")
-
-            out_mztab_psh = pd.DataFrame()
-            for n, group in report.groupby(["Run"]):
-                if isinstance(n, tuple) and len(n) == 1:
-                    # This is here only to support versions of pandas where the groupby
-                    # key is a tuple.
-                    # related: https://github.com/pandas-dev/pandas/pull/51817
-                    n = n[0]
-
-                file = __find_info(folder, n)
-                target = pd.read_csv(file, sep="\t")
-                group.sort_values(by="RT.Start", inplace=True)
-                target = target[["Retention_Time", "SpectrumID", "Exp_Mass_To_Charge"]]
-                target.columns = ["RT.Start", "opt_global_spectrum_reference", "exp_mass_to_charge"]
-                # TODO seconds returned from precursor.getRT()
-                target.loc[:, "RT.Start"] = target.apply(lambda x: x["RT.Start"] / 60, axis=1)
-                out_mztab_psh = pd.concat(
-                    [out_mztab_psh, pd.merge_asof(group, target, on="RT.Start", direction="nearest")])
-
-            ## Score at PSM level: Q.Value
-            out_mztab_psh = out_mztab_psh[
-                [
-                    "Stripped.Sequence",
-                    "Protein.Ids",
-                    "Q.Value",
-                    "RT.Start",
-                    "Precursor.Charge",
-                    "Calculate.Precursor.Mz",
-                    "exp_mass_to_charge",
-                    "Modified.Sequence",
-                    "PEP",
-                    "Global.Q.Value",
-                    "Global.Q.Value",
-                    "opt_global_spectrum_reference",
-                    "ms_run",
-                ]
-            ]
-            out_mztab_psh.columns = [
-                "sequence",
-                "accession",
-                "search_engine_score[1]",
-                "retention_time",
-                "charge",
-                "calc_mass_to_charge",
-                "exp_mass_to_charge",
-                "peptidoform_sequence",
-                "opt_global_SpecEValue_score",
-                "opt_global_q-value",
-                "opt_global_q-value_score",
-                "opt_global_spectrum_reference",
-                "ms_run",
-            ]
-
-            out_mztab_psh.loc[:, "decoy_peptide"] = "0"
-            out_mztab_psh.loc[:, "PSM_ID"] = out_mztab_psh.index
-            out_mztab_psh.loc[:, "unique"] = out_mztab_psh.apply(
-                lambda x: "0" if ";" in str(x["accession"]) else "1", axis=1, result_type="expand"
-            )
-
-            null_col = [
-                "database_version",
-                "search_engine",
-                "pre",
-                "post",
-                "start",
-                "end",
-                "opt_global_feature_id",
-                "opt_global_map_index",
-            ]
-            for i in null_col:
-                out_mztab_psh.loc[:, i] = "null"
-
-            out_mztab_psh.loc[:, "modifications"] = out_mztab_psh.apply(
-                lambda x: find_modification(x["peptidoform_sequence"]), axis=1,
-                result_type="expand"
-            )
-
-            out_mztab_psh.loc[:, "spectra_ref"] = out_mztab_psh.apply(
-                lambda x: "ms_run[{}]:".format(x["ms_run"]) + x["opt_global_spectrum_reference"], axis=1,
-                result_type="expand"
-            )
-
-            out_mztab_psh.loc[:, "peptidoform_sequence"] = out_mztab_psh.apply(
-                lambda x: AASequence.fromString(x["peptidoform_sequence"]).toString(),
-                axis=1,
-                result_type="expand",
-            )
-
-            out_mztab_psh.loc[:, "PSH"] = "PSM"
-            index = out_mztab_psh.loc[:, "PSH"]
-            out_mztab_psh.drop(["PSH", "ms_run"], axis=1, inplace=True)
-            out_mztab_psh.insert(0, "PSH", index)
-            out_mztab_psh.fillna("null", inplace=True)
-            new_cols = [col for col in out_mztab_psh.columns if not col.startswith("opt_")] + [
-                col for col in out_mztab_psh.columns if col.startswith("opt_")
-            ]
-            out_mztab_psh = out_mztab_psh[new_cols]
-            out_mztab_psh.loc[:, 'scan_number'] = out_mztab_psh['spectra_ref'].apply(lambda x: generate_scan_number(x))
-            out_mztab_psh['spectra_ref'] = out_mztab_psh['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
-
-            yield out_mztab_psh
-
+    
     def __extract_from_psm_to_pep_msg(self, psm, map_dict, psm_unique_keys):
 
-        for key, df in psm.groupby(['peptidoform_sequence', 'charge']):
+        for key, df in psm.groupby(['opt_global_cv_MS:1000889_peptidoform_sequence', 'charge']):
             if key not in map_dict.keys():
                 map_dict[key] = [None, None, None]
                 psm_unique_keys.append(key)
@@ -790,9 +678,9 @@ class DiaNNConvert:
                 if len(map_dict[key]) == 7:
                     map_dict[key].append(None)
             if len(map_dict[key]) == 8:
-                if "decoy_peptide" in df.columns:
+                if "opt_global_cv_MS:1002217_decoy_peptide" in df.columns:
                     map_dict[key].append(
-                        df["decoy_peptide"].values[0]
+                        df["opt_global_cv_MS:1002217_decoy_peptide"].values[0]
                     )
                 else:
                     map_dict[key].append(None)
@@ -831,16 +719,15 @@ class DiaNNConvert:
 
         return map_dict, psm_unique_keys
 
-    @staticmethod
-    def __get_spectra_count(psm, counter):
+    def __get_spectra_count(self, psm, counter):
         """
         mzTab_path: mzTab file path
         psm_chunksize: the large of chunk
         return: a dict about peptide numbers
         """
         spectra_dict = (
-            psm[["peptidoform_sequence", "charge", "spectra_ref", ]]
-            .groupby(["peptidoform_sequence", "charge", "spectra_ref", ])
+            psm[["opt_global_cv_MS:1000889_peptidoform_sequence", "charge", "spectra_ref",]]
+            .groupby(["opt_global_cv_MS:1000889_peptidoform_sequence", "charge", "spectra_ref",])
             .size()
         )
         counter.update(spectra_dict.to_dict())
@@ -852,9 +739,9 @@ class DiaNNConvert:
         else:
             return reference, scan
 
-    def generate_feature_file(self, report_path: str, design_file: str, fasta_path: str, modifications: List,
+    def generate_feature_and_psm_file(self, report_path: str, design_file: str, fasta_path: str, modifications: List,
                               pg_path: str, pr_path: str, qvalue_threshold: float, mzml_info_folder: str,
-                              sdrf_path: str, output_path: str, chunksize: int):
+                              sdrf_path: str, output_path: str, psm_output_path,chunksize: int):
 
         st = time.time()
         s_data_frame, f_table = get_exp_design_dfs(design_file)
@@ -882,7 +769,7 @@ class DiaNNConvert:
         map_dict, spectra_count_dict = self.extract_from_psm_to_pep_msg(report_path,
                                                                         qvalue_threshold,
                                                                         mzml_info_folder, self.uniq_masses_map,
-                                                                        index_ref, map_dict, chunksize)
+                                                                        index_ref, map_dict, psm_output_path, chunksize)
         print_estimated_time(st, "extract_from_psm_to_pep_msg")
 
         schema = FeatureHandler()
@@ -931,61 +818,43 @@ class DiaNNConvert:
         if pqwriter:
             pqwriter.close()
 
-    def generate_psm_file(self, report_path: str, design_file: str, fasta_path: str, modifications: List, pg_path: str,
-                          qvalue_threshold: float, mzml_info_folder: str, output_path: str, chunksize: int):
+    def generate_psm_file(self,psm):
+        use_cols = [
+            "sequence",
+            "accession",
+            "start",
+            "end",
+            "unique",
+            "search_engine_score[1]",
+            "modifications",
+            "retention_time",
+            "charge",
+            "calc_mass_to_charge",
+            "exp_mass_to_charge",
+            "spectra_ref",
+            'scan_number',
+            "opt_global_q-value",
+            "opt_global_cv_MS:1002217_decoy_peptide"
+        ]
+        psm = psm[use_cols].copy()
+        psm.loc[:, 'protein_global_qvalue'] = psm['accession'].apply(
+            lambda x: handle_protein_map(self._protein_map, x))
+        psm.loc[:, 'peptidoform'] = psm[['sequence', 'modifications']].apply(
+            lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'], row['modifications'],
+                                                                    self._modifications), axis=1)
+        psm.loc[:, 'id_scores'] = psm['search_engine_score[1]'].apply(lambda x: [
+            f"protein-level q-value: {x}",
+            f"Posterior error probability: ",
+        ])
+        psm.drop(["search_engine_score[1]"], inplace=True, axis=1)
 
-        _, f_table = get_exp_design_dfs(design_file)
-        _, index_ref = self.generete_fasta_msg(fasta_path, f_table)
-        if not self.uniq_masses_map:
-            self.uniq_masses_map, self.unique_reference_map, self.protein_best_score_dict, self.peptide_best_score_dict = self.get_uniq_and_index_and_reference_map(
-                report_path, chunksize=chunksize)
-        if not self._ms_runs:
-            self._ms_runs = self.get_ms_runs(index_ref)
-            self._modifications = get_modifications(modifications[0], modifications[1])
-            self._protein_map = self.get_protein_map(pg_path, self.protein_best_score_dict)
-        pqwriter = None
-        for psm in self.get_psm_chunk(report_path, qvalue_threshold, mzml_info_folder, self.uniq_masses_map, index_ref,
-                                      chunksize):
-            use_cols = [
-                "sequence",
-                "accession",
-                "start",
-                "end",
-                "unique",
-                "search_engine_score[1]",
-                "modifications",
-                "retention_time",
-                "charge",
-                "calc_mass_to_charge",
-                "exp_mass_to_charge",
-                "spectra_ref",
-                'scan_number',
-                "opt_global_q-value",
-                "decoy_peptide"
-            ]
-            psm = psm[use_cols].copy()
-            psm.loc[:, 'protein_global_qvalue'] = psm['accession'].apply(
-                lambda x: handle_protein_map(self._protein_map, x))
-            psm.loc[:, 'peptidoform'] = psm[['sequence', 'modifications']].apply(
-                lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'], row['modifications'],
-                                                                      self._modifications), axis=1)
-            psm.loc[:, 'id_scores'] = psm['search_engine_score[1]'].apply(lambda x: [
-                f"protein-level q-value: {x}",
-                f"Posterior error probability: ",
-            ])
-            psm.drop(["search_engine_score[1]"], inplace=True, axis=1)
+        psm.loc[:, "posterior_error_probability"] = None
+        psm.loc[:, "consensus_support"] = None
 
-            psm.loc[:, "posterior_error_probability"] = None
-            psm.loc[:, "consensus_support"] = None
+        psm.rename(columns=self.map_psm, inplace=True)
+        parquet_table = self.convert_psm_format_to_parquet(psm)
 
-            psm.rename(columns=self.map_psm, inplace=True)
-            parquet_table = self.convert_psm_format_to_parquet(psm)
-            if not pqwriter:
-                # create a parquet write object giving it an output file
-                pqwriter = pq.ParquetWriter(output_path, parquet_table.schema)
-            pqwriter.write_table(parquet_table)
-        if pqwriter:
-            pqwriter.close()
+        return parquet_table
 
     @staticmethod
     def __split_start_or_end(value):
