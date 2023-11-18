@@ -605,11 +605,6 @@ class DiaNNConvert:
                 result_type="expand",
             )
 
-            out_mztab_psh.loc[:, "PSH"] = "PSM"
-            index = out_mztab_psh.loc[:, "PSH"]
-            out_mztab_psh.drop(["PSH", "ms_run"], axis=1, inplace=True)
-            out_mztab_psh.insert(0, "PSH", index)
-            out_mztab_psh.fillna("null", inplace=True)
             new_cols = [col for col in out_mztab_psh.columns if not col.startswith("opt_")] + [
                 col for col in out_mztab_psh.columns if col.startswith("opt_")
             ]
