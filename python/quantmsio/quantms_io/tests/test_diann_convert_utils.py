@@ -31,7 +31,7 @@ class Test(TestCase):
         sdrf_path = "/Users/yperez/work/quantms-data/PXD037340.2/PXD037340-DIA.sdrf.tsv"
         output_folder = "/Users/yperez/work/quantms-data/PXD037340.2/"
         output_prefix_file = "PXD037340.2"
-        chunksize = 3000000
+        chunksize = 100000
 
         # Invoke the function
         # Assert that the feature and psm files are generated in the specified output folder
@@ -40,11 +40,11 @@ class Test(TestCase):
 
         DiaNN = DiaNNConvert()
 
-        DiaNN.generate_feature_file(report_path, design_file, fasta_path, modifications, pg_path, pr_path,
-                                    qvalue_threshold, mzml_info_folder, sdrf_path, feature_output_path, chunksize)
-        DiaNN.generate_psm_file(report_path, design_file, fasta_path, modifications, pg_path, qvalue_threshold,
-                                mzml_info_folder, psm_output_path, chunksize)
-
+        DiaNN.generate_feature_and_psm_file(report_path=report_path, design_file=design_file, fasta_path=fasta_path,
+                                            modifications=modifications, pg_path=pg_path, pr_path=pr_path,
+                                            qvalue_threshold=qvalue_threshold, mzml_info_folder=mzml_info_folder,
+                                            sdrf_path=sdrf_path, output_path=feature_output_path,
+                                            psm_output_path=psm_output_path, chunksize=chunksize)
         et = time.time()
 
         # get the execution time

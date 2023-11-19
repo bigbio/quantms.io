@@ -101,7 +101,11 @@ def diann_convert_to_parquet(ctx,report_path:str,design_file:str,fasta_path:str,
 
     DiaNN = DiaNNConvert()
 
-    DiaNN.generate_feature_and_psm_file(report_path,design_file,fasta_path,modifications,pg_path,pr_path,qvalue_threshold,mzml_info_folder,sdrf_path,feature_output_path,psm_output_path,chunksize)
+    DiaNN.generate_feature_and_psm_file(report_path=report_path,design_file=design_file,fasta_path=fasta_path,
+                                        modifications=modifications,pg_path=pg_path,pr_path=pr_path,
+                                        qvalue_threshold=qvalue_threshold,mzml_info_folder=mzml_info_folder,
+                                        sdrf_path=sdrf_path,output_path=feature_output_path,
+                                        psm_output_path=psm_output_path,chunksize=chunksize)
     #DiaNN.generate_psm_file(report_path,design_file,fasta_path,modifications,pg_path,qvalue_threshold,mzml_info_folder,psm_output_path,chunksize)
 
 cli.add_command(diann_convert_to_parquet)
