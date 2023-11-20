@@ -425,12 +425,8 @@ class DiaNNConvert:
         return protein_map
 
     def extract_dict_from_pep(self, pr_path: str, bset_score_map: dict) -> dict:
-        pep_usecols = ['Protein.Group',
+        pep_usecols = [
                        'Protein.Ids',
-                       'Protein.Names',
-                       'Genes',
-                       'First.Protein.Description',
-                       'Proteotypic',
                        'Stripped.Sequence',
                        'Modified.Sequence',
                        'Precursor.Charge',
@@ -440,10 +436,6 @@ class DiaNNConvert:
             sep="\t",
             header=0,
             usecols=pep_usecols)
-
-        out_matab_peh.drop(
-            ["Protein.Group", "Protein.Names", "First.Protein.Description", "Proteotypic"], axis=1, inplace=True
-        )
         out_matab_peh.rename(
             columns={
                 "Stripped.Sequence": "sequence",
@@ -578,7 +570,6 @@ class DiaNNConvert:
             ]
 
             out_mztab_psh.loc[:, "opt_global_cv_MS:1002217_decoy_peptide"] = "0"
-            out_mztab_psh.loc[:, "PSM_ID"] = out_mztab_psh.index
             out_mztab_psh.loc[:, "unique"] = out_mztab_psh.apply(lambda x: "0" if ";" in str(x["accession"]) else "1",
                                                                  axis=1, result_type="expand")
 
