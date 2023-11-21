@@ -391,29 +391,33 @@ class FeatureInMemory:
                 df['spectra_ref'] = df['spectra_ref'].swifter.apply(lambda x: self._ms_runs[x.split(":")[0]])
                 if pd.isna(map_dict[key][1]):
                     if 'opt_global_q-value_score' in df.columns:
-                        map_dict[key][0] = df.iloc[df['opt_global_q-value_score'].idxmin()]['opt_global_q-value_score']
-                        map_dict[key][1] = df.iloc[df['opt_global_q-value_score'].idxmin()]['spectra_ref']
-                        map_dict[key][2] = df.iloc[df['opt_global_q-value_score'].idxmin()]['scan_number']
+                        temp_df = df.iloc[df['opt_global_q-value_score'].idxmin()]
+                        map_dict[key][0] = temp_df['opt_global_q-value_score']
+                        map_dict[key][1] = temp_df['spectra_ref']
+                        map_dict[key][2] = temp_df['scan_number']
                     elif 'search_engine_score[1]' in df.columns:
-                        map_dict[key][0] = df.iloc[df['search_engine_score[1]'].idxmin()]['search_engine_score[1]']
-                        map_dict[key][1] = df.iloc[df['search_engine_score[1]'].idxmin()]['spectra_ref']
-                        map_dict[key][2] = df.iloc[df['search_engine_score[1]'].idxmin()]['scan_number']
+                        temp_df = df.iloc[df['search_engine_score[1]'].idxmin()]
+                        map_dict[key][0] = temp_df['search_engine_score[1]']
+                        map_dict[key][1] = temp_df['spectra_ref']
+                        map_dict[key][2] = temp_df['scan_number']
                     else:
                         raise Exception(
                             "The psm table don't have opt_global_q-value_score or search_engine_score[1] columns")
                 elif key in psm_unique_keys:
                     if 'opt_global_q-value_score' in df.columns:
-                        best_qvalue = df.iloc[df['opt_global_q-value_score'].idxmin()]['opt_global_q-value_score']
+                        temp_df = df.iloc[df['opt_global_q-value_score'].idxmin()]
+                        best_qvalue = temp_df['opt_global_q-value_score']
                         if float(map_dict[key][0]) > float(best_qvalue):
                             map_dict[key][0] = best_qvalue
-                            map_dict[key][1] = df.iloc[df['opt_global_q-value_score'].idxmin()]['spectra_ref']
-                            map_dict[key][2] = df.iloc[df['opt_global_q-value_score'].idxmin()]['scan_number']
+                            map_dict[key][1] = temp_df['spectra_ref']
+                            map_dict[key][2] = temp_df['scan_number']
                     elif 'search_engine_score[1]' in df.columns:
-                        best_qvalue = df.iloc[df['search_engine_score[1]'].idxmin()]['search_engine_score[1]']
+                        temp_df = df.iloc[df['search_engine_score[1]'].idxmin()]
+                        best_qvalue = temp_df['search_engine_score[1]']
                         if float(map_dict[key][0]) > float(best_qvalue):
                             map_dict[key][0] = best_qvalue
-                            map_dict[key][1] = df.iloc[df['search_engine_score[1]'].idxmin()]['spectra_ref']
-                            map_dict[key][2] = df.iloc[df['search_engine_score[1]'].idxmin()]['scan_number']
+                            map_dict[key][1] = temp_df['spectra_ref']
+                            map_dict[key][2] = temp_df['scan_number']
                 if len(map_dict[key]) == 3:
                     map_dict[key].append(df['start'].values[0])
                     map_dict[key].append(df['end'].values[0])
