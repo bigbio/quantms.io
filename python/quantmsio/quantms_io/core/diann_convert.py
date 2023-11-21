@@ -17,7 +17,7 @@ from quantms_io.core.psm import PSMHandler
 from collections import Counter
 from quantms_io.utils.thread import MyThread
 from typing import Any, List, Tuple, Dict, Set
-
+import swifter
 MODIFICATION_PATTERN = re.compile(r"\((.*?)\)")
 
 
@@ -445,9 +445,8 @@ class DiaNNConvert:
             },
             inplace=True,
         )
-        out_matab_peh.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = out_matab_peh.apply(
-            lambda x: AASequence.fromString(x["opt_global_cv_MS:1000889_peptidoform_sequence"]).toString(), axis=1
-        )
+        out_matab_peh["opt_global_cv_MS:1000889_peptidoform_sequence"] = out_matab_peh["opt_global_cv_MS:1000889_peptidoform_sequence"].apply(
+            lambda x: AASequence.fromString(x).toString())
 
         out_matab_peh["best_search_engine_score[1]"] = out_matab_peh["Precursor.Id"].map(bset_score_map)
         out_matab_peh.fillna("null", inplace=True)
@@ -570,8 +569,8 @@ class DiaNNConvert:
             ]
 
             out_mztab_psh.loc[:, "opt_global_cv_MS:1002217_decoy_peptide"] = "0"
-            out_mztab_psh.loc[:, "unique"] = out_mztab_psh.apply(lambda x: "0" if ";" in str(x["accession"]) else "1",
-                                                                 axis=1, result_type="expand")
+            out_mztab_psh.reset_index(drop=True,inplace=True)
+            out_mztab_psh.loc[:, "unique"] = out_mztab_psh["accession"].swifter.apply(lambda x: "0" if ";" in str(x) else "1")
 
             null_col = [
                 "start",
@@ -581,28 +580,21 @@ class DiaNNConvert:
             ]
             out_mztab_psh.loc[:, null_col] = "null"
 
-            out_mztab_psh.loc[:, "modifications"] = out_mztab_psh.apply(
-                lambda x: find_modification(x["opt_global_cv_MS:1000889_peptidoform_sequence"]), axis=1,
-                result_type="expand"
+            out_mztab_psh.loc[:, "modifications"] = out_mztab_psh["opt_global_cv_MS:1000889_peptidoform_sequence"].swifter.apply(
+                lambda x: find_modification(x)
             )
-
-            out_mztab_psh.loc[:, "spectra_ref"] = out_mztab_psh.apply(
-                lambda x: "ms_run[{}]:".format(x["ms_run"]) + x["opt_global_spectrum_reference"], axis=1,
-                result_type="expand"
-            )
-
-            out_mztab_psh.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = out_mztab_psh.apply(
-                lambda x: AASequence.fromString(x["opt_global_cv_MS:1000889_peptidoform_sequence"]).toString(),
-                axis=1,
-                result_type="expand",
+            out_mztab_psh.loc[:, "spectra_ref"] = 'ms_run[' + out_mztab_psh["ms_run"].astype(str).values + ']:' + out_mztab_psh["opt_global_spectrum_reference"].values
+     
+            out_mztab_psh.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = out_mztab_psh["opt_global_cv_MS:1000889_peptidoform_sequence"].apply(
+                lambda x: AASequence.fromString(x).toString()
             )
 
             new_cols = [col for col in out_mztab_psh.columns if not col.startswith("opt_")] + [
                 col for col in out_mztab_psh.columns if col.startswith("opt_")
             ]
             out_mztab_psh = out_mztab_psh[new_cols]
-            out_mztab_psh.loc[:, 'scan_number'] = out_mztab_psh['spectra_ref'].apply(lambda x: generate_scan_number(x))
-            out_mztab_psh['spectra_ref'] = out_mztab_psh['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
+            out_mztab_psh.loc[:, 'scan_number'] = out_mztab_psh['spectra_ref'].swifter.apply(lambda x: generate_scan_number(x))
+            out_mztab_psh['spectra_ref'] = out_mztab_psh['spectra_ref'].swifter.apply(lambda x: self._ms_runs[x.split(":")[0]])
             parquet_table = self.generate_psm_file(out_mztab_psh)
             
             if not pqwriter:
@@ -684,30 +676,25 @@ class DiaNNConvert:
                     cals = df[
                         (df["spectra_ref"] == map_dict[key][1])
                         & (df["scan_number"] == map_dict[key][2])
-                        ]["calc_mass_to_charge"].values
+                        ]
+                    
                     if len(cals) == 0:
                         map_dict[key].append(None)
                         map_dict[key].append(None)
                     else:
-                        map_dict[key].append(cals[0])
+                        map_dict[key].append(cals["calc_mass_to_charge"].values[0])
                         map_dict[key].append(
-                            df[
-                                (df["spectra_ref"] == map_dict[key][1])
-                                & (df["scan_number"] == map_dict[key][2])
-                                ]["exp_mass_to_charge"].values[0]
+                            cals["exp_mass_to_charge"].values[0]
                         )
             elif map_dict[key][-1] == None:
                 if map_dict[key][1] in df["spectra_ref"].values:
                     cals = df[
                         (df["spectra_ref"] == map_dict[key][1])
                         & (df["scan_number"] == map_dict[key][2])
-                        ]["calc_mass_to_charge"].values
+                        ]
                     if len(cals) != 0:
-                        map_dict[key][-2] = cals[0]
-                        map_dict[key][-1] = df[
-                            (df["spectra_ref"] == map_dict[key][1])
-                            & (df["scan_number"] == map_dict[key][2])
-                            ]["exp_mass_to_charge"].values[0]
+                        map_dict[key][-2] = cals["calc_mass_to_charge"].values[0]
+                        map_dict[key][-1] = cals["exp_mass_to_charge"].values[0]
 
         return map_dict, psm_unique_keys
 
@@ -771,10 +758,10 @@ class DiaNNConvert:
         pqwriter = None
         for report in self.main_report_df(report_path, qvalue_threshold, chunksize, self.uniq_masses_map):
             msstats_in = self.get_msstats_in(report, self.unique_reference_map, s_data_frame, f_table)
-            msstats_in['Reference'] = msstats_in['Reference'].apply(lambda x: x.split(".")[0])
-            msstats_in.loc[:, 'protein_global_qvalue'] = msstats_in['ProteinName'].apply(
+            msstats_in['Reference'] = msstats_in['Reference'].swifter.apply(lambda x: x.split(".")[0])
+            msstats_in.loc[:, 'protein_global_qvalue'] = msstats_in['ProteinName'].swifter.apply(
                 lambda x: handle_protein_map(self._protein_map, x))
-            msstats_in.loc[:, 'sequence'] = msstats_in['PeptideSequence'].apply(lambda x: clean_peptidoform_sequence(x))
+            msstats_in.loc[:, 'sequence'] = msstats_in['PeptideSequence'].swifter.apply(lambda x: clean_peptidoform_sequence(x))
 
             no_lfq_usecols = [
                 col
@@ -789,13 +776,13 @@ class DiaNNConvert:
             msstats_in = msstats_in[self._lfq_msstats_usecols]
 
             msstats_in = feature._map_msstats_in(msstats_in, map_dict, spectra_count_dict)
-            msstats_in.loc[:, 'peptidoform'] = msstats_in[['sequence', 'modifications']].apply(
+            msstats_in.loc[:, 'peptidoform'] = msstats_in[['sequence', 'modifications']].swifter.apply(
                 lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'], row['modifications'],
                                                                       self._modifications), axis=1)
             msstats_in.drop(['PeptideSequence'], inplace=True, axis=1)
             msstats_in[["best_psm_reference_file_name", "best_psm_scan_number"]] = msstats_in[
                 ["best_psm_reference_file_name", "best_psm_scan_number", 'exp_mass_to_charge']
-            ].apply(
+            ].swifter.apply(
                 lambda row: self.__check_mbr_peptide(row["best_psm_reference_file_name"], row["best_psm_scan_number"],
                                                      row['exp_mass_to_charge']),
                 axis=1,
@@ -829,12 +816,12 @@ class DiaNNConvert:
             "opt_global_cv_MS:1002217_decoy_peptide"
         ]
         psm = psm[use_cols].copy()
-        psm.loc[:, 'protein_global_qvalue'] = psm['accession'].apply(
+        psm.loc[:, 'protein_global_qvalue'] = psm['accession'].swifter.apply(
             lambda x: handle_protein_map(self._protein_map, x))
-        psm.loc[:, 'peptidoform'] = psm[['sequence', 'modifications']].apply(
+        psm.loc[:, 'peptidoform'] = psm[['sequence', 'modifications']].swifter.apply(
             lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'], row['modifications'],
                                                                     self._modifications), axis=1)
-        psm.loc[:, 'id_scores'] = psm['search_engine_score[1]'].apply(lambda x: [
+        psm.loc[:, 'id_scores'] = psm['search_engine_score[1]'].swifter.apply(lambda x: [
             f"protein-level q-value: {x}",
             f"Posterior error probability: ",
         ])
@@ -874,13 +861,13 @@ class DiaNNConvert:
         feature._score_names = self._score_names
         res['sequence'] = res['sequence'].astype(str)
         res['protein_accessions'] = res['protein_accessions'].str.split(";")
-        res['protein_start_positions'] = res['protein_start_positions'].apply(
+        res['protein_start_positions'] = res['protein_start_positions'].swifter.apply(
             self.__split_start_or_end).to_list()
-        res['protein_end_positions'] = res['protein_end_positions'].apply(
+        res['protein_end_positions'] = res['protein_end_positions'].swifter.apply(
             self.__split_start_or_end).to_list()
         res['protein_global_qvalue'] = res['protein_global_qvalue'].astype(float)
         res['unique'] = res['unique'].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype('Int32')
-        res['modifications'] = res['modifications'].apply(lambda x: feature._generate_modification_list(x))
+        res['modifications'] = res['modifications'].swifter.apply(lambda x: feature._generate_modification_list(x))
         res['retention_time'] = res['retention_time'].astype(float)
         res['charge'] = res['charge'].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype('Int32')
         res['exp_mass_to_charge'] = res['exp_mass_to_charge'].astype(float)
