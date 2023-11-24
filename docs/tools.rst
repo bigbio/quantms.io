@@ -266,16 +266,12 @@ Example:
    python diann_convert_command.py diann_convert_to_parquet
       --report_path diann_report.tsv
       --design_file PXD037682.sdrf_openms_design.tsv
-      --fasta_path Homo-sapiens-uniprot-reviewed-contaminants-decoy-202210.fasta
       --modifications "Carbamidomethyl (C)" "null"
-      --pg_path diann_report.pg_matrix.tsv
-      --pr_path diann_report.pr_matrix.tsv
       --qvalue_threshold 0.05
       --mzml_info_folder mzml
-      --sdrf_path PXD037682.sdrf.tsv
       --output_folder result
       --output_prefix_file PXD037682
-      --chunksize 100000
+      --threads 60
 
 
 Compare psm.parquet

@@ -804,13 +804,13 @@ class FeatureInMemory:
         res['id_scores'] = res['id_scores'].str.split(',')
         res['sequence'] = res['sequence'].astype(str)
         res['protein_accessions'] = res['protein_accessions'].str.split(";")
-        res['protein_start_positions'] = res['protein_start_positions'].apply(
+        res['protein_start_positions'] = res['protein_start_positions'].swifter.apply(
             self.__split_start_or_end).to_list()
-        res['protein_end_positions'] = res['protein_end_positions'].apply(
+        res['protein_end_positions'] = res['protein_end_positions'].swifter.apply(
             self.__split_start_or_end).to_list()
         res['protein_global_qvalue'] = res['protein_global_qvalue'].astype(float)
         res['unique'] = res['unique'].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype('Int32')
-        res['modifications'] = res['modifications'].apply(lambda x: self._generate_modification_list(x))
+        res['modifications'] = res['modifications'].swifter.apply(lambda x: self._generate_modification_list(x))
         res['charge'] = res['charge'].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype('Int32')
         res['exp_mass_to_charge'] = res['exp_mass_to_charge'].astype(float)
         res['calc_mass_to_charge'] = res['calc_mass_to_charge'].astype(float)
