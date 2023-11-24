@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import re
 from quantms_io.core.mztab import fetch_modifications_from_mztab_line
-from quantms_io.utils.pride_utils import (get_peptidoform_proforma_version_in_mztab,print_estimated_time)
+from quantms_io.utils.pride_utils import (get_peptidoform_proforma_version_in_mztab)
 import pyarrow as pa
 import pyarrow.parquet as pq
 from quantms_io.core.feature import FeatureHandler
@@ -15,7 +15,6 @@ from quantms_io.core.feature_in_memory import FeatureInMemory
 from quantms_io.core.psm import PSMHandler
 
 import concurrent.futures
-from typing import Any, List, Tuple, Dict, Set
 import duckdb
 import swifter
 MODIFICATION_PATTERN = re.compile(r"\((.*?)\)")
@@ -235,11 +234,11 @@ class DiaNNConvert:
         
         return masses_map,modifications_map
     
-    def main_report_df(self,report_path: str, qvalue_threshold: float,folder: str,thread_num:int) -> pd.DataFrame:
+    def main_report_df(self, report_path: str, qvalue_threshold: float, mzml_info_folder: str, thread_num:int) -> pd.DataFrame:
         def intergrate_msg(n):
             nonlocal report
-            nonlocal folder
-            files = list(Path(folder).glob(f"*{n}_mzml_info.tsv"))
+            nonlocal mzml_info_folder
+            files = list(Path(mzml_info_folder).glob(f"*{n}_mzml_info.tsv"))
             if not files:
                 raise ValueError(f"Could not find {n} info file in {dir}")
             target = pd.read_csv(files[0],sep='\t',usecols=["Retention_Time", "SpectrumID", "Exp_Mass_To_Charge"])
@@ -256,7 +255,7 @@ class DiaNNConvert:
         peptide_map,best_ref_map = self.get_peptide_map_from_database(report_path)
         masses_map,modifications_map = self.get_masses_and_modifications_map(report_path)
         
-        info_list = [mzml.replace('_mzml_info.tsv','') for mzml in os.listdir(folder) if mzml.endswith('_mzml_info.tsv')]
+        info_list = [mzml.replace('_mzml_info.tsv','') for mzml in os.listdir(mzml_info_folder) if mzml.endswith('_mzml_info.tsv')]
         info_list =  [info_list[i:i+thread_num] for i in range(0,len(info_list),thread_num)]
         for refs in info_list:
             report = self.get_report_from_database(report_path,refs)
@@ -283,13 +282,17 @@ class DiaNNConvert:
             report = self.add_additional_msg(report)
             yield report
 
-    def generate_psm_and_feature_file(self,report_path: str, qvalue_threshold: float,folder: str,design_file:str,modifications:list,psm_output_path:str,feature_output_path:str,thread_num:int=60):
+    def generate_psm_and_feature_file(self, report_path: str,
+                                      qvalue_threshold: float, mzml_info_folder: str,
+                                      design_file: str, modifications: list,
+                                      psm_output_path: str, feature_output_path: str,
+                                      thread_num: int = 60):
         psm_pqwriter = None
         feature_pqwriter = None
 
         s_data_frame, f_table = get_exp_design_dfs(design_file)
         self._modifications = get_modifications(modifications[0], modifications[1])
-        for report in self.main_report_df(report_path, qvalue_threshold,folder,thread_num):
+        for report in self.main_report_df(report_path, qvalue_threshold, mzml_info_folder , thread_num):
             psm_pqwriter = self.generate_psm_file(report,psm_pqwriter,psm_output_path)
             feature_pqwriter = self.generate_feature_file(report,s_data_frame,f_table,feature_pqwriter,feature_output_path)
         if psm_pqwriter:

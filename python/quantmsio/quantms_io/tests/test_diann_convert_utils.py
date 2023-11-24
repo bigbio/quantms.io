@@ -1,13 +1,8 @@
 import os
 from unittest import TestCase
-
-import click
 import pandas as pd
-from click.testing import CliRunner
 
-from quantms_io.commands.diann_convert_command import diann_convert_to_parquet
-from quantms_io.core.diann_convert import get_exp_design_dfs, find_modification, generate_scan_number, \
-    handle_protein_map, DiaNNConvert
+from quantms_io.core.diann_convert import get_exp_design_dfs, find_modification, DiaNNConvert
 import time
 
 from quantms_io.core.project import create_uuid_filename
@@ -31,7 +26,7 @@ class Test(TestCase):
         sdrf_path = "/Users/yperez/work/quantms-data/PXD037340.2/PXD037340-DIA.sdrf.tsv"
         output_folder = "/Users/yperez/work/quantms-data/PXD037340.2/"
         output_prefix_file = "PXD037340.2"
-        chunksize = 100000
+
 
         # Invoke the function
         # Assert that the feature and psm files are generated in the specified output folder
@@ -40,11 +35,11 @@ class Test(TestCase):
 
         DiaNN = DiaNNConvert()
 
-        DiaNN.generate_feature_and_psm_file(report_path=report_path, design_file=design_file, fasta_path=fasta_path,
-                                            modifications=modifications, pg_path=pg_path, pr_path=pr_path,
-                                            qvalue_threshold=qvalue_threshold, mzml_info_folder=mzml_info_folder,
-                                            sdrf_path=sdrf_path, output_path=feature_output_path,
-                                            psm_output_path=psm_output_path, chunksize=chunksize)
+        DiaNN.generate_psm_and_feature_file(report_path=report_path, design_file=design_file,
+                                            modifications=modifications, qvalue_threshold=qvalue_threshold,
+                                            feature_output_path=feature_output_path,
+                                            psm_output_path=psm_output_path,
+                                            mzml_info_folder=mzml_info_folder, thread_num=600)
         et = time.time()
 
         # get the execution time
@@ -85,23 +80,4 @@ class Test(TestCase):
         # get the execution time
         elapsed_time = et - st
         print('Execution time:', elapsed_time, 'seconds')
-
-    def test_returns_scan_number_when_scan_in_spectra_ref(self):
-        spectra_ref = 'scan=123'
-        assert generate_scan_number(spectra_ref) == '123'
-
-    def test_returns_value_if_key_exists(self):
-        protein_map = {"key1": "value1", "key2": "value2"}
-        key = "key1"
-        result = handle_protein_map(protein_map, key)
-        assert result == "value1"
-
-    def test_update_dict_with_new_key_value_pairs(self):
-        map_dict = {'A': 1.2, 'B': 3.2}
-        temporary_dict = {'A': 2.8, 'C': 3.3}
-
-        converter = DiaNNConvert()
-        updated_dict = converter._DiaNNConvert__update_dict(map_dict, temporary_dict, 0)
-
-        assert updated_dict == {'A': 1.2, 'B': 3.2, 'C': 3.3}
 

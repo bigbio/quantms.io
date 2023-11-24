@@ -75,7 +75,7 @@ def diann_convert_to_parquet(ctx,report_path:str,design_file:str,modifications:L
     DiaNN.generate_psm_and_feature_file(
                                         report_path=report_path,
                                         qvalue_threshold=qvalue_threshold,
-                                        folder=mzml_info_folder,
+                                        mzml_info_folder=mzml_info_folder,
                                         design_file=design_file,
                                         modifications=modifications,
                                         psm_output_path=psm_output_path,
