@@ -1,4 +1,3 @@
-import os
 from unittest import TestCase
 import pandas as pd
 
@@ -17,6 +16,7 @@ class Test(TestCase):
         # Initialize input arguments
         report_path = "/Users/yperez/work/quantms-data/PXD037340.2/diann_report.tsv"
         design_file = "/Users/yperez/work/quantms-data/PXD037340.2/PXD037340-DIA.sdrf_openms_design.tsv"
+        sdrf_file   = "/Users/yperez/work/quantms-data/PXD037340.2/PXD037340-DIA.sdrf.tsv"
         modifications = ["Carbamidomethyl (C)", "Oxidation (M)"]
         qvalue_threshold = 0.01
         mzml_info_folder = "/Users/yperez/work/quantms-data/PXD037340.2/mzmlstatistics"
@@ -34,7 +34,7 @@ class Test(TestCase):
         DiaNN.generate_psm_and_feature_file(report_path=report_path, design_file=design_file,
                                             modifications=modifications, qvalue_threshold=qvalue_threshold,
                                             feature_output_path=feature_output_path,
-                                            psm_output_path=psm_output_path,
+                                            psm_output_path=psm_output_path, sdrf_path=sdrf_file,
                                             mzml_info_folder=mzml_info_folder, thread_num=600)
         et = time.time()
 

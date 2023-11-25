@@ -5,7 +5,6 @@ from quantms_io.utils.pride_utils import clean_peptidoform_sequence, get_petidof
 import numpy as np
 import pandas as pd
 import os
-import re
 import pyarrow as pa
 import pyarrow.parquet as pq
 from quantms_io.utils.constants import ITRAQ_CHANNEL, TMT_CHANNELS
@@ -213,7 +212,7 @@ class FeatureInMemory:
             mztab_path, "PSH", sep="\t", chunksize=psm_chunksize
         )
         for psm in psms:
-            psm["spectra_ref"] = psm["spectra_ref"].apply(
+            psm["spectra_ref"] = psm["spectra_ref"].swifter.apply(
                 lambda x: self._ms_runs[x.split(":")[0]]
             )
             if "opt_global_cv_MS:1000889_peptidoform_sequence" not in psm.columns:
@@ -329,7 +328,7 @@ class FeatureInMemory:
             modifications = get_modifications(mztab_path)
             pep.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = pep[
                 ["modifications", "sequence"]
-            ].apply(
+            ].swifter.apply(
                 lambda row: get_petidoform_msstats_notation(
                     row["sequence"], row["modifications"], modifications
                 ),
@@ -341,16 +340,16 @@ class FeatureInMemory:
             pep.loc[:, "scan_number"] = None
             pep.loc[:, "spectra_ref"] = None
         else:
-            pep.loc[:, "scan_number"] = pep["spectra_ref"].apply(
+            pep.loc[:, "scan_number"] = pep["spectra_ref"].swifter.apply(
                 lambda x: generate_scan_number(x)
             )
-            pep["spectra_ref"] = pep["spectra_ref"].apply(
+            pep["spectra_ref"] = pep["spectra_ref"].swifter.apply(
                 lambda x: self._ms_runs[x.split(":")[0]]
             )
         pep_msg = pep.iloc[
             pep.groupby(
                 ["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"]
-            ).apply(lambda row: row["best_search_engine_score[1]"].idxmin())
+            ).swifter.apply(lambda row: row["best_search_engine_score[1]"].idxmin())
         ]
         pep_msg = pep_msg.set_index(
             ["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"]
@@ -358,7 +357,7 @@ class FeatureInMemory:
 
         pep_msg.loc[:, "pep_msg"] = pep_msg[
             ["best_search_engine_score[1]", "spectra_ref", "scan_number"]
-        ].apply(
+        ].swifter.apply(
             lambda row: [
                 row["best_search_engine_score[1]"],
                 row["spectra_ref"],
@@ -492,19 +491,19 @@ class FeatureInMemory:
     def _extract_rt_from_consensus_xml(self,intensity_map,msstats_in):
         if "RetentionTime" not in msstats_in.columns:
             if self.experiment_type != 'LFQ':
-                msstats_in['retention_time'] = msstats_in[['peptidoform','Charge','Reference','Channel','Intensity']].apply(
+                msstats_in['retention_time'] = msstats_in[['peptidoform','Charge','Reference','Channel','Intensity']].swifter.apply(
                     lambda row: self.__map_rt_or_exp_mass(row[:-1],intensity_map,row[-1:].values[0],label='rt'), axis=1
                 )
             else:
-                msstats_in['retention_time'] = msstats_in[['peptidoform','PrecursorCharge','Reference','Intensity']].apply(
+                msstats_in['retention_time'] = msstats_in[['peptidoform','PrecursorCharge','Reference','Intensity']].swifter.apply(
                     lambda row: self.__map_rt_or_exp_mass(row[:-1],intensity_map,row[-1:].values[0],label='rt'), axis=1
                 )
         if self.experiment_type != 'LFQ':
-            msstats_in['exp_mass_to_charge'] = msstats_in[['peptidoform','Charge','Reference','Channel','Intensity','exp_mass_to_charge']].apply(
+            msstats_in['exp_mass_to_charge'] = msstats_in[['peptidoform','Charge','Reference','Channel','Intensity','exp_mass_to_charge']].swifter.apply(
                     lambda row: self.__map_rt_or_exp_mass(row[:-2],intensity_map,row[-2:-1].values[0],label='exp',exp_mass=row[-1:].values[0]), axis=1
             )
         else:
-            msstats_in['exp_mass_to_charge'] = msstats_in[['peptidoform','PrecursorCharge','Reference','Intensity','exp_mass_to_charge']].apply(
+            msstats_in['exp_mass_to_charge'] = msstats_in[['peptidoform','PrecursorCharge','Reference','Intensity','exp_mass_to_charge']].swifter.apply(
                     lambda row: self.__map_rt_or_exp_mass(row[:-2],intensity_map,row[-2:-1].values[0],label='exp',exp_mass=row[-1:].values[0]), axis=1
             )
         return msstats_in
@@ -546,7 +545,7 @@ class FeatureInMemory:
         if self.experiment_type == "LFQ":
             msstats_in.loc[:, "spectral_count"] = msstats_in[
                 ["PeptideSequence", "PrecursorCharge", "Reference"]
-            ].apply(
+            ].swifter.apply(
                 lambda row: spectra_count_dict[
                     (row["PeptideSequence"], row["PrecursorCharge"], row["Reference"])
                 ],
@@ -555,7 +554,7 @@ class FeatureInMemory:
         else:
             msstats_in.loc[:, "spectral_count"] = msstats_in[
                 ["PeptideSequence", "Charge", "Reference"]
-            ].apply(
+            ].swifter.apply(
                 lambda row: spectra_count_dict[
                     (row["PeptideSequence"], row["Charge"], row["Reference"])
                 ],
@@ -620,12 +619,12 @@ class FeatureInMemory:
         spectra_count_dict = self.__get_spectra_count(mztab_path, 500000)
         pqwriter = None
         for msstats_in in msstats_ins:
-            msstats_in['Reference'] = msstats_in['Reference'].apply(
+            msstats_in['Reference'] = msstats_in['Reference'].swifter.apply(
                 lambda x: x.split(".")[0])
-            msstats_in.loc[:, 'protein_global_qvalue'] = msstats_in['ProteinName'].apply(
+            msstats_in.loc[:, 'protein_global_qvalue'] = msstats_in['ProteinName'].swifter.apply(
                 lambda x: self.__handle_protein_map(protein_map, x))
             msstats_in.loc[:, 'sequence'] = (msstats_in['PeptideSequence']
-                                             .apply(lambda x: clean_peptidoform_sequence(x)))
+                                             .swifter.apply(lambda x: clean_peptidoform_sequence(x)))
             
             if self.experiment_type != 'LFQ':
                 no_tmt_usecols = [
@@ -639,11 +638,11 @@ class FeatureInMemory:
                     else:
                         msstats_in.loc[:, col] = None
                 if "TMT" in self.experiment_type:
-                    msstats_in["Channel"] = msstats_in["Channel"].apply(
+                    msstats_in["Channel"] = msstats_in["Channel"].swifter.apply(
                         lambda row: TMT_CHANNELS[self.experiment_type][row - 1]
                     )
                 else:
-                    msstats_in["Channel"] = msstats_in["Channel"].apply(
+                    msstats_in["Channel"] = msstats_in["Channel"].swifter.apply(
                         lambda row: ITRAQ_CHANNEL[self.experiment_type][row - 1]
                     )
                 if "RetentionTime" in msstats_in.columns:
@@ -651,11 +650,11 @@ class FeatureInMemory:
                 msstats_in = msstats_in[self._tmt_msstats_usecols]
                 self._tmt_msstats_usecols.remove('RetentionTime')
                 msstats_in = self._map_msstats_in(msstats_in, map_dict, spectra_count_dict)
-                msstats_in.loc[:,'peptidoform'] = msstats_in[['sequence','modifications']].apply(lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'],row['modifications'],self._modifications),axis=1)
+                msstats_in.loc[:,'peptidoform'] = msstats_in[['sequence','modifications']].swifter.apply(lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'],row['modifications'],self._modifications),axis=1)
                 msstats_in.drop(['PeptideSequence'],inplace=True, axis=1)
                 msstats_in[["best_psm_reference_file_name", "best_psm_scan_number"]] = msstats_in[
                 ["best_psm_reference_file_name", "best_psm_scan_number",'exp_mass_to_charge']
-                ].apply(
+                ].swifter.apply(
                 lambda row: self.__check_mbr_peptide(row["best_psm_reference_file_name"],row["best_psm_scan_number"],row['exp_mass_to_charge']),
                 axis=1,
                 result_type="expand",
@@ -681,11 +680,11 @@ class FeatureInMemory:
                         msstats_in.loc[:, col] = None
                 msstats_in = msstats_in[self._lfq_msstats_usecols]
                 msstats_in = self._map_msstats_in(msstats_in, map_dict, spectra_count_dict)
-                msstats_in.loc[:,'peptidoform'] = msstats_in[['sequence','modifications']].apply(lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'],row['modifications'],self._modifications),axis=1)
+                msstats_in.loc[:,'peptidoform'] = msstats_in[['sequence','modifications']].swifter.apply(lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'],row['modifications'],self._modifications),axis=1)
                 msstats_in.drop(['PeptideSequence'],inplace=True, axis=1)
                 msstats_in[["best_psm_reference_file_name", "best_psm_scan_number"]] = msstats_in[
                 ["best_psm_reference_file_name", "best_psm_scan_number",'exp_mass_to_charge']
-                ].apply(
+                ].swifter.apply(
                 lambda row: self.__check_mbr_peptide(row["best_psm_reference_file_name"],row["best_psm_scan_number"],row['exp_mass_to_charge']),
                 axis=1,
                 result_type="expand",
@@ -719,7 +718,7 @@ class FeatureInMemory:
                 "comment[label]",
             ]
         ]
-        sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(
+        sdrf["comment[data file]"] = sdrf["comment[data file]"].swifter.apply(
             lambda x: x.split(".")[0]
         )
         if self.experiment_type != "LFQ":
