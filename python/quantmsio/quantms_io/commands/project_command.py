@@ -12,7 +12,7 @@ def cli():
     """
 
 @click.command(
-    "generate_pride_project_json",
+    "generate-pride-project-json",
     short_help="Generate a json project file from original pride accession",
 )
 @click.option(

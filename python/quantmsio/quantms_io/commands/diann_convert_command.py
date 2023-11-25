@@ -11,9 +11,7 @@ def cli():
     This is the main tool that gives access to all commands.
     """
 
-@click.command(
-    "diann_convert_to_parquet", short_help="Convert diann_report to parquet and psm file"
-)
+@click.command("convert-diann", short_help="Convert diann_report to parquet and psm file of quantms.io format")
 @click.option(
     "--report_path",
     help="the diann report file path",

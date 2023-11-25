@@ -9,8 +9,7 @@ def cli():
     This is the main tool that gives access to all commands.
     """
 
-@click.command(
-    "map_spectrum_message_to_parquet", short_help="According mzMl to map the spectrum message to parquet"
+@click.command("map_spectrum_message_to_parquet", short_help="According mzMl to map the spectrum message to parquet"
 )
 @click.option('--parquet_path',  help='Psm or feature parquet path')
 @click.option('--mzml_directory', help='mzml file folder')

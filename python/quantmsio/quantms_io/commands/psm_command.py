@@ -12,10 +12,7 @@ def cli():
     This is the main tool that gives access to all commands.
     """
 
-@click.command(
-    "convert_psm_file",
-    short_help="Convert psm from mzTab to parquet file in quantms io",
-)
+@click.command("convert-psm", short_help="Convert psm from mzTab to parquet file in quantms io",)
 @click.option(
     "--mztab_file",
     help="the mzTab file, this will be used to extract the protein information",

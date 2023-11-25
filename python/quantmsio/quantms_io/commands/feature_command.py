@@ -12,9 +12,7 @@ def cli():
     This is the main tool that gives access to all commands.
     """
 
-@click.command(
-    "convert_feature_file", short_help="Convert msstats/mztab to parquet file"
-)
+@click.command("convert-feature", short_help="Convert msstats/mztab to parquet file")
 @click.option(
     "--sdrf_file",
     help="the SDRF file needed to extract some of the metadata",

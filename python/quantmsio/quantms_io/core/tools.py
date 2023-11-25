@@ -44,10 +44,10 @@ def map_spectrum_mz(mz_path: str, scan: str, mzml: OpenMSHandler, mzml_directory
 
 
 def generate_features_of_spectrum(parquet_path: str, mzml_directory: str,output_path:str,label,chunksize,partition:str=None):
-    '''
+    """
     parquet_path: parquet file path
     mzml_directory: mzml file directory path
-    '''
+    """
     pqwriters = {}
     pqwriter_no_part = None
     for table in read_large_parquet(parquet_path,batch_size=chunksize):
@@ -216,15 +216,15 @@ def plot_sequence_venn(parquet_path_list,labels):
 # gei unqnimous name
 from collections import defaultdict
 def map_protein_for_parquet(parquet_path,fasta,output_path,map_parameter,label):
-    '''
+    """
     according fasta database to map the proteins accessions to uniprot names.
     :param parquet_path: psm_parquet_path or feature_parquet_path
     :param fasta: Reference fasta database
     :param output_path: output file path
     :param map_parameter: map_protein_name or map_protein_accession
-    :param label: feature or psm 
+    :param label: feature or psm
     retrun: None
-    '''
+    """
     from Bio import SeqIO
     map_protein_names = defaultdict(set)
     if map_parameter == 'map_protein_name':
@@ -242,15 +242,15 @@ def map_protein_for_parquet(parquet_path,fasta,output_path,map_parameter,label):
     change_and_save_parquet(parquet_path,map_protein_names,output_path,label)
 
 def map_protein_for_tsv(path,fasta,output_path,map_parameter):
-    '''
+    """
     according fasta database to map the proteins accessions to uniprot names.
     :param path: de_path or ae_path
     :param fasta: Reference fasta database
     :param output_path: output file path
     :param map_parameter: map_protein_name or map_protein_accession
-    :param label: feature or psm 
+    :param label: feature or psm
     retrun: None
-    '''
+    """
     from Bio import SeqIO
     map_protein_names = defaultdict(set)
     if map_parameter == 'map_protein_name':
@@ -368,9 +368,9 @@ def get_file_size(file_path):
                 
 #covert ae or de to json
 def convert_to_json(file_path):
-    '''
+    """
     by providing the json format of AE and DE files for retrieval. return json
-    '''
+    """
     table,content = load_de_or_ae(file_path)
     output = {}
     pattern = r'[\\|\|//|/]'

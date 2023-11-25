@@ -10,7 +10,7 @@ def cli():
     """
 
 @click.command(
-    "convert_ibaq_absolute",
+    "convert-ae",
     short_help="Convert a ibaq_absolute file into a quantms.io file " "format",
 )
 @click.option(

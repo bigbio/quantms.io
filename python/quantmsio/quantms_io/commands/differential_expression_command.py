@@ -10,10 +10,7 @@ def cli():
     This is the main tool that gives access to all commands.
     """
 
-@click.command(
-    "convert_msstats_differential",
-    short_help="Convert a MSstats differential file into a quantms.io file " "format",
-)
+@click.command("convert-de", short_help="Convert a MSstats differential file into a quantms.io file format")
 @click.option("--msstats_file", help="MSstats differential file", required=True)
 @click.option(
     "--sdrf_file",
