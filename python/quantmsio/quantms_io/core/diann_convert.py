@@ -332,7 +332,10 @@ class DiaNNConvert:
 
     def generate_feature_file(self,report,s_data_frame,f_table,sdrf_path,feature_pqwriter,feature_output_path):
 
-        sample_name = pd.read_csv(sdrf_path,sep='\t',usecols=['source name'],nrows=1)['source name'].values[0].split('-')[0]
+        sdrf = pd.read_csv(sdrf_path,sep='\t',usecols=['source name',"comment[data file]"])
+        sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(lambda x: x.split('.')[0])
+        sdrf = sdrf.set_index(["comment[data file]"])
+        sdrf_map  = sdrf.to_dict()['source name']
         report = report[report["intensity"] != 0]
         report.loc[:,"fragment_ion"] = "NA"
         report.loc[:,"isotope_label_type"] = "L"
@@ -343,12 +346,12 @@ class DiaNNConvert:
                 .merge(f_table[["Fraction", "Sample", "Run"]], on="Sample")
                 .rename(
                     columns={"MSstats_BioReplicate": "BioReplicate", "MSstats_Condition": "Condition"})
+                .drop(columns=["Sample"])
             ),
             on="Run",
             validate="many_to_one",
         )
         report.rename(columns={
-            'Sample':'sample_accession',
             'Condition': 'condition',
             'Fraction': 'fraction',
             'BioReplicate': 'biological_replicate',
@@ -359,7 +362,7 @@ class DiaNNConvert:
             peptide_score_name + ":" + report["global_qvalue"].astype(str).values + ","
             + "Best PSM PEP:" + report["posterior_error_probability"].astype(str).values
         )
-        report['sample_accession'] = sample_name + '-Sample-' + report['sample_accession'].astype(str).values
+        report['sample_accession'] = report["reference_file_name"].map(sdrf_map)
         schema = FeatureHandler()
         feature = FeatureInMemory('LFQ',schema.schema)
         feature._modifications = self._modifications
