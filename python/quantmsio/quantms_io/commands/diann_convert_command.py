@@ -51,9 +51,11 @@ def cli():
     required=True,
 )
 @click.option("--output_prefix_file", help="Prefix of the Json file needed to generate the file name", required=False)
-@click.option("--threads",help="The number of thread", default=60)
+@click.option("--threads", help= "The number of thread", default = 100)
 @click.pass_context
-def diann_convert_to_parquet(ctx,report_path:str,design_file:str,modifications:List,qvalue_threshold: float,mzml_info_folder:str,sdrf_path:str,output_folder:str,output_prefix_file:str,threads:int):
+def diann_convert_to_parquet(ctx, report_path: str, design_file: str, modifications:List, qvalue_threshold: float,
+                             mzml_info_folder:str, sdrf_path:str, output_folder:str, output_prefix_file:str,
+                             threads:int ):
     '''
     report_path: diann report file path
     design_file: the disign file path
