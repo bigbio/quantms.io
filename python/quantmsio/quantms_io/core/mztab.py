@@ -2,6 +2,7 @@ import numpy as np
 
 from quantms_io.core.core import DiskCache
 from quantms_io.utils.constants import PROTEIN_DETAILS
+from quantms_io.utils.file_utils import calculate_buffer_size
 from quantms_io.utils.pride_utils import (fetch_modifications_from_mztab_line,
                                           fetch_ms_runs_from_mztab_line,
                                           fetch_peptide_from_mztab_line,
@@ -128,7 +129,6 @@ class MztabHandler:
         self._modifications = {}
         self._mztab_file = mztab_file  # mztab file
         self._use_cache = use_cache  # use cache to store peptide information
-        self._index = {}  # index for each section of the mztab file
 
     def create_peptide_index(self):
         """
@@ -320,8 +320,7 @@ class MztabHandler:
         self._protein_details = {}
         self.create_peptide_index()
 
-        with open(mztab_file) as f:
-            pos = 0
+        with open(mztab_file, "r", buffering=calculate_buffer_size(mztab_file)) as f:
             line = f.readline()
             while line != "":
                 line = line.strip()
@@ -336,27 +335,21 @@ class MztabHandler:
                 elif line.startswith("PRH"):
                     logger.info("-- End of the Metadata section of the mztab file -- ")
                     protein_columns = line.split("\t")
-                    self._index["PRH"] = pos
                 elif line.startswith("PRT"):
-                    self._index["PRT"] = pos
                     protein_info = line.split("\t")
                     if PROTEIN_DETAILS not in line:
                         es = dict(zip(protein_columns, protein_info))
-                        protein = fetch_protein_from_mztab_line(pos, es)
+                        protein = fetch_protein_from_mztab_line(es)
                         self._protein_details[protein["accession"]] = [
-                            protein["score"],
-                            pos,
+                            protein["score"]
                         ]
                 elif line.startswith("PEH"):
                     logger.info("-- All proteins have been read, starting peptide section -- ")
-                    self._index["PEH"] = pos
                     peptide_columns = line.split("\t")
                 elif line.startswith("PEP"):
-                    self._index["PEP"] = pos
                     peptide_info = line.split("\t")
                     es = dict(zip(peptide_columns, peptide_info))
                     peptide = fetch_peptide_from_mztab_line(
-                        pos,
                         es,
                         ms_runs=self._ms_runs,
                         modification_definition=self._modifications,
@@ -378,14 +371,11 @@ class MztabHandler:
                     self.add_peptide_to_index(peptide_key, peptide_value)
                 elif line.startswith("PSH"):
                     logger.info("-- All peptides have been read, starting psm section -- ")
-                    self._index["PSH"] = pos
                     psm_columns = line.split("\t")
                 elif line.startswith("PSM"):
-                    self._index["PSM"] = pos
                     psm_info = line.split("\t")
                     es = dict(zip(psm_columns, psm_info))
                     psm = fetch_psm_from_mztab_line(
-                        pos,
                         es,
                         ms_runs=self._ms_runs,
                         modifications_definition=self._modifications,
@@ -406,9 +396,7 @@ class MztabHandler:
                         mztab_postion=psm["pos"],
                     )
 
-                pos = f.tell()
                 line = f.readline()
-        return self._index
 
     def load_mztab_file(self, use_cache: bool = False):
         """
@@ -537,8 +525,7 @@ class MztabHandler:
         :return: None
         """
         self._protein_details = {}
-        self._psm_iterator = open(mztab_file)
-        pos = 0
+        self._psm_iterator = open(mztab_file, "r", buffering=calculate_buffer_size(mztab_file))
         line = self._psm_iterator.readline()
         while line != "":
             line = line.strip()
@@ -553,26 +540,21 @@ class MztabHandler:
             elif line.startswith("PRH"):
                 logger.info("-- End of the Metadata section of the mztab file -- ")
                 protein_columns = line.split("\t")
-                self._index["PRH"] = pos
             elif line.startswith("PRT"):
-                self._index["PRT"] = pos
                 protein_info = line.split("\t")
+                logger.info("Protein info {}".format(protein_info))
                 if PROTEIN_DETAILS not in line:
                     es = dict(zip(protein_columns, protein_info))
-                    protein = fetch_protein_from_mztab_line(pos, es)
+                    protein = fetch_protein_from_mztab_line(es)
                     protein["accession"] = standardize_protein_string_accession(
                         protein["accession"], sorted=True
                     )
-                    self._protein_details[protein["accession"]] = [
-                        protein["score"],
-                        pos,
-                    ]
+                    self._protein_details[protein["accession"]] = [ protein["score"]]
+                    logger.info("Added protein to the protein index -- {}".format(protein["accession"]))
             elif line.startswith("PSH"):
                 logger.info("-- All peptides have been read, starting psm section -- ")
-                self._index["PSH"] = pos
                 self._psm_columns = line.split("\t")
                 return
-            pos = self._psm_iterator.tell()
             line = self._psm_iterator.readline()
 
     def read_next_psm(self):
@@ -586,13 +568,11 @@ class MztabHandler:
                 "The mztab file has not been loaded or the iterator has not been created"
             )
 
-        pos = self._psm_iterator.tell()
         line = self._psm_iterator.readline()
         if line != "" and line.startswith("PSM"):
             psm_info = line.split("\t")
             es = dict(zip(self._psm_columns, psm_info))
             psm = fetch_psm_from_mztab_line(
-                pos,
                 es,
                 ms_runs=self._ms_runs,
                 modifications_definition=self._modifications,

@@ -17,13 +17,9 @@ class Test(TestCase):
         # Initialize input arguments
         report_path = "/Users/yperez/work/quantms-data/PXD037340.2/diann_report.tsv"
         design_file = "/Users/yperez/work/quantms-data/PXD037340.2/PXD037340-DIA.sdrf_openms_design.tsv"
-        fasta_path = "/Users/yperez/work/multiomics-configs/databases/Homo-sapiens-uniprot-reviewed-contaminants-202210.fasta"
         modifications = ["Carbamidomethyl (C)", "Oxidation (M)"]
-        pg_path = "/Users/yperez/work/quantms-data/PXD037340.2/diann_report.pg_matrix.tsv"
-        pr_path = "/Users/yperez/work/quantms-data/PXD037340.2/diann_report.pr_matrix.tsv"
         qvalue_threshold = 0.01
         mzml_info_folder = "/Users/yperez/work/quantms-data/PXD037340.2/mzmlstatistics"
-        sdrf_path = "/Users/yperez/work/quantms-data/PXD037340.2/PXD037340-DIA.sdrf.tsv"
         output_folder = "/Users/yperez/work/quantms-data/PXD037340.2/"
         output_prefix_file = "PXD037340.2"
 

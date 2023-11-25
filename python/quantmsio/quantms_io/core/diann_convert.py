@@ -1,6 +1,5 @@
 import pandas as pd
 import os
-import time
 from pyopenms import AASequence,ModificationsDB
 from pyopenms.Constants import PROTON_MASS_U
 from pathlib import Path

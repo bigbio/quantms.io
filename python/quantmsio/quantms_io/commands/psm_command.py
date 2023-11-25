@@ -35,7 +35,7 @@ def cli():
               help="Output debug information.",
     default=False, is_flag=True)
 @click.pass_context
-def convert_psm_file(ctx,mztab_file: str, output_folder: str, output_prefix_file: str=None, verbose: bool = False):
+def convert_psm_file(ctx, mztab_file: str, output_folder: str, output_prefix_file: str=None, verbose: bool = False):
     """
     convert mztab psm section to a parquet file. The parquet file will contain the features and the metadata.
     :param mztab_file: the mzTab file, this will be used to extract the protein information

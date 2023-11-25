@@ -119,14 +119,12 @@ def standardize_protein_string_accession(
     :param sorted: sort the protein string
     :return: standardized protein string
     """
-
+    protein_string = protein_string.replace(",", ";").strip()
     if sorted:
-        protein_string = protein_string.replace(",", ";").strip()
         accessions = protein_string.split(";")
         accessions.sort()
         return ";".join(accessions)
-
-    return protein_string.replace(",", ";").strip()
+    return protein_string
 
 
 def standardize_protein_list_accession(protein_string: str) -> list:
@@ -330,7 +328,6 @@ def get_petidoform_msstats_notation(
 
 
 def fetch_peptide_from_mztab_line(
-    pos: int,
     peptide_dict: dict,
     ms_runs: dict = None,
     modification_definition: dict = None,
@@ -347,7 +344,6 @@ def fetch_peptide_from_mztab_line(
     peptide = dict(zip(keys, [peptide_dict[k] for k in keys]))
 
     peptide["accession"] = standardize_protein_string_accession(peptide["accession"])
-    peptide["pos"] = pos
     peptide["score"] = peptide_dict["best_search_engine_score[1]"]
 
     if (
@@ -400,7 +396,7 @@ def fetch_peptide_from_mztab_line(
     return peptide
 
 
-def fetch_protein_from_mztab_line(pos: int, protein_dict: dict):
+def fetch_protein_from_mztab_line(protein_dict: dict):
     """
     get the protein from a mztab line include the post.
     :param pos: position of the protein in the mztab file
@@ -413,7 +409,6 @@ def fetch_protein_from_mztab_line(pos: int, protein_dict: dict):
     return {
         "accession": accession_string,
         "score": protein_dict["best_search_engine_score[1]"],
-        "pos": pos,
     }
 
 
@@ -435,12 +430,10 @@ def fetch_ms_runs_from_mztab_line(mztab_line: str, ms_runs: dict) -> dict:
     return ms_runs
 
 
-def fetch_psm_from_mztab_line(
-    pos: int, es: dict, ms_runs: dict = None, modifications_definition: dict = None
+def fetch_psm_from_mztab_line(es: dict, ms_runs: dict = None, modifications_definition: dict = None
 ) -> dict:
     """
     Get the psm from a mztab line include the post.
-    :param pos: Position of the psm in the mztab file
     :param es: dictionary with the psm information
     :param ms_runs: ms runs dictionary
     :param modifications_definition: modifications definition
@@ -473,7 +466,6 @@ def fetch_psm_from_mztab_line(
     psm = dict(zip(keys, [es[k] for k in keys]))
 
     psm["accession"] = standardize_protein_string_accession(psm["accession"])
-    psm["pos"] = pos
     psm["score"] = es["search_engine_score[1]"]
 
     if (
