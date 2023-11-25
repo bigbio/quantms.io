@@ -43,6 +43,11 @@ def cli():
     required=True,
 )
 @click.option(
+    "--sdrf_path",
+    help="the SDRF file needed to extract some of the metadata",
+    required=True,
+)
+@click.option(
     "--output_folder",
     help="Folder where the Json file will be generated",
     required=True,
@@ -50,13 +55,14 @@ def cli():
 @click.option("--output_prefix_file", help="Prefix of the Json file needed to generate the file name", required=False)
 @click.option("--threads",help="The number of thread", default=60)
 @click.pass_context
-def diann_convert_to_parquet(ctx,report_path:str,design_file:str,modifications:List,qvalue_threshold: float,mzml_info_folder:str,output_folder:str,output_prefix_file:str,threads:int):
+def diann_convert_to_parquet(ctx,report_path:str,design_file:str,modifications:List,qvalue_threshold: float,mzml_info_folder:str,sdrf_path:str,output_folder:str,output_prefix_file:str,threads:int):
     '''
     report_path: diann report file path
     design_file: the disign file path
     modifications: a list contains fix modifications and variable modifications
     qvalue_threshold: qvalue threshold
     mzml_info_folder: mzml info file folder
+    sdrf_path: sdrf file path
     output_folder: Folder where the Json file will be generated
     output_prefix_file: Prefix of the Json file needed to generate the file name
     threads: The number of thread
@@ -78,6 +84,7 @@ def diann_convert_to_parquet(ctx,report_path:str,design_file:str,modifications:L
                                         mzml_info_folder=mzml_info_folder,
                                         design_file=design_file,
                                         modifications=modifications,
+                                        sdrf_path = sdrf_path,
                                         psm_output_path=psm_output_path,
                                         feature_output_path = feature_output_path,
                                         thread_num = threads

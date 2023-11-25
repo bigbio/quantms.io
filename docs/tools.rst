@@ -269,6 +269,7 @@ Example:
       --modifications "Carbamidomethyl (C)" "null"
       --qvalue_threshold 0.05
       --mzml_info_folder mzml
+      --sdrf_path PXD037682.sdrf.tsv
       --output_folder result
       --output_prefix_file PXD037682
       --threads 60
