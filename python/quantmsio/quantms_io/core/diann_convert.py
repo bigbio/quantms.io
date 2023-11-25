@@ -283,7 +283,7 @@ class DiaNNConvert:
             report = self.add_additional_msg(report)
             yield report
 
-    def generate_psm_and_feature_file(self,report_path: str, qvalue_threshold: float,folder: str,design_file:str,modifications:list,psm_output_path:str,feature_output_path:str,thread_num:int=60):
+    def generate_psm_and_feature_file(self,report_path: str, qvalue_threshold: float,folder: str,design_file:str,modifications:list,sdrf_path:str,psm_output_path:str,feature_output_path:str,thread_num:int=60):
         psm_pqwriter = None
         feature_pqwriter = None
 
@@ -291,7 +291,7 @@ class DiaNNConvert:
         self._modifications = get_modifications(modifications[0], modifications[1])
         for report in self.main_report_df(report_path, qvalue_threshold,folder,thread_num):
             psm_pqwriter = self.generate_psm_file(report,psm_pqwriter,psm_output_path)
-            feature_pqwriter = self.generate_feature_file(report,s_data_frame,f_table,feature_pqwriter,feature_output_path)
+            feature_pqwriter = self.generate_feature_file(report,s_data_frame,f_table,sdrf_path,feature_pqwriter,feature_output_path)
         if psm_pqwriter:
             psm_pqwriter.close()
         if feature_pqwriter:
@@ -332,8 +332,9 @@ class DiaNNConvert:
         psm_pqwriter.write_table(parquet_table)
         return psm_pqwriter
 
-    def generate_feature_file(self,report,s_data_frame,f_table,feature_pqwriter,feature_output_path):
-        
+    def generate_feature_file(self,report,s_data_frame,f_table,sdrf_path,feature_pqwriter,feature_output_path):
+
+        sample_name = pd.read_csv(sdrf_path,sep='\t',usecols=['source name'],nrows=1)['source name'].values[0].split('-')[0]
         report = report[report["intensity"] != 0]
         report.loc[:,"fragment_ion"] = "NA"
         report.loc[:,"isotope_label_type"] = "L"
@@ -360,6 +361,7 @@ class DiaNNConvert:
             peptide_score_name + ":" + report["global_qvalue"].astype(str).values + ","
             + "Best PSM PEP:" + report["posterior_error_probability"].astype(str).values
         )
+        report['sample_accession'] = sample_name + '-Sample-' + report['sample_accession'].astype(str).values 
         schema = FeatureHandler()
         feature = FeatureInMemory('LFQ',schema.schema)
         feature._modifications = self._modifications
