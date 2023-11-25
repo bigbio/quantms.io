@@ -1,7 +1,7 @@
 import click
 
 from quantms_io.core.psm import PSMHandler
-from quantms_io.core.project import create_uuid_filename,check_directory
+from quantms_io.core.project import create_uuid_filename
 from quantms_io.core.tools import plot_peptidoform_charge_venn, plot_sequence_venn
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 

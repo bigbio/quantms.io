@@ -56,7 +56,6 @@ class TestProjectHandler(TestCase):
     def test_save_project_info(self):
         project_accession = "PXD020187"
         sdrf_file = "data/PXD020187.sdrf.tsv"
-        quantms_version = "0.1.1"
 
         project_manager = ProjectHandler(project_accession)
         project_manager.populate_from_pride_archive()

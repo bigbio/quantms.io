@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-from pyopenms import AASequence,ModificationsDB
+from pyopenms import AASequence, ModificationsDB
 from pyopenms.Constants import PROTON_MASS_U
 from pathlib import Path
 import numpy as np
@@ -177,11 +177,11 @@ class DiaNNConvert:
                             "Modified.Sequence": "peptidoform",
                             "opt_global_spectrum_reference": "scan_number",
                             "File.Name": "reference_file_name",
-                            "Precursor.Quantity":"intensity",
+                            "Precursor.Quantity": "intensity",
                             "Q.Value": "search_engine_score[1]"
                             }
     
-    def get_protein_map_from_database(self,report_path):
+    def get_protein_map_from_database(self, report_path):
         database = duckdb.query(
             """
             select "Protein.Ids",MIN("Global.PG.Q.Value") as "Global.PG.Q.Value" from '{}'
@@ -208,7 +208,7 @@ class DiaNNConvert:
         peptide_df.index = peptide_df["Precursor.Id"]
         peptide_map = peptide_df.to_dict()["Q.Value"]
         best_ref_map = peptide_df.to_dict()["Run"]
-        return peptide_map,best_ref_map
+        return peptide_map, best_ref_map
     
     def get_report_from_database(self,report_path,runs):
         database = duckdb.query(

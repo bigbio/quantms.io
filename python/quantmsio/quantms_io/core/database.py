@@ -1,11 +1,4 @@
-import os
-import re
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 import duckdb
-import random
 
 
 def get_skip_rows(path):

@@ -1,8 +1,7 @@
 import click
-import pandas as pd
 
 from quantms_io.core.feature import FeatureHandler
-from quantms_io.core.project import check_directory,get_project_accession,create_uuid_filename
+from quantms_io.core.project import create_uuid_filename
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 

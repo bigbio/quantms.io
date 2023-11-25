@@ -144,13 +144,14 @@ class ProjectHandler:
             "acquisition_properties"
         ] = sdrf.get_acquisition_properties()
 
-    def add_quantms_file(self, file_name: str, file_category: str,replace_existing:bool=True):
+    def add_quantms_file(self, file_name: str, file_category: str, replace_existing: bool = True):
         """
         Add a quantms file to the project information. The file name will be generated automatically. Read more about the
         quantms file naming convention in the docs folder of this repository
         (https://github.com/bigbio/quantms.io/blob/main/docs/PROJECT.md)
         :param file_name: quantms file name
         :param file_category: quantms file category (e.g. "protein_file", "peptide_file", "psm_file", "differential_file", etc.)
+        :param replace_existing: Replace existing file name.
         """
         if "quantms_files" not in self.project.project_info:
             self.project.project_info["quantms_files"] = []

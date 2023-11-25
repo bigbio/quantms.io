@@ -1,6 +1,5 @@
 import click
 
-from quantms_io.core.project import ProjectHandler
 from quantms_io.core.project import check_directory
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 

@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import pandas as pd
 
@@ -7,7 +5,6 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from quantms_io.core.mztab import MztabHandler
 from quantms_io.core.parquet_handler import ParquetHandler
-from quantms_io.core.project import check_directory,cut_path
 from quantms_io.utils.file_utils import extract_len
 from quantms_io.utils.pride_utils import (get_quantmsio_modifications,
                                           standardize_protein_list_accession)
@@ -175,7 +172,7 @@ class PSMHandler(ParquetHandler):
     def _create_psm_table(self, psm_list: list) -> pa.Table:
         return pa.Table.from_pandas(pd.DataFrame(psm_list), schema=self.schema)
 
-    def convert_mztab_to_psm(self, mztab_path: str, output_folder:str, parquet_path: str = None, verbose: bool = False,batch_size: int = 100000):
+    def convert_mztab_to_psm(self, mztab_path: str, parquet_path: str = None, verbose: bool = False,batch_size: int = 100000):
         """
         convert a mzTab file to a feature file
         :param mztab_path: path to the mzTab file

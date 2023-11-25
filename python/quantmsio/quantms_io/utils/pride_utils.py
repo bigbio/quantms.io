@@ -334,7 +334,6 @@ def fetch_peptide_from_mztab_line(
 ) -> dict:
     """
     Get the peptide from a mztab line include the post.
-    :param pos: Position of the peptide in the mztab file
     :param peptide_dict: dictionary with the peptide information
     :param ms_runs: ms runs dictionary
     :param modification_definition: modification definition
@@ -398,8 +397,7 @@ def fetch_peptide_from_mztab_line(
 
 def fetch_protein_from_mztab_line(protein_dict: dict):
     """
-    get the protein from a mztab line include the post.
-    :param pos: position of the protein in the mztab file
+    get the protein from a mztab line.
     :param protein_dict: dictionary with the protein information
     :return: protein dictionary
     """

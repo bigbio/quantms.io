@@ -241,14 +241,13 @@ def map_protein_for_parquet(parquet_path,fasta,output_path,map_parameter,label):
             map_protein_names[name].add(accession)
     change_and_save_parquet(parquet_path,map_protein_names,output_path,label)
 
-def map_protein_for_tsv(path,fasta,output_path,map_parameter):
+def map_protein_for_tsv(path: str,fasta: str, output_path: str, map_parameter: str):
     """
     according fasta database to map the proteins accessions to uniprot names.
     :param path: de_path or ae_path
     :param fasta: Reference fasta database
     :param output_path: output file path
     :param map_parameter: map_protein_name or map_protein_accession
-    :param label: feature or psm
     retrun: None
     """
     from Bio import SeqIO

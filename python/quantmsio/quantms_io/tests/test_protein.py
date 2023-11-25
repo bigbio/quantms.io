@@ -13,7 +13,7 @@ class TestProteinHandler(TestCase):
     def test_write_an_example_protein(self):
         protein_manager = ProteinHandler()
         protein_manager.parquet_path = "example_protein.parquet"
-        protein_manager.create_protein(
+        protein_manager.create_proteins_table(list(
             {
                 "protein_accessions": ["P12345"],
                 "sample_accession": "S1",
@@ -30,7 +30,7 @@ class TestProteinHandler(TestCase):
                 "ibaq": 123.45,
                 "ribaq": 67.89,
                 "intensity": 987.65,
-            }
+            })
         )
 
     @staticmethod

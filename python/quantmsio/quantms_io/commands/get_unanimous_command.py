@@ -47,7 +47,6 @@ def get_unanimous_for_tsv(ctx,path,fasta,output_path,map_parameter):
     :param fasta: Reference fasta database
     :param output_path: output file path
     :param map_parameter: map_protein_name or map_protein_accession
-    :param label: feature or psm 
     retrun: None
     '''
     map_protein_for_tsv(path,fasta,output_path,map_parameter)
