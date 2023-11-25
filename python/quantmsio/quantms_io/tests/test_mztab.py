@@ -25,7 +25,6 @@ class TestMztabHandler(TestCase):
 
         st = time.time()
         mztab_path = "/Users/yperez/work/quantms.io/python/quantmsio/quantms_io/data/raw_ae_example/PXD009219.sdrf_openms_design_openms.mzTab"
-        output_folder = "/Users/yperez/work/quantms.io/python/quantmsio/quantms_io/data/"
         parquet_path = "/Users/yperez/work/quantms.io/python/quantmsio/quantms_io/data/PXD009219.psm.parquet"
         verbose = False
         batch_size = 100000
@@ -33,7 +32,7 @@ class TestMztabHandler(TestCase):
         psm_handler = PSMHandler()
 
         # Invoke
-        psm_handler.convert_mztab_to_psm(mztab_path, output_folder, parquet_path, verbose, batch_size)
+        psm_handler.convert_mztab_to_psm(mztab_path=mztab_path, parquet_path = parquet_path, verbose=verbose, batch_size=batch_size)
 
         # Assert
         assert os.path.exists(parquet_path)
