@@ -281,7 +281,7 @@ class DiaNNConvert:
             report = self.add_additional_msg(report)
             yield report
 
-    def generate_psm_and_feature_file(self,report_path: str, qvalue_threshold: float,folder: str,design_file:str,modifications:list,sdrf_path:str,psm_output_path:str,feature_output_path:str,thread_num:int=60):
+    def generate_psm_and_feature_file(self, report_path: str, qvalue_threshold: float,mzml_info_folder: str,design_file:str,modifications:list,sdrf_path:str,psm_output_path:str,feature_output_path:str,thread_num:int=60):
         psm_pqwriter = None
         feature_pqwriter = None
 
