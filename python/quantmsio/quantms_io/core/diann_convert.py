@@ -169,8 +169,12 @@ def create_duckdb_from_diann_report(report_path):
     :param report_path: The path to the diann report
     :return: A duckdb database
     """
+    s = time.time()
     database = duckdb.connect()
+    database.execute("SET enable_progress_bar=true")
     database.execute("CREATE TABLE diann_report AS SELECT * FROM '{}'".format(report_path))
+    et = time.time() - s
+    logging.info('Time to create duckdb database {} seconds'.format(et))
     return database
 
 
