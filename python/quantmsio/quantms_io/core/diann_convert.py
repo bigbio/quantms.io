@@ -1,3 +1,6 @@
+import logging
+import time
+
 import pandas as pd
 import os
 from pyopenms import AASequence, ModificationsDB
@@ -182,6 +185,7 @@ class DiaNNConvert:
                             }
     
     def get_protein_map_from_database(self, report_path):
+        s = time.time()
         database = duckdb.query(
             """
             select "Protein.Ids",MIN("Global.PG.Q.Value") as "Global.PG.Q.Value" from '{}'
@@ -191,9 +195,14 @@ class DiaNNConvert:
         protein_df = database.df()
         protein_df.index = protein_df["Protein.Ids"]
         protein_map = protein_df.to_dict()["Global.PG.Q.Value"]
+
+        et = time.time() - s
+        logging.info('Time to load protein map {} seconds'.format(et))
+
         return protein_map
 
-    def get_peptide_map_from_database(self,report_path):
+    def get_peptide_map_from_database(self, report_path):
+        s = time.time()
         database = duckdb.query(
             """    
             SELECT "Precursor.Id","Q.Value","Run"
@@ -208,16 +217,21 @@ class DiaNNConvert:
         peptide_df.index = peptide_df["Precursor.Id"]
         peptide_map = peptide_df.to_dict()["Q.Value"]
         best_ref_map = peptide_df.to_dict()["Run"]
+        et = time.time()-s
+        logging.info('Time to load peptide map {} seconds'.format(et))
         return peptide_map, best_ref_map
     
-    def get_report_from_database(self,report_path,runs):
+    def get_report_from_database(self, report_path: str , runs):
+        s = time.time()
         database = duckdb.query(
             """
             select "File.Name","Run","Protein.Ids","RT.Start","Precursor.Id","Q.Value","Modified.Sequence","Stripped.Sequence","Precursor.Charge","Precursor.Quantity" from '{}'
             where Run IN {}
-            """.format(report_path,tuple(runs))
+            """.format(report_path , tuple(runs))
         )
         report = database.df()
+        et = time.time() - s
+        logging.info('Time to load report {} seconds'.format(et))
         return report
 
     def get_masses_and_modifications_map(self,report_path):
@@ -233,7 +247,7 @@ class DiaNNConvert:
         
         return masses_map,modifications_map
     
-    def main_report_df(self, report_path: str, qvalue_threshold: float, mzml_info_folder: str, thread_num:int) -> pd.DataFrame:
+    def main_report_df(self, report_path: str, qvalue_threshold: float, mzml_info_folder: str, thread_num: int) -> pd.DataFrame:
         def intergrate_msg(n):
             nonlocal report
             nonlocal mzml_info_folder
@@ -251,18 +265,18 @@ class DiaNNConvert:
 
         #query duckdb
         protein_map = self.get_protein_map_from_database(report_path)
-        peptide_map,best_ref_map = self.get_peptide_map_from_database(report_path)
-        masses_map,modifications_map = self.get_masses_and_modifications_map(report_path)
+        peptide_map, best_ref_map = self.get_peptide_map_from_database(report_path)
+        masses_map, modifications_map = self.get_masses_and_modifications_map(report_path)
         
         info_list = [mzml.replace('_mzml_info.tsv','') for mzml in os.listdir(mzml_info_folder) if mzml.endswith('_mzml_info.tsv')]
-        info_list =  [info_list[i:i+thread_num] for i in range(0,len(info_list),thread_num)]
+        info_list =  [info_list[i:i+thread_num] for i in range(0,len(info_list), thread_num)]
         for refs in info_list:
-            report = self.get_report_from_database(report_path,refs)
-            usecols = report.columns.to_list() + ["opt_global_spectrum_reference","exp_mass_to_charge"]
+            report = self.get_report_from_database(report_path, refs)
+            usecols = report.columns.to_list() + ["opt_global_spectrum_reference", "exp_mass_to_charge"]
             with concurrent.futures.ThreadPoolExecutor(thread_num) as executor:
                 results = executor.map(intergrate_msg,refs)
             report = np.vstack([result.values for result in results])
-            report = pd.DataFrame(report,columns=usecols)
+            report = pd.DataFrame(report, columns=usecols)
             #restrict
             report = report[report["Q.Value"] < qvalue_threshold]
             #map
@@ -290,8 +304,11 @@ class DiaNNConvert:
         s_data_frame, f_table = get_exp_design_dfs(design_file)
         self._modifications = get_modifications(modifications[0], modifications[1])
         for report in self.main_report_df(report_path, qvalue_threshold, mzml_info_folder , thread_num):
+            s = time.time()
             psm_pqwriter = self.generate_psm_file(report,psm_pqwriter,psm_output_path)
             feature_pqwriter = self.generate_feature_file(report,s_data_frame,f_table,sdrf_path,feature_pqwriter,feature_output_path)
+            et = time.time() - s
+            logging.info('Time to generate psm and feature file {} seconds'.format(et))
         if psm_pqwriter:
             psm_pqwriter.close()
         if feature_pqwriter:
