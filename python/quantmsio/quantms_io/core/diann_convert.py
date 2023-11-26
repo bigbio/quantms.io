@@ -289,7 +289,6 @@ class DiaNNConvert:
         
         info_list = [mzml.replace('_mzml_info.tsv','') for mzml in os.listdir(mzml_info_folder) if mzml.endswith('_mzml_info.tsv')]
         info_list =  [info_list[i:i+thread_num] for i in range(0,len(info_list), thread_num)]
-        duckdb.read_csv(report_path,sep='\t')
         for refs in info_list:
             report = self.get_report_from_database(report_path, refs)
             usecols = report.columns.to_list() + ["opt_global_spectrum_reference", "exp_mass_to_charge"]
