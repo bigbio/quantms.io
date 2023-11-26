@@ -226,7 +226,7 @@ class DiaNNConvert:
             """    
             SELECT "Precursor.Id","Q.Value","Run"
             FROM (
-            SELECT *, ROW_NUMBER() OVER (PARTITION BY "Precursor.Id" ORDER BY "Q.Value" ASC) AS row_num
+            SELECT "Precursor.Id", "Q.Value","Run", ROW_NUMBER() OVER (PARTITION BY "Precursor.Id" ORDER BY "Q.Value" ASC) AS row_num
             FROM diann_report
             ) AS subquery
             WHERE row_num = 1;
