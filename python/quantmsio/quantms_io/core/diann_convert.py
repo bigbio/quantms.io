@@ -162,6 +162,19 @@ def get_modifications(fix_modifications: str, variable_modifications: str):
     return mod_dict
 
 
+def create_duckdb_from_diann_report(report_path):
+    """
+    This function creates a duckdb database from a diann report for fast performance queries. The database
+    is created from the tab delimited format of diann and can handle really large datasets.
+    :param report_path: The path to the diann report
+    :return: A duckdb database
+    """
+    database = duckdb.connect()
+    database.execute("CREATE TABLE diann_report AS SELECT * FROM '{}'".format(report_path))
+    return database
+
+
+
 class DiaNNConvert:
 
     def __init__(self):
@@ -184,15 +197,15 @@ class DiaNNConvert:
                             "Q.Value": "search_engine_score[1]"
                             }
     
-    def get_protein_map_from_database(self, report_path):
+    def get_protein_map_from_database(self):
         s = time.time()
-        database = duckdb.query(
+        query = self._duckdb.query(
             """
-            select "Protein.Ids",MIN("Global.PG.Q.Value") as "Global.PG.Q.Value" from '{}'
+            select "Protein.Ids",MIN("Global.PG.Q.Value") as "Global.PG.Q.Value" from diann_report
             GROUP BY "Protein.Ids"
-            """.format(report_path)
+            """
         )
-        protein_df = database.df()
+        protein_df = query.df()
         protein_df.index = protein_df["Protein.Ids"]
         protein_map = protein_df.to_dict()["Global.PG.Q.Value"]
 
@@ -201,17 +214,17 @@ class DiaNNConvert:
 
         return protein_map
 
-    def get_peptide_map_from_database(self, report_path):
+    def get_peptide_map_from_database(self):
         s = time.time()
-        database = duckdb.query(
+        database = self._duckdb.query(
             """    
             SELECT "Precursor.Id","Q.Value","Run"
             FROM (
             SELECT *,ROW_NUMBER() OVER (PARTITION BY "Precursor.Id" ORDER BY "Q.Value" ASC) AS row_num
-            FROM '{}'
+            FROM diann_report
             ) AS subquery
             WHERE row_num = 1;
-            """.format(report_path)
+            """
         )
         peptide_df = database.df()
         peptide_df.index = peptide_df["Precursor.Id"]
@@ -223,22 +236,22 @@ class DiaNNConvert:
     
     def get_report_from_database(self, report_path: str , runs):
         s = time.time()
-        database = duckdb.query(
+        database = self._duckdb.query(
             """
-            select "File.Name","Run","Protein.Ids","RT.Start","Precursor.Id","Q.Value","Modified.Sequence","Stripped.Sequence","Precursor.Charge","Precursor.Quantity" from '{}'
+            select "File.Name","Run","Protein.Ids","RT.Start","Precursor.Id","Q.Value","Modified.Sequence","Stripped.Sequence","Precursor.Charge","Precursor.Quantity" from diann_report
             where Run IN {}
-            """.format(report_path , tuple(runs))
+            """.format(tuple(runs))
         )
         report = database.df()
         et = time.time() - s
         logging.info('Time to load report {} seconds'.format(et))
         return report
 
-    def get_masses_and_modifications_map(self,report_path):
-        database = duckdb.query(
+    def get_masses_and_modifications_map(self):
+        database = self._duckdb.query(
             """
-            select DISTINCT "Modified.Sequence" from '{}'
-            """.format(report_path)
+            select DISTINCT "Modified.Sequence" from diann_report
+            """
         )
         report = database.df()
         uniq_p = report["Modified.Sequence"].values
@@ -264,9 +277,9 @@ class DiaNNConvert:
             return res
 
         #query duckdb
-        protein_map = self.get_protein_map_from_database(report_path)
-        peptide_map, best_ref_map = self.get_peptide_map_from_database(report_path)
-        masses_map, modifications_map = self.get_masses_and_modifications_map(report_path)
+        protein_map = self.get_protein_map_from_database()
+        peptide_map, best_ref_map = self.get_peptide_map_from_database()
+        masses_map, modifications_map = self.get_masses_and_modifications_map()
         
         info_list = [mzml.replace('_mzml_info.tsv','') for mzml in os.listdir(mzml_info_folder) if mzml.endswith('_mzml_info.tsv')]
         info_list =  [info_list[i:i+thread_num] for i in range(0,len(info_list), thread_num)]
@@ -300,6 +313,8 @@ class DiaNNConvert:
                                       feature_output_path:str, thread_num:int=60):
         psm_pqwriter = None
         feature_pqwriter = None
+
+        self._duckdb = create_duckdb_from_diann_report(report_path)
 
         s_data_frame, f_table = get_exp_design_dfs(design_file)
         self._modifications = get_modifications(modifications[0], modifications[1])
