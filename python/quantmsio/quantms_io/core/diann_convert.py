@@ -173,6 +173,8 @@ def create_duckdb_from_diann_report(report_path):
     database = duckdb.connect()
     database.execute("SET enable_progress_bar=true")
     database.execute("CREATE TABLE diann_report AS SELECT * FROM '{}'".format(report_path))
+    database.execute("""CREATE INDEX idx_precursor_q ON diann_report ("Precursor.Id", "Q.Value")""")
+    database.execute("""CREATE INDEX idx_run ON diann_report ("Run")""")
     et = time.time() - s
     logging.info('Time to create duckdb database {} seconds'.format(et))
     return database
@@ -224,14 +226,14 @@ class DiaNNConvert:
             """    
             SELECT "Precursor.Id","Q.Value","Run"
             FROM (
-            SELECT *,ROW_NUMBER() OVER (PARTITION BY "Precursor.Id" ORDER BY "Q.Value" ASC) AS row_num
+            SELECT *, ROW_NUMBER() OVER (PARTITION BY "Precursor.Id" ORDER BY "Q.Value" ASC) AS row_num
             FROM diann_report
             ) AS subquery
             WHERE row_num = 1;
             """
         )
         peptide_df = database.df()
-        peptide_df.index = peptide_df["Precursor.Id"]
+        peptide_df.set_index("Precursor.Id", inplace=True)
         peptide_map = peptide_df.to_dict()["Q.Value"]
         best_ref_map = peptide_df.to_dict()["Run"]
         et = time.time()-s
