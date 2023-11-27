@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 import re
 from quantms_io.core.mztab import fetch_modifications_from_mztab_line
+from quantms_io.core.project import create_uuid_filename
 from quantms_io.utils.pride_utils import (get_peptidoform_proforma_version_in_mztab)
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -162,36 +163,6 @@ def get_modifications(fix_modifications: str, variable_modifications: str):
     return mod_dict
 
 
-def create_duckdb_from_diann_report(report_path,max_memory,worker_threads):
-    """
-    This function creates a duckdb database from a diann report for fast performance queries. The database
-    is created from the tab delimited format of diann and can handle really large datasets.
-    :param report_path: The path to the diann report
-    :return: A duckdb database
-    """
-    s = time.time()
-
-    database = duckdb.connect()
-    database.execute("SET enable_progress_bar=true")
-
-    if max_memory is not None:
-        database.execute("SET max_memory='{}'".format(max_memory))
-    if worker_threads is not None:
-        database.execute("SET worker_threads='{}'".format(worker_threads))
-
-    msg = database.execute("SELECT * FROM duckdb_settings() where name in ('worker_threads', 'max_memory')").df()
-    logging.info('Duckdb uses {} threads.'.format(str(msg['value'][0])))
-    logging.info('duckdb uses {} of memory.'.format(str(msg['value'][1])))
-
-    database.execute("CREATE TABLE diann_report AS SELECT * FROM '{}'".format(report_path))
-    database.execute("""CREATE INDEX idx_precursor_q ON diann_report ("Precursor.Id", "Q.Value")""")
-    database.execute("""CREATE INDEX idx_run ON diann_report ("Run")""")
-
-    et = time.time() - s
-    logging.info('Time to create duckdb database {} seconds'.format(et))
-    return database
-
-
 
 class DiaNNConvert:
 
@@ -214,7 +185,38 @@ class DiaNNConvert:
                             "Precursor.Quantity": "intensity",
                             "Q.Value": "search_engine_score[1]"
                             }
-    
+
+    def create_duckdb_from_diann_report(self, report_path, max_memory, worker_threads):
+        """
+        This function creates a duckdb database from a diann report for fast performance queries. The database
+        is created from the tab delimited format of diann and can handle really large datasets.
+        :param report_path: The path to the diann report
+        :return: A duckdb database
+        """
+        s = time.time()
+
+        self._duckdb_name = create_uuid_filename("report-duckdb", '.db')
+
+        database = duckdb.connect(self._duckdb_name)
+        database.execute("SET enable_progress_bar=true")
+
+        if max_memory is not None:
+            database.execute("SET max_memory='{}'".format(max_memory))
+        if worker_threads is not None:
+            database.execute("SET worker_threads='{}'".format(worker_threads))
+
+        msg = database.execute("SELECT * FROM duckdb_settings() where name in ('worker_threads', 'max_memory')").df()
+        logging.info('Duckdb uses {} threads.'.format(str(msg['value'][0])))
+        logging.info('duckdb uses {} of memory.'.format(str(msg['value'][1])))
+
+        database.execute("CREATE TABLE diann_report AS SELECT * FROM '{}'".format(report_path))
+        database.execute("""CREATE INDEX idx_precursor_q ON diann_report ("Precursor.Id", "Q.Value")""")
+        database.execute("""CREATE INDEX idx_run ON diann_report ("Run")""")
+
+        et = time.time() - s
+        logging.info('Time to create duckdb database {} seconds'.format(et))
+        return database
+
     def get_protein_map_from_database(self):
         s = time.time()
         query = self._duckdb.query(
@@ -332,7 +334,7 @@ class DiaNNConvert:
         psm_pqwriter = None
         feature_pqwriter = None
 
-        self._duckdb = create_duckdb_from_diann_report(report_path, duckdb_max_memory, duckdb_threads)
+        self._duckdb = self.create_duckdb_from_diann_report(report_path, duckdb_max_memory, duckdb_threads)
 
         s_data_frame, f_table = get_exp_design_dfs(design_file)
         self._modifications = get_modifications(modifications[0], modifications[1])
@@ -346,6 +348,8 @@ class DiaNNConvert:
             psm_pqwriter.close()
         if feature_pqwriter:
             feature_pqwriter.close()
+
+        self.destroy_duckdb_database()
 
     def add_additional_msg(self,report:pd.DataFrame):
         report.rename(columns=self._columns_map,inplace=True)
@@ -478,3 +482,13 @@ class DiaNNConvert:
         res.loc[:, "gene_names"] = None
 
         return pa.Table.from_pandas(res, schema=psm._create_schema())
+
+    def destroy_duckdb_database(self):
+        """
+        This function destroys the duckdb database, closing connection and removeing it from the filesystem.
+        """
+        if self._duckdb_name and self._duckdb:
+            self._duckdb.close()
+            os.remove(self._duckdb_name)
+            self._duckdb_name = None
+            self._duckdb = None
