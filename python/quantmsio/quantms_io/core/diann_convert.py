@@ -162,7 +162,7 @@ def get_modifications(fix_modifications: str, variable_modifications: str):
     return mod_dict
 
 
-def create_duckdb_from_diann_report(report_path,max_memory):
+def create_duckdb_from_diann_report(report_path,max_memory,worker_threads):
     """
     This function creates a duckdb database from a diann report for fast performance queries. The database
     is created from the tab delimited format of diann and can handle really large datasets.
@@ -171,10 +171,12 @@ def create_duckdb_from_diann_report(report_path,max_memory):
     """
     s = time.time()
     database = duckdb.connect(config={
-    'max_memory': max_memory
+    'max_memory': max_memory,
+    'worker_threads': worker_threads
     })
-    maxmemory = database.execute("SELECT * FROM duckdb_settings() where name in ('memory_limit', 'max_memory')")
-    print(maxmemory.df())
+    msg = database.execute("SELECT * FROM duckdb_settings() where name in ('worker_threads', 'max_memory')").df()
+    logging.info('Duckdb uses {} threads.'.format(str(msg['value'][0])))
+    logging.info('duckdb uses {} of memory.'.format(str(msg['value'][1])))
     database.execute("SET enable_progress_bar=true")
     database.execute("CREATE TABLE diann_report AS SELECT * FROM '{}'".format(report_path))
     database.execute("""CREATE INDEX idx_precursor_q ON diann_report ("Precursor.Id", "Q.Value")""")
@@ -270,7 +272,7 @@ class DiaNNConvert:
         
         return masses_map,modifications_map
     
-    def main_report_df(self, report_path: str, qvalue_threshold: float, mzml_info_folder: str, thread_num: int) -> pd.DataFrame:
+    def main_report_df(self, report_path: str, qvalue_threshold: float, mzml_info_folder: str, file_num: int) -> pd.DataFrame:
         def intergrate_msg(n):
             nonlocal report
             nonlocal mzml_info_folder
@@ -292,11 +294,11 @@ class DiaNNConvert:
         masses_map, modifications_map = self.get_masses_and_modifications_map()
         
         info_list = [mzml.replace('_mzml_info.tsv','') for mzml in os.listdir(mzml_info_folder) if mzml.endswith('_mzml_info.tsv')]
-        info_list =  [info_list[i:i+thread_num] for i in range(0,len(info_list), thread_num)]
+        info_list =  [info_list[i:i+file_num] for i in range(0,len(info_list), file_num)]
         for refs in info_list:
             report = self.get_report_from_database(report_path, refs)
             usecols = report.columns.to_list() + ["opt_global_spectrum_reference", "exp_mass_to_charge"]
-            with concurrent.futures.ThreadPoolExecutor(thread_num) as executor:
+            with concurrent.futures.ThreadPoolExecutor(100) as executor:
                 results = executor.map(intergrate_msg,refs)
             report = np.vstack([result.values for result in results])
             report = pd.DataFrame(report, columns=usecols)
@@ -320,15 +322,15 @@ class DiaNNConvert:
 
     def generate_psm_and_feature_file(self, report_path: str, qvalue_threshold: float, mzml_info_folder: str,
                                       design_file: str, modifications:list, sdrf_path:str, psm_output_path:str,
-                                      feature_output_path:str, max_memory:str='8GB',thread_num:int=60):
+                                      feature_output_path:str, max_memory:str='8GB',worker_threads:int=4,file_num:int=100):
         psm_pqwriter = None
         feature_pqwriter = None
 
-        self._duckdb = create_duckdb_from_diann_report(report_path,max_memory)
+        self._duckdb = create_duckdb_from_diann_report(report_path,max_memory,worker_threads)
 
         s_data_frame, f_table = get_exp_design_dfs(design_file)
         self._modifications = get_modifications(modifications[0], modifications[1])
-        for report in self.main_report_df(report_path, qvalue_threshold, mzml_info_folder , thread_num):
+        for report in self.main_report_df(report_path, qvalue_threshold, mzml_info_folder , file_num):
             s = time.time()
             psm_pqwriter = self.generate_psm_file(report,psm_pqwriter,psm_output_path)
             feature_pqwriter = self.generate_feature_file(report,s_data_frame,f_table,sdrf_path,feature_pqwriter,feature_output_path)
