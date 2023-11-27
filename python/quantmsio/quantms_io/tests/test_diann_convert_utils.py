@@ -35,7 +35,7 @@ class Test(TestCase):
                                             modifications=modifications, qvalue_threshold=qvalue_threshold,
                                             feature_output_path=feature_output_path,
                                             psm_output_path=psm_output_path, sdrf_path=sdrf_file,
-                                            mzml_info_folder=mzml_info_folder, thread_num=10)
+                                            mzml_info_folder=mzml_info_folder, file_num=10)
         et = time.time()
 
         # get the execution time

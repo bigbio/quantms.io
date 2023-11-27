@@ -170,17 +170,23 @@ def create_duckdb_from_diann_report(report_path,max_memory,worker_threads):
     :return: A duckdb database
     """
     s = time.time()
-    database = duckdb.connect(config={
-    'max_memory': max_memory,
-    'worker_threads': worker_threads
-    })
+
+    database = duckdb.connect()
+    database.execute("SET enable_progress_bar=true")
+
+    if max_memory is not None:
+        database.execute("SET max_memory='{}'".format(max_memory))
+    if worker_threads is not None:
+        database.execute("SET worker_threads='{}'".format(worker_threads))
+
     msg = database.execute("SELECT * FROM duckdb_settings() where name in ('worker_threads', 'max_memory')").df()
     logging.info('Duckdb uses {} threads.'.format(str(msg['value'][0])))
     logging.info('duckdb uses {} of memory.'.format(str(msg['value'][1])))
-    database.execute("SET enable_progress_bar=true")
+
     database.execute("CREATE TABLE diann_report AS SELECT * FROM '{}'".format(report_path))
     database.execute("""CREATE INDEX idx_precursor_q ON diann_report ("Precursor.Id", "Q.Value")""")
     database.execute("""CREATE INDEX idx_run ON diann_report ("Run")""")
+
     et = time.time() - s
     logging.info('Time to create duckdb database {} seconds'.format(et))
     return database
@@ -322,11 +328,11 @@ class DiaNNConvert:
 
     def generate_psm_and_feature_file(self, report_path: str, qvalue_threshold: float, mzml_info_folder: str,
                                       design_file: str, modifications:list, sdrf_path:str, psm_output_path:str,
-                                      feature_output_path:str, max_memory:str='8GB',worker_threads:int=4,file_num:int=100):
+                                      feature_output_path:str, max_memory:str = None, worker_threads:int = None,file_num:int=2):
         psm_pqwriter = None
         feature_pqwriter = None
 
-        self._duckdb = create_duckdb_from_diann_report(report_path,max_memory,worker_threads)
+        self._duckdb = create_duckdb_from_diann_report(report_path, max_memory, worker_threads)
 
         s_data_frame, f_table = get_exp_design_dfs(design_file)
         self._modifications = get_modifications(modifications[0], modifications[1])
