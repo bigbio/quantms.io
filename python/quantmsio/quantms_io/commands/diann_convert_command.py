@@ -91,8 +91,8 @@ def diann_convert_to_parquet(ctx, report_path: str, design_file: str, modificati
                                         sdrf_path = sdrf_path,
                                         psm_output_path=psm_output_path,
                                         feature_output_path = feature_output_path,
-                                        max_memory = duckdb_max_memory,
-                                        worker_threads = duckdb_threads,
+                                        duckdb_max_memory= duckdb_max_memory,
+                                        duckdb_threads= duckdb_threads,
                                         file_num = file_num
                                     )
 
