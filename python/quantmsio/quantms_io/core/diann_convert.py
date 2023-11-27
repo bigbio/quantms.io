@@ -162,7 +162,7 @@ def get_modifications(fix_modifications: str, variable_modifications: str):
     return mod_dict
 
 
-def create_duckdb_from_diann_report(report_path):
+def create_duckdb_from_diann_report(report_path,max_memory):
     """
     This function creates a duckdb database from a diann report for fast performance queries. The database
     is created from the tab delimited format of diann and can handle really large datasets.
@@ -170,7 +170,11 @@ def create_duckdb_from_diann_report(report_path):
     :return: A duckdb database
     """
     s = time.time()
-    database = duckdb.connect()
+    database = duckdb.connect(config={
+    'max_memory': max_memory
+    })
+    maxmemory = database.execute("SELECT * FROM duckdb_settings() where name in ('memory_limit', 'max_memory')")
+    print(maxmemory.df())
     database.execute("SET enable_progress_bar=true")
     database.execute("CREATE TABLE diann_report AS SELECT * FROM '{}'".format(report_path))
     database.execute("""CREATE INDEX idx_precursor_q ON diann_report ("Precursor.Id", "Q.Value")""")
@@ -316,11 +320,11 @@ class DiaNNConvert:
 
     def generate_psm_and_feature_file(self, report_path: str, qvalue_threshold: float, mzml_info_folder: str,
                                       design_file: str, modifications:list, sdrf_path:str, psm_output_path:str,
-                                      feature_output_path:str, thread_num:int=60):
+                                      feature_output_path:str, max_memory:str='8GB',thread_num:int=60):
         psm_pqwriter = None
         feature_pqwriter = None
 
-        self._duckdb = create_duckdb_from_diann_report(report_path)
+        self._duckdb = create_duckdb_from_diann_report(report_path,max_memory)
 
         s_data_frame, f_table = get_exp_design_dfs(design_file)
         self._modifications = get_modifications(modifications[0], modifications[1])

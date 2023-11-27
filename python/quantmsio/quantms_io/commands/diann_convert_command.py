@@ -51,10 +51,11 @@ def cli():
     required=True,
 )
 @click.option("--output_prefix_file", help="Prefix of the Json file needed to generate the file name", required=False)
+@click.option("--max_memory", help= "The maximum amount of memory allocated", default = '32GB')
 @click.option("--threads", help= "The number of thread", default = 100)
 @click.pass_context
 def diann_convert_to_parquet(ctx, report_path: str, design_file: str, modifications:List, qvalue_threshold: float,
-                             mzml_info_folder:str, sdrf_path:str, output_folder:str, output_prefix_file:str,
+                             mzml_info_folder:str, sdrf_path:str, output_folder:str, output_prefix_file:str,max_memory:str,
                              threads:int ):
     '''
     report_path: diann report file path
@@ -87,6 +88,7 @@ def diann_convert_to_parquet(ctx, report_path: str, design_file: str, modificati
                                         sdrf_path = sdrf_path,
                                         psm_output_path=psm_output_path,
                                         feature_output_path = feature_output_path,
+                                        max_memory = max_memory,
                                         thread_num = threads
                                     )
 
