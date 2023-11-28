@@ -326,6 +326,7 @@ class DiaNNConvert:
             #cal value and mod
             mass_vector = report["Modified.Sequence"].map(masses_map)
             report["Calculate.Precursor.Mz"] = (mass_vector + (PROTON_MASS_U * report["Precursor.Charge"].values)) / report["Precursor.Charge"].values
+            report["modifications"] = report["Modified.Sequence"].swifter.apply(lambda x: find_modification(x))
             report["Modified.Sequence"] = report["Modified.Sequence"].map(modifications_map)
             #pep 
             report["best_psm_reference_file_name"] = report["Precursor.Id"].map(best_ref_map)
@@ -375,7 +376,6 @@ class DiaNNConvert:
         ]
         report.loc[:, null_col] = None
 
-        report.loc[:, "modifications"] = report["peptidoform"].swifter.apply(lambda x: find_modification(x))
         report['peptidoform'] = report[['sequence', 'modifications']].swifter.apply(lambda row:
             get_peptidoform_proforma_version_in_mztab(row['sequence'], row['modifications'], self._modifications),
                                                                                     axis=1)
