@@ -320,6 +320,7 @@ class DiaNNConvert:
             #cal value and mod
             mass_vector = report["Modified.Sequence"].map(masses_map)
             report["Calculate.Precursor.Mz"] = (mass_vector + (PROTON_MASS_U * report["Precursor.Charge"].values)) / report["Precursor.Charge"].values
+            report["modifications"] = report["Modified.Sequence"].swifter.apply(lambda x: find_modification(x))
             report["Modified.Sequence"] = report["Modified.Sequence"].map(modifications_map)
             #pep 
             report["best_psm_reference_file_name"] = report["Precursor.Id"].map(best_ref_map)
@@ -330,7 +331,7 @@ class DiaNNConvert:
 
     def generate_psm_and_feature_file(self, report_path: str, qvalue_threshold: float, mzml_info_folder: str,
                                       design_file: str, modifications:list, sdrf_path:str, psm_output_path:str,
-                                      feature_output_path:str, duckdb_max_memory:str = None, duckdb_threads:int = None, file_num:int=2):
+                                      feature_output_path:str, duckdb_max_memory:str = None, duckdb_threads:int = None, file_num:int=60):
         psm_pqwriter = None
         feature_pqwriter = None
 
@@ -365,7 +366,6 @@ class DiaNNConvert:
         ]
         report.loc[:, null_col] = None
 
-        report.loc[:, "modifications"] = report["peptidoform"].swifter.apply(lambda x: find_modification(x))
         report['peptidoform'] = report[['sequence', 'modifications']].swifter.apply(lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'], row['modifications'],self._modifications), axis=1)
         
         return report
