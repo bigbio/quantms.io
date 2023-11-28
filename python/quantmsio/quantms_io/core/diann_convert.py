@@ -183,8 +183,10 @@ class DiaNNConvert:
                             "opt_global_spectrum_reference": "scan_number",
                             "File.Name": "reference_file_name",
                             "Precursor.Quantity": "intensity",
-                            "Q.Value": "search_engine_score[1]"
-                            }
+                            "Global.Q.Value": "global_qvalue",
+                            "PEP": "posterior_error_probability",
+                            "Global.PG.Q.Value": "protein_global_qvalue",
+        }
 
     def create_duckdb_from_diann_report(self, report_path, max_memory, worker_threads):
         """
@@ -254,11 +256,18 @@ class DiaNNConvert:
         logging.info('Time to load peptide map {} seconds'.format(et))
         return peptide_map, best_ref_map
     
-    def get_report_from_database(self, report_path: str , runs):
+    def get_report_from_database(self, runs: list) -> pd.DataFrame:
+        """
+        This function loads the report from the duckdb database for a group of ms_runs.
+        :param runs: A list of ms_runs
+        :return: The report
+        """
         s = time.time()
         database = self._duckdb.query(
             """
-            select "File.Name","Run","Protein.Ids","RT.Start","Precursor.Id","Q.Value","Modified.Sequence","Stripped.Sequence","Precursor.Charge","Precursor.Quantity" from diann_report
+            select "File.Name", "Run", "Protein.Ids", "RT.Start", "Precursor.Id", "Q.Value", "Global.Q.Value", "PEP", 
+                   "Global.PG.Q.Value", "Modified.Sequence", "Stripped.Sequence", "Precursor.Charge", "Precursor.Quantity"
+                    from diann_report
             where Run IN {}
             """.format(tuple(runs))
         )
@@ -297,14 +306,13 @@ class DiaNNConvert:
             return res
 
         #query duckdb
-        protein_map = self.get_protein_map_from_database()
         peptide_map, best_ref_map = self.get_peptide_map_from_database()
         masses_map, modifications_map = self.get_masses_and_modifications_map()
         
         info_list = [mzml.replace('_mzml_info.tsv','') for mzml in os.listdir(mzml_info_folder) if mzml.endswith('_mzml_info.tsv')]
         info_list =  [info_list[i:i+file_num] for i in range(0,len(info_list), file_num)]
         for refs in info_list:
-            report = self.get_report_from_database(report_path, refs)
+            report = self.get_report_from_database(refs)
             usecols = report.columns.to_list() + ["opt_global_spectrum_reference", "exp_mass_to_charge"]
             with concurrent.futures.ThreadPoolExecutor(100) as executor:
                 results = executor.map(intergrate_msg,refs)
@@ -312,9 +320,7 @@ class DiaNNConvert:
             report = pd.DataFrame(report, columns=usecols)
             #restrict
             report = report[report["Q.Value"] < qvalue_threshold]
-            #map
-            report["protein_global_qvalue"] = report["Protein.Ids"].map(protein_map)
-            report["global_qvalue"] = report["Precursor.Id"].map(peptide_map)
+
             #spectral count
             report["spectral_count"] = report.groupby(["Modified.Sequence","Precursor.Charge","Run"]).transform('size')
             #cal value and mod
@@ -340,7 +346,7 @@ class DiaNNConvert:
         self._modifications = get_modifications(modifications[0], modifications[1])
         for report in self.main_report_df(report_path, qvalue_threshold, mzml_info_folder , file_num):
             s = time.time()
-            psm_pqwriter = self.generate_psm_file(report,psm_pqwriter,psm_output_path)
+            psm_pqwriter = self.generate_psm_file(report, psm_pqwriter, psm_output_path)
             feature_pqwriter = self.generate_feature_file(report,s_data_frame,f_table,sdrf_path,feature_pqwriter,feature_output_path)
             et = time.time() - s
             logging.info('Time to generate psm and feature file {} seconds'.format(et))
@@ -351,8 +357,13 @@ class DiaNNConvert:
 
         self.destroy_duckdb_database()
 
-    def add_additional_msg(self,report:pd.DataFrame):
-        report.rename(columns=self._columns_map,inplace=True)
+    def add_additional_msg(self,report:pd.DataFrame) -> pd.DataFrame:
+        """
+        Perform some transformations in the report dataframe to help with the generation of the psm and feature files.
+        :param report: The report dataframe
+        :return: The report dataframe with the transformations
+        """
+        report.rename(columns=self._columns_map , inplace=True)
         report["reference_file_name"] = report["reference_file_name"].swifter.apply(lambda x:x.split('.')[0])
 
         report.loc[:,"is_decoy"] = "0"
@@ -360,23 +371,25 @@ class DiaNNConvert:
 
         null_col = [
             "protein_start_positions",
-            "protein_end_positions",
-            "posterior_error_probability"
+            "protein_end_positions"
         ]
         report.loc[:, null_col] = None
 
         report.loc[:, "modifications"] = report["peptidoform"].swifter.apply(lambda x: find_modification(x))
-        report['peptidoform'] = report[['sequence', 'modifications']].swifter.apply(lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'], row['modifications'],self._modifications), axis=1)
+        report['peptidoform'] = report[['sequence', 'modifications']].swifter.apply(lambda row:
+            get_peptidoform_proforma_version_in_mztab(row['sequence'], row['modifications'], self._modifications),
+                                                                                    axis=1)
+
+        report['id_scores'] = report[['Q.Value', 'posterior_error_probability', 'global_qvalue']].swifter.apply(lambda x: [
+            f"q-value: {x['Q.Value']}",
+            f"global q-value: {x['global_qvalue']}",
+            f"posterior error probability: {x['posterior_error_probability']}",
+        ], axis=1)
         
         return report
     
     def generate_psm_file(self,report,psm_pqwriter,psm_output_path):
         psm = report.copy()
-        psm.loc[:, 'id_scores'] = psm['search_engine_score[1]'].swifter.apply(lambda x: [
-            f"protein-level q-value: {x}",
-            f"Posterior error probability: ",
-        ])
-        psm.drop(["search_engine_score[1]"], inplace=True, axis=1)
         psm.loc[:, "consensus_support"] = None
         parquet_table = self.convert_psm_format_to_parquet(psm)
         
@@ -414,10 +427,6 @@ class DiaNNConvert:
             'Run': 'run'
         },inplace=True)
         peptide_score_name = self._score_names["peptide_score"]
-        report["id_scores"] = (
-            peptide_score_name + ":" + report["global_qvalue"].astype(str).values + ","
-            + "Best PSM PEP:" + report["posterior_error_probability"].astype(str).values
-        )
         report['sample_accession'] = report["reference_file_name"].map(sdrf_map)
         schema = FeatureHandler()
         feature = FeatureInMemory('LFQ',schema.schema)
@@ -471,6 +480,7 @@ class DiaNNConvert:
         res['exp_mass_to_charge'] = res['exp_mass_to_charge'].astype(float)
         res['calc_mass_to_charge'] = res['calc_mass_to_charge'].astype(float)
         res['posterior_error_probability'] = res['posterior_error_probability'].astype(float)
+        res['global_qvalue'] = res['global_qvalue'].astype(float)
 
         res['is_decoy'] = res['is_decoy'].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype('Int32')
 

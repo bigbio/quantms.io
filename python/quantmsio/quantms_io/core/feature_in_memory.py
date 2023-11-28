@@ -800,7 +800,8 @@ class FeatureInMemory:
         res: msstats_in dataframe
         return: parquet table
         """
-        res['id_scores'] = res['id_scores'].str.split(',')
+        if res['id_scores'].dtype == 'str':
+            res['id_scores'] = res['id_scores'].str.split(',')
         res['sequence'] = res['sequence'].astype(str)
         res['protein_accessions'] = res['protein_accessions'].str.split(";")
         res['protein_start_positions'] = res['protein_start_positions'].swifter.apply(
