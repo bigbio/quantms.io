@@ -313,13 +313,14 @@ class DiaNNConvert:
         info_list =  [info_list[i:i+file_num] for i in range(0,len(info_list), file_num)]
         for refs in info_list:
             report = self.get_report_from_database(refs)
+
+            #restrict
+            report = report[report["Q.Value"] < qvalue_threshold]
             usecols = report.columns.to_list() + ["opt_global_spectrum_reference", "exp_mass_to_charge"]
             with concurrent.futures.ThreadPoolExecutor(100) as executor:
                 results = executor.map(intergrate_msg,refs)
             report = np.vstack([result.values for result in results])
             report = pd.DataFrame(report, columns=usecols)
-            #restrict
-            report = report[report["Q.Value"] < qvalue_threshold]
 
             #spectral count
             report["spectral_count"] = report.groupby(["Modified.Sequence","Precursor.Charge","Run"]).transform('size')

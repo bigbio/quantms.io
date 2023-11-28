@@ -25,7 +25,7 @@ from quantms_io.core.psm import PSMHandler
 from quantms_io.core.project import ProjectHandler
 from quantms_io.utils.file_utils import extract_len
 from quantms_io.core.project import create_uuid_filename
-
+import duckdb
 
 
 # optional about spectrum
@@ -385,3 +385,38 @@ def convert_to_json(file_path):
     f = open(output_path, 'w')
     f.write(b)
     f.close()
+
+#get best_scan_number
+def load_best_scan_number(diann_psm_path:str,diann_feature_path:str,output_path:str):
+    database = duckdb.connect(config={
+    "max_memory" : "16GB",
+    "worker_threads": 4
+    })
+    psm_table = database.read_parquet(diann_psm_path)
+    psm_df = database.execute(
+        """    
+        SELECT peptidoform,charge,scan_number
+        FROM (
+        SELECT peptidoform,charge,scan_number, ROW_NUMBER() OVER (PARTITION BY peptidoform,charge ORDER BY global_qvalue ASC) AS row_num
+        FROM psm_table
+        ) AS subquery
+        WHERE row_num = 1;
+        """
+    ).df()
+    pqwriter = None
+    hander = FeatureHandler()
+    for df in read_large_parquet(diann_feature_path):
+        df = df.merge(psm_df,on=['peptidoform','charge'],how='left')
+        df.drop(["best_psm_scan_number"],inplace=True,axis=1)
+        df.rename(columns={
+            "scan_number": "best_psm_scan_number"
+        },inplace=True)
+
+        parquet_table = pa.Table.from_pandas(df, schema=hander.schema)
+        if not pqwriter:
+        # create a parquet write object giving it an output file
+            pqwriter = pq.ParquetWriter(output_path, parquet_table.schema)
+        pqwriter.write_table(parquet_table)
+    if pqwriter:
+        pqwriter.close() 
+
