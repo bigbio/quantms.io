@@ -20,9 +20,10 @@ def read_large_parquet(parquet_path: str, batch_size: int = 100000):
 @click.option("--feature_parquet", help="Parquet file with features", required=True)
 @click.option("--output_file", help="Output file", required=True)
 @click.option("--accession", help="Accession", required=True)
-def extract_protein_qvalues(feature_parquet: str, output_file: str, accession: str):
+@click.option("--batch_size", help="Batch size", default=100000)
+def extract_protein_qvalues(feature_parquet: str, output_file: str, accession: str, batch_size: int = 100000):
 
-    chunks = read_large_parquet(feature_parquet)
+    chunks = read_large_parquet(feature_parquet, batch_size=batch_size)
     q_df = pd.DataFrame()
     for feature_df in chunks:
         feature_df = feature_df[['protein_accessions', 'protein_global_qvalue', 'is_decoy', 'condition']]
