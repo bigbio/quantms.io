@@ -1,3 +1,5 @@
+import logging
+
 import click
 import pandas as pd
 import pyarrow.parquet as pq
@@ -31,6 +33,7 @@ def extract_protein_qvalues(feature_parquet: str, output_file: str, accession: s
         q_df = pd.concat([q_df, feature_df])
         q_df.drop_duplicates(inplace=True)
         q_df['dataset_accession'] = accession
+        logging.info(f"Finished converting {len(feature_df)} rows")
     print(q_df)
     q_df.to_csv(output_file, index=False, mode="w")
 
