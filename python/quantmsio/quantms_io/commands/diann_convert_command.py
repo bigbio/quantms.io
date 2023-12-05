@@ -1,7 +1,6 @@
 from quantms_io.core.diann_convert import DiaNNConvert
 import click
 from quantms_io.core.project import create_uuid_filename
-from typing import List
 import os
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
@@ -19,7 +18,7 @@ def cli():
 )
 @click.option(
     "--design_file",
-    help="the disign file path",
+    help="the design file path",
     required=True,
 )
 @click.option(
