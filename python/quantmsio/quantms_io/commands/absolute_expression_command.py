@@ -1,5 +1,6 @@
 from quantms_io.core.ae import AbsoluteExpressionHander
 import click
+
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
@@ -9,8 +10,9 @@ def cli():
     This is the main tool that gives access to all commands.
     """
 
+
 @click.command(
-    "convert_ibaq_absolute",
+    "convert-ae",
     short_help="Convert a ibaq_absolute file into a quantms.io file " "format",
 )
 @click.option(
@@ -37,13 +39,13 @@ def cli():
 )
 @click.pass_context
 def convert_ibaq_absolute(ctx,
-    ibaq_file:str,
-    sdrf_file:str,
-    project_file: str,
-    output_folder: str,
-    output_prefix_file: str,
-    delete_existing: bool = True,
-    ):
+                          ibaq_file: str,
+                          sdrf_file: str,
+                          project_file: str,
+                          output_folder: str,
+                          output_prefix_file: str,
+                          delete_existing: bool = True,
+                          ):
     """
     Convert a IBAQ absolute file into a quantms.io file format. The file definition is available in the docs
     https://github.com/bigbio/quantms.io/blob/main/docs/AE.md.
@@ -65,6 +67,7 @@ def convert_ibaq_absolute(ctx,
         output_file_prefix=output_prefix_file,
         delete_existing=delete_existing,
     )
+
 
 cli.add_command(convert_ibaq_absolute)
 

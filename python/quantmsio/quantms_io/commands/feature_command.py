@@ -1,8 +1,7 @@
 import click
-import pandas as pd
 
 from quantms_io.core.feature import FeatureHandler
-from quantms_io.core.project import check_directory,get_project_accession,create_uuid_filename
+from quantms_io.core.project import create_uuid_filename
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
@@ -12,9 +11,7 @@ def cli():
     This is the main tool that gives access to all commands.
     """
 
-@click.command(
-    "convert_feature_file", short_help="Convert msstats/mztab to parquet file"
-)
+@click.command("convert-feature", short_help="Convert msstats/mztab to parquet file")
 @click.option(
     "--sdrf_file",
     help="the SDRF file needed to extract some of the metadata",

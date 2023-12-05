@@ -10,7 +10,7 @@ def cli():
     This is the main tool that gives access to all commands.
     """
 
-@click.command("compare_two_parquet", short_help="Compare two parquet files")
+@click.command("compare-parquet", short_help="Compare two parquet files, feature or psm files")
 @click.option("--parquet_path_one", help="First parquet file", required=True)
 @click.option("--parquet_path_two", help="the parquet file of memory version", required=True)
 @click.option("--report_path", help="report path", required=True)

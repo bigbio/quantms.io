@@ -16,8 +16,7 @@ import pandas as pd
 
 import pyarrow as pa
 import pyarrow.parquet as pq
-from quantms_io.core.project import ProjectHandler
-from quantms_io.core.project import check_directory,cut_path
+
 from quantms_io.core.feature_in_memory import FeatureInMemory
 from quantms_io.core.mztab import MztabHandler
 from quantms_io.core.openms import OpenMSHandler
@@ -507,7 +506,6 @@ class FeatureHandler(ParquetHandler):
         msstats_file: str,
         sdrf_file: str,
         mztab_file: str,
-        output_folder: str,
         consesusxml_file: str = None,
         batch_size: int = 1000000,
         use_cache: bool = False,

@@ -119,7 +119,7 @@ class AbsoluteExpressionHander:
         if output_folder is not None and not os.path.exists(output_folder):
             Path(output_folder).mkdir(parents=True, exist_ok=True)
 
-        ## Delete existing SDRF file
+        # Delete existing SDRF file
         if delete_existing:
             delete_files_extension(
                 output_folder,

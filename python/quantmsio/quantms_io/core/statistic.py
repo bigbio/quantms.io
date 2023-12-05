@@ -65,9 +65,9 @@ class Statistic:
                 
     @check_exist('feature_db')
     def get_unique_peptides(self):
-        '''
+        """
         return: A list of deduplicated peptides.
-        '''
+        """
         feature_db = self.feature_db
         unique_peps = duckdb.sql(f"SELECT DISTINCT sequence FROM feature_db").df()
         
@@ -75,9 +75,9 @@ class Statistic:
 
     @check_exist('ibaq_db')
     def get_unique_proteins(self):
-        '''
+        """
         return: A list of deduplicated proteins.
-        '''
+        """
         ibaq_db = self.ibaq_db
         unique_prts = duckdb.sql(f"SELECT DISTINCT protein FROM ibaq_db").df()
         
@@ -85,10 +85,10 @@ class Statistic:
  
     @check_exist('feature_db')
     def query_peptide(self,peptide:str):
-        '''
+        """
         peptide: Peptide that need to be queried.
         return: A DataFrame of all information about query peptide.
-        '''
+        """
 
         feature_db = self.feature_db
         if check_string('^[A-Z]+$',peptide):
@@ -98,10 +98,10 @@ class Statistic:
 
     @check_exist('ibaq_db')
     def query_protein(self,protein:str):
-        '''
+        """
         protein: Protein that need to be queried.
         return: A DataFrame of all information about query protein.
-        '''
+        """
 
         ibaq_db = self.ibaq_db
         if check_string('^[A-Z]+',protein):
@@ -111,9 +111,9 @@ class Statistic:
     
     @check_exist('feature_db')
     def plot_peptide_distribution_of_protein(self):
-        '''
+        """
         Bar graphs of peptide counts for different samples.
-        '''
+        """
         feature_db = self.feature_db
         df = duckdb.sql(f"SELECT sample_accession, COUNT(sequence) FROM feature_db GROUP BY sample_accession").df()
         df.columns = ['sample','peptides']
@@ -125,9 +125,9 @@ class Statistic:
     
     @check_exist('feature_db')
     def plot_intensty_distribution_of_samples(self):
-        '''
+        """
         Kde of peptide intensity distribution for different samples.
-        '''
+        """
         feature_db = self.feature_db
         sample_accessions = duckdb.sql(f"SELECT DISTINCT sample_accession FROM feature_db").df()['sample_accession'].tolist()
         random.shuffle(sample_accessions)
@@ -145,9 +145,9 @@ class Statistic:
     
     @check_exist('feature_db')
     def plot_intensty_box_of_samples(self):
-        '''
+        """
         Boxplot of peptide intensity distribution for different samples.
-        '''
+        """
         feature_db = self.feature_db
         sample_accessions = duckdb.sql(f"SELECT DISTINCT sample_accession FROM feature_db").df()['sample_accession'].tolist()
         random.shuffle(sample_accessions)

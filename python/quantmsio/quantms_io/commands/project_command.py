@@ -1,6 +1,5 @@
 import click
 
-from quantms_io.core.project import ProjectHandler
 from quantms_io.core.project import check_directory
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -12,7 +11,7 @@ def cli():
     """
 
 @click.command(
-    "generate_pride_project_json",
+    "generate-pride-project-json",
     short_help="Generate a json project file from original pride accession",
 )
 @click.option(

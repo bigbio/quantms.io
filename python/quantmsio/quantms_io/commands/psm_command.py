@@ -1,7 +1,7 @@
 import click
 
 from quantms_io.core.psm import PSMHandler
-from quantms_io.core.project import create_uuid_filename,check_directory
+from quantms_io.core.project import create_uuid_filename
 from quantms_io.core.tools import plot_peptidoform_charge_venn, plot_sequence_venn
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -12,10 +12,7 @@ def cli():
     This is the main tool that gives access to all commands.
     """
 
-@click.command(
-    "convert_psm_file",
-    short_help="Convert psm from mzTab to parquet file in quantms io",
-)
+@click.command("convert-psm", short_help="Convert psm from mzTab to parquet file in quantms io",)
 @click.option(
     "--mztab_file",
     help="the mzTab file, this will be used to extract the protein information",
@@ -35,7 +32,7 @@ def cli():
               help="Output debug information.",
     default=False, is_flag=True)
 @click.pass_context
-def convert_psm_file(ctx,mztab_file: str, output_folder: str, output_prefix_file: str=None, verbose: bool = False):
+def convert_psm_file(ctx, mztab_file: str, output_folder: str, output_prefix_file: str=None, verbose: bool = False):
     """
     convert mztab psm section to a parquet file. The parquet file will contain the features and the metadata.
     :param mztab_file: the mzTab file, this will be used to extract the protein information

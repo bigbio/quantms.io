@@ -1,8 +1,8 @@
 from quantms_io.core.diann_convert import DiaNNConvert
 import click
 from quantms_io.core.project import create_uuid_filename
-from typing import List
 import os
+
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 @click.group(context_settings=CONTEXT_SETTINGS)
 def cli():
@@ -10,9 +10,7 @@ def cli():
     This is the main tool that gives access to all commands.
     """
 
-@click.command(
-    "diann_convert_to_parquet", short_help="Convert diann_report to parquet and psm file"
-)
+@click.command("convert-diann", short_help="Convert diann_report to parquet and psm file of quantms.io format")
 @click.option(
     "--report_path",
     help="the diann report file path",
@@ -20,27 +18,7 @@ def cli():
 )
 @click.option(
     "--design_file",
-    help="the disign file path",
-    required=True,
-)
-@click.option(
-    "--fasta_path",
-    help="reference fasta database file",
-    required=True,
-)
-@click.option(
-    "--modifications",
-    help="a list contains fix modifications and variable modifications",
-    required=True,
-)
-@click.option(
-    "--pg_path",
-    help="pg_matrix file",
-    required=True,
-)
-@click.option(
-    "--pr_path",
-    help="pr_matrix file",
+    help="the design file path",
     required=True,
 )
 @click.option(
@@ -56,7 +34,7 @@ def cli():
 )
 @click.option(
     "--sdrf_path",
-    help="sdrf file path",
+    help="the SDRF file needed to extract some of the metadata",
     required=True,
 )
 @click.option(
@@ -65,29 +43,26 @@ def cli():
     required=True,
 )
 @click.option("--output_prefix_file", help="Prefix of the Json file needed to generate the file name", required=False)
-@click.option(
-    "--chunksize",
-    help="mzml info tsv file",
-    required=False,
-    default = 100000
-)
+@click.option("--duckdb_max_memory", help= "The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)")
+@click.option("--duckdb_threads", help= "The number of threads for the DuckDB engine (e.g 4)")
+@click.option("--file_num", help= "The number of files being processed at the same time", default = 100)
 @click.pass_context
-def diann_convert_to_parquet(ctx,report_path:str,design_file:str,fasta_path:str,modifications:List,pg_path:str,pr_path:str,qvalue_threshold: float,mzml_info_folder:str,sdrf_path:str,output_folder:str,output_prefix_file:str,chunksize:int):
+def diann_convert_to_parquet(ctx, report_path: str, design_file: str, qvalue_threshold: float,
+                             mzml_info_folder:str, sdrf_path:str, output_folder:str, output_prefix_file:str,
+                             duckdb_max_memory:str, duckdb_threads:int, file_num:int ):
     '''
     report_path: diann report file path
     design_file: the disign file path
-    fasta_path: reference fasta database file
-    modifications: a list contains fix modifications and variable modifications
-    pg_path: pg_matrix file
-    pr_path: pr_matrix file
     qvalue_threshold: qvalue threshold
     mzml_info_folder: mzml info file folder
     sdrf_path: sdrf file path
     output_folder: Folder where the Json file will be generated
     output_prefix_file: Prefix of the Json file needed to generate the file name
-    chunksize: batch size
+    duckdb_max_memory: The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)
+    duckdb_threads: The number of threads for the DuckDB engine (e.g 4)
+    file_num: The number of files being processed at the same time
     '''
-    if os.path.exists(output_folder):
+    if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     
     if not output_prefix_file:
@@ -98,8 +73,18 @@ def diann_convert_to_parquet(ctx,report_path:str,design_file:str,fasta_path:str,
 
     DiaNN = DiaNNConvert()
 
-    DiaNN.generate_feature_file(report_path,design_file,fasta_path,modifications,pg_path,pr_path,qvalue_threshold,mzml_info_folder,sdrf_path,feature_output_path,chunksize)
-    DiaNN.generate_psm_file(report_path,design_file,fasta_path,modifications,pg_path,qvalue_threshold,mzml_info_folder,psm_output_path,chunksize)
+    DiaNN.generate_psm_and_feature_file(
+                                        report_path=report_path,
+                                        qvalue_threshold=qvalue_threshold,
+                                        mzml_info_folder=mzml_info_folder,
+                                        design_file=design_file,
+                                        sdrf_path = sdrf_path,
+                                        psm_output_path=psm_output_path,
+                                        feature_output_path = feature_output_path,
+                                        duckdb_max_memory= duckdb_max_memory,
+                                        duckdb_threads= duckdb_threads,
+                                        file_num = file_num
+                                    )
 
 cli.add_command(diann_convert_to_parquet)
 if __name__ == '__main__':

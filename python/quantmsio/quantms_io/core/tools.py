@@ -16,7 +16,8 @@ import json
 import pandas as pd
 import matplotlib.pyplot as plt
 from venn import venn
-
+from Bio import SeqIO
+import ahocorasick
 import pyarrow as pa
 import pyarrow.parquet as pq
 from quantms_io.core.feature import FeatureHandler
@@ -25,8 +26,8 @@ from quantms_io.core.psm import PSMHandler
 from quantms_io.core.project import ProjectHandler
 from quantms_io.utils.file_utils import extract_len
 from quantms_io.core.project import create_uuid_filename
-
-
+import duckdb
+import swifter
 
 # optional about spectrum
 def map_spectrum_mz(mz_path: str, scan: str, mzml: OpenMSHandler, mzml_directory: str):
@@ -44,10 +45,10 @@ def map_spectrum_mz(mz_path: str, scan: str, mzml: OpenMSHandler, mzml_directory
 
 
 def generate_features_of_spectrum(parquet_path: str, mzml_directory: str,output_path:str,label,chunksize,partition:str=None):
-    '''
+    """
     parquet_path: parquet file path
     mzml_directory: mzml file directory path
-    '''
+    """
     pqwriters = {}
     pqwriter_no_part = None
     for table in read_large_parquet(parquet_path,batch_size=chunksize):
@@ -216,15 +217,15 @@ def plot_sequence_venn(parquet_path_list,labels):
 # gei unqnimous name
 from collections import defaultdict
 def map_protein_for_parquet(parquet_path,fasta,output_path,map_parameter,label):
-    '''
+    """
     according fasta database to map the proteins accessions to uniprot names.
     :param parquet_path: psm_parquet_path or feature_parquet_path
     :param fasta: Reference fasta database
     :param output_path: output file path
     :param map_parameter: map_protein_name or map_protein_accession
-    :param label: feature or psm 
+    :param label: feature or psm
     retrun: None
-    '''
+    """
     from Bio import SeqIO
     map_protein_names = defaultdict(set)
     if map_parameter == 'map_protein_name':
@@ -241,17 +242,15 @@ def map_protein_for_parquet(parquet_path,fasta,output_path,map_parameter,label):
             map_protein_names[name].add(accession)
     change_and_save_parquet(parquet_path,map_protein_names,output_path,label)
 
-def map_protein_for_tsv(path,fasta,output_path,map_parameter):
-    '''
+def map_protein_for_tsv(path: str,fasta: str, output_path: str, map_parameter: str):
+    """
     according fasta database to map the proteins accessions to uniprot names.
     :param path: de_path or ae_path
     :param fasta: Reference fasta database
     :param output_path: output file path
     :param map_parameter: map_protein_name or map_protein_accession
-    :param label: feature or psm 
     retrun: None
-    '''
-    from Bio import SeqIO
+    """
     map_protein_names = defaultdict(set)
     if map_parameter == 'map_protein_name':
         for seq_record in SeqIO.parse(fasta, "fasta"):
@@ -368,9 +367,9 @@ def get_file_size(file_path):
                 
 #covert ae or de to json
 def convert_to_json(file_path):
-    '''
+    """
     by providing the json format of AE and DE files for retrieval. return json
-    '''
+    """
     table,content = load_de_or_ae(file_path)
     output = {}
     pattern = r'[\\|\|//|/]'
@@ -386,3 +385,90 @@ def convert_to_json(file_path):
     f = open(output_path, 'w')
     f.write(b)
     f.close()
+
+#get best_scan_number
+def load_best_scan_number(diann_psm_path:str,diann_feature_path:str,output_path:str):
+    database = duckdb.connect(config={
+    "max_memory" : "16GB",
+    "worker_threads": 4
+    })
+    psm_table = database.read_parquet(diann_psm_path)
+    psm_df = database.execute(
+        """    
+        SELECT peptidoform,charge,scan_number
+        FROM (
+        SELECT peptidoform,charge,scan_number, ROW_NUMBER() OVER (PARTITION BY peptidoform,charge ORDER BY global_qvalue ASC) AS row_num
+        FROM psm_table
+        ) AS subquery
+        WHERE row_num = 1;
+        """
+    ).df()
+    pqwriter = None
+    hander = FeatureHandler()
+    for df in read_large_parquet(diann_feature_path):
+        df = df.merge(psm_df,on=['peptidoform','charge'],how='left')
+        df.drop(["best_psm_scan_number"],inplace=True,axis=1)
+        df.rename(columns={
+            "scan_number": "best_psm_scan_number"
+        },inplace=True)
+
+        parquet_table = pa.Table.from_pandas(df, schema=hander.schema)
+        if not pqwriter:
+        # create a parquet write object giving it an output file
+            pqwriter = pq.ParquetWriter(output_path, parquet_table.schema)
+        pqwriter.write_table(parquet_table)
+    if pqwriter:
+        pqwriter.close() 
+
+# get start and end from fasta
+def get_protein_dict(parquet_path,fasta_path):
+
+    database = duckdb.connect(config={
+    "max_memory" : "16GB",
+    "worker_threads": 4
+    })
+    parquet_table = database.read_parquet(parquet_path)
+    df = database.execute(
+        """
+        select DISTINCT protein_accessions from parquet_table
+        """
+    ).df()
+    proteins = set()
+    df['protein_accessions'].apply(lambda x: proteins.update(set(x)))
+    protein_dict = {}
+    for seq in SeqIO.parse(fasta_path, "fasta"):
+        p_name = seq.id.split('|')[1]
+        if p_name in proteins and p_name not in protein_dict:
+            protein_dict[p_name] = str(seq.seq)
+    return protein_dict
+
+def fill_start_and_end(row,protein_dict):
+    start = []
+    end = []
+    for protein in list(row['protein_accessions']):
+        automaton = ahocorasick.Automaton()
+        automaton.add_word(row['sequence'],row['sequence'])
+        automaton.make_automaton()
+        for item in automaton.iter(protein_dict[protein]):
+            end.append(item[0])
+            start.append(item[0]-len(row['sequence'])+1)
+    return start,end
+
+def generate_start_and_end_from_fasta(parquet_path,fasta_path,label,output_path):
+    protein_dict = get_protein_dict(parquet_path,fasta_path)
+    if label == 'feature':
+        hander = FeatureHandler()
+    elif label == 'psm':
+        hander = PSMHandler()
+    pqwriter = None
+    for df in read_large_parquet(parquet_path):
+        df[['protein_start_positions','protein_end_positions']] = (df[['sequence','protein_accessions']]
+                                                                    .swifter
+                                                                    .apply(lambda row:fill_start_and_end(row,protein_dict),axis=1,result_type="expand"))
+        parquet_table = pa.Table.from_pandas(df, schema=hander.schema)
+        if not pqwriter:
+        # create a parquet write object giving it an output file
+            pqwriter = pq.ParquetWriter(output_path, parquet_table.schema)
+        pqwriter.write_table(parquet_table)
+    if pqwriter:
+        pqwriter.close()

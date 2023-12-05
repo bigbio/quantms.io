@@ -10,10 +10,7 @@ def cli():
     This is the main tool that gives access to all commands.
     """
 
-@click.command(
-    "generate_report_about_files",
-    short_help="generateb report of psm or feature files " "format",
-)
+@click.command("generate-report", short_help="generate report of psm or feature files " "format",)
 @click.option(
     "--check_dir", help="Folder to generate the df expression file.", required=True
 )
@@ -21,7 +18,7 @@ def cli():
 @click.pass_context
 def generate_report_about_files(ctx, check_dir: str, label: str):
     '''
-    ckeck_dir: psm or feature file file directory
+    ckeck_dir: psm or feature file directory
     label: psm or feature
     '''
     generate_report_of_psms_or_features(check_dir=check_dir,label=label)

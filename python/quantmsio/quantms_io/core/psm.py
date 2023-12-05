@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import pandas as pd
 
@@ -7,7 +5,6 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from quantms_io.core.mztab import MztabHandler
 from quantms_io.core.parquet_handler import ParquetHandler
-from quantms_io.core.project import check_directory,cut_path
 from quantms_io.utils.file_utils import extract_len
 from quantms_io.utils.pride_utils import (get_quantmsio_modifications,
                                           standardize_protein_list_accession)
@@ -175,7 +172,7 @@ class PSMHandler(ParquetHandler):
     def _create_psm_table(self, psm_list: list) -> pa.Table:
         return pa.Table.from_pandas(pd.DataFrame(psm_list), schema=self.schema)
 
-    def convert_mztab_to_psm(self, mztab_path: str, output_folder:str, parquet_path: str = None, verbose: bool = False,batch_size: int = 100000):
+    def convert_mztab_to_psm(self, mztab_path: str, parquet_path: str = None, verbose: bool = False,batch_size: int = 100000):
         """
         convert a mzTab file to a feature file
         :param mztab_path: path to the mzTab file
@@ -188,10 +185,13 @@ class PSMHandler(ParquetHandler):
             self.parquet_path = parquet_path
 
         mztab_handler = MztabHandler(mztab_file=mztab_path)
-        mztab_handler.create_mztab_psm_iterator(mztab_path)
-        psm_list = []
+
         batches = get_psm_in_batches(mztab_path, batch_size)
         logger.info(f"Number of batches: {batches}")
+
+        mztab_handler.create_mztab_psm_iterator(mztab_path)
+        psm_list = []
+
         batch_count = 1
         pq_writer = None
 
@@ -233,12 +233,10 @@ class PSMHandler(ParquetHandler):
         sequence = psm["sequence"]
         protein_accessions = standardize_protein_list_accession(psm["accession"])
         protein_start_positions = check_start_or_end(psm["start"])
-        #[int(i) for i in psm["start"].split(",")]
         protein_end_positions = check_start_or_end(psm["end"])
-        #[int(i) for i in psm["end"].split(",")]
         unique = 1 if len(protein_accessions) == 1 else 0
 
-        protein_accession_nredundant = list(dict.fromkeys(protein_accessions))
+        protein_accession_nredundant = list(set(protein_accessions))
         protein_qvalue = mztab_handler.get_protein_qvalue_from_index_list(
             protein_accession_list=protein_accession_nredundant
         )
@@ -268,18 +266,12 @@ class PSMHandler(ParquetHandler):
             modifications_string=modifications_string,
             modification_definition=mztab_handler.get_modifications_definition(),
         )
-        modifications_string = ""
-        for key, value in modifications.items():
-            modifications_string += "|".join(map(str, value["position"]))
-            modifications_string = (
-                modifications_string + "-" + value["unimod_accession"] + ","
-            )
-        modifications_string = (
-            None if len(modifications_string) == 0 else modifications_string[:-1]
-        )  # Remove last comma
-        modification_list = (
-            None if modifications_string is None else modifications_string.split(",")
-        )
+
+        modifications_string = "-".join("|".join(map(str, value["position"])) + "-"
+                                        + value["unimod_accession"]
+                                        for key, value in modifications.items()) if modifications else None
+
+        modification_list = (None if modifications_string is None else modifications_string.split(","))
         posterior_error_probability = (
             None
             if (
