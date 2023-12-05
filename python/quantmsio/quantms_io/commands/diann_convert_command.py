@@ -23,13 +23,6 @@ def cli():
     required=True,
 )
 @click.option(
-    "--modifications",
-    nargs=2, 
-    type=str,
-    help="a list contains fix modifications and variable modifications",
-    required=True,
-)
-@click.option(
     "--qvalue_threshold",
     help="qvalue_threshold",
     required=True,
@@ -55,13 +48,12 @@ def cli():
 @click.option("--duckdb_threads", help= "The number of threads for the DuckDB engine (e.g 4)")
 @click.option("--file_num", help= "The number of files being processed at the same time", default = 100)
 @click.pass_context
-def diann_convert_to_parquet(ctx, report_path: str, design_file: str, modifications:List, qvalue_threshold: float,
+def diann_convert_to_parquet(ctx, report_path: str, design_file: str, qvalue_threshold: float,
                              mzml_info_folder:str, sdrf_path:str, output_folder:str, output_prefix_file:str,
                              duckdb_max_memory:str, duckdb_threads:int, file_num:int ):
     '''
     report_path: diann report file path
     design_file: the disign file path
-    modifications: a list contains fix modifications and variable modifications
     qvalue_threshold: qvalue threshold
     mzml_info_folder: mzml info file folder
     sdrf_path: sdrf file path
@@ -87,7 +79,6 @@ def diann_convert_to_parquet(ctx, report_path: str, design_file: str, modificati
                                         qvalue_threshold=qvalue_threshold,
                                         mzml_info_folder=mzml_info_folder,
                                         design_file=design_file,
-                                        modifications=modifications,
                                         sdrf_path = sdrf_path,
                                         psm_output_path=psm_output_path,
                                         feature_output_path = feature_output_path,

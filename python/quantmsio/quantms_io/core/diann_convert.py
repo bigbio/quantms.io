@@ -289,6 +289,24 @@ class DiaNNConvert:
         
         return masses_map,modifications_map
     
+    def get_mods(self,sdrf_path):
+        sdrf = pd.read_csv(sdrf_path,sep='\t',nrows=1)
+        mod_cols = [col for col in sdrf.columns if col.startswith('comment[modification parameter]')]
+        fix_m = []
+        variable_m = []
+        for col in mod_cols:
+            mod_msg = sdrf[col].values[0].split(';')
+            mod_dict = {k.split('=')[0]:k.split('=')[1] for k in mod_msg}
+            mod = f"{mod_dict['NT']} ({mod_dict['TA']})" if 'TA' in mod_dict else f"{mod_dict['NT']} ({mod_dict['PP']})"
+            if mod_dict['MT'] == 'Variable' or mod_dict['MT'] == 'variable':
+                variable_m.append(mod)
+            else:
+                fix_m.append(mod)
+        fix_s = ','.join(fix_m) if len(fix_m) > 0 else 'null'
+        variable_s = ','.join(variable_m) if len(variable_m) > 0 else 'null'
+
+        return fix_s,variable_s
+    
     def main_report_df(self, report_path: str, qvalue_threshold: float, mzml_info_folder: str, file_num: int) -> pd.DataFrame:
         def intergrate_msg(n):
             nonlocal report
@@ -337,7 +355,7 @@ class DiaNNConvert:
             yield report
 
     def generate_psm_and_feature_file(self, report_path: str, qvalue_threshold: float, mzml_info_folder: str,
-                                      design_file: str, modifications:list, sdrf_path:str, psm_output_path:str,
+                                      design_file: str, sdrf_path:str, psm_output_path:str,
                                       feature_output_path:str, duckdb_max_memory:str = None, duckdb_threads:int = None, file_num:int=2):
         psm_pqwriter = None
         feature_pqwriter = None
@@ -345,7 +363,8 @@ class DiaNNConvert:
         self._duckdb = self.create_duckdb_from_diann_report(report_path, duckdb_max_memory, duckdb_threads)
 
         s_data_frame, f_table = get_exp_design_dfs(design_file)
-        self._modifications = get_modifications(modifications[0], modifications[1])
+        fix_mods,variable_mods = self.get_mods(sdrf_path)
+        self._modifications = get_modifications(fix_mods,variable_mods)
         for report in self.main_report_df(report_path, qvalue_threshold, mzml_info_folder , file_num):
             s = time.time()
             psm_pqwriter = self.generate_psm_file(report, psm_pqwriter, psm_output_path)
