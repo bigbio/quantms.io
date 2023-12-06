@@ -20,6 +20,7 @@ from Bio import SeqIO
 import ahocorasick
 import pyarrow as pa
 import pyarrow.parquet as pq
+import seaborn as sns
 from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.openms import OpenMSHandler
 from quantms_io.core.psm import PSMHandler
@@ -472,3 +473,20 @@ def generate_start_and_end_from_fasta(parquet_path,fasta_path,label,output_path)
         pqwriter.write_table(parquet_table)
     if pqwriter:
         pqwriter.close()
+#plot
+def plot_peptides_of_lfq_condition(psm_parquet_path,sdrf_path,save_path):
+    df = pd.read_parquet(psm_parquet_path,columns=["reference_file_name"])
+    sdrf = pd.read_csv(sdrf_path,sep='\t')
+    usecols = [col for col in sdrf.columns if col.startswith('factor value')]
+    usecols.append('comment[data file]')
+    sdrf = sdrf[usecols]
+    sdrf['comment[data file]'] = sdrf['comment[data file]'].apply(lambda x: x.split('.')[0])
+    sdrf.rename(columns={
+        'comment[data file]': "reference_file_name"
+    },inplace=True)
+    df = df.merge(sdrf,on="reference_file_name",how='left')
+    df.columns = ['reference','condition']
+    df = df[['condition']]
+    plt.figure(dpi=500,figsize=(8,6))
+    img = sns.barplot(y=df['condition'].value_counts().values, x=df['condition'].value_counts().index,hue=df['condition'].value_counts().index.astype(str),palette="bone_r",legend=True)
+    img.figure.savefig(save_path,dpi=500)
