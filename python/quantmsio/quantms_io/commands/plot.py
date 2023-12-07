@@ -1,5 +1,5 @@
 import click
-from quantms_io.core.tools import plot_peptides_of_lfq_condition,plot_distribution_of_ibaq
+from quantms_io.core.plots import plot_peptides_of_lfq_condition, plot_distribution_of_ibaq
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 

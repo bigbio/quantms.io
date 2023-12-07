@@ -124,7 +124,7 @@ class Statistic:
             return df.plot.bar(figsize=(12,8),x='sample',y='peptides',title='number of peptides for different samples',color='#82C3A3',rot=65)
     
     @check_exist('feature_db')
-    def plot_intensty_distribution_of_samples(self):
+    def plot_intensity_distribution_of_samples(self):
         """
         Kde of peptide intensity distribution for different samples.
         """
@@ -144,7 +144,7 @@ class Statistic:
         return df.plot.kde(figsize=(12,8),linewidth=2, legend=False)
     
     @check_exist('feature_db')
-    def plot_intensty_box_of_samples(self):
+    def plot_intensity_box_of_samples(self):
         """
         Boxplot of peptide intensity distribution for different samples.
         """
