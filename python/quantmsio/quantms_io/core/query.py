@@ -25,7 +25,6 @@ class FeatureQuery:
         """
         return: A list of deduplicated peptides.
         """
-        feature_db = self.feature_db
         unique_peps = self.parquet_db.sql(f"SELECT DISTINCT sequence FROM parquet_db").df()
 
         return unique_peps['sequence'].tolist()

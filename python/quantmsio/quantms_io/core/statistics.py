@@ -21,6 +21,12 @@ class Statistics(ABC):
     def get_number_of_samples(self):
         pass
 
+    def get_number_of_peptidoforms(self):
+        pass
+
+    def get_number_msruns(self):
+        pass
+
 
 class IbaqStatistics(Statistics):
 
@@ -77,6 +83,10 @@ class ParquetStatistics(Statistics):
         protein_ids = [item for sublist in protein_ids for item in sublist]
         protein_ids = set(protein_ids)
         return len(protein_ids)
+
+    def get_number_msruns(self) -> int:
+        count = self.parquet_db.sql(f"SELECT COUNT(DISTINCT reference_file_name) FROM parquet_db").fetchone()[0]
+        return count
 
 
 
