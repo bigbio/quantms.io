@@ -475,16 +475,28 @@ def generate_start_and_end_from_fasta(parquet_path,fasta_path,label,output_path)
     if pqwriter:
         pqwriter.close()
 #plot
-def plot_peptides_of_lfq_condition(psm_parquet_path,sdrf_path,save_path):
+def plot_peptides_of_lfq_condition(psm_parquet_path: str, sdrf_path: str, save_path:str) -> None:
+    """
+    This function plots the number of peptides for each condition in a LFQ (Label-Free Quantification) experiment.
+
+    Example Usage
+    plot_peptides_of_lfq_condition("psm.parquet", "sdrf.txt", "output.png")
+    The function takes three inputs: the path to the PSM (Peptide-Spectrum Match) parquet file, the path to the SDRF
+    (Sample and Data Relationship Format) file, and the path to save the output plot.
+    It then generates a bar plot showing the number of peptides for each condition in the LFQ
+    experiment and saves it as a PNG file.
+    :param psm_parquet_path: psm parquet path in lfq
+    :param sdrf_path: sdrf path
+    :param save_path: save path
+    """
+
     df = pd.read_parquet(psm_parquet_path,columns=["reference_file_name"])
     sdrf = pd.read_csv(sdrf_path,sep='\t')
-    usecols = [col for col in sdrf.columns if col.startswith('factor value')]
-    usecols.append('comment[data file]')
-    sdrf = sdrf[usecols]
+    use_cols = [col for col in sdrf.columns if col.startswith('factor value')]
+    use_cols.append('comment[data file]')
+    sdrf = sdrf[use_cols]
     sdrf['comment[data file]'] = sdrf['comment[data file]'].apply(lambda x: x.split('.')[0])
-    sdrf.rename(columns={
-        'comment[data file]': "reference_file_name"
-    },inplace=True)
+    sdrf.rename(columns={'comment[data file]': "reference_file_name"}, inplace=True)
     df = df.merge(sdrf,on="reference_file_name",how='left')
     df.columns = ['reference','condition']
     df = df[['condition']]
@@ -493,7 +505,8 @@ def plot_peptides_of_lfq_condition(psm_parquet_path,sdrf_path,save_path):
     if len(f_count) < 20:
         i = math.ceil(len(f_count)/5)
         plt.figure(dpi=500,figsize=(6*i,4*i))
-        img = sns.barplot(y=f_count.values, x=f_count.index,hue=f_count.index.astype(str),palette="bone_r",legend=True)
+        img = sns.barplot(y=f_count.values, x=f_count.index, hue=f_count.index.astype(str),
+                          palette="bone_r", legend=True)
         img.set(xlabel=None)
         for tick in img.get_xticklabels():
             tick.set_rotation(30)
@@ -510,13 +523,13 @@ def plot_peptides_of_lfq_condition(psm_parquet_path,sdrf_path,save_path):
             subset_data = df.iloc[:, start_col:end_col]
 
             sns.barplot(data=subset_data, ax=axes[i])
-            axes[i].set_title(f'Subplot {i+1}')
+            axes[i].set_title("Condition vs Number of Peptides {}-{}".format(start_col+1, end_col))
             axes[i].set(xlabel=None)
             for tick in axes[i].get_xticklabels():
                 tick.set_rotation(30)
             sns.despine(ax=axes[i], top=True, right=True)
         plt.tight_layout()
-        fig.figure.savefig(save_path,dpi=500)
+        fig.figure.savefig(save_path, dpi=500)
 
 def plot_distribution_of_ibaq(ibaq_path,save_path):
     df = pd.read_csv(ibaq_path)

@@ -7,6 +7,7 @@ import click
 
 from quantms_io import __version__ as __version__
 from quantms_io.commands.attach_file_command import attach_file_to_json
+from quantms_io.commands.plot import plot
 from quantms_io.commands.project_command import generate_pride_project_json
 from quantms_io.commands.parquet_command import compare_two_parquet
 from quantms_io.commands.differential_expression_command import (
@@ -43,6 +44,7 @@ cli.add_command(get_unanimous_for_parquet)
 cli.add_command(get_unanimous_for_tsv)
 cli.add_command(generate_report_about_files)
 cli.add_command(convert_parquet_to_json)
+cli.add_command(plot)
 
 def quantms_io_main():
     """
