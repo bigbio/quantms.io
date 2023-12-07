@@ -531,7 +531,12 @@ def plot_peptides_of_lfq_condition(psm_parquet_path: str, sdrf_path: str, save_p
         plt.tight_layout()
         fig.figure.savefig(save_path, dpi=500)
 
-def plot_distribution_of_ibaq(ibaq_path,save_path):
+def plot_distribution_of_ibaq(ibaq_path: str, save_path: str) -> None:
+    """
+    This function plots the distribution of the protein IBAQ values.
+    :param ibaq_path: ibaq file path
+    :param save_path: save path
+    """
     df = pd.read_csv(ibaq_path)
     plt.figure(dpi=500,figsize=(12,8))
     fig = sns.histplot(data=df['IbaqLog'],stat='frequency',kde=True,color='#209D73')
