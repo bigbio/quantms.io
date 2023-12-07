@@ -539,7 +539,7 @@ def plot_distribution_of_ibaq(ibaq_path: str, save_path: str, selected_column: s
     :param selected_column: selected column
     """
     df = pd.read_csv(ibaq_path, sep=None, comment='#', engine='python')
-    plt.figure(dpi=500,figsize=(12,8))
+    plt.figure(dpi=500, figsize=(12,8))
     columns = df.columns
     if selected_column is None:
         if 'ribaq' in columns:
