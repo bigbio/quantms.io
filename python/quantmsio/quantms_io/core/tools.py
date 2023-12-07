@@ -547,7 +547,7 @@ def plot_distribution_of_ibaq(ibaq_path: str, save_path: str, selected_column: s
         elif 'IbaqLog' in columns:
             selected_column = 'IbaqLog'
     if selected_column is not None:
-        fig = sns.histplot(data=df[selected_column],stat='frequency',kde=True,color='#209D73')
+        fig = sns.histplot(data=df[selected_column], stat='frequency',kde=True,color='#209D73')
         fig.set(xlabel=selected_column, ylabel='Frequency')
         fig.set_title('Distribution of IBAQ values using {}'.format(selected_column))
         sns.despine(ax=fig, top=True, right=True)
