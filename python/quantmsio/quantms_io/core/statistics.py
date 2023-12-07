@@ -1,14 +1,8 @@
 import os
-import re
 from abc import ABC
 
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 import duckdb
-import random
-
 
 class Statistics(ABC):
 

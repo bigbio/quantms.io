@@ -19,7 +19,7 @@ def cli():
 @click.option('--partition', type=click.Choice(['charge', 'reference_file_name'], case_sensitive=False),help='partition',required=False)
 @click.pass_context
 def map_spectrum_message_to_parquet(ctx,parquet_path: str, mzml_directory: str,output_path:str,label:str,chunksize,partition:str=None):
-    '''
+    """
     according mzML file to map the spectrum message to parquet.
     :param parquet_path: psm_parquet_path or feature_parquet_path
     :param mzml_directory: mzml file folder
@@ -28,7 +28,7 @@ def map_spectrum_message_to_parquet(ctx,parquet_path: str, mzml_directory: str,o
     :param chunksize: batch size
     :param partition: charge or reference_file_name
     retrun: None
-    '''
+    """
     if not output_path.endswith('parquet'):
         raise click.UsageError("Please provide file extension(.parquet)")
     generate_features_of_spectrum(

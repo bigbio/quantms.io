@@ -17,10 +17,10 @@ def cli():
 @click.option('--label', type=click.Choice(['feature', 'psm'], case_sensitive=False),help='parquet type')
 @click.pass_context
 def generate_report_about_files(ctx, check_dir: str, label: str):
-    '''
+    """
     ckeck_dir: psm or feature file directory
     label: psm or feature
-    '''
+    """
     generate_report_of_psms_or_features(check_dir=check_dir,label=label)
 
 cli.add_command(generate_report_about_files)

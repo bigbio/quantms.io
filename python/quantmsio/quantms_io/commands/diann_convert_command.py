@@ -50,7 +50,7 @@ def cli():
 def diann_convert_to_parquet(ctx, report_path: str, design_file: str, qvalue_threshold: float,
                              mzml_info_folder:str, sdrf_path:str, output_folder:str, output_prefix_file:str,
                              duckdb_max_memory:str, duckdb_threads:int, file_num:int ):
-    '''
+    """
     report_path: diann report file path
     design_file: the disign file path
     qvalue_threshold: qvalue threshold
@@ -61,7 +61,7 @@ def diann_convert_to_parquet(ctx, report_path: str, design_file: str, qvalue_thr
     duckdb_max_memory: The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)
     duckdb_threads: The number of threads for the DuckDB engine (e.g 4)
     file_num: The number of files being processed at the same time
-    '''
+    """
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     
@@ -71,9 +71,9 @@ def diann_convert_to_parquet(ctx, report_path: str, design_file: str, qvalue_thr
     feature_output_path = output_folder + "/" + create_uuid_filename(output_prefix_file,'.feature.parquet')
     psm_output_path = output_folder + "/" + create_uuid_filename(output_prefix_file,'.psm.parquet')
 
-    DiaNN = DiaNNConvert()
+    dia_nn = DiaNNConvert()
 
-    DiaNN.generate_psm_and_feature_file(
+    dia_nn.generate_psm_and_feature_file(
                                         report_path=report_path,
                                         qvalue_threshold=qvalue_threshold,
                                         mzml_info_folder=mzml_info_folder,

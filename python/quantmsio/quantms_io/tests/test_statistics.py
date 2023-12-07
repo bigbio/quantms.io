@@ -17,7 +17,6 @@ class TestStatistics(TestCase):
         proteins_count = parquet_stats.get_number_proteins()
         msruns_count = parquet_stats.get_number_msruns()
 
-
         # Assert that the result is equal to the number of unique peptides in the DataFrame
         assert peptide_count == 37783
         assert peptidoform_count == 37783
