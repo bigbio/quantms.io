@@ -9,7 +9,6 @@ from Bio import SeqIO
 import ahocorasick
 import pyarrow as pa
 import pyarrow.parquet as pq
-import seaborn as sns
 from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.openms import OpenMSHandler
 from quantms_io.core.psm import PSMHandler
@@ -17,7 +16,6 @@ from quantms_io.core.project import ProjectHandler
 from quantms_io.utils.file_utils import extract_len
 from quantms_io.core.project import create_uuid_filename
 import duckdb
-import math
 import swifter
 
 # optional about spectrum
