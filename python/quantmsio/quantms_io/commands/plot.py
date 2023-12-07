@@ -42,8 +42,8 @@ def plot_peptides(ctx, psm_parquet_path: str, sdrf_path: str, save_path: str):
 @click.command(
     "plot_ibaq_distribution", short_help="plot ibaq distribution of expression"
 )
-@click.option('--ibaq_path',  help='ibaq file path',required=True,)
-@click.option('--save_path',  help='img save path [xxx.png]',required=True,)
+@click.option('--ibaq_path',  help='ibaq file path',required=True)
+@click.option('--save_path',  help='img save path [xxx.png]',required=True)
 @click.pass_context
 def plot_ibaq_distribution(ctx,ibaq_path,save_path):
     """
