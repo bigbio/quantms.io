@@ -26,9 +26,10 @@ def plot_peptides(ctx, psm_parquet_path: str, sdrf_path: str, save_path: str):
 
 @plot.command("plot-ibaq-distribution", short_help="plot ibaq distribution of expression")
 @click.option('--ibaq_path',  help='ibaq file path',required=True)
-@click.option('--save_path',  help='img save path [xxx.svg]',required=True)
+@click.option('--save_path',  help='img save path [xxx.svg]', required=True)
+@click.option('--select_column',  help='Selected column in Ibaq File', required=False)
 @click.pass_context
-def plot_ibaq_distribution(ctx,ibaq_path,save_path):
+def plot_ibaq_distribution(ctx, ibaq_path: str, save_path: str, select_column:str) -> None:
     """
     plot ibaq distribution of expression
     :param ibaq_path: ibaq file path
@@ -36,4 +37,4 @@ def plot_ibaq_distribution(ctx,ibaq_path,save_path):
     :return: none
     """
 
-    plot_distribution_of_ibaq(ibaq_path,save_path)
+    plot_distribution_of_ibaq(ibaq_path,save_path, select_column)

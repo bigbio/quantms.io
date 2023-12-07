@@ -531,24 +531,25 @@ def plot_peptides_of_lfq_condition(psm_parquet_path: str, sdrf_path: str, save_p
         plt.tight_layout()
         fig.figure.savefig(save_path, dpi=500)
 
-def plot_distribution_of_ibaq(ibaq_path: str, save_path: str) -> None:
+def plot_distribution_of_ibaq(ibaq_path: str, save_path: str, selected_column: str = None) -> None:
     """
     This function plots the distribution of the protein IBAQ values.
     :param ibaq_path: ibaq file path
     :param save_path: save path
+    :param selected_column: selected column
     """
-    df = pd.read_csv(ibaq_path, sep=None, comment='#')
+    df = pd.read_csv(ibaq_path, sep=None, comment='#', engine='python')
     plt.figure(dpi=500,figsize=(12,8))
     columns = df.columns
-    selected_column = None
-    if 'ribaq' in columns:
-        selected_column = 'ribaq'
-    elif 'IbaqLog' in columns:
-        selected_column = 'IbaqLog'
-
+    if selected_column is None:
+        if 'ribaq' in columns:
+            selected_column = 'ribaq'
+        elif 'IbaqLog' in columns:
+            selected_column = 'IbaqLog'
     if selected_column is not None:
         fig = sns.histplot(data=df[selected_column],stat='frequency',kde=True,color='#209D73')
-
+        fig.set(xlabel=selected_column, ylabel='Frequency')
+        fig.set_title('Distribution of IBAQ values using {}'.format(selected_column))
         sns.despine(ax=fig, top=True, right=True)
         fig.figure.savefig(save_path, dpi=500)
     else:
