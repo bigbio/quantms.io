@@ -537,8 +537,19 @@ def plot_distribution_of_ibaq(ibaq_path: str, save_path: str) -> None:
     :param ibaq_path: ibaq file path
     :param save_path: save path
     """
-    df,_ = load_de_or_ae(ibaq_path)
+    df = pd.read_csv(ibaq_path, sep=None, comment='#')
     plt.figure(dpi=500,figsize=(12,8))
-    fig = sns.histplot(data=df['ribaq'],stat='frequency',kde=True,color='#209D73')
-    sns.despine(ax=fig, top=True, right=True)
-    fig.figure.savefig(save_path,dpi=500)
+    columns = df.columns
+    selected_column = None
+    if 'ribaq' in columns:
+        selected_column = 'ribaq'
+    elif 'IbaqLog' in columns:
+        selected_column = 'IbaqLog'
+
+    if selected_column is not None:
+        fig = sns.histplot(data=df[selected_column],stat='frequency',kde=True,color='#209D73')
+
+        sns.despine(ax=fig, top=True, right=True)
+        fig.figure.savefig(save_path, dpi=500)
+    else:
+        raise ValueError("No IBAQ column found in the ibaq file")

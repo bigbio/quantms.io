@@ -9,7 +9,7 @@ def plot():
     """Tool related commands"""
     pass
 
-@plot.command("plot-peptides", short_help="plot peptides of condition in lfq",)
+@plot.command("plot-psm-peptides", short_help="plot peptides of condition in lfq",)
 @click.option("--psm_parquet_path", help="psm parquet path in lfq", required=True)
 @click.option("--sdrf_path", help="sdrf path", required=True)
 @click.option("--save_path", help="img save path [xxx.svg]", required=True)
