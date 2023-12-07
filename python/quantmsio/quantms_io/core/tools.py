@@ -28,6 +28,7 @@ from quantms_io.core.project import ProjectHandler
 from quantms_io.utils.file_utils import extract_len
 from quantms_io.core.project import create_uuid_filename
 import duckdb
+import math
 import swifter
 
 # optional about spectrum
@@ -487,6 +488,39 @@ def plot_peptides_of_lfq_condition(psm_parquet_path,sdrf_path,save_path):
     df = df.merge(sdrf,on="reference_file_name",how='left')
     df.columns = ['reference','condition']
     df = df[['condition']]
-    plt.figure(dpi=500,figsize=(8,6))
-    img = sns.barplot(y=df['condition'].value_counts().values, x=df['condition'].value_counts().index,hue=df['condition'].value_counts().index.astype(str),palette="bone_r",legend=True)
-    img.figure.savefig(save_path,dpi=500)
+    f_count = df['condition'].value_counts()
+    f_count.sort_values(ascending=False)
+    if len(f_count) < 20:
+        i = math.ceil(len(f_count)/5)
+        plt.figure(dpi=500,figsize=(6*i,4*i))
+        img = sns.barplot(y=f_count.values, x=f_count.index,hue=f_count.index.astype(str),palette="bone_r",legend=True)
+        img.set(xlabel=None)
+        for tick in img.get_xticklabels():
+            tick.set_rotation(30)
+        sns.despine(ax=img, top=True, right=True)
+        img.figure.savefig(save_path,dpi=500)
+    else:
+        df = pd.DataFrame([list(f_count.values)], columns=f_count.index)
+        num_subplots = math.ceil(len(f_count)/20)
+        columns_per_subplot = 20
+        fig, axes = plt.subplots(nrows=num_subplots, ncols=1, figsize=(12,4*num_subplots))
+        for i in range(num_subplots):
+            start_col = i * columns_per_subplot
+            end_col = (i + 1) * columns_per_subplot
+            subset_data = df.iloc[:, start_col:end_col]
+
+            sns.barplot(data=subset_data, ax=axes[i])
+            axes[i].set_title(f'Subplot {i+1}')
+            axes[i].set(xlabel=None)
+            for tick in axes[i].get_xticklabels():
+                tick.set_rotation(30)
+            sns.despine(ax=axes[i], top=True, right=True)
+        plt.tight_layout()
+        fig.figure.savefig(save_path,dpi=500)
+
+def plot_distribution_of_ibaq(ibaq_path,save_path):
+    df = pd.read_csv(ibaq_path)
+    plt.figure(dpi=500,figsize=(12,8))
+    fig = sns.histplot(data=df['IbaqLog'],stat='frequency',kde=True,color='#209D73')
+    sns.despine(ax=fig, top=True, right=True)
+    fig.figure.savefig(save_path,dpi=500)
