@@ -65,15 +65,19 @@ class ParquetStatistics(Statistics):
         count = self.parquet_db.sql(f"SELECT COUNT(DISTINCT sample_accession) FROM parquet_db").fetchone()[0]
         return count
 
+    def get_number_proteins(self) -> int:
+        """
+        This method reads the protein accessions from a parquet file and return the number of unique accessions.
+        This method is not accurate. It needs to be refined.
+        :return: number of unique proteins
+        """
+        protein_ids = self.parquet_db.sql(f"SELECT DISTINCT protein_accessions FROM parquet_db").fetchall()
+        # This probalby needs to be refined.
+        protein_ids = [item for sublist in protein_ids for item in sublist]
+        protein_ids = [item for sublist in protein_ids for item in sublist]
+        protein_ids = set(protein_ids)
+        return len(protein_ids)
 
-def get_skip_rows(path):
-    skip_rows = 0
-    with open(path) as f:
-        line = f.readline()
-        while line.startswith("#"):
-            skip_rows += 1
-            line = f.readline()
-        return skip_rows
 
 
 def check_string(re_exp, strings):
