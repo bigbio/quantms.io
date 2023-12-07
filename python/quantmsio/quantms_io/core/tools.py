@@ -532,8 +532,8 @@ def plot_peptides_of_lfq_condition(psm_parquet_path: str, sdrf_path: str, save_p
         fig.figure.savefig(save_path, dpi=500)
 
 def plot_distribution_of_ibaq(ibaq_path,save_path):
-    df = pd.read_csv(ibaq_path)
+    df,_ = load_de_or_ae(ibaq_path) 
     plt.figure(dpi=500,figsize=(12,8))
-    fig = sns.histplot(data=df['IbaqLog'],stat='frequency',kde=True,color='#209D73')
+    fig = sns.histplot(data=df['ribaq'],stat='frequency',kde=True,color='#209D73')
     sns.despine(ax=fig, top=True, right=True)
     fig.figure.savefig(save_path,dpi=500)
