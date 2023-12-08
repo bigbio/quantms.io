@@ -87,33 +87,34 @@ def plot_peptides_of_lfq_condition(psm_parquet_path: str, sdrf_path: str, save_p
         plt.tight_layout()
         fig.figure.savefig(save_path, dpi=500)
 
-def plot_intensity_distribution_of_samples(feature_path: str, num_samples: int = 10)-> None:
+def plot_intensity_distribution_of_samples(feature_path: str,save_path:str, num_samples: int = 10)-> None:
     """
     Plot the distribution of intensities for different samples.
     :param feature_path: path to the feature file
+    :param save_path: save path[xxx.svg]
     :param num_samples: number of samples to plot
     """
-
-    # For now we are trying with Pandas dataframe we may explore duckdb later for big files.
     df = pd.read_parquet(feature_path, columns=["sample_accession", "intensity"])
     sample_accessions = df['sample_accession'].unique().tolist()
     random.shuffle(sample_accessions)
     if len(sample_accessions) > num_samples:
         sample_accessions = sample_accessions[:num_samples]
-    df = pd.DataFrame()
-    for sample in sample_accessions:
-        df_sample = df[df['sample_accession'] == sample]
-        df_sample = df_sample[df_sample['intensity'] > 0]
-        df_sample['intensity'] = np.log(df_sample['intensity'])
-        df_sample.columns = [sample]
-        df = pd.concat([df, df_sample], axis=1)
+    
+    df = df[df['sample_accession'].isin(sample_accessions)]
+    df = df[df['intensity'] > 0]
+    df['intensity'] = np.log(df['intensity'])
 
-    return df.plot.kde(figsize=(12, 8), linewidth=2, legend=False)
+    plt.figure(dpi=500, figsize=(12,8))
+    fig = sns.kdeplot(data=df, x="intensity", hue="sample_accession",palette="Paired",linewidth=2)
+    sns.despine(ax=fig, top=True, right=True)
+    fig.set(ylabel=None)
+    fig.figure.savefig(save_path, dpi=500)
 
-def plot_peptide_distribution_of_protein(feature_path: str, num_samples: int = 20)-> None:
+def plot_peptide_distribution_of_protein(feature_path: str,save_path:str,num_samples: int = 20)-> None:
     """
     Bar graphs of peptide counts for different samples.
     :param feature_path: path to the feature file
+    :param save_path: save path[xxx.svg]
     :param num_samples: number of samples to plot
     """
     df = pd.read_parquet(feature_path, columns=["sample_accession", "sequence"])
@@ -121,43 +122,53 @@ def plot_peptide_distribution_of_protein(feature_path: str, num_samples: int = 2
     df.columns = ['sample', 'peptides']
     df = df.sample(frac=1).reset_index(drop=True)
     if len(df) > num_samples:
-        return df.iloc[:num_samples, :].plot.bar(figsize=(12, 8), x='sample', y='peptides',
-                                        title='number of peptides for different samples', width=0.7,
-                                        color='#82C3A3', rot=65, ylim=(
-                0, max(df.loc[:20, 'peptides']) + 1 / 2 * max(df.loc[:20, 'peptides'])))
-    else:
-        return df.plot.bar(figsize=(12, 8), x='sample', y='peptides',
-                           title='number of peptides for different samples', color='#82C3A3', rot=65)
+        df = df.iloc[:20,:]
+    
+    max_p = max(df['peptides']) + 1 / 3 * max(df['peptides'])
+    plt.figure(dpi=500, figsize=(12,8))
+    fig = sns.barplot(data=df, x='sample', y='peptides',color='#82C3A3',legend=False,width=0.7)
+    fig.set_ylim(0,max_p)
+    fig.set(xlabel=None)
+    sns.despine(ax=fig, top=True, right=True)
+    for tick in fig.get_xticklabels():
+        tick.set_rotation(65)
+    fig.figure.savefig(save_path, dpi=500)
 
 
-
-    def plot_intensity_box_of_samples(self):
+def plot_intensity_box_of_samples(feature_path: str,save_path:str, num_samples: int = 10)-> None:
         """
         Boxplot of peptide intensity distribution for different samples.
+        :param feature_path: path to the feature file
+        :param save_path: save path[xxx.svg]
+        :param num_samples: number of samples to plot
         """
-        feature_db = self.feature_db
-        sample_accessions = duckdb.sql(f"SELECT DISTINCT sample_accession FROM feature_db").df()[
-            'sample_accession'].tolist()
+        df = pd.read_parquet(feature_path, columns=["sample_accession", "intensity"])
+        sample_accessions = df['sample_accession'].unique().tolist()
         random.shuffle(sample_accessions)
-        if len(sample_accessions) > 10:
-            sample_accessions = sample_accessions[:10]
-        df = pd.DataFrame()
-        for sample in sample_accessions:
-            df_sample = duckdb.sql(f"SELECT sample_accession,intensity FROM db WHERE sample_accession='{sample}'").df()
-            df_sample = df_sample[df_sample['intensity'] > 0]
-            df_sample['intensity'] = np.log(df_sample['intensity'])
-            df = pd.concat([df, df_sample], axis=0)
-        plt.figure(figsize=(12, 8), dpi=500)
-        chart = sns.boxplot(
-            x='sample_accession',
-            y='intensity',
-            data=df,
-            boxprops=dict(alpha=0.3),
-            palette="muted",
-        )
-        chart.set_xticklabels(labels=sample_accessions, rotation=65)
 
-        return chart
+        if len(sample_accessions) > num_samples:
+            sample_accessions = sample_accessions[:num_samples]
+        
+        df = df[df['sample_accession'].isin(sample_accessions)]
+        df = df[df['intensity'] > 0]
+        df['intensity'] = np.log(df['intensity'])
+
+        plt.figure(figsize=(12, 8), dpi=500)
+        fig = sns.boxplot(
+                    x='sample_accession',
+                    y='intensity',
+                    data=df,
+                    boxprops=dict(alpha=0.2),
+                    palette="muted",
+                    hue='sample_accession',
+                    fliersize=3
+                )
+        fig.set(xlabel=None)
+        sns.despine(ax=fig, top=True, right=True)
+        for tick in fig.get_xticklabels():
+            tick.set_rotation(30)
+        fig.figure.savefig(save_path, dpi=500)
+
 
 
 
