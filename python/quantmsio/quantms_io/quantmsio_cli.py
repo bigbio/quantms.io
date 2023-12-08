@@ -6,7 +6,7 @@ Commandline interface for quantmsio package allows generating the quantms.io fil
 import click
 
 from quantms_io import __version__ as __version__
-from quantms_io.commands import statistics
+from quantms_io.commands.statistics import statistics
 from quantms_io.commands.attach_file_command import attach_file_to_json
 from quantms_io.commands.plot import plot
 from quantms_io.commands.project_command import generate_pride_project_json
