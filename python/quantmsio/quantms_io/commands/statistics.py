@@ -9,11 +9,11 @@ CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 # Command Group
 @click.group(name='statistics', context_settings=CONTEXT_SETTINGS)
-def plot():
+def statistics():
     """Tool related commands"""
     pass
 
-@plot.command("feature-file-statistics", short_help="Statistics of a feature file",)
+@statistics.command("feature-file-statistics", short_help="Statistics of a feature file",)
 @click.option("--parquet_path", help="psm parquet path in lfq", required=True)
 @click.option("--save_path", help="file with the statistics (e.g. statistics.csv), if not provided,"
                                   " will print to stdout")
