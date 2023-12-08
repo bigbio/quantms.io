@@ -66,7 +66,7 @@ class ParquetStatistics(Statistics):
         count = self.parquet_db.sql(f"SELECT COUNT(DISTINCT sample_accession) FROM parquet_db").fetchone()[0]
         return count
 
-    def get_number_proteins(self) -> int:
+    def get_number_of_proteins(self) -> int:
         """
         This method reads the protein accessions from a parquet file and return the number of unique accessions.
         This method is not accurate. It needs to be refined.
