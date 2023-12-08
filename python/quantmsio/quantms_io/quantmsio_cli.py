@@ -6,6 +6,7 @@ Commandline interface for quantmsio package allows generating the quantms.io fil
 import click
 
 from quantms_io import __version__ as __version__
+from quantms_io.commands.absolute_expression_command import convert_ibaq_absolute
 from quantms_io.commands.statistics import statistics
 from quantms_io.commands.attach_file_command import attach_file_to_json
 from quantms_io.commands.plot import plot
@@ -36,6 +37,7 @@ def cli():
 
 cli.add_command(generate_pride_project_json)
 cli.add_command(convert_msstats_differential)
+cli.add_command(convert_ibaq_absolute)
 cli.add_command(convert_feature_file)
 cli.add_command(convert_psm_file)
 cli.add_command(compare_two_parquet)
