@@ -39,9 +39,10 @@ class IbaqStatistics(Statistics):
     def get_number_of_samples(self) -> int:
         if 'SampleID' in self.ibaq_db.columns:
             return len(self.ibaq_db['SampleID'].unique())
+        elif 'sample_accession' in self.ibaq_db.columns:
+            return len(self.ibaq_db['sample_accession'].unique())
         else:
             raise ValueError("No SampleID column found in the ibaq file")
-
 
 class ParquetStatistics(Statistics):
 
