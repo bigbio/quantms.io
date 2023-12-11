@@ -29,9 +29,3 @@ def attach_file_to_json(ctx, project_file, attach_file, category, replace_existi
     """
     register_file_to_json(project_file, attach_file,
                           category, replace_existing)
-
-
-cli.add_command(attach_file_to_json)
-
-if __name__ == '__main__':
-    cli()

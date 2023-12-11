@@ -22,8 +22,3 @@ def generate_report_about_files(ctx, check_dir: str, label: str):
     label: psm or feature
     """
     generate_report_of_psms_or_features(check_dir=check_dir,label=label)
-
-cli.add_command(generate_report_about_files)
-
-if __name__ == '__main__':
-    cli()

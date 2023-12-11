@@ -67,9 +67,3 @@ def convert_ibaq_absolute(ctx,
         output_file_prefix=output_prefix_file,
         delete_existing=delete_existing,
     )
-
-
-cli.add_command(convert_ibaq_absolute)
-
-if __name__ == '__main__':
-    cli()

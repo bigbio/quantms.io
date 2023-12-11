@@ -57,7 +57,7 @@ def convert_psm_file(ctx, mztab_file: str, output_folder: str, output_prefix_fil
 
 
 @click.command(
-    "compare_set_of_psms", short_help="plot venn for a set of Psms parquet"
+    "compare-set-psms", short_help="plot venn for a set of Psms parquet"
 )
 @click.option('-p','--parquets', type=str, help='List of psm parquet path', multiple=True)
 @click.option('-t','--tags', type=str, help='List of parquet label', multiple=True)
@@ -73,9 +73,3 @@ def compare_set_of_psms(ctx,parquets, tags):
 
     plot_peptidoform_charge_venn(parquets, tags)
     plot_sequence_venn(parquets, tags)
-
-cli.add_command(convert_psm_file)
-cli.add_command(compare_set_of_psms)
-
-if __name__ == '__main__':
-    cli()

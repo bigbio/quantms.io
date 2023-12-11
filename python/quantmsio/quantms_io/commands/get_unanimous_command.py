@@ -50,10 +50,3 @@ def get_unanimous_for_tsv(ctx,path,fasta,output_path,map_parameter):
     retrun: None
     """
     map_protein_for_tsv(path,fasta,output_path,map_parameter)
-
-
-cli.add_command(get_unanimous_for_parquet)
-cli.add_command(get_unanimous_for_tsv)
-
-if __name__ == '__main__':
-    cli()

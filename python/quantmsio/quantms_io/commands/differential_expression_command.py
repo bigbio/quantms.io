@@ -73,7 +73,3 @@ def convert_msstats_differential(
         output_file_prefix=output_prefix_file,
         delete_existing=delete_existing,
     )
-
-cli.add_command(convert_msstats_differential)
-if __name__ == '__main__':
-    cli()

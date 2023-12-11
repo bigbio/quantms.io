@@ -29,7 +29,3 @@ def compare_two_parquet(ctx,parquet_path_one: str, parquet_path_two: str, report
     compare = datacompy.Compare(parquet_one, parquet_two, join_columns='sequence', df1_name='discache',df2_name='no_cache')
     with open(report_path,'w') as f:
         f.write(compare.report())
-
-cli.add_command(compare_two_parquet)
-if __name__ == '__main__':
-    cli()

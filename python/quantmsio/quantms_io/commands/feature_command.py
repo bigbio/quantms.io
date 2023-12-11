@@ -86,7 +86,6 @@ def convert_feature_file(
             mztab_file=mztab_file,
             msstats_file=msstats_file,
             sdrf_file=sdrf_file,
-            output_folder = output_folder,
             consesusxml_file=consensusxml_file,
             use_cache=use_cache,
         )
@@ -95,10 +94,5 @@ def convert_feature_file(
             mztab_file=mztab_file,
             msstats_file=msstats_file,
             sdrf_file=sdrf_file,
-            output_folder = output_folder,
             use_cache=use_cache,
         )
-
-cli.add_command(convert_feature_file)
-if __name__ == '__main__':
-    cli()

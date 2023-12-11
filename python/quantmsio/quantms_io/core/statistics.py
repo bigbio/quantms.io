@@ -83,6 +83,14 @@ class ParquetStatistics(Statistics):
         count = self.parquet_db.sql(f"SELECT COUNT(DISTINCT reference_file_name) FROM parquet_db").fetchone()[0]
         return count
 
+    def get_number_of_psms(self) -> int:
+        """
+        If the file is a psm file, it will return the number of psms
+        :return: numbers of psms
+        """
+        count = self.parquet_db.sql(f"SELECT COUNT(*) FROM parquet_db").fetchone()[0]
+        return count
+
 
 
 

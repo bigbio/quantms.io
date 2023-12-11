@@ -85,7 +85,3 @@ def diann_convert_to_parquet(ctx, report_path: str, design_file: str, qvalue_thr
                                         duckdb_threads= duckdb_threads,
                                         file_num = file_num
                                     )
-
-cli.add_command(diann_convert_to_parquet)
-if __name__ == '__main__':
-    cli()
