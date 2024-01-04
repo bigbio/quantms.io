@@ -302,6 +302,11 @@ def get_unanimous_name(protein_accessions,map_dict):
     return unqnimous_names
         
 def read_large_parquet(parquet_path: str, batch_size: int = 500000):
+    """_summary_
+    :param parquet_path: _description_
+    :param batch_size: _description_, defaults to 100000
+    :yield: _description_
+    """
     parquet_file = pq.ParquetFile(parquet_path)
     for batch in parquet_file.iter_batches(batch_size=batch_size):
         batch_df = batch.to_pandas()
@@ -352,28 +357,7 @@ def get_file_size(file_path):
             if mbx < 1024:
                 return str(round(mbx,2)) + 'M'
             else:
-                return str(round(mbx/1024)) + 'G'
-                
-#covert ae or de to json
-def convert_to_json(file_path):
-    """
-    by providing the json format of AE and DE files for retrieval. return json
-    """
-    table,content = load_de_or_ae(file_path)
-    output = {}
-    pattern = r'[\\|\|//|/]'
-    file_name = re.split(pattern,file_path)[-1]
-    output['id'] = file_name
-    output['metadata'] = content
-    records = {}
-    for col in table.columns:
-        records[col] = table.loc[:,col].to_list()
-    output['records'] = records
-    b = json.dumps(output)
-    output_path = ".".join(file_name.split('.')[:-1]) + '.json'
-    f = open(output_path, 'w')
-    f.write(b)
-    f.close()
+                return str(round(mbx/1024)) + 'G'               
 
 #get best_scan_number
 def load_best_scan_number(diann_psm_path:str,diann_feature_path:str,output_path:str):

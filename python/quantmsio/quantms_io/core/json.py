@@ -1,27 +1,15 @@
 import json
 import logging
-
+import re
 import numpy as np
 import pyarrow.parquet as pq
+from quantms_io.core.tools import load_de_or_ae,read_large_parquet
 
 class Npencoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.int32):
             return int(obj)
         return json.JSONEncoder.default(self, obj)
-
-def read_large_parquet(parquet_path: str, batch_size: int = 1000000):
-    """_summary_
-
-    :param parquet_path: _description_
-    :param batch_size: _description_, defaults to 100000
-    :yield: _description_
-    """
-    parquet_file = pq.ParquetFile(parquet_path)
-    for batch in parquet_file.iter_batches(batch_size=batch_size):
-        batch_df = batch.to_pandas()
-        yield batch_df
-
 
 def scores_to_json(scores_row) -> list:
     """
@@ -104,3 +92,23 @@ class JsonConverter:
         for psm_df in chunks:
             psm_df.to_json(json_psm_path, orient='records', lines=True, compression='gzip')
         return json_psm_path
+
+    def convert_tsv_to_json(self,file_path:str):
+        """
+        by providing the json format of AE and DE files for retrieval. return json
+        """
+        table,content = load_de_or_ae(file_path)
+        output = {}
+        pattern = r'[\\|\|//|/]'
+        file_name = re.split(pattern,file_path)[-1]
+        output['id'] = file_name
+        output['metadata'] = content
+        records = {}
+        for col in table.columns:
+            records[col] = table.loc[:,col].to_list()
+        output['records'] = records
+        b = json.dumps(output)
+        output_path = ".".join(file_name.split('.')[:-1]) + '.json'
+        f = open(output_path, 'w')
+        f.write(b)
+        f.close()

@@ -138,7 +138,7 @@ descriptive information about the entire project.
 
 .. code:: shell
 
-   python project_command.py generate_pride_project_json
+   quantmsio_cli generate-pride-project-json
       --project_accession PXD014414
       --sdrf PXD014414.sdrf.tsv
       --quantms_version 1.12
@@ -159,7 +159,7 @@ Example:
 
 .. code:: shell
 
-   python differential_expression_command.py convert_msstats_differential
+   quantmsio_cli convert-de
       --msstats_file PXD014414.sdrf_openms_design_msstats_in_comparisons.csv
       --sdrf_file PXD014414.sdrf.tsv
       --output_folder result
@@ -186,7 +186,7 @@ Example:
 
 .. code:: shell
 
-   python absolute_expression_command.py attach_file_to_json
+   quantmsio_cli convert-ae
       --ibaq_file PXD004452-ibaq.csv
       --sdrf_file PXD014414.sdrf.tsv
       --output_folder result
@@ -215,7 +215,7 @@ Example:
 
 .. code:: shell
 
-   python feature_command.py convert_feature_file
+   quantmsio_cli convert-feature
       --sdrf_file PXD014414.sdrf.tsv
       --msstats_file PXD014414.sdrf_openms_design_msstats_in.csv
       --mztab_file PXD014414.sdrf_openms_design_openms.mzTab
@@ -241,10 +241,9 @@ Example:
     
 .. code:: shell
 
-   python psm_command.py convert_psm_file
+   quantmsio_cli convert-psm
       --mztab_file PXD014414.sdrf_openms_design_openms.mzTab
       --output_folder result
-
 
 - Optional parameter
 
@@ -257,22 +256,52 @@ DiaNN convert
 --------------------------
 For DiaNN, the command supports generating ``feature.parquet`` and ``psm.parquet`` directly from diann_report files.
 
-- ``--modifications`` is a list of 2 lengths containing both fixed and variable modifications. The different modifications in each modification are separated by ``,``.
+- If you want to see ``design_file``, please click `sdrf-pipelines <https://github.com/bigbio/sdrf-pipelines>`__
 
 Example: 
 
 .. code:: shell
 
-   python diann_convert_command.py diann_convert_to_parquet
+   quantmsio_cli convert-diann
       --report_path diann_report.tsv
       --design_file PXD037682.sdrf_openms_design.tsv
-      --modifications "Carbamidomethyl (C)" "null"
       --qvalue_threshold 0.05
       --mzml_info_folder mzml
       --sdrf_path PXD037682.sdrf.tsv
       --output_folder result
       --output_prefix_file PXD037682
-      --threads 60
+   
+- Optional parameter
+
+.. code:: shell
+
+   --duckdb_max_memory   "The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)"
+   --duckdb_threads  "The number of threads for the DuckDB engine (e.g 4)"
+   --file_num "The number of files being processed at the same time (default 100)"
+
+Inject some messages for DiaNN 
+-------------------------------
+For DiaNN, some field information is not available and needs to be filled with other commands.
+
+- bset-psm-scan-number
+Example: 
+.. code:: shell
+
+   quantmsio_cli inject-bset-psm-scan-number
+      --diann_psm_path PXD010154-f75fbb29-4419-455f-a011-e4f776bcf73b.psm.parquet
+      --diann_feature_path PXD010154_map_protein_accession-88d63fca-3ae6-4eab-9262-6e7a68184432.feature.parquet
+      --output_path PXD010154.feature.parquet
+
+- start-and-end-pisition
+Example:
+.. code:: shell
+
+   quantmsio_cli inject-start-and-end-from-fasta
+      --parquet_path PXD010154_map_protein_accession-88d63fca-3ae6-4eab-9262-6e7a68184432.feature.parquet
+      --fasta_path "D:\converter\AE\Homo-sapiens-uniprot-reviewed-contaminants-decoy-202210.fasta"
+      --label feature
+      --output_path PXD010154.feature.parquet
+
 
 
 Compare psm.parquet
@@ -285,7 +314,7 @@ Example:
 
 .. code:: shell
 
-   python feature_command.py compare_set_of_psms
+   quantmsio_cli compare-set-psms
       -p PXD014414-comet.parquet
       -p PXD014414-sage.parquet
       -p PXD014414-msgf.parquet
@@ -295,7 +324,6 @@ Example:
 
 Generate spectra message
 -------------------------
-
 generate_spectra_message support psm and feature. It can be used directly for spectral clustering.
 
 - ``--label`` contains two options: ``psm`` and ``feature``.
@@ -306,7 +334,7 @@ Example:
 
 .. code:: shell
 
-   python generate_spectra_message_command.py map_spectrum_message_to_parquet
+   quantmsio_cli map-spectrum-message-to-parquet
       --parquet_path PXD014414-f4fb88f6-0a45-451d-a8a6-b6d58fb83670.psm.parquet
       --mzml_directory mzmls
       --output_path psm/PXD014414.parquet
@@ -328,7 +356,7 @@ Example:
 
 .. code:: shell
 
-   python get_unanimous_command.py map_unanimous_for_parquet
+   quantmsio_cli labels convert-accession
       --parquet_path PXD014414-f4fb88f6-0a45-451d-a8a6-b6d58fb83670.psm.parquet
       --fasta Reference fasta database
       --output_path psm/PXD014414.psm.parquet
@@ -341,7 +369,7 @@ Example:
 
 .. code:: shell
 
-   python get_unanimous_command.py get_unanimous_for_tsv
+   quantmsio_cli labels get-unanimous-for-tsv
       --path PXD014414-c2a52d63-ea64-4a64-b241-f819a3157b77.differential.tsv
       --fasta Reference fasta database
       --output_path psm/PXD014414.de.tsv
@@ -355,7 +383,7 @@ Example:
 
 .. code:: shell
 
-   python parquet_command.py compare_two_parquet
+   quantmsio_cli compare-parquet
       --parquet_path_one res_lfq2_discache.parquet
       --parquet_path_two res_lfq2_no_cache.parquet
       --report_path report.txt
@@ -387,24 +415,91 @@ Example:
 
 .. code:: shell
    
-   python attach_file_command.py attach_file_to_json
+   quantmsio_cli attach-file
       --project_file PXD014414/project.json
       --attach_file PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet
       --category feature_file
       --replace_existing
 
-Data preview
+Convert file to json 
 --------------------------
-This tool is used to preview your feature files and AE files.
-You can run ``streamlit run .\visualize_web_commond.py`` start a web service.
-Then set up your working directory to preview the data.
+This tool is used to convert file to json.
 
-.. image:: data_view.png
-   :width: 800
-   :align: center
+- parquet
+- ``--data_type`` contains two options: ``psm`` and ``feature``
+Example: 
+.. code:: shell
 
-* If you want to manipulate data on NoteBook, you can introduce the ``Statistic`` class.
+   quantmsio_cli convert-parquet-json
+      --data_type feature
+      --parquet_path PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet
+      --json_path PXD014414.featrue.json
 
-.. code:: python
+- tsv
+Example: 
+.. code:: shell
 
-   from quantms_io.core.statistic import Statistic
+   .. code:: shell
+
+   quantmsio_cli convert-tsv-to-json
+      --file PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.absolute.tsv
+
+Statistics
+-----------
+This tool is used for statistics.
+Example: 
+.. code:: shell
+
+   quantmsio_cli project-ae-statistics
+      --absolute_path PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.absolute.tsv
+      --parquet_path PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.featrue.parquet
+      --save_path PXD014414.statistic.txt
+
+.. code:: shell
+
+   quantmsio_cli parquet-psm-statistics
+      --parquet_path PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.psm.parquet
+      --save_path PXD014414.statistic.txt
+
+Plots
+-------
+This tool is used for visualization.
+- plot-psm-peptides
+.. code:: shell
+
+   quantmsio_cli plot plot-psm-peptides
+      --psm_parquet_path PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.psm.parquet
+      --sdrf_path PXD010154.sdrf.tsv
+      --save_path PXD014414_psm_peptides.svg
+
+- plot-ibaq-distribution
+.. code:: shell
+
+   quantmsio_cli plot plot-ibaq-distribution
+      --ibaq_path PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.ibaq.tsv
+      --select_column IbaqLog
+      --save_path PXD014414_psm_peptides.svg
+
+- plot-kde-intensity-distribution
+.. code:: shell
+
+      quantmsio_cli plot plot-kde-intensity-distribution
+      --feature_path PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.featrue.parquet
+      --num_samples 10
+      --save_path PXD014414_psm_peptides.svg
+
+- plot-bar-peptide-distribution
+.. code:: shell
+
+      quantmsio_cli plot plot-bar-peptide-distribution
+      --feature_path PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.featrue.parquet
+      --num_samples 10
+      --save_path PXD014414_psm_peptides.svg
+
+- plot-box-intensity-distribution
+.. code:: shell
+
+      quantmsio_cli plot plot-box-intensity-distribution
+      --feature_path PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.featrue.parquet
+      --num_samples 10
+      --save_path PXD014414_psm_peptides.svg

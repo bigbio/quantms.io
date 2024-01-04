@@ -3,13 +3,6 @@ import click
 from quantms_io.core.project import create_uuid_filename
 import os
 
-CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
-@click.group(context_settings=CONTEXT_SETTINGS)
-def cli():
-    """
-    This is the main tool that gives access to all commands.
-    """
-
 @click.command("convert-diann", short_help="Convert diann_report to parquet and psm file of quantms.io format")
 @click.option(
     "--report_path",
@@ -29,7 +22,7 @@ def cli():
 )
 @click.option(
     "--mzml_info_folder",
-    help="mzml info tsv file",
+    help="the foldef of mzml_info tsv file",
     required=True,
 )
 @click.option(
@@ -46,8 +39,7 @@ def cli():
 @click.option("--duckdb_max_memory", help= "The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)")
 @click.option("--duckdb_threads", help= "The number of threads for the DuckDB engine (e.g 4)")
 @click.option("--file_num", help= "The number of files being processed at the same time", default = 100)
-@click.pass_context
-def diann_convert_to_parquet(ctx, report_path: str, design_file: str, qvalue_threshold: float,
+def diann_convert_to_parquet(report_path: str, design_file: str, qvalue_threshold: float,
                              mzml_info_folder:str, sdrf_path:str, output_folder:str, output_prefix_file:str,
                              duckdb_max_memory:str, duckdb_threads:int, file_num:int ):
     """

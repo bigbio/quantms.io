@@ -2,14 +2,6 @@ import click
 
 from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.project import create_uuid_filename
-CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
-
-
-@click.group(context_settings=CONTEXT_SETTINGS)
-def cli():
-    """
-    This is the main tool that gives access to all commands.
-    """
 
 @click.command("convert-feature", short_help="Convert msstats/mztab to parquet file")
 @click.option(
@@ -44,9 +36,7 @@ def cli():
     required=True,
 )
 @click.option("--output_prefix_file", help="Prefix of the Json file needed to generate the file name", required=False)
-@click.pass_context
 def convert_feature_file(
-    ctx,
     sdrf_file: str,
     msstats_file: str,
     mztab_file: str,

@@ -1,16 +1,6 @@
 from quantms_io.core.ae import AbsoluteExpressionHander
 import click
 
-CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
-
-
-@click.group(context_settings=CONTEXT_SETTINGS)
-def cli():
-    """
-    This is the main tool that gives access to all commands.
-    """
-
-
 @click.command(
     "convert-ae",
     short_help="Convert a ibaq_absolute file into a quantms.io file " "format",
@@ -37,8 +27,7 @@ def cli():
 @click.option(
     "--delete_existing", help="Delete existing files in the output folder", is_flag=True
 )
-@click.pass_context
-def convert_ibaq_absolute(ctx,
+def convert_ibaq_absolute(
                           ibaq_file: str,
                           sdrf_file: str,
                           project_file: str,

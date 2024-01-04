@@ -3,14 +3,6 @@ import click
 from quantms_io.core.psm import PSMHandler
 from quantms_io.core.project import create_uuid_filename
 from quantms_io.core.tools import plot_peptidoform_charge_venn, plot_sequence_venn
-CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
-
-
-@click.group(context_settings=CONTEXT_SETTINGS)
-def cli():
-    """
-    This is the main tool that gives access to all commands.
-    """
 
 @click.command("convert-psm", short_help="Convert psm from mzTab to parquet file in quantms io",)
 @click.option(
@@ -31,8 +23,7 @@ def cli():
     "--verbose",
               help="Output debug information.",
     default=False, is_flag=True)
-@click.pass_context
-def convert_psm_file(ctx, mztab_file: str, output_folder: str, output_prefix_file: str=None, verbose: bool = False):
+def convert_psm_file(mztab_file: str, output_folder: str, output_prefix_file: str=None, verbose: bool = False):
     """
     convert mztab psm section to a parquet file. The parquet file will contain the features and the metadata.
     :param mztab_file: the mzTab file, this will be used to extract the protein information
@@ -61,8 +52,7 @@ def convert_psm_file(ctx, mztab_file: str, output_folder: str, output_prefix_fil
 )
 @click.option('-p','--parquets', type=str, help='List of psm parquet path', multiple=True)
 @click.option('-t','--tags', type=str, help='List of parquet label', multiple=True)
-@click.pass_context
-def compare_set_of_psms(ctx,parquets, tags):
+def compare_set_of_psms(parquets, tags):
     """
     Compare a set of psm parquet files
     :param parquets: a set of psm parquet path

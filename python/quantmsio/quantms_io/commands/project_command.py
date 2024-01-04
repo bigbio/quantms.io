@@ -1,14 +1,6 @@
 import click
 
 from quantms_io.core.project import check_directory
-CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
-
-
-@click.group(context_settings=CONTEXT_SETTINGS)
-def cli():
-    """
-    This is the main tool that gives access to all commands.
-    """
 
 @click.command(
     "generate-pride-project-json",
@@ -37,9 +29,7 @@ def cli():
 @click.option(
     "--delete_existing", help="Delete existing files in the output folder", is_flag=False,
 )
-@click.pass_context
 def generate_pride_project_json(
-    ctx,
     project_accession: str,
     sdrf_file: str,
     quantms_version: str,
@@ -83,7 +73,3 @@ def generate_pride_project_json(
         delete_existing=delete_existing,
     )
     project_handler.save_updated_project_info(output_file_name=project_path)
-
-cli.add_command(generate_pride_project_json)
-if __name__ == '__main__':
-    cli()
