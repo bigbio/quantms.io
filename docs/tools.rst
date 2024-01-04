@@ -285,6 +285,7 @@ For DiaNN, some field information is not available and needs to be filled with o
 
 - bset-psm-scan-number
 Example: 
+
 .. code:: shell
 
    quantmsio_cli inject-bset-psm-scan-number
@@ -294,6 +295,7 @@ Example:
 
 - start-and-end-pisition
 Example:
+
 .. code:: shell
 
    quantmsio_cli inject-start-and-end-from-fasta
@@ -428,6 +430,7 @@ This tool is used to convert file to json.
 - parquet
 - ``--data_type`` contains two options: ``psm`` and ``feature``
 Example: 
+
 .. code:: shell
 
    quantmsio_cli convert-parquet-json
@@ -437,6 +440,7 @@ Example:
 
 - tsv
 Example: 
+
 .. code:: shell
 
    .. code:: shell
@@ -448,6 +452,7 @@ Statistics
 -----------
 This tool is used for statistics.
 Example: 
+
 .. code:: shell
 
    quantmsio_cli project-ae-statistics
@@ -465,6 +470,7 @@ Plots
 -------
 This tool is used for visualization.
 - plot-psm-peptides
+  
 .. code:: shell
 
    quantmsio_cli plot plot-psm-peptides
@@ -473,6 +479,7 @@ This tool is used for visualization.
       --save_path PXD014414_psm_peptides.svg
 
 - plot-ibaq-distribution
+  
 .. code:: shell
 
    quantmsio_cli plot plot-ibaq-distribution
@@ -481,6 +488,7 @@ This tool is used for visualization.
       --save_path PXD014414_psm_peptides.svg
 
 - plot-kde-intensity-distribution
+
 .. code:: shell
 
       quantmsio_cli plot plot-kde-intensity-distribution
@@ -489,6 +497,7 @@ This tool is used for visualization.
       --save_path PXD014414_psm_peptides.svg
 
 - plot-bar-peptide-distribution
+
 .. code:: shell
 
       quantmsio_cli plot plot-bar-peptide-distribution
@@ -497,6 +506,7 @@ This tool is used for visualization.
       --save_path PXD014414_psm_peptides.svg
 
 - plot-box-intensity-distribution
+
 .. code:: shell
 
       quantmsio_cli plot plot-box-intensity-distribution
