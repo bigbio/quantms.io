@@ -7,7 +7,7 @@ import seaborn as sns
 import math
 
 
-def plot_distribution_of_ibaq(ibaq_path: str, save_path: str, selected_column: str = None) -> None:
+def plot_distribution_of_ibaq(ibaq_path: str, save_path: str=None, selected_column: str = None) -> None:
     """
     This function plots the distribution of the protein IBAQ values.
     :param ibaq_path: ibaq file path
@@ -27,11 +27,13 @@ def plot_distribution_of_ibaq(ibaq_path: str, save_path: str, selected_column: s
         fig.set(xlabel=selected_column, ylabel='Frequency')
         fig.set_title('Distribution of IBAQ values using {}'.format(selected_column))
         sns.despine(ax=fig, top=True, right=True)
-        fig.figure.savefig(save_path, dpi=500)
+        if save_path:
+            fig.figure.savefig(save_path, dpi=500)
+        return fig
     else:
         raise ValueError("No IBAQ column found in the ibaq file")
 
-def plot_peptides_of_lfq_condition(psm_parquet_path: str, sdrf_path: str, save_path:str) -> None:
+def plot_peptides_of_lfq_condition(psm_parquet_path: str, sdrf_path: str, save_path:str=None) -> None:
     """
     this function plots the number of peptides for each condition in a LFQ (Label-Free Quantification) experiment.
 
@@ -67,7 +69,9 @@ def plot_peptides_of_lfq_condition(psm_parquet_path: str, sdrf_path: str, save_p
         for tick in img.get_xticklabels():
             tick.set_rotation(30)
         sns.despine(ax=img, top=True, right=True)
-        img.figure.savefig(save_path,dpi=500)
+        if save_path:
+            img.figure.savefig(save_path,dpi=500)
+        return fig
     else:
         df = pd.DataFrame([list(f_count.values)], columns=f_count.index)
         num_subplots = math.ceil(len(f_count)/20)
@@ -85,9 +89,11 @@ def plot_peptides_of_lfq_condition(psm_parquet_path: str, sdrf_path: str, save_p
                 tick.set_rotation(30)
             sns.despine(ax=axes[i], top=True, right=True)
         plt.tight_layout()
-        fig.figure.savefig(save_path, dpi=500)
+        if save_path:
+            fig.figure.savefig(save_path, dpi=500)
+        return fig
 
-def plot_intensity_distribution_of_samples(feature_path: str,save_path:str, num_samples: int = 10)-> None:
+def plot_intensity_distribution_of_samples(feature_path: str,save_path:str=None, num_samples: int = 10)-> None:
     """
     Plot the distribution of intensities for different samples.
     :param feature_path: path to the feature file
@@ -108,9 +114,11 @@ def plot_intensity_distribution_of_samples(feature_path: str,save_path:str, num_
     fig = sns.kdeplot(data=df, x="intensity", hue="sample_accession",palette="Paired",linewidth=2)
     sns.despine(ax=fig, top=True, right=True)
     fig.set(ylabel=None)
-    fig.figure.savefig(save_path, dpi=500)
+    if save_path:
+        fig.figure.savefig(save_path, dpi=500)
+    return fig
 
-def plot_peptide_distribution_of_protein(feature_path: str,save_path:str,num_samples: int = 20)-> None:
+def plot_peptide_distribution_of_protein(feature_path: str,save_path:str=None,num_samples: int = 20)-> None:
     """
     Bar graphs of peptide counts for different samples.
     :param feature_path: path to the feature file
@@ -132,10 +140,11 @@ def plot_peptide_distribution_of_protein(feature_path: str,save_path:str,num_sam
     sns.despine(ax=fig, top=True, right=True)
     for tick in fig.get_xticklabels():
         tick.set_rotation(65)
-    fig.figure.savefig(save_path, dpi=500)
+    if save_path:
+        fig.figure.savefig(save_path, dpi=500)
+    return fig
 
-
-def plot_intensity_box_of_samples(feature_path: str,save_path:str, num_samples: int = 10)-> None:
+def plot_intensity_box_of_samples(feature_path: str,save_path:str=None, num_samples: int = 10)-> None:
         """
         Boxplot of peptide intensity distribution for different samples.
         :param feature_path: path to the feature file
@@ -167,7 +176,9 @@ def plot_intensity_box_of_samples(feature_path: str,save_path:str, num_samples: 
         sns.despine(ax=fig, top=True, right=True)
         for tick in fig.get_xticklabels():
             tick.set_rotation(30)
-        fig.figure.savefig(save_path, dpi=500)
+        if save_path:
+            fig.figure.savefig(save_path, dpi=500)
+        return fig
 
 
 

@@ -17,6 +17,14 @@ from quantms_io.utils.file_utils import extract_len
 from quantms_io.core.project import create_uuid_filename
 import duckdb
 import swifter
+from quantms_io.core.statistics import ParquetStatistics, IbaqStatistics
+import string
+from io import BytesIO
+import base64
+from quantms_io.core.plots import (plot_peptides_of_lfq_condition, plot_distribution_of_ibaq,
+                                   plot_intensity_distribution_of_samples, plot_peptide_distribution_of_protein,
+                                   plot_intensity_box_of_samples)
+from quantms_io.report.report import report
 
 # optional about spectrum
 def map_spectrum_mz(mz_path: str, scan: str, mzml: OpenMSHandler, mzml_directory: str):
@@ -445,5 +453,83 @@ def generate_start_and_end_from_fasta(parquet_path,fasta_path,label,output_path)
         pqwriter.write_table(parquet_table)
     if pqwriter:
         pqwriter.close()
-#plot
 
+#report
+
+def convert_to_base64(fig):
+    figfile = BytesIO()
+    fig.figure.savefig(figfile, format='png')
+    figfile.seek(0)
+    figdata_png = base64.b64encode(figfile.getvalue()) 
+    figdata_str = str(figdata_png, "utf-8")
+
+    return 'data:image/png;base64,' + figdata_str
+
+def get_msgs_from_project(path):
+    f = open(path, 'r')
+    content = f.read()
+    res = json.loads(content)
+    return res['project_accession'],res['project_title'],res['project_data_description']
+
+def generate_project_report(project_folder):
+    msgs = {
+    'project':'',
+    'projectTitle': '',
+    'projectDescription': '',
+    'featureProtrins': '',
+    'featurePeptides': '',
+    'featureSamples': '',
+    'featurePeptidoforms': '',
+    'featureMsruns': '',
+    'featureImg1': '',
+    'featureImg2': '',
+    'featureImg3': '',
+    'psmProtrins':'',
+    'psmPeptides':'',
+    'psmPeptidoforms':'',
+    'psms':'',
+    'psmMsruns':'',
+    'psmImg1': '',
+    'aeProtrins':'',
+    'aeSamples':'',
+    'aeImg1': ''
+    }
+    file_list = os.listdir(project_folder)
+    os.chdir(project_folder)
+    if 'project.json' in file_list:
+        project_info = get_msgs_from_project('project.json')
+        msgs['project'] = project_info[0]
+        msgs['projectTitle'] = project_info[1]
+        msgs['projectDescription'] = project_info[2]
+    feature_paths = [f for f in file_list if f.endswith('.feature.parquet')]
+    if len(feature_paths) > 0:
+        feature_statistics = ParquetStatistics(feature_paths[0])
+        msgs['featureProtrins'] = feature_statistics.get_number_of_proteins()
+        msgs['featurePeptides'] =  feature_statistics.get_number_of_peptides()
+        msgs['featureSamples'] = feature_statistics.get_number_of_samples()
+        msgs['featurePeptidoforms'] = feature_statistics.get_number_of_peptidoforms()
+        msgs['featureMsruns'] =  feature_statistics.get_number_msruns()
+        msgs['featureImg1'] = convert_to_base64(plot_intensity_distribution_of_samples(feature_paths[0]))      
+        msgs['featureImg2'] = convert_to_base64(plot_peptide_distribution_of_protein(feature_paths[0])) 
+        msgs['featureImg3'] = convert_to_base64(plot_intensity_box_of_samples(feature_paths[0]))
+    psm_paths = [f for f in file_list if f.endswith('.psm.parquet')]
+    if len(psm_paths) > 0:
+        psm_statistics = ParquetStatistics(psm_paths[0])
+        msgs['psmProtrins'] = psm_statistics.get_number_of_proteins()
+        msgs['psmPeptides'] = psm_statistics.get_number_of_peptides()
+        msgs['psmPeptidoforms'] = psm_statistics.get_number_of_peptidoforms()
+        msgs['psms'] = psm_statistics.get_number_of_psms()
+        msgs['psmMsruns'] = psm_statistics.get_number_msruns()
+        sdrf_paths = [f for f in file_list if f.endswith('.sdrf.tsv')]
+        if len(sdrf_paths) > 0:
+            msgs['psmImg1'] = convert_to_base64(plot_peptides_of_lfq_condition(psm_paths[0],sdrf_paths[0]))
+    ae_paths = [f for f in file_list if f.endswith('.absolute.tsv')]
+    if len(ae_paths) > 0:
+        absolute_stats = IbaqStatistics(ibaq_path=ae_paths[0])
+        msgs['aeProtrins'] = absolute_stats.get_number_of_proteins()
+        msgs['aeSamples'] = absolute_stats.get_number_of_samples()
+        msgs['aeImg1'] = convert_to_base64(plot_distribution_of_ibaq(ae_paths[0]))
+
+    template_str = string.Template(report)
+    with open("report.html",'w',encoding='utf8') as f:
+        f.write(template_str.substitute(msgs))
