@@ -275,9 +275,9 @@ Example:
 
 .. code:: shell
 
-   --duckdb_max_memory   "The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)"
-   --duckdb_threads  "The number of threads for the DuckDB engine (e.g 4)"
-   --file_num "The number of files being processed at the same time (default 100)"
+   --duckdb_max_memory   The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)
+   --duckdb_threads  The number of threads for the DuckDB engine (e.g 4)
+   --file_num The number of files being processed at the same time (default 100)
 
 Inject some messages for DiaNN 
 -------------------------------
@@ -300,7 +300,7 @@ Example:
 
    quantmsio_cli inject-start-and-end-from-fasta
       --parquet_path PXD010154_map_protein_accession-88d63fca-3ae6-4eab-9262-6e7a68184432.feature.parquet
-      --fasta_path "D:\converter\AE\Homo-sapiens-uniprot-reviewed-contaminants-decoy-202210.fasta"
+      --fasta_path Homo-sapiens-uniprot-reviewed-contaminants-decoy-202210.fasta
       --label feature
       --output_path PXD010154.feature.parquet
 
