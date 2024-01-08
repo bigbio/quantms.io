@@ -324,48 +324,7 @@ def read_large_parquet(parquet_path: str, batch_size: int = 500000):
 def register_file_to_json(project_file,attach_file,category,replace_existing):
     register= ProjectHandler(project_json_file=project_file)
     register.add_quantms_file(attach_file,category,replace_existing)
-    register.save_updated_project_info(output_file_name=project_file)
-
-#check result of psms or features
-def generate_report_of_psms_or_features(check_dir,label):
-    if not os.path.exists(check_dir):
-        raise Exception("not file path")
-    file_list = os.listdir(check_dir)
-    if label == 'psm':
-        check_list = [file for file in file_list if file.endswith(".psm.parquet")]
-    elif label == 'feature':
-        check_list = [file for file in file_list if file.endswith(".feature.parquet")]
-    
-    output_lines = ''
-    for file_path in check_list:
-        output_lines += 'Name: ' + file_path + '\n'
-        file_path = check_dir + "/" + file_path
-        file_size = get_file_size(file_path)
-        output_lines += 'File size: ' + file_size + '\n'
-        df = pd.read_parquet(file_path,columns=['protein_accessions','peptidoform','charge'])
-        output_lines += 'Total number of Peptides: ' + str(len(df.groupby(['peptidoform','charge']))) + '\n'
-        proteins = set()
-        df['protein_accessions'].apply(lambda x: proteins.update(set(x)))
-        output_lines += 'Total number of Proteins: ' + str(len(proteins)) + '\n\n'
-
-    output_path =  create_uuid_filename(label+'s_report','.txt')
-    with open(output_path, "w",encoding='utf8') as f:
-            f.write(output_lines)
-
-def get_file_size(file_path):
-    fsize = os.path.getsize(file_path)
-    if fsize < 1024:
-        return str(round(fsize,2)) + 'Byte'
-    else: 
-        kbx = fsize/1024
-        if kbx < 1024:
-            return str(round(kbx,2)) + 'K'
-        else:
-            mbx = kbx /1024
-            if mbx < 1024:
-                return str(round(mbx,2)) + 'M'
-            else:
-                return str(round(mbx/1024)) + 'G'               
+    register.save_updated_project_info(output_file_name=project_file)            
 
 #get best_scan_number
 def load_best_scan_number(diann_psm_path:str,diann_feature_path:str,output_path:str):

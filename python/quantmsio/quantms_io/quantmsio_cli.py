@@ -11,7 +11,6 @@ from quantms_io.commands.attach_file_command import attach_file_to_json
 from quantms_io.commands.diann_convert_command import diann_convert_to_parquet
 from quantms_io.commands.differential_expression_command import convert_msstats_differential
 from quantms_io.commands.feature_command import convert_feature_file
-from quantms_io.commands.generate_report_command import generate_report_about_files
 from quantms_io.commands.get_unanimous_command import get_unanimous_for_tsv, get_unanimous_for_parquet
 from quantms_io.commands.parquet_command import compare_two_parquet
 from quantms_io.commands.parquet_to_json import convert_parquet_to_json
@@ -50,7 +49,6 @@ cli.add_command(compare_two_parquet)
 cli.add_command(attach_file_to_json)
 cli.add_command(get_unanimous_for_parquet)
 cli.add_command(get_unanimous_for_tsv)
-cli.add_command(generate_report_about_files)
 cli.add_command(convert_parquet_to_json)
 cli.add_command(plot)
 cli.add_command(statistics)

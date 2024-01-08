@@ -93,7 +93,7 @@ class JsonConverter:
             psm_df.to_json(json_psm_path, orient='records', lines=True, compression='gzip')
         return json_psm_path
 
-    def convert_tsv_to_json(self,file_path:str):
+    def convert_tsv_to_json(self,file_path:str,json_path:str):
         """
         by providing the json format of AE and DE files for retrieval. return json
         """
@@ -108,7 +108,6 @@ class JsonConverter:
             records[col] = table.loc[:,col].to_list()
         output['records'] = records
         b = json.dumps(output)
-        output_path = ".".join(file_name.split('.')[:-1]) + '.json'
-        f = open(output_path, 'w')
+        f = open(json_path, 'w')
         f.write(b)
         f.close()
