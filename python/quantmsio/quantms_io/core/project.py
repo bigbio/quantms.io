@@ -120,7 +120,7 @@ class ProjectHandler:
                 "experiment_type"
             ] = get_set_of_experiment_keywords(pride_data)
         else:
-            logger.error(f"Error retrieving data from PRIDE Archive API. Status code: {response.status_code}")
+            logger.info("A non-pride project is being created.")
 
     def add_quantms_version(self, quantms_version: str):
         """
