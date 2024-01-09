@@ -130,8 +130,9 @@ Example:
 Project converter tool
 -------------------------
 If your project comes from the PRIDE database, 
-you can generate a ``project.json`` that contains 
+you can use the pride accession to generate a ``project.json`` that contains 
 descriptive information about the entire project.
+Or, customize a Project Accession to generate an entirely new project.
 
 - If you want to know more, please read :doc:`project`.
 - If your project is not from PRIDE, you can skip this step.
@@ -141,8 +142,14 @@ descriptive information about the entire project.
    quantmsio_cli generate-pride-project-json
       --project_accession PXD014414
       --sdrf PXD014414.sdrf.tsv
-      --quantms_version 1.12
       --output_folder result
+
+- Optional parameter
+
+.. code:: shell
+
+   --quantms_version   Quantms version
+   --delete_existing   Delete existing files in the output folder(default False)
 
 DE converter tool
 --------------------
