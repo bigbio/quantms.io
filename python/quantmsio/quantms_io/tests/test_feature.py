@@ -60,7 +60,7 @@ def generate_million_features():
 class TestFeatureHandler(TestCase):
     @unittest.skip("Skipping test_write_an_example_feature_million")
     def test_write_an_example_feature_million(self):
-        feature_list = generate_random_feature()  # Generate a list of features
+        feature_list = [generate_random_feature()]  # Generate a list of features
         feature_manager = FeatureHandler()
         feature_manager.parquet_path = "example_feature.parquet"
         table = feature_manager.create_feature_table(feature_list)

@@ -25,7 +25,7 @@ class OpenMSHandler:
             self._mzml_exp = oms.MSExperiment()
             oms.MzMLFile().load(mzml_path, self._mzml_exp)
             self._spec_lookup = SpectrumLookup()
-            self._spec_lookup.readSpectra(self._mzml_exp, "scan=(?<SCAN>\\d+)")
+            self._spec_lookup.readSpectra(self._mzml_exp, "scan=(?<SCAN>\d+)")
         try:
             index = self._spec_lookup.findByScanNumber(scan_number)
         except:

@@ -14,9 +14,7 @@ from quantms_io.core.openms import OpenMSHandler
 from quantms_io.core.psm import PSMHandler
 from quantms_io.core.project import ProjectHandler
 from quantms_io.utils.file_utils import extract_len
-from quantms_io.core.project import create_uuid_filename
 import duckdb
-import swifter
 from quantms_io.core.statistics import ParquetStatistics, IbaqStatistics
 import string
 from io import BytesIO
@@ -24,7 +22,8 @@ import base64
 from quantms_io.core.plots import (plot_peptides_of_lfq_condition, plot_distribution_of_ibaq,
                                    plot_intensity_distribution_of_samples, plot_peptide_distribution_of_protein,
                                    plot_intensity_box_of_samples)
-from quantms_io.report.report import report
+from quantms_io.utils.report import report
+import swifter
 
 # optional about spectrum
 def map_spectrum_mz(mz_path: str, scan: str, mzml: OpenMSHandler, mzml_directory: str):
