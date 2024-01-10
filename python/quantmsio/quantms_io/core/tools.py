@@ -19,6 +19,7 @@ from quantms_io.core.statistics import ParquetStatistics, IbaqStatistics
 import string
 from io import BytesIO
 import base64
+import mygene
 from quantms_io.core.plots import (plot_peptides_of_lfq_condition, plot_distribution_of_ibaq,
                                    plot_intensity_distribution_of_samples, plot_peptide_distribution_of_protein,
                                    plot_intensity_box_of_samples)
@@ -40,7 +41,7 @@ def map_spectrum_mz(mz_path: str, scan: str, mzml: OpenMSHandler, mzml_directory
     return mz_array, array_intensity, 0
 
 
-def generate_features_of_spectrum(parquet_path: str, mzml_directory: str,output_path:str,label,chunksize,partition:str=None):
+def generate_features_of_spectrum(parquet_path: str, mzml_directory: str,output_path:str,label:str,chunksize:int,partition:str=None):
     """
     parquet_path: parquet file path
     mzml_directory: mzml file directory path
@@ -110,78 +111,53 @@ def generate_features_of_spectrum(parquet_path: str, mzml_directory: str,output_
 
 
 # option about gene
-def generate_gene_names(parquet_path: str, mz_tab_path: str):
+def generate_gene_name_map(fasta,map_parameter):
     """
-    get gene names from mzTab into parquet.
+    according fasta database to map the proteins accessions to uniprot names.
+    :param parquet_path: psm_parquet_path or feature_parquet_path
+    :param fasta: Reference fasta database
+    :param output_path: output file path
+    :param map_parameter: map_protein_name or map_protein_accession
+    :param label: feature or psm
+    retrun: None
     """
-    gene_map = extract_optional_gene_dict(mz_tab_path)
-    table = pd.read_parquet(parquet_path)
-    keys = gene_map.keys()
-    table["gene_names"] = table["protein_accessions"].apply(
-        lambda x: gene_map[",".join(x)] if ",".join(x) in keys else pd.NA
-    )
-    feature = FeatureHandler()
-    parquet_table = pa.Table.from_pandas(table, schema=feature.schema)
+    map_gene_names = defaultdict(set)
+    if map_parameter == 'map_protein_name':
+        for seq_record in SeqIO.parse(fasta, "fasta"):
+            name = seq_record.id.split("|")[-1]
+            gene_list = re.findall('GN=(\S+)',seq_record.description)
+            gene_name = gene_list[0] if len(gene_list)>0 else None
+            map_gene_names[name].add(gene_name)
+    else:
+        for seq_record in SeqIO.parse(fasta, "fasta"):
+            accession = seq_record.id.split("|")[-2]
+            gene_list = re.findall('GN=(\S+)',seq_record.description)
+            gene_name = gene_list[0] if len(gene_list)>0 else None
+            map_gene_names[accession].add(gene_name)
+    return map_gene_names
 
-    pq.write_table(parquet_table, parquet_path, compression="snappy", store_schema=True)
+def generate_gene_acession_map(gene_names):
+    mg = mygene.MyGeneInfo()
+    gene_accessions = mg.querymany(gene_names, scopes='symbol',species='human',fields='accession')
+    gene_accessions_maps = defaultdict(list)
+    for obj in gene_accessions:
+        if 'accession' in obj:
+            gene_accessions_maps[obj['query']].append(obj['accession'])
+    return gene_accessions_maps
 
+def get_gene_accessions(gene_list,map_dict):
+    if len(gene_list) == 0:
+        return []
+    else:
+        accessions = []
+        for gene in gene_list:
+            accession = str(map_dict[gene][0])
+            accessions.append(accession)
+        return accessions
 
-def query_accessions(gene_name, email, species: str = "Homo sapiens", ox: str = "9606"):
-    """
-    getting the gene_accessions is time-consuming work, so we support single gene query.
-    gene_name: 'gene name'
-    Email: 'a available email address'
-    species: ''
-    OX: 'Organism Taxonomy ID'
-    """
-    from Bio import Entrez
-    Entrez.email = email
-    q_name = gene_name + " AND " + species + "[porgn:__txid" + ox + "]"
-    handle = Entrez.esearch(db="nucleotide", term=q_name)
-    record = Entrez.read(handle)
-    id_list = record["IdList"]
-    accessions = get_accessions(id_list)
-    return accessions
-
-
-def get_accessions(id_list):
-    from Bio import Entrez, SeqIO
-    accessions = []
-    for id_q in id_list:
-        handle = Entrez.efetch(db="nucleotide", id=id_q, rettype="gb", retmode="text")
-        record = SeqIO.read(handle, "genbank")
-        accessions.append(record.id)
-    return accessions
-
-
-def load_prt(mz_tab_path, **kwargs):
-    fle_len, pos = extract_len(mz_tab_path, "PRH")
-    f = open(mz_tab_path)
-    f.seek(pos)
-    return pd.read_csv(f, nrows=fle_len, **kwargs)
-
-
-def extract_optional_gene_dict(mz_tab_path):
-    """
-    return: a dict, key is protein accessions, value is gene names
-    """
-    prt = load_prt(mz_tab_path, "PRH", sep="\t", usecols=["accession", "description"])
-    prt.loc[:, "gene_names"] = (
-        prt["description"]
-        .fillna("unknown")
-        .apply(
-            lambda x: re.findall(r"GN=(\w+)", x)
-            if re.findall(r"GN=(\w+)", x)
-            else pd.NA
-        )
-    )
-    gene_map = (
-        prt[["accession", "gene_names"]]
-        .set_index("accession")
-        .to_dict(orient="dict")["gene_names"]
-    )
-
-    return gene_map
+def map_gene_msgs_to_parquet(parquet_path: str, fasta_path: str,map_parameter:str,output_path:str,label:str):
+    map_gene_names = generate_gene_name_map(fasta_path,map_parameter)
+    change_and_save_parquet(parquet_path,map_gene_names,output_path,label,'gene')
 
 #plot venn
 def plot_peptidoform_charge_venn(parquet_path_list,labels):
@@ -236,7 +212,7 @@ def map_protein_for_parquet(parquet_path,fasta,output_path,map_parameter,label):
             map_protein_names[seq_record.id].add(accession)
             map_protein_names[accession].add(accession)
             map_protein_names[name].add(accession)
-    change_and_save_parquet(parquet_path,map_protein_names,output_path,label)
+    change_and_save_parquet(parquet_path,map_protein_names,output_path,label,'protein')
 
 def map_protein_for_tsv(path: str,fasta: str, output_path: str, map_parameter: str):
     """
@@ -280,11 +256,16 @@ def load_de_or_ae(path):
     f.seek(pos-1)
     return pd.read_csv(f,sep='\t'),content
         
-def change_and_save_parquet(parquet_path,map_dict,output_path,label):
+def change_and_save_parquet(parquet_path,map_dict,output_path,label,control):
     pqwriter = None
     for df in read_large_parquet(parquet_path):
-        df['protein_accessions'] = df['protein_accessions'].apply(lambda x: get_unanimous_name(x,map_dict))
-        
+        if control == 'gene':
+            df['gene_names'] = df['protein_accessions'].apply(lambda x: get_unanimous_name(x,map_dict))
+            gene_names = list(set([item for sublist in df['gene_names'] for item in sublist]))
+            gene_accessions_maps = generate_gene_acession_map(gene_names)
+            df['gene_accessions'] = df['gene_names'].apply(lambda x:get_gene_accessions(x,gene_accessions_maps))
+        else:
+            df['protein_accessions'] = df['protein_accessions'].apply(lambda x: get_unanimous_name(x,map_dict))
         if label == 'feature':
             hander = FeatureHandler()
         elif label == 'psm':
@@ -305,7 +286,8 @@ def get_unanimous_name(protein_accessions,map_dict):
             protein_accessions = protein_accessions.split(",")
     unqnimous_names = []
     for accession in protein_accessions:
-        unqnimous_names.append(list(map_dict[accession])[0])
+        if accession in map_dict:
+            unqnimous_names.append(list(map_dict[accession])[0])
     return unqnimous_names
         
 def read_large_parquet(parquet_path: str, batch_size: int = 500000):

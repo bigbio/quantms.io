@@ -351,6 +351,24 @@ Example:
       --chunksize(default 100000)
       --partition charge
 
+Generate gene message
+-------------------------
+generate_gene_message support psm and feature. 
+
+- ``--label`` contains two options: ``psm`` and ``feature``.
+- ``--map_parameter`` contains two options: ``map_protein_name`` or ``map_protein_accession``.
+
+Example: 
+
+.. code:: shell
+
+   quantmsio_cli map-gene-msg-to-parquet 
+   --parquet_path PXD000672-0beee055-ae78-4d97-b6ac-1f191e91bdd4.featrue.parquet
+   --fasta_path Homo-sapiens-uniprot-reviewed-contaminants-decoy-202210.fasta
+   --output_path PXD000672-gene.parquet
+   --label feature 
+   --map_parameter map_protein_name
+
 Map proteins accessions
 ------------------------
 

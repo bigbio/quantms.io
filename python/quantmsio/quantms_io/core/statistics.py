@@ -75,7 +75,6 @@ class ParquetStatistics(Statistics):
         protein_ids = self.parquet_db.sql(f"SELECT DISTINCT protein_accessions FROM parquet_db").fetchall()
         # This probalby needs to be refined.
         protein_ids = [item for sublist in protein_ids for item in sublist]
-        protein_ids = [item for sublist in protein_ids for item in sublist]
         protein_ids = set(protein_ids)
         return len(protein_ids)
 

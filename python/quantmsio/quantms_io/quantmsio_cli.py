@@ -24,6 +24,7 @@ from quantms_io.commands.load_best_scan_number_command import inject_bset_psm_sc
 from quantms_io.commands.project_command import generate_pride_project_json
 from quantms_io.commands.convert_tsv_to_json_command import convert_tsv_to_json
 from quantms_io.commands.generate_project_report_command import generate_report_about_project
+from quantms_io.commands.generate_gene_msg_command import map_gene_msg_to_parquet
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -59,6 +60,7 @@ cli.add_command(inject_bset_psm_scan_number)
 cli.add_command(generate_pride_project_json)
 cli.add_command(convert_tsv_to_json)
 cli.add_command(generate_report_about_project)
+cli.add_command(map_gene_msg_to_parquet)
 
 def quantms_io_main():
     """
