@@ -136,9 +136,9 @@ def generate_gene_name_map(fasta,map_parameter):
             map_gene_names[accession].add(gene_name)
     return map_gene_names
 
-def generate_gene_acession_map(gene_names):
+def generate_gene_acession_map(gene_names,species='human'):
     mg = mygene.MyGeneInfo()
-    gene_accessions = mg.querymany(gene_names, scopes='symbol',species='human',fields='accession')
+    gene_accessions = mg.querymany(gene_names, scopes='symbol',species=species,fields='accession')
     gene_accessions_maps = defaultdict(list)
     for obj in gene_accessions:
         if 'accession' in obj:
@@ -151,13 +151,30 @@ def get_gene_accessions(gene_list,map_dict):
     else:
         accessions = []
         for gene in gene_list:
-            accession = str(map_dict[gene][0])
-            accessions.append(accession)
+            accession = map_dict[gene]
+            if len(accession)>0:
+                accessions.append(str(accession[0]))
         return accessions
 
-def map_gene_msgs_to_parquet(parquet_path: str, fasta_path: str,map_parameter:str,output_path:str,label:str):
+def map_gene_msgs_to_parquet(parquet_path: str, fasta_path: str,map_parameter:str,output_path:str,label:str,species:str):
     map_gene_names = generate_gene_name_map(fasta_path,map_parameter)
-    change_and_save_parquet(parquet_path,map_gene_names,output_path,label,'gene')
+    pqwriter = None
+    for df in read_large_parquet(parquet_path):
+        df['gene_names'] = df['protein_accessions'].swifter.apply(lambda x: get_unanimous_name(x,map_gene_names))
+        gene_names = list(set([item for sublist in df['gene_names'] for item in sublist]))
+        gene_accessions_maps = generate_gene_acession_map(gene_names,species)
+        df['gene_accessions'] = df['gene_names'].swifter.apply(lambda x:get_gene_accessions(x,gene_accessions_maps))
+        if label == 'feature':
+            hander = FeatureHandler()
+        elif label == 'psm':
+            hander = PSMHandler()
+        parquet_table = pa.Table.from_pandas(df, schema=hander.schema)
+        if not pqwriter:
+        # create a parquet write object giving it an output file
+            pqwriter = pq.ParquetWriter(output_path, parquet_table.schema)
+        pqwriter.write_table(parquet_table)
+    if pqwriter:
+        pqwriter.close()
 
 #plot venn
 def plot_peptidoform_charge_venn(parquet_path_list,labels):
@@ -212,7 +229,7 @@ def map_protein_for_parquet(parquet_path,fasta,output_path,map_parameter,label):
             map_protein_names[seq_record.id].add(accession)
             map_protein_names[accession].add(accession)
             map_protein_names[name].add(accession)
-    change_and_save_parquet(parquet_path,map_protein_names,output_path,label,'protein')
+    change_and_save_parquet(parquet_path,map_protein_names,output_path,label)
 
 def map_protein_for_tsv(path: str,fasta: str, output_path: str, map_parameter: str):
     """
@@ -256,16 +273,10 @@ def load_de_or_ae(path):
     f.seek(pos-1)
     return pd.read_csv(f,sep='\t'),content
         
-def change_and_save_parquet(parquet_path,map_dict,output_path,label,control):
+def change_and_save_parquet(parquet_path,map_dict,output_path,label):
     pqwriter = None
     for df in read_large_parquet(parquet_path):
-        if control == 'gene':
-            df['gene_names'] = df['protein_accessions'].apply(lambda x: get_unanimous_name(x,map_dict))
-            gene_names = list(set([item for sublist in df['gene_names'] for item in sublist]))
-            gene_accessions_maps = generate_gene_acession_map(gene_names)
-            df['gene_accessions'] = df['gene_names'].apply(lambda x:get_gene_accessions(x,gene_accessions_maps))
-        else:
-            df['protein_accessions'] = df['protein_accessions'].apply(lambda x: get_unanimous_name(x,map_dict))
+        df['protein_accessions'] = df['protein_accessions'].apply(lambda x: get_unanimous_name(x,map_dict))
         if label == 'feature':
             hander = FeatureHandler()
         elif label == 'psm':

@@ -8,7 +8,8 @@ import click
 @click.option('--output_path', help='output file path(.parquet)')
 @click.option('--label', type=click.Choice(['feature', 'psm'], case_sensitive=False),help='parquet type')
 @click.option('--map_parameter', type=click.Choice(['map_protein_name', 'map_protein_accession'],case_sensitive=False),help='map type')
-def map_gene_msg_to_parquet(parquet_path: str, fasta_path: str,output_path:str,label:str,map_parameter:str):
+@click.option("--species", help="species", default='human')
+def map_gene_msg_to_parquet(parquet_path: str, fasta_path: str,output_path:str,label:str,map_parameter:str,species:str):
     """
     according mzML file to map the spectrum message to parquet.
     :param parquet_path: psm_parquet_path or feature_parquet_path
@@ -21,4 +22,4 @@ def map_gene_msg_to_parquet(parquet_path: str, fasta_path: str,output_path:str,l
     if not output_path.endswith('parquet'):
         raise click.UsageError("Please provide file extension(.parquet)")
 
-    map_gene_msgs_to_parquet(parquet_path, fasta_path,map_parameter,output_path,label)
+    map_gene_msgs_to_parquet(parquet_path, fasta_path,map_parameter,output_path,label,species)

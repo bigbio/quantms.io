@@ -351,6 +351,28 @@ Example:
       --chunksize(default 100000)
       --partition charge
 
+- Optional parameter
+
+.. code:: shell
+
+   --species species type(default human)
+
+- ``species``
+  
++-------------+-------------------------+
+| Common name | Genus name              |
++=============+=========================+
+| human       | Homo sapiens            |
+| mouse       | Mus musculus            |
+| rat         | Rattus norvegicus       |
+| fruitfly    | Drosophila melanogaster |
+| nematode    | Caenorhabditis elegans  |
+| zebrafish   | Danio rerio             |
+| thale-cress | Arabidopsis thaliana    |
+| frog        | Xenopus tropicalis      |
+| pig         | Sus scrofa              |
++-------------+-------------------------+
+
 Generate gene message
 -------------------------
 generate_gene_message support psm and feature. 
