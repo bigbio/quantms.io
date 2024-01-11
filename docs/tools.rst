@@ -359,19 +359,19 @@ Example:
 
 - ``species``
   
-+-------------+-------------------------+
-| Common name | Genus name              |
-+=============+=========================+
-| human       | Homo sapiens            |
-| mouse       | Mus musculus            |
-| rat         | Rattus norvegicus       |
-| fruitfly    | Drosophila melanogaster |
-| nematode    | Caenorhabditis elegans  |
-| zebrafish   | Danio rerio             |
-| thale-cress | Arabidopsis thaliana    |
-| frog        | Xenopus tropicalis      |
-| pig         | Sus scrofa              |
-+-------------+-------------------------+
+ ============= ========================= 
+  Common name   Genus name               
+ ============= ========================= 
+  human         Homo sapiens             
+  mouse         Mus musculus             
+  rat           Rattus norvegicus        
+  fruitfly      Drosophila melanogaster  
+  nematode      Caenorhabditis elegans   
+  zebrafish     Danio rerio              
+  thale-cress   Arabidopsis thaliana     
+  frog          Xenopus tropicalis       
+  pig           Sus scrofa               
+ ============= ========================= 
 
 Generate gene message
 -------------------------
