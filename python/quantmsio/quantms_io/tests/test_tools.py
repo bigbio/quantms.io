@@ -1,7 +1,7 @@
 from quantms_io.core.tools import generate_features_of_spectrum
 from quantms_io.core.tools import generate_project_report
 from quantms_io.core.tools import register_file_to_json
-
+from quantms_io.core.tools import map_gene_msgs_to_parquet
 from unittest import TestCase
 
 
@@ -40,3 +40,12 @@ class TestTools(TestCase):
                                   category=file_item[1],
                                   replace_existing=True
             )
+    
+    def test_generate_gene_msg_to_parquet(self):
+        parquet_path = "PXD000672\PXD000672-0beee055-ae78-4d97-b6ac-1f191e91bdd4.featrue.parquet"
+        fasta_path = "Homo-sapiens-uniprot-reviewed-contaminants-decoy-202210.fasta"
+        output_path = "PXD000672\PXD000672-gene.featrue.parquet"
+        label =  'feature'
+        map_parameter = 'map_protein_name'
+        species = 'human'
+        map_gene_msgs_to_parquet(parquet_path, fasta_path,map_parameter,output_path,label,species)
