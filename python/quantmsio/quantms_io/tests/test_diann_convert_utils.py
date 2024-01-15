@@ -15,6 +15,7 @@ class Test(TestCase):
                   '/examples/output/DIA-lfq/'+create_uuid_filename('PXD037682','.feature.parquet'),
                   '/examples/output/DIA-lfq/'+create_uuid_filename('PXD037682','.psm.parquet')
                   )
+        
 
     def test_all_required_arguments(self):
         st = time.time()
@@ -40,21 +41,24 @@ class Test(TestCase):
         # get the execution time
         elapsed_time = et - st
         print('Execution time:', elapsed_time, 'seconds')
-
-        """     
+    
     def test_fill_start_and_end(self):
-        fasta_path = "/Users/yperez/work/Homo-sapiens-uniprot-reviewed-contaminants-decoy-202210.fasta"
-        feature_output_path='/Users/yperez/work/quantms-data/PXD037340.2/PXD010154.feature.parquet'
-        psm_output_path = '/Users/yperez/work/quantms-data/PXD037340.2/PXD010154.psm.parquet'
-        generate_start_and_end_from_fasta(parquet_path=self.feature_output_path,fasta_path=fasta_path,label='feature',output_path=feature_output_path)
-        generate_start_and_end_from_fasta(parquet_path=self.psm_output_path,fasta_path=fasta_path,label='psm',output_path=psm_output_path)
+        fasta_path = __package__ + '/examples/fasta/Homo-sapiens.fasta'
+        feature_path = __package__ + test_datas[4]
+        psm_path = __package__ + test_datas[5]
+        feature_output_path = __package__ + '/examples/output/DIA-lfq/PXD010154_fill_start_and_end.feature.parquet'
+        psm_output_path = __package__ + '/examples/output/DIA-lfq/PXD010154_fill_start_and_end.psm.parquet'
+        generate_start_and_end_from_fasta(parquet_path=feature_path,fasta_path=fasta_path,label='feature',output_path=feature_output_path)
+        generate_start_and_end_from_fasta(parquet_path=psm_path,fasta_path=fasta_path,label='psm',output_path=psm_output_path)
     
     def test_fill_best_scan_number(self):
-        output_path = '/Users/yperez/work/quantms-data/PXD037340.2/PXD010154-fill-best_scan_number.feature.parquet'
-        load_best_scan_number(diann_psm_path=self.psm_output_path,
-                          diann_feature_path=self.feature_output_path,
+        feature_output_path = __package__ + test_datas[4]
+        psm_output_path = __package__ + test_datas[5]
+        output_path = __package__ + '/examples/output/DIA-lfq/PXD010154_fill_best_scan_number.feature.parquet'
+        load_best_scan_number(diann_psm_path=psm_output_path,
+                          diann_feature_path=feature_output_path,
                           output_path=output_path
-                          ) """
+                          )
 
 
 
