@@ -400,11 +400,7 @@ class DiaNNConvert:
             get_peptidoform_proforma_version_in_mztab(row['sequence'], row['modifications'], self._modifications),
                                                                                     axis=1)
 
-        report['id_scores'] = report[['Q.Value', 'posterior_error_probability', 'global_qvalue']].swifter.apply(lambda x: [
-            f"q-value: {x['Q.Value']}",
-            f"global q-value: {x['global_qvalue']}",
-            f"posterior error probability: {x['posterior_error_probability']}",
-        ], axis=1)
+        report['id_scores'] = report[['Q.Value', 'posterior_error_probability', 'global_qvalue']].swifter.apply(lambda x: f"q-value: {x['Q.Value']},global q-value: {x['global_qvalue']},posterior error probability: {x['posterior_error_probability']}",axis=1)
         
         return report
     

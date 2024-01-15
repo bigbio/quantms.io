@@ -349,7 +349,7 @@ class FeatureInMemory:
         pep_msg = pep.iloc[
             pep.groupby(
                 ["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"]
-            ).swifter.apply(lambda row: row["best_search_engine_score[1]"].idxmin())
+            ).apply(lambda row: row["best_search_engine_score[1]"].idxmin())
         ]
         pep_msg = pep_msg.set_index(
             ["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"]
@@ -386,8 +386,8 @@ class FeatureInMemory:
                     map_dict[key] = [None, None, None]
                     psm_unique_keys.append(key)
                 df = df.reset_index(drop=True)
-                df.loc[:, 'scan_number'] = df['spectra_ref'].swifter.apply(lambda x: generate_scan_number(x))
-                df['spectra_ref'] = df['spectra_ref'].swifter.apply(lambda x: self._ms_runs[x.split(":")[0]])
+                df.loc[:, 'scan_number'] = df['spectra_ref'].apply(lambda x: generate_scan_number(x))
+                df['spectra_ref'] = df['spectra_ref'].apply(lambda x: self._ms_runs[x.split(":")[0]])
                 if pd.isna(map_dict[key][1]):
                     if 'opt_global_q-value_score' in df.columns:
                         temp_df = df.iloc[df['opt_global_q-value_score'].idxmin()]
@@ -800,8 +800,7 @@ class FeatureInMemory:
         res: msstats_in dataframe
         return: parquet table
         """
-        if res['id_scores'].dtype == 'str':
-            res['id_scores'] = res['id_scores'].str.split(',')
+        res['id_scores'] = res['id_scores'].apply(lambda x:x.split(','))
         res['sequence'] = res['sequence'].astype(str)
         res['protein_accessions'] = res['protein_accessions'].str.split(";")
         res['protein_start_positions'] = res['protein_start_positions'].swifter.apply(

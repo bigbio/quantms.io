@@ -1,0 +1,69 @@
+{
+    "project_accession": "MSV000079033",
+    "project_title": "",
+    "project_description": "",
+    "project_sample_description": "",
+    "project_data_description": "",
+    "project_pubmed_id": "",
+    "organisms": [
+        "Homo sapiens"
+    ],
+    "organism_parts": [
+        "blood plasma"
+    ],
+    "diseases": [
+        "normal"
+    ],
+    "cell_lines": [
+        "not available"
+    ],
+    "instruments": [
+        "Q Exactive"
+    ],
+    "enzymes": [
+        "Trypsin/P"
+    ],
+    "experiment_type": [],
+    "acquisition_properties": [
+        {
+            "proteomics data acquisition method": "iTRAQ"
+        },
+        {
+            "proteomics data acquisition method": "Data-dependent acquisition"
+        },
+        {
+            "proteomics data acquisition method": "iTRAQ"
+        },
+        {
+            "proteomics data acquisition method": "Data-dependent acquisition"
+        },
+        {
+            "proteomics data acquisition method": "iTRAQ"
+        },
+        {
+            "proteomics data acquisition method": "Data-dependent acquisition"
+        },
+        {
+            "proteomics data acquisition method": "iTRAQ"
+        },
+        {
+            "proteomics data acquisition method": "Data-dependent acquisition"
+        },
+        {
+            "dissociation method": "HCD"
+        },
+        {
+            "precursor mass tolerance": "30 ppm"
+        },
+        {
+            "fragment mass tolerance": "0.05 Da"
+        }
+    ],
+    "quantms_files": [
+        {
+            "sdrf_file": "MSV000079033-Blood-Plasma-iTRAQ-44fdac9a-9edc-4538-972f-5bf64bc808a1.sdrf.tsv"
+        }
+    ],
+    "quantms_version": "",
+    "comments": []
+}
