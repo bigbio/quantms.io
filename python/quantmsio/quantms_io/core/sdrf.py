@@ -200,9 +200,9 @@ class SDRFHandler:
                 "comment[label]": "channel",
             }
         )
-
+        experiment_type = re.sub('[\d]','',experiment_type)
         # Add the channel column if it is not present
-        if experiment_type not in ["tmt", "itraq", "lfq"]:
+        if experiment_type.upper() not in ["TMT", "ITRAQ", "LFQ"]:
             raise ValueError(
                 "The experiment type provided is not supported: {}, available values [lfq,tmt,itraq]".format(
                     experiment_type
@@ -210,7 +210,7 @@ class SDRFHandler:
             )
 
         # extract
-        if experiment_type != "lfq":
+        if experiment_type.upper() != "LFQ":
             sdrf = sdrf_pd[
                 [
                     "reference_file_name",
@@ -221,8 +221,8 @@ class SDRFHandler:
                 ]
             ]
             return sdrf
-        sdrf = sdrf_pd[["reference_file_name", "sample_accession", "condition", "fraction"]]
-        sdrf["channel"] = None  # Channel will be needed in the LFQ as empty.
+        sdrf_pd.loc[:,"channel"] = None  # Channel will be needed in the LFQ as empty.
+        sdrf = sdrf_pd[["reference_file_name", "sample_accession", "condition", "fraction","channel"]]
         return sdrf
 
     def get_experiment_type_from_sdrf(self):

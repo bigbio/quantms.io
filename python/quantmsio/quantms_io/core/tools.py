@@ -13,7 +13,7 @@ from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.openms import OpenMSHandler
 from quantms_io.core.psm import PSMHandler
 from quantms_io.core.project import ProjectHandler
-from quantms_io.utils.file_utils import extract_len
+#from quantms_io.utils.file_utils import extract_len
 import duckdb
 from quantms_io.core.statistics import ParquetStatistics, IbaqStatistics
 import string

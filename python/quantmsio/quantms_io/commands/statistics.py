@@ -29,7 +29,7 @@ def feature_file_statistics(ctx, absolute_path: str, parquet_path: str, save_pat
     feature_statistics = ParquetStatistics(parquet_path)
     absolute_stats = IbaqStatistics(ibaq_path=absolute_path)
 
-    def write_stats(file, stats):
+    def write_stats(file, stats:ParquetStatistics):
         file.write("Number of proteins: {}\n".format(stats.get_number_of_proteins()))
         file.write("Number of peptides: {}\n".format(stats.get_number_of_peptides()))
         file.write("Number of samples: {}\n".format(stats.get_number_of_samples()))
@@ -62,7 +62,7 @@ def parquet_psm_statistics(ctx, parquet_path: str, save_path: str):
     :param save_path: file with the statistics (e.g. statistics.csv), if not provided, will print to stdout
     :return: none
     """
-    def write_stats(file, stats):
+    def write_stats(file, stats:ParquetStatistics):
         file.write("Number of proteins: {}\n".format(stats.get_number_of_proteins()))
         file.write("Number of peptides: {}\n".format(stats.get_number_of_peptides()))
         file.write("Number of peptidoforms: {}\n".format(stats.get_number_of_peptidoforms()))

@@ -62,6 +62,12 @@
     "quantms_files": [
         {
             "sdrf_file": "MSV000079033-Blood-Plasma-iTRAQ-44fdac9a-9edc-4538-972f-5bf64bc808a1.sdrf.tsv"
+        },
+        {
+            "testsfeature_file": "tests/examples/output/DDA-plex/MSV000079033-6771dd93-aafd-4530-882c-e98243f53aaf.feature.parquet"
+        },
+        {
+            "testspsm_file": "tests/examples/output/DDA-plex/MSV000079033-a645fef2-3d54-4166-88a1-519c3be3b817.psm.parquet"
         }
     ],
     "quantms_version": "",
