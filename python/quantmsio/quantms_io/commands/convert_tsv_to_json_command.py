@@ -25,7 +25,7 @@ def convert_tsv_to_json(file: str, json_path:str):
 @json.command("convert-sdrf-to-json", short_help="Convert sdrf file to JSON format", )
 @click.option("--file", help="sdrf file", required=True)
 @click.option("--json_path", help="save json path", required=True)
-def sdrf_to_json(file: str, json_path:str):
+def convert_sdrf_to_json(file: str, json_path:str):
     if not os.path.exists(file):
         raise click.UsageError("The file does not exist.")
 
