@@ -22,7 +22,7 @@ from quantms_io.commands.generate_spectra_message_command import map_spectrum_me
 from quantms_io.commands.generate_start_and_end_command import inject_start_and_end_from_fasta
 from quantms_io.commands.load_best_scan_number_command import inject_bset_psm_scan_number
 from quantms_io.commands.project_command import generate_pride_project_json
-from quantms_io.commands.convert_tsv_to_json_command import convert_tsv_to_json
+from quantms_io.commands.convert_tsv_to_json_command import json
 from quantms_io.commands.generate_project_report_command import generate_report_about_project
 from quantms_io.commands.generate_gene_msg_command import map_gene_msg_to_parquet
 
@@ -58,7 +58,7 @@ cli.add_command(map_spectrum_message_to_parquet)
 cli.add_command(inject_start_and_end_from_fasta)
 cli.add_command(inject_bset_psm_scan_number)
 cli.add_command(generate_pride_project_json)
-cli.add_command(convert_tsv_to_json)
+cli.add_command(json)
 cli.add_command(generate_report_about_project)
 cli.add_command(map_gene_msg_to_parquet)
 

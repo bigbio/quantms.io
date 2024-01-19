@@ -494,10 +494,19 @@ Example:
 
 .. code:: shell
 
-   .. code:: shell
-
-   quantmsio_cli convert-tsv-to-json
+   quantmsio_cli json convert-tsv-to-json
       --file PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.absolute.tsv
+      --json_path PXD010154.ae.json
+
+- sdrf
+Example: 
+
+.. code:: shell
+
+   quantmsio_cli json convert-sdrf-to-json
+      --file MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv
+      --json_path MSV000079033.sdrf.json
+
 
 Statistics
 -----------
