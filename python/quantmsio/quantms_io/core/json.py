@@ -4,6 +4,7 @@ import re
 import numpy as np
 import pyarrow.parquet as pq
 from quantms_io.core.tools import load_de_or_ae,read_large_parquet
+from quantms_io.core.sdrf import SDRFHandler
 
 class Npencoder(json.JSONEncoder):
     def default(self, obj):
@@ -108,6 +109,30 @@ class JsonConverter:
             records[col] = table.loc[:,col].to_list()
         output['records'] = records
         b = json.dumps(output)
+        f = open(json_path, 'w')
+        f.write(b)
+        f.close()
+    
+    def sdrf_to_json(self,sdrf_path:str,json_path:str):
+        sdrf_handler = SDRFHandler(sdrf_path)
+        sdrf_handler._load_sdrf_info(sdrf_path)
+        sdrf_json = {}
+        sdrf_json['organism'] = sdrf_handler.get_organisms()
+        sdrf_json['instrument'] = sdrf_handler.get_instruments()
+        sdrf_json['diseases'] = sdrf_handler.get_diseases()
+        sdrf_json['enzymes'] = sdrf_handler.get_enzymes()
+        sdrf_json['cell_lines'] = sdrf_handler.get_cell_lines()
+        sdrf_json['method'] = sdrf_handler.get_acquisition_properties()
+        sdrf_json['experiment_type'] = sdrf_handler.get_experiment_type_from_sdrf()
+        sdrf_json['feature_msg'] = sdrf_handler.extract_feature_properties().to_json(orient='values')
+        sdrf_json['sample_map'] = sdrf_handler.get_sample_map()
+        fix_m,var_m = sdrf_handler.get_mods()
+
+        sdrf_json['modifications'] = {
+            'Fixed': fix_m,
+            'Variable': var_m
+        }
+        b = json.dumps(sdrf_json)
         f = open(json_path, 'w')
         f.write(b)
         f.close()
