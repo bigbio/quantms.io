@@ -16,6 +16,7 @@ import pyarrow.parquet as pq
 from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.feature_in_memory import FeatureInMemory
 from quantms_io.core.psm import PSMHandler
+from quantms_io.core.sdrf import SDRFHandler
 
 import concurrent.futures
 import duckdb
@@ -363,7 +364,8 @@ class DiaNNConvert:
         self._duckdb = self.create_duckdb_from_diann_report(report_path, duckdb_max_memory, duckdb_threads)
 
         s_data_frame, f_table = get_exp_design_dfs(design_file)
-        fix_mods,variable_mods = self.get_mods(sdrf_path)
+        sdrf_handle = SDRFHandler(sdrf_path)
+        fix_mods,variable_mods = sdrf_handle.get_mods()
         self._modifications = get_modifications(fix_mods,variable_mods)
         for report in self.main_report_df(report_path, qvalue_threshold, mzml_info_folder , file_num):
             s = time.time()
@@ -443,7 +445,7 @@ class DiaNNConvert:
             'Run': 'run'
         },inplace=True)
         peptide_score_name = self._score_names["peptide_score"]
-        report['sample_accession'] = report["reference_file_name"].map(sdrf_map)
+        report.loc[:,'sample_accession'] = report["reference_file_name"].map(sdrf_map)
         schema = FeatureHandler()
         feature = FeatureInMemory('LFQ',schema.schema)
         feature._modifications = self._modifications
