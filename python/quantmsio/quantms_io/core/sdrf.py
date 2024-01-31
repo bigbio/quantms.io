@@ -200,9 +200,9 @@ class SDRFHandler:
                 "comment[label]": "channel",
             }
         )
-
+        experiment_type = re.sub('[\d]','',experiment_type)
         # Add the channel column if it is not present
-        if experiment_type not in ["tmt", "itraq", "lfq"]:
+        if experiment_type.upper() not in ["TMT", "ITRAQ", "LFQ"]:
             raise ValueError(
                 "The experiment type provided is not supported: {}, available values [lfq,tmt,itraq]".format(
                     experiment_type
@@ -210,7 +210,7 @@ class SDRFHandler:
             )
 
         # extract
-        if experiment_type != "lfq":
+        if experiment_type.upper() != "LFQ":
             sdrf = sdrf_pd[
                 [
                     "reference_file_name",
@@ -221,8 +221,8 @@ class SDRFHandler:
                 ]
             ]
             return sdrf
-        sdrf = sdrf_pd[["reference_file_name", "sample_accession", "condition", "fraction"]]
-        sdrf["channel"] = None  # Channel will be needed in the LFQ as empty.
+        sdrf_pd.loc[:,"channel"] = None  # Channel will be needed in the LFQ as empty.
+        sdrf = sdrf_pd[["reference_file_name", "sample_accession", "condition", "fraction","channel"]]
         return sdrf
 
     def get_experiment_type_from_sdrf(self):
@@ -289,3 +289,21 @@ class SDRFHandler:
                     print("channel {} for sample {} already in the sample map".format(channel, row["source name"]))
             sample_map[row["comment[data file]"] + ":_:" + channel] = row["source name"]
         return sample_map
+
+    def get_mods(self):
+        sdrf = self.sdrf_table
+        mod_cols = [col for col in sdrf.columns if (col.startswith('comment[modification parameter]') | col.startswith('comment[modification parameters]'))]
+        fix_m = []
+        variable_m = []
+        for col in mod_cols:
+            mod_msg = sdrf[col].values[0].split(';')
+            mod_dict = {k.split('=')[0]:k.split('=')[1] for k in mod_msg}
+            mod = f"{mod_dict['NT']} ({mod_dict['TA']})" if 'TA' in mod_dict else f"{mod_dict['NT']} ({mod_dict['PP']})"
+            if mod_dict['MT'] == 'Variable' or mod_dict['MT'] == 'variable':
+                variable_m.append(mod)
+            else:
+                fix_m.append(mod)
+        fix_s = ','.join(fix_m) if len(fix_m) > 0 else 'null'
+        variable_s = ','.join(variable_m) if len(variable_m) > 0 else 'null'
+
+        return fix_s,variable_s

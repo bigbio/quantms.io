@@ -1,21 +1,11 @@
 import click
 import pandas as pd
 import datacompy
-CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
-
-
-@click.group(context_settings=CONTEXT_SETTINGS)
-def cli():
-    """
-    This is the main tool that gives access to all commands.
-    """
-
 @click.command("compare-parquet", short_help="Compare two parquet files, feature or psm files")
 @click.option("--parquet_path_one", help="First parquet file", required=True)
 @click.option("--parquet_path_two", help="the parquet file of memory version", required=True)
 @click.option("--report_path", help="report path", required=True)
-@click.pass_context
-def compare_two_parquet(ctx,parquet_path_one: str, parquet_path_two: str, report_path: str):
+def compare_two_parquet(parquet_path_one: str, parquet_path_two: str, report_path: str):
     """
     compare two parquet files generated from the same mztab psms files.
     :param parquet_path_one: the parquet file of discache version

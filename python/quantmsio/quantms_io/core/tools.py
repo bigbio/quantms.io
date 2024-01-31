@@ -13,9 +13,17 @@ from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.openms import OpenMSHandler
 from quantms_io.core.psm import PSMHandler
 from quantms_io.core.project import ProjectHandler
-from quantms_io.utils.file_utils import extract_len
-from quantms_io.core.project import create_uuid_filename
+#from quantms_io.utils.file_utils import extract_len
 import duckdb
+from quantms_io.core.statistics import ParquetStatistics, IbaqStatistics
+import string
+from io import BytesIO
+import base64
+import mygene
+from quantms_io.core.plots import (plot_peptides_of_lfq_condition, plot_distribution_of_ibaq,
+                                   plot_intensity_distribution_of_samples, plot_peptide_distribution_of_protein,
+                                   plot_intensity_box_of_samples)
+from quantms_io.utils.report import report
 import swifter
 
 # optional about spectrum
@@ -33,7 +41,7 @@ def map_spectrum_mz(mz_path: str, scan: str, mzml: OpenMSHandler, mzml_directory
     return mz_array, array_intensity, 0
 
 
-def generate_features_of_spectrum(parquet_path: str, mzml_directory: str,output_path:str,label,chunksize,partition:str=None):
+def generate_features_of_spectrum(parquet_path: str, mzml_directory: str,output_path:str,label:str,chunksize:int,partition:str=None):
     """
     parquet_path: parquet file path
     mzml_directory: mzml file directory path
@@ -103,78 +111,70 @@ def generate_features_of_spectrum(parquet_path: str, mzml_directory: str,output_
 
 
 # option about gene
-def generate_gene_names(parquet_path: str, mz_tab_path: str):
+def generate_gene_name_map(fasta,map_parameter):
     """
-    get gene names from mzTab into parquet.
+    according fasta database to map the proteins accessions to uniprot names.
+    :param parquet_path: psm_parquet_path or feature_parquet_path
+    :param fasta: Reference fasta database
+    :param output_path: output file path
+    :param map_parameter: map_protein_name or map_protein_accession
+    :param label: feature or psm
+    retrun: None
     """
-    gene_map = extract_optional_gene_dict(mz_tab_path)
-    table = pd.read_parquet(parquet_path)
-    keys = gene_map.keys()
-    table["gene_names"] = table["protein_accessions"].apply(
-        lambda x: gene_map[",".join(x)] if ",".join(x) in keys else pd.NA
-    )
-    feature = FeatureHandler()
-    parquet_table = pa.Table.from_pandas(table, schema=feature.schema)
+    map_gene_names = defaultdict(set)
+    if map_parameter == 'map_protein_name':
+        for seq_record in SeqIO.parse(fasta, "fasta"):
+            name = seq_record.id.split("|")[-1]
+            gene_list = re.findall('GN=(\S+)',seq_record.description)
+            gene_name = gene_list[0] if len(gene_list)>0 else None
+            map_gene_names[name].add(gene_name)
+    else:
+        for seq_record in SeqIO.parse(fasta, "fasta"):
+            accession = seq_record.id.split("|")[-2]
+            gene_list = re.findall('GN=(\S+)',seq_record.description)
+            gene_name = gene_list[0] if len(gene_list)>0 else None
+            map_gene_names[accession].add(gene_name)
+    return map_gene_names
 
-    pq.write_table(parquet_table, parquet_path, compression="snappy", store_schema=True)
+def generate_gene_acession_map(gene_names,species='human'):
+    mg = mygene.MyGeneInfo()
+    gene_accessions = mg.querymany(gene_names, scopes='symbol',species=species,fields='accession')
+    gene_accessions_maps = defaultdict(list)
+    for obj in gene_accessions:
+        if 'accession' in obj:
+            gene_accessions_maps[obj['query']].append(obj['accession'])
+    return gene_accessions_maps
 
+def get_gene_accessions(gene_list,map_dict):
+    if len(gene_list) == 0:
+        return []
+    else:
+        accessions = []
+        for gene in gene_list:
+            accession = map_dict[gene]
+            if len(accession)>0:
+                accessions.append(str(accession[0]))
+        return accessions
 
-def query_accessions(gene_name, email, species: str = "Homo sapiens", ox: str = "9606"):
-    """
-    getting the gene_accessions is time-consuming work, so we support single gene query.
-    gene_name: 'gene name'
-    Email: 'a available email address'
-    species: ''
-    OX: 'Organism Taxonomy ID'
-    """
-    from Bio import Entrez
-    Entrez.email = email
-    q_name = gene_name + " AND " + species + "[porgn:__txid" + ox + "]"
-    handle = Entrez.esearch(db="nucleotide", term=q_name)
-    record = Entrez.read(handle)
-    id_list = record["IdList"]
-    accessions = get_accessions(id_list)
-    return accessions
-
-
-def get_accessions(id_list):
-    from Bio import Entrez, SeqIO
-    accessions = []
-    for id_q in id_list:
-        handle = Entrez.efetch(db="nucleotide", id=id_q, rettype="gb", retmode="text")
-        record = SeqIO.read(handle, "genbank")
-        accessions.append(record.id)
-    return accessions
-
-
-def load_prt(mz_tab_path, **kwargs):
-    fle_len, pos = extract_len(mz_tab_path, "PRH")
-    f = open(mz_tab_path)
-    f.seek(pos)
-    return pd.read_csv(f, nrows=fle_len, **kwargs)
-
-
-def extract_optional_gene_dict(mz_tab_path):
-    """
-    return: a dict, key is protein accessions, value is gene names
-    """
-    prt = load_prt(mz_tab_path, "PRH", sep="\t", usecols=["accession", "description"])
-    prt.loc[:, "gene_names"] = (
-        prt["description"]
-        .fillna("unknown")
-        .apply(
-            lambda x: re.findall(r"GN=(\w+)", x)
-            if re.findall(r"GN=(\w+)", x)
-            else pd.NA
-        )
-    )
-    gene_map = (
-        prt[["accession", "gene_names"]]
-        .set_index("accession")
-        .to_dict(orient="dict")["gene_names"]
-    )
-
-    return gene_map
+def map_gene_msgs_to_parquet(parquet_path: str, fasta_path: str,map_parameter:str,output_path:str,label:str,species:str):
+    map_gene_names = generate_gene_name_map(fasta_path,map_parameter)
+    pqwriter = None
+    for df in read_large_parquet(parquet_path):
+        df['gene_names'] = df['protein_accessions'].swifter.apply(lambda x: get_unanimous_name(x,map_gene_names))
+        gene_names = list(set([item for sublist in df['gene_names'] for item in sublist]))
+        gene_accessions_maps = generate_gene_acession_map(gene_names,species)
+        df['gene_accessions'] = df['gene_names'].swifter.apply(lambda x:get_gene_accessions(x,gene_accessions_maps))
+        if label == 'feature':
+            hander = FeatureHandler()
+        elif label == 'psm':
+            hander = PSMHandler()
+        parquet_table = pa.Table.from_pandas(df, schema=hander.schema)
+        if not pqwriter:
+        # create a parquet write object giving it an output file
+            pqwriter = pq.ParquetWriter(output_path, parquet_table.schema)
+        pqwriter.write_table(parquet_table)
+    if pqwriter:
+        pqwriter.close()
 
 #plot venn
 def plot_peptidoform_charge_venn(parquet_path_list,labels):
@@ -277,7 +277,6 @@ def change_and_save_parquet(parquet_path,map_dict,output_path,label):
     pqwriter = None
     for df in read_large_parquet(parquet_path):
         df['protein_accessions'] = df['protein_accessions'].apply(lambda x: get_unanimous_name(x,map_dict))
-        
         if label == 'feature':
             hander = FeatureHandler()
         elif label == 'psm':
@@ -298,10 +297,16 @@ def get_unanimous_name(protein_accessions,map_dict):
             protein_accessions = protein_accessions.split(",")
     unqnimous_names = []
     for accession in protein_accessions:
-        unqnimous_names.append(list(map_dict[accession])[0])
+        if accession in map_dict:
+            unqnimous_names.append(list(map_dict[accession])[0])
     return unqnimous_names
         
 def read_large_parquet(parquet_path: str, batch_size: int = 500000):
+    """_summary_
+    :param parquet_path: _description_
+    :param batch_size: _description_, defaults to 100000
+    :yield: _description_
+    """
     parquet_file = pq.ParquetFile(parquet_path)
     for batch in parquet_file.iter_batches(batch_size=batch_size):
         batch_df = batch.to_pandas()
@@ -311,69 +316,7 @@ def read_large_parquet(parquet_path: str, batch_size: int = 500000):
 def register_file_to_json(project_file,attach_file,category,replace_existing):
     register= ProjectHandler(project_json_file=project_file)
     register.add_quantms_file(attach_file,category,replace_existing)
-    register.save_updated_project_info(output_file_name=project_file)
-
-#check result of psms or features
-def generate_report_of_psms_or_features(check_dir,label):
-    if not os.path.exists(check_dir):
-        raise Exception("not file path")
-    file_list = os.listdir(check_dir)
-    if label == 'psm':
-        check_list = [file for file in file_list if file.endswith(".psm.parquet")]
-    elif label == 'feature':
-        check_list = [file for file in file_list if file.endswith(".feature.parquet")]
-    
-    output_lines = ''
-    for file_path in check_list:
-        output_lines += 'Name: ' + file_path + '\n'
-        file_path = check_dir + "/" + file_path
-        file_size = get_file_size(file_path)
-        output_lines += 'File size: ' + file_size + '\n'
-        df = pd.read_parquet(file_path,columns=['protein_accessions','peptidoform','charge'])
-        output_lines += 'Total number of Peptides: ' + str(len(df.groupby(['peptidoform','charge']))) + '\n'
-        proteins = set()
-        df['protein_accessions'].apply(lambda x: proteins.update(set(x)))
-        output_lines += 'Total number of Proteins: ' + str(len(proteins)) + '\n\n'
-
-    output_path =  create_uuid_filename(label+'s_report','.txt')
-    with open(output_path, "w",encoding='utf8') as f:
-            f.write(output_lines)
-
-def get_file_size(file_path):
-    fsize = os.path.getsize(file_path)
-    if fsize < 1024:
-        return str(round(fsize,2)) + 'Byte'
-    else: 
-        kbx = fsize/1024
-        if kbx < 1024:
-            return str(round(kbx,2)) + 'K'
-        else:
-            mbx = kbx /1024
-            if mbx < 1024:
-                return str(round(mbx,2)) + 'M'
-            else:
-                return str(round(mbx/1024)) + 'G'
-                
-#covert ae or de to json
-def convert_to_json(file_path):
-    """
-    by providing the json format of AE and DE files for retrieval. return json
-    """
-    table,content = load_de_or_ae(file_path)
-    output = {}
-    pattern = r'[\\|\|//|/]'
-    file_name = re.split(pattern,file_path)[-1]
-    output['id'] = file_name
-    output['metadata'] = content
-    records = {}
-    for col in table.columns:
-        records[col] = table.loc[:,col].to_list()
-    output['records'] = records
-    b = json.dumps(output)
-    output_path = ".".join(file_name.split('.')[:-1]) + '.json'
-    f = open(output_path, 'w')
-    f.write(b)
-    f.close()
+    register.save_updated_project_info(output_file_name=project_file)            
 
 #get best_scan_number
 def load_best_scan_number(diann_psm_path:str,diann_feature_path:str,output_path:str):
@@ -461,5 +404,83 @@ def generate_start_and_end_from_fasta(parquet_path,fasta_path,label,output_path)
         pqwriter.write_table(parquet_table)
     if pqwriter:
         pqwriter.close()
-#plot
 
+#report
+
+def convert_to_base64(fig):
+    figfile = BytesIO()
+    fig.figure.savefig(figfile, format='png')
+    figfile.seek(0)
+    figdata_png = base64.b64encode(figfile.getvalue()) 
+    figdata_str = str(figdata_png, "utf-8")
+
+    return 'data:image/png;base64,' + figdata_str
+
+def get_msgs_from_project(path):
+    f = open(path, 'r')
+    content = f.read()
+    res = json.loads(content)
+    return res['project_accession'],res['project_title'],res['project_data_description']
+
+def generate_project_report(project_folder):
+    msgs = {
+    'project':'',
+    'projectTitle': '',
+    'projectDescription': '',
+    'featureProtrins': '',
+    'featurePeptides': '',
+    'featureSamples': '',
+    'featurePeptidoforms': '',
+    'featureMsruns': '',
+    'featureImg1': '',
+    'featureImg2': '',
+    'featureImg3': '',
+    'psmProtrins':'',
+    'psmPeptides':'',
+    'psmPeptidoforms':'',
+    'psms':'',
+    'psmMsruns':'',
+    'psmImg1': '',
+    'aeProtrins':'',
+    'aeSamples':'',
+    'aeImg1': ''
+    }
+    file_list = os.listdir(project_folder)
+    os.chdir(project_folder)
+    if 'project.json' in file_list:
+        project_info = get_msgs_from_project('project.json')
+        msgs['project'] = project_info[0]
+        msgs['projectTitle'] = project_info[1]
+        msgs['projectDescription'] = project_info[2]
+    feature_paths = [f for f in file_list if f.endswith('.feature.parquet')]
+    if len(feature_paths) > 0:
+        feature_statistics = ParquetStatistics(feature_paths[0])
+        msgs['featureProtrins'] = feature_statistics.get_number_of_proteins()
+        msgs['featurePeptides'] =  feature_statistics.get_number_of_peptides()
+        msgs['featureSamples'] = feature_statistics.get_number_of_samples()
+        msgs['featurePeptidoforms'] = feature_statistics.get_number_of_peptidoforms()
+        msgs['featureMsruns'] =  feature_statistics.get_number_msruns()
+        msgs['featureImg1'] = convert_to_base64(plot_intensity_distribution_of_samples(feature_paths[0]))      
+        msgs['featureImg2'] = convert_to_base64(plot_peptide_distribution_of_protein(feature_paths[0])) 
+        msgs['featureImg3'] = convert_to_base64(plot_intensity_box_of_samples(feature_paths[0]))
+    psm_paths = [f for f in file_list if f.endswith('.psm.parquet')]
+    if len(psm_paths) > 0:
+        psm_statistics = ParquetStatistics(psm_paths[0])
+        msgs['psmProtrins'] = psm_statistics.get_number_of_proteins()
+        msgs['psmPeptides'] = psm_statistics.get_number_of_peptides()
+        msgs['psmPeptidoforms'] = psm_statistics.get_number_of_peptidoforms()
+        msgs['psms'] = psm_statistics.get_number_of_psms()
+        msgs['psmMsruns'] = psm_statistics.get_number_msruns()
+        sdrf_paths = [f for f in file_list if f.endswith('.sdrf.tsv')]
+        if len(sdrf_paths) > 0:
+            msgs['psmImg1'] = convert_to_base64(plot_peptides_of_lfq_condition(psm_paths[0],sdrf_paths[0]))
+    ae_paths = [f for f in file_list if f.endswith('.absolute.tsv')]
+    if len(ae_paths) > 0:
+        absolute_stats = IbaqStatistics(ibaq_path=ae_paths[0])
+        msgs['aeProtrins'] = absolute_stats.get_number_of_proteins()
+        msgs['aeSamples'] = absolute_stats.get_number_of_samples()
+        msgs['aeImg1'] = convert_to_base64(plot_distribution_of_ibaq(ae_paths[0]))
+
+    template_str = string.Template(report)
+    with open("report.html",'w',encoding='utf8') as f:
+        f.write(template_str.substitute(msgs))

@@ -13,8 +13,7 @@ def statistics():
     """Tool related commands"""
     pass
 
-
-@statistics.command("project-ae-statistics", short_help="Statistics about a particular project", )
+@statistics.command("project-ae-statistics", short_help="Statistics about a particular project",)
 @click.option("--absolute_path", help="absolute path", required=True)
 @click.option("--parquet_path", help="psm parquet path in lfq", required=True)
 @click.option("--save_path", help="file with the statistics (e.g. statistics.csv), if not provided,"
@@ -24,14 +23,13 @@ def feature_file_statistics(ctx, absolute_path: str, parquet_path: str, save_pat
     """
     Statistics of a feature file
     :param parquet_path: feature parquet path
-    :param absolute_path: absolute path
     :param save_path: file with the statistics (e.g. statistics.csv), if not provided, will print to stdout
     :return: none
     """
     feature_statistics = ParquetStatistics(parquet_path)
     absolute_stats = IbaqStatistics(ibaq_path=absolute_path)
 
-    def write_stats(file, stats):
+    def write_stats(file, stats:ParquetStatistics):
         file.write("Number of proteins: {}\n".format(stats.get_number_of_proteins()))
         file.write("Number of peptides: {}\n".format(stats.get_number_of_peptides()))
         file.write("Number of samples: {}\n".format(stats.get_number_of_samples()))
@@ -52,7 +50,6 @@ def feature_file_statistics(ctx, absolute_path: str, parquet_path: str, save_pat
         write_stats(sys.stdout, feature_statistics)
         write_absolute_stats(sys.stdout, absolute_stats)
 
-
 @statistics.command("parquet-psm-statistics", short_help="Statistics about a particular psm parquet file")
 @click.option("--parquet_path", help="psm parquet path in lfq", required=True)
 @click.option("--save_path", help="file with the statistics (e.g. statistics.csv), if not provided,"
@@ -65,14 +62,12 @@ def parquet_psm_statistics(ctx, parquet_path: str, save_path: str):
     :param save_path: file with the statistics (e.g. statistics.csv), if not provided, will print to stdout
     :return: none
     """
-
-    def write_stats(file, stats):
+    def write_stats(file, stats:ParquetStatistics):
         file.write("Number of proteins: {}\n".format(stats.get_number_of_proteins()))
         file.write("Number of peptides: {}\n".format(stats.get_number_of_peptides()))
         file.write("Number of peptidoforms: {}\n".format(stats.get_number_of_peptidoforms()))
         file.write("Number of psms: {}\n".format(stats.get_number_of_psms()))
         file.write("Number of msruns: {}\n".format(stats.get_number_msruns()))
-
     feature_statistics = ParquetStatistics(parquet_path)
     if save_path:
         # Open save file and write stats
@@ -81,3 +76,5 @@ def parquet_psm_statistics(ctx, parquet_path: str, save_path: str):
     else:
         # Print stats to stdout
         write_stats(sys.stdout, feature_statistics)
+
+

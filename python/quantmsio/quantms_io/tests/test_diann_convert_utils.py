@@ -5,28 +5,29 @@ from quantms_io.core.diann_convert import get_exp_design_dfs, find_modification,
 import time
 
 from quantms_io.core.project import create_uuid_filename
-
-
+from quantms_io.core.tools import generate_start_and_end_from_fasta
+from quantms_io.core.tools import load_best_scan_number
+from quantms_io.core.project import create_uuid_filename
 class Test(TestCase):
-
+    global test_datas
+    test_datas = ('/examples/DIA-lfq/diann_report.tsv','/examples/DIA-lfq/mzml',
+                  '/examples/DIA-lfq/PXD037682.sdrf_openms_design.tsv','/examples/DIA-lfq/PXD037682.sdrf.tsv',
+                  '/examples/output/DIA-lfq/'+create_uuid_filename('PXD037682','.feature.parquet'),
+                  '/examples/output/DIA-lfq/'+create_uuid_filename('PXD037682','.psm.parquet')
+                  )
+        
 
     def test_all_required_arguments(self):
         st = time.time()
 
         # Initialize input arguments
-        report_path = "/Users/yperez/work/quantms-data/PXD037340.2/diann_report.tsv"
-        design_file = "/Users/yperez/work/quantms-data/PXD037340.2/PXD037340-DIA.sdrf_openms_design.tsv"
-        sdrf_file   = "/Users/yperez/work/quantms-data/PXD037340.2/PXD037340-DIA.sdrf.tsv"
+        report_path = __package__ + test_datas[0]
+        mzml_info_folder = __package__ + test_datas[1]
+        design_file = __package__ + test_datas[2]
+        sdrf_file   = __package__ + test_datas[3]
+        feature_output_path = __package__ + test_datas[4]
+        psm_output_path = __package__ + test_datas[5]
         qvalue_threshold = 0.01
-        mzml_info_folder = "/Users/yperez/work/quantms-data/PXD037340.2/mzmlstatistics"
-        output_folder = "/Users/yperez/work/quantms-data/PXD037340.2/"
-        output_prefix_file = "PXD037340.2"
-
-
-        # Invoke the function
-        # Assert that the feature and psm files are generated in the specified output folder
-        feature_output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, '.feature.parquet')
-        psm_output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, '.psm.parquet')
 
         DiaNN = DiaNNConvert()
 
@@ -40,39 +41,24 @@ class Test(TestCase):
         # get the execution time
         elapsed_time = et - st
         print('Execution time:', elapsed_time, 'seconds')
+    
+    def test_fill_start_and_end(self):
+        fasta_path = __package__ + '/examples/fasta/Homo-sapiens.fasta'
+        feature_path = __package__ + test_datas[4]
+        psm_path = __package__ + test_datas[5]
+        feature_output_path = __package__ + '/examples/output/DIA-lfq/PXD010154_fill_start_and_end.feature.parquet'
+        psm_output_path = __package__ + '/examples/output/DIA-lfq/PXD010154_fill_start_and_end.psm.parquet'
+        generate_start_and_end_from_fasta(parquet_path=feature_path,fasta_path=fasta_path,label='feature',output_path=feature_output_path)
+        generate_start_and_end_from_fasta(parquet_path=psm_path,fasta_path=fasta_path,label='psm',output_path=psm_output_path)
+    
+    def test_fill_best_scan_number(self):
+        feature_output_path = __package__ + test_datas[4]
+        psm_output_path = __package__ + test_datas[5]
+        output_path = __package__ + '/examples/output/DIA-lfq/PXD010154_fill_best_scan_number.feature.parquet'
+        load_best_scan_number(diann_psm_path=psm_output_path,
+                          diann_feature_path=feature_output_path,
+                          output_path=output_path
+                          )
 
-    def test_read_experimental_design_file(self):
-        # Measure the time to read the file
-        # get the start time
-        st = time.time()
 
-        exp_design_file = "data/PXD030304.sdrf_openms_design.tsv"
-
-        # Act
-        result = get_exp_design_dfs(exp_design_file)
-
-        # Assert
-        assert isinstance(result, tuple)
-        assert len(result) == 2
-        assert isinstance(result[0], pd.DataFrame)
-        assert isinstance(result[1], pd.DataFrame)
-
-        # get the end time
-        et = time.time()
-
-        # get the execution time
-        elapsed_time = et - st
-        print('Execution time:', elapsed_time, 'seconds')
-
-        # Check that the file name of the firt entry in fraction table is 190204_2300_0054N_008SA_M06_S_1
-        assert result[1].iloc[0]['run'] == '190204_2300_0054N_008SA_M06_S_1'
-
-    def test_single_modification(self):
-        st = time.time()
-        assert find_modification("PEPM(UNIMOD:35)IDE") == "4-UNIMOD:35"
-        et = time.time()
-
-        # get the execution time
-        elapsed_time = et - st
-        print('Execution time:', elapsed_time, 'seconds')
 

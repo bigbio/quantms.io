@@ -1,14 +1,6 @@
 import click
 
 from quantms_io.core.de import DifferentialExpressionHandler
-CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
-
-
-@click.group(context_settings=CONTEXT_SETTINGS)
-def cli():
-    """
-    This is the main tool that gives access to all commands.
-    """
 
 @click.command("convert-de", short_help="Convert a MSstats differential file into a quantms.io file format")
 @click.option("--msstats_file", help="MSstats differential file", required=True)
@@ -35,9 +27,7 @@ def cli():
 @click.option(
     "--delete_existing", help="Delete existing files in the output folder", is_flag=True
 )
-@click.pass_context
 def convert_msstats_differential(
-    ctx,
     msstats_file: str,
     sdrf_file: str,
     project_file:str,

@@ -1,12 +1,20 @@
 from unittest import TestCase
 from unittest.mock import patch
-
+from ddt import data,ddt
 import requests
 
 from quantms_io.core.project import ProjectHandler
 
-
+@ddt
 class TestProjectHandler(TestCase):
+    global test_datas
+    test_datas = [
+        ("PXD040438","/examples/DDA-lfq/PXD040438.sdrf.tsv","/examples/output/DDA-lfq/"), 
+        ("MSV000079033","/examples/DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv","/examples/output/DDA-plex/"),
+        ("PXD037682","/examples/DIA-lfq/PXD037682.sdrf.tsv","/examples/output/DIA-lfq/")
+    ]
+
+
     @patch("requests.get")
     def test_populate_from_pride_archive_successful(self, mock_get):
         # Mock the API response for a successful request
@@ -53,19 +61,19 @@ class TestProjectHandler(TestCase):
         )
         print(project_manager.project.project_info)
 
-    def test_save_project_info(self):
-        project_accession = "PXD020187"
-        sdrf_file = "data/PXD020187.sdrf.tsv"
+    @data(*test_datas)
+    def test_save_project_info(self,test_data):
+        project_accession = test_data[0]
+        sdrf_file = __package__ + test_data[1]
+        output_folder = __package__ + test_data[2]
 
         project_manager = ProjectHandler(project_accession)
         project_manager.populate_from_pride_archive()
         project_manager.populate_from_sdrf(sdrf_file)
-
-        project_manager.save_project_info()  # Save the project information to a JSON file
-
-    def test_load_project_from_json(self):
-        project_file = (
-            "data/PXD020187-934d85ce-6a7a-4417-8330-a21b750fd9e4.project.json"
+        project_manager.add_sdrf_file(
+            sdrf_file_path=sdrf_file,
+            output_folder=output_folder,
+            delete_existing=False,
         )
-        project_manager = ProjectHandler(project_json_file=project_file)
-        project_manager.save_project_info()  # Save the project information to a JSON file
+        project_manager.save_updated_project_info(output_file_name=output_folder+'peoject.json')
+

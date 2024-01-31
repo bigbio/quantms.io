@@ -3,16 +3,6 @@ import click
 from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.project import create_uuid_filename
 
-CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
-
-
-@click.group(context_settings=CONTEXT_SETTINGS)
-def cli():
-    """
-    This is the main tool that gives access to all commands.
-    """
-
-
 @click.command("convert-feature", short_help="Convert msstats/mztab to parquet file")
 @click.option(
     "--sdrf_file",
@@ -46,16 +36,14 @@ def cli():
     required=True,
 )
 @click.option("--output_prefix_file", help="Prefix of the Json file needed to generate the file name", required=False)
-@click.pass_context
 def convert_feature_file(
-        ctx,
-        sdrf_file: str,
-        msstats_file: str,
-        mztab_file: str,
-        consensusxml_file: str,
-        use_cache: bool,
-        output_folder: str,
-        output_prefix_file: str,
+    sdrf_file: str,
+    msstats_file: str,
+    mztab_file: str,
+    consensusxml_file: str,
+    use_cache: bool,
+    output_folder: str,
+    output_prefix_file: str,
 ):
     """
     Convert a msstats/mztab file to a parquet file. The parquet file will contain the features and the metadata.
@@ -70,10 +58,10 @@ def convert_feature_file(
     """
 
     if (
-            sdrf_file is None
-            or msstats_file is None
-            or mztab_file is None
-            or output_folder is None
+        sdrf_file is None
+        or msstats_file is None
+        or mztab_file is None
+        or output_folder is None
     ):
         raise click.UsageError("Please provide all the required parameters")
     if use_cache is None:
@@ -82,7 +70,7 @@ def convert_feature_file(
     feature_manager = FeatureHandler()
     if not output_prefix_file:
         output_prefix_file = ''
-    feature_manager.parquet_path = output_folder + "/" + create_uuid_filename(output_prefix_file, '.feature.parquet')
+    feature_manager.parquet_path = output_folder + "/" + create_uuid_filename(output_prefix_file,'.feature.parquet')
     if consensusxml_file is not None:
         feature_manager.convert_mztab_msstats_to_feature(
             mztab_file=mztab_file,

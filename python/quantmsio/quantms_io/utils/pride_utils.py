@@ -167,6 +167,8 @@ def get_modifications_object_from_mztab_line(
     modification_values = re.split(r",(?![^\[]*\])", modification_string)
     for modification in modification_values:
         modification = modification.strip()
+        if modification == '':
+            return {}
         accession = modification.split("-")[1]
         unimod_accession = accession
         if accession not in modifications_definition:

@@ -1,0 +1,139 @@
+{
+    "project_accession": "PXD016999",
+    "project_title": "A Quantitative Proteome Map of the Human Body",
+    "project_description": "In this study, we quantified the relative protein levels from 12,627 genes across 32 normal human tissue types prepared by the GTEx project. Known and new tissue specific or enriched proteins were identified and compared to transcriptome data. Many ubiquitous transcripts are found to encode highly tissue specific proteins. Discordance in the sites of RNA expression and protein detection also revealed potential sites of synthesis and action of protein signaling molecules. Overall, these results provide an extraordinary resource, and demonstrate that understanding protein levels can provide insights into metabolism, regulation, secretome, and human diseases.",
+    "project_sample_description": "Paxgene fixed tissue samples were provided by NIH GTEx consortium. Detailed information about donor enrollment, tissue collection, sample fixation and  histopathological review methods are described in (1,2). There are in total 201 samples from 32 major organs from 14 different individuals. The sample preparation method was as described before with modification (3). About 30mg tissue samples were cut into small pieces on ice and further disrupted using beat beating and sonication in lysis buffer (6 M guanidine, 10mM TCEP, 40mM CAA, 100mM Tris pH 8.5). The supernatant was collected and heated at 95\u2103 for 5min. After protein reduction and alkylated, protein concentration was measured using the BCA kit (ThermoFisher). Since Paxgene fixed samples have a high amount of PEG contamination, protein extract was cleaned up by acetone precipitation at -20\u2070C overnight. The protein pellet was washed with acetone 3 times and air-dried.  The pellet was resuspended in 6 M guanidine and 100mg was used for digested using LysC (1:100 protease to protein ratio) for 2 hours followed by trypsin (1:50) digestion overnight at 37\u2070C. Peptides were cleaned up using Waters HLB column and subsequently labeled using TMT10 Plex (ThermoFisher) in 100mM TEAB buffer. An equal amount of proteins from each tissue were pooled together as a reference sample. Tissue samples were randomized and equal amount of them and one common reference sample was multiplexed into one sample.  To ensure equal mix, we mixed a small amount of each sample first and adjusted the amount of each sample for the final run based on the mass spectrometry results of the small mix.    About 15ug of multiplexed sample was loaded to Waters 2D LC system for online fractionation. Peptides were separated by reverse-phase chromatography at high pH in the first dimension, followed by an orthogonal separation at low pH in the second dimension. In the first dimension, the mobile phases were buffer A: 20mM ammonium formate at pH10 and buffer B: Acetonitrile. Peptides were separated on an Xbridge 300\u00b5m x 5 cm C18 5.0\u00b5m column (Waters) using 12 discontinuous step gradient at 2 \u00b5l/min. In the second dimension, peptides were loaded to an in-house packed 75\u00b5m ID/15\u00b5m tip ID x 25cm Sepax GP-C18 1.8\u00b5m resin column with buffer A (0.1% formic acid in water). Peptides were separated with a linear gradient from 5% to 30% buffer B (0.1% formic acid in acetonitrile) at a flow rate of 300 nl/min in 180 min. The LC system was directly coupled in-line with an Orbitrap Fusion (Thermo Fisher Scientific).",
+    "project_data_description": "The Orbitrap Fusion was operated in a data-dependent mode for both MS2 and MS3. MS1 scan was acquired in the Orbitrap mass analyzer with resolution 120,000 at m/z 400. Top speed instrument method was used for MS2 and MS3. For MS2, the isolation width was set at 0.7 Da and isolated precursors were fragmented by CID at a normalized collision energy (NCE) of 35% and analyzed in the ion trap using \u201cturbo\u201d scan. Following the acquisition of each MS2 spectrum, a synchronous precursor selection (SPS) MS3 scan was collected on the top 5 most intense ions in the MS2 spectrum. SPS-MS3 precursors were fragmented by higher energy collision-induced dissociation (HCD) at an NCE of 65% and analyzed using the Orbitrap at a resolution of 60,000. We used SEQUEST in ProteomeDiscoverer (ThermoFisher Scientific) for protein identification.  Raw files from 12 fractions of each sample were combined together for a single search against GENCODE V19 human proteome database (4). Mass tolerance of 10ppm was used for precursor ion and 0.6 Dalton for fragment ions. The search included cysteine carbamidomethylation as a fixed modification. Peptide N-terminal and lysine TMT 10plex modification, protein N-terminal acetylation and methionine oxidation were set as variable modifications. Up to two missed cleavages were allowed for trypsin digestion. The peptide false discovery rate (FDR) was set as <1% using Percolator. For protein identification, at least one unique peptide with a minimum 6 amino acid length was required. For protein quantitation, only unique peptides with reporter ion mass tolerance of less than 10ppm were used.  Peptide precursor ion isolation purity should be >50%, signal-to-noise (S/N) > 15 and the summed S/N of all channels > 200.  Peptides passing these criteria were summed, thereby giving more weight to the most-intense peptides. We also pooled together all the spectra in this study for a single search at protein FDR of 1%. For structure variant peptide search, we reconstructed the protein database by adding all the structure variant peptides to the database. The structure variant peptides were extracted based on the SNP information provided by GTEx consortium.",
+    "project_pubmed_id": 32916130,
+    "organisms": [
+        "Homo sapiens"
+    ],
+    "organism_parts": [
+        "Norm",
+        "skeletal muscle tissue",
+        "Esophagus Gastroesophageal Junction",
+        "aorta",
+        "thyroid gland",
+        "heart atrial appendage",
+        "Stomach",
+        "Liver",
+        "sigmoid colon",
+        "tibial nerve",
+        "esophagus mucosa",
+        "Skin - Not Sun Exposed (Suprapubic)",
+        "Uterus",
+        "Lung",
+        "heart left ventricle",
+        "cerebellum",
+        "Ovary",
+        "Vagina",
+        "minor salivary gland",
+        "Pancreas",
+        "adrenal gland",
+        "esophagus muscularis mucosa",
+        "Skin - Sun Exposed (Lower leg)",
+        "cerebral cortex",
+        "Spleen",
+        "Breast",
+        "transverse colon",
+        "Empty",
+        "Testis",
+        "tibial artery",
+        "Small Intestine - Terminal Ileum",
+        "Prostate",
+        "pituitary gland",
+        "coronary artery"
+    ],
+    "diseases": [
+        "not available"
+    ],
+    "cell_lines": [],
+    "instruments": [
+        "Orbitrap Fusion"
+    ],
+    "enzymes": [
+        "Trypsin"
+    ],
+    "experiment_type": [
+        "Quantitative proteomics of 32 normal human tissues",
+        "Biological"
+    ],
+    "acquisition_properties": [
+        {
+            "proteomics data acquisition method": "TMT"
+        },
+        {
+            "proteomics data acquisition method": "Data-dependent acquisition"
+        },
+        {
+            "proteomics data acquisition method": "TMT"
+        },
+        {
+            "proteomics data acquisition method": "Data-dependent acquisition"
+        },
+        {
+            "proteomics data acquisition method": "TMT"
+        },
+        {
+            "proteomics data acquisition method": "Data-dependent acquisition"
+        },
+        {
+            "proteomics data acquisition method": "TMT"
+        },
+        {
+            "proteomics data acquisition method": "Data-dependent acquisition"
+        },
+        {
+            "proteomics data acquisition method": "TMT"
+        },
+        {
+            "proteomics data acquisition method": "Data-dependent acquisition"
+        },
+        {
+            "proteomics data acquisition method": "TMT"
+        },
+        {
+            "proteomics data acquisition method": "Data-dependent acquisition"
+        },
+        {
+            "proteomics data acquisition method": "TMT"
+        },
+        {
+            "proteomics data acquisition method": "Data-dependent acquisition"
+        },
+        {
+            "proteomics data acquisition method": "TMT"
+        },
+        {
+            "proteomics data acquisition method": "Data-dependent acquisition"
+        },
+        {
+            "proteomics data acquisition method": "TMT"
+        },
+        {
+            "proteomics data acquisition method": "Data-dependent acquisition"
+        },
+        {
+            "proteomics data acquisition method": "TMT"
+        },
+        {
+            "proteomics data acquisition method": "Data-dependent acquisition"
+        },
+        {
+            "dissociation method": "CID"
+        },
+        {
+            "precursor mass tolerance": "10 ppm"
+        },
+        {
+            "fragment mass tolerance": "0.6 Da"
+        }
+    ],
+    "quantms_files": [
+        {
+            "sdrf_file": "PXD016999-first-instrument-4d0f796d-5c4a-4be0-ba46-734c5d02be13.sdrf.tsv"
+        }
+    ],
+    "quantms_version": "1.13",
+    "comments": []
+}

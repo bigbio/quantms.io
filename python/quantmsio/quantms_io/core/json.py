@@ -1,27 +1,16 @@
 import json
 import logging
-
+import re
 import numpy as np
 import pyarrow.parquet as pq
+from quantms_io.core.tools import load_de_or_ae,read_large_parquet
+from quantms_io.core.sdrf import SDRFHandler
 
 class Npencoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.int32):
             return int(obj)
         return json.JSONEncoder.default(self, obj)
-
-def read_large_parquet(parquet_path: str, batch_size: int = 1000000):
-    """_summary_
-
-    :param parquet_path: _description_
-    :param batch_size: _description_, defaults to 100000
-    :yield: _description_
-    """
-    parquet_file = pq.ParquetFile(parquet_path)
-    for batch in parquet_file.iter_batches(batch_size=batch_size):
-        batch_df = batch.to_pandas()
-        yield batch_df
-
 
 def scores_to_json(scores_row) -> list:
     """
@@ -104,3 +93,46 @@ class JsonConverter:
         for psm_df in chunks:
             psm_df.to_json(json_psm_path, orient='records', lines=True, compression='gzip')
         return json_psm_path
+
+    def convert_tsv_to_json(self,file_path:str,json_path:str):
+        """
+        by providing the json format of AE and DE files for retrieval. return json
+        """
+        table,content = load_de_or_ae(file_path)
+        output = {}
+        pattern = r'[\\|\|//|/]'
+        file_name = re.split(pattern,file_path)[-1]
+        output['id'] = file_name
+        output['metadata'] = content
+        records = {}
+        for col in table.columns:
+            records[col] = table.loc[:,col].to_list()
+        output['records'] = records
+        b = json.dumps(output)
+        f = open(json_path, 'w')
+        f.write(b)
+        f.close()
+    
+    def sdrf_to_json(self,sdrf_path:str,json_path:str):
+        sdrf_handler = SDRFHandler(sdrf_path)
+        sdrf_handler._load_sdrf_info(sdrf_path)
+        sdrf_json = {}
+        sdrf_json['organism'] = sdrf_handler.get_organisms()
+        sdrf_json['instrument'] = sdrf_handler.get_instruments()
+        sdrf_json['diseases'] = sdrf_handler.get_diseases()
+        sdrf_json['enzymes'] = sdrf_handler.get_enzymes()
+        sdrf_json['cell_lines'] = sdrf_handler.get_cell_lines()
+        sdrf_json['method'] = sdrf_handler.get_acquisition_properties()
+        sdrf_json['experiment_type'] = sdrf_handler.get_experiment_type_from_sdrf()
+        sdrf_json['feature_msg'] = sdrf_handler.extract_feature_properties().to_json(orient='values')
+        sdrf_json['sample_map'] = sdrf_handler.get_sample_map()
+        fix_m,var_m = sdrf_handler.get_mods()
+
+        sdrf_json['modifications'] = {
+            'Fixed': fix_m,
+            'Variable': var_m
+        }
+        b = json.dumps(sdrf_json)
+        f = open(json_path, 'w')
+        f.write(b)
+        f.close()
