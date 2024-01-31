@@ -43,7 +43,7 @@ def convert_psm_file(mztab_file: str, output_folder: str, output_prefix_file: st
     psm_manager = PSMHandler()
     psm_manager.parquet_path = output_folder + "/" + create_uuid_filename(output_prefix_file,'.psm.parquet')
     psm_manager.convert_mztab_to_psm(
-        mztab_path=mztab_file, output_folder=output_folder, parquet_path=psm_manager.parquet_path, verbose=verbose
+        mztab_path=mztab_file, parquet_path=psm_manager.parquet_path, verbose=verbose
     )
 
 
