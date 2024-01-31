@@ -1,5 +1,6 @@
 from quantms_io.core.tools import load_best_scan_number
 import click
+
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
@@ -10,13 +11,12 @@ def cli():
     """
 
 
-@click.command("inject_bset_psm_scan_number", short_help="inject bset_psm_scan_number to feature",)
+@click.command("inject_bset_psm_scan_number", short_help="inject bset_psm_scan_number to feature", )
 @click.option("--diann_psm_path", help="diann psm parquet file path", required=True)
 @click.option("--diann_feature_path", help="diann feature parquet file path", required=True)
 @click.option("--output_path", help="save path", required=True)
-
 @click.pass_context
-def inject_bset_psm_scan_number(ctx, diann_psm_path:str,diann_feature_path:str,output_path:str):
+def inject_bset_psm_scan_number(ctx, diann_psm_path: str, diann_feature_path: str, output_path: str):
     """
     Register the file with project.json
     :param diann_psm_path: diann psm parquet file path

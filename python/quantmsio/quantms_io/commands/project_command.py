@@ -1,6 +1,7 @@
 import click
 
 from quantms_io.core.project import check_directory
+
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
@@ -9,6 +10,7 @@ def cli():
     """
     This is the main tool that gives access to all commands.
     """
+
 
 @click.command(
     "generate-pride-project-json",
@@ -39,12 +41,12 @@ def cli():
 )
 @click.pass_context
 def generate_pride_project_json(
-    ctx,
-    project_accession: str,
-    sdrf_file: str,
-    quantms_version: str,
-    output_folder: str,
-    delete_existing: bool,
+        ctx,
+        project_accession: str,
+        sdrf_file: str,
+        quantms_version: str,
+        output_folder: str,
+        delete_existing: bool,
 ):
     """
     Generate a json project file from the original PX accession and SDRF file. The Json file definition is available in the docs
@@ -60,17 +62,14 @@ def generate_pride_project_json(
     """
 
     if (
-        project_accession is None
-        or sdrf_file is None
-        or quantms_version is None
-        or output_folder is None
+            project_accession is None
+            or sdrf_file is None
+            or quantms_version is None
+            or output_folder is None
     ):
         raise click.UsageError("Please provide all the required parameters")
-    
-    
 
-
-    project_handler = check_directory(output_folder,project_accession)
+    project_handler = check_directory(output_folder, project_accession)
 
     # Populate the project handler with the metadata from Pride Archive and the SDRF file
     project_handler.populate_from_pride_archive()
@@ -83,6 +82,7 @@ def generate_pride_project_json(
         delete_existing=delete_existing,
     )
     project_handler.save_updated_project_info(output_file_name=project_path)
+
 
 cli.add_command(generate_pride_project_json)
 if __name__ == '__main__':

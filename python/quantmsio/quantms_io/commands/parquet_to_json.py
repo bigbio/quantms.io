@@ -11,6 +11,7 @@ def cli():
     This is the main tool that gives access to all commands.
     """
 
+
 @click.command("convert-parquet-json", short_help="Convert parquet to json")
 @click.option("--data_type", type=click.Choice(['feature', 'psm']),
               help="Data type of the parquet: psm or feature", required=True)
