@@ -1,7 +1,13 @@
 quantms.io tools
 =================================
 
-quantms.io tools provides a standardized set of commands to generate different files for your project. You can generate separate files or complete project files depending on your needs. A completed project contains the following files:
+quantms.io tools provides a standardized set of commands to generate different files for your project. It is mainly used to consolidate the data of each file and generate a standardized file representation. 
+
+.. image:: map.png
+   :width: 80%
+   :align: center
+
+You can generate separate files or complete project files depending on your needs.A completed project contains the following files:
 
 - ``project.json`` -> contains descriptive information about the entire project.
 
