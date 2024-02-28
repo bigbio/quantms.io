@@ -406,7 +406,7 @@ def generate_start_and_end_from_fasta(parquet_path,fasta_path,label,output_path)
         pqwriter.close()
 
 #report
-
+        
 def convert_to_base64(fig):
     figfile = BytesIO()
     fig.figure.savefig(figfile, format='png')
