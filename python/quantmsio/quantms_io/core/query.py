@@ -8,6 +8,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from Bio import SeqIO
 import ahocorasick
+import pandas as pd
 
 def check_string(re_exp, strings):
     res = re.search(re_exp, strings)
@@ -49,6 +50,7 @@ class Parquet:
 
     def __init__(self, parquet_path: str):
         if os.path.exists(parquet_path):
+            self._path = parquet_path
             self.parquet_db = duckdb.connect()
             self.parquet_db = self.parquet_db.execute(
                 "CREATE VIEW parquet_db AS SELECT * FROM parquet_scan('{}')".format(parquet_path))
@@ -70,6 +72,75 @@ class Parquet:
         report = database.df()
         return report
     
+    def iter_chunk(self, batch_size: int = 500000):
+        """_summary_
+        :param batch_size: _description_, defaults to 100000
+        :yield: _description_
+        """
+        parquet_file = pq.ParquetFile(self._path)
+        for batch in parquet_file.iter_batches(batch_size=batch_size):
+            batch_df = batch.to_pandas()
+            yield batch_df
+
+    def iter_file(self,file_num:int=10):
+        """
+        :params file_num: The number of files being processed at the same time(default 10)
+        :yield: _description_
+        """
+        references = self.get_unique_references()
+        ref_list =  [references[i:i+file_num] for i in range(0,len(references), file_num)]
+        for refs in ref_list:
+            batch_df = self.get_report_from_database(refs)
+            yield batch_df
+                
+    def inject_spectrum_msg(self,df:pd.DataFrame,mzml_directory:str):
+        """
+        :params df: parquet file
+        :params maml_directory: Mzml folder
+        :return df
+        """
+        refs = df['reference_file_name'].unique()
+        mzml = {ref:OpenMSHandler() for ref in refs}
+        if "best_psm_reference_file_name" in df.columns :
+            df[["mz_array", "intensity_array", "num_peaks"]] = df[
+                    ["best_psm_reference_file_name", "best_psm_scan_number"]
+                ].apply(
+                    lambda x: map_spectrum_mz(
+                        x["best_psm_reference_file_name"],
+                        x["best_psm_scan_number"],
+                        mzml,
+                        mzml_directory,
+                    ),
+                    axis=1,
+                    result_type="expand",
+                )
+            return df
+        elif "reference_file_name" in df.columns:
+            df[["mz_array", "intensity_array", "num_peaks"]] = df[
+                    ["reference_file_name", "scan_number"]
+                ].apply(
+                    lambda x: map_spectrum_mz(
+                        x["reference_file_name"],
+                        x["scan_number"],
+                        mzml,
+                        mzml_directory,
+                    ),
+                    axis=1,
+                    result_type="expand",
+                )
+            return df
+    
+    def inject_position_msg(self,df:pd.DataFrame,protein_dict:dict):
+        """
+        :params df: parquet file
+        :params protein_dict: {protein_accession:seq}
+        :retrun df
+        """
+        df[['protein_start_positions','protein_end_positions']] = (df[['sequence','protein_accessions']]
+                                                                        .apply(lambda row:fill_start_and_end(row,protein_dict),axis=1,result_type="expand"))
+        return df
+
+
     def generate_spectrum_msg(self, mzml_directory: str,output_path:str,label:str,partition:str=None,file_num:int=2):
         """
         This function injects the spectral message from the mzml file.
