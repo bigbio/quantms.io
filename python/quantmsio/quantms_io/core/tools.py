@@ -20,10 +20,12 @@ import string
 from io import BytesIO
 import base64
 import mygene
+from collections import defaultdict
 from quantms_io.core.plots import (plot_peptides_of_lfq_condition, plot_distribution_of_ibaq,
                                    plot_intensity_distribution_of_samples, plot_peptide_distribution_of_protein,
                                    plot_intensity_box_of_samples)
 from quantms_io.utils.report import report
+from quantms.io.core.query import Parquet
 import swifter
 
 # optional about spectrum
@@ -41,43 +43,19 @@ def map_spectrum_mz(mz_path: str, scan: str, mzml: OpenMSHandler, mzml_directory
     return mz_array, array_intensity, 0
 
 
-def generate_features_of_spectrum(parquet_path: str, mzml_directory: str,output_path:str,label:str,chunksize:int,partition:str=None):
+def generate_features_of_spectrum(parquet_path: str, mzml_directory: str,output_path:str,label:str,file_num:int,partition:str=None):
     """
     parquet_path: parquet file path
     mzml_directory: mzml file directory path
     """
     pqwriters = {}
     pqwriter_no_part = None
-    for table in read_large_parquet(parquet_path,batch_size=chunksize):
-        #table = pd.read_parquet(parquet_path)
-        mzml = OpenMSHandler()
+    P = Parquet(parquet_path)
+    for table in P.iter_file(file_num=file_num):
+        table = P.inject_spectrum_msg(table,mzml_directory)
         if label == 'feature':
-            table[["mz_array", "intensity_array", "num_peaks"]] = table[
-                ["best_psm_reference_file_name", "best_psm_scan_number"]
-            ].apply(
-                lambda x: map_spectrum_mz(
-                    x["best_psm_reference_file_name"],
-                    x["best_psm_scan_number"],
-                    mzml,
-                    mzml_directory,
-                ),
-                axis=1,
-                result_type="expand",
-            )
             hander = FeatureHandler()
         else:
-            table[["mz_array", "intensity_array", "num_peaks"]] = table[
-                ["reference_file_name", "scan_number"]
-            ].apply(
-                lambda x: map_spectrum_mz(
-                    x["reference_file_name"],
-                    x["scan_number"],
-                    mzml,
-                    mzml_directory,
-                ),
-                axis=1,
-                result_type="expand",
-            )
             hander = PSMHandler()
         #save
         if partition == 'charge':
@@ -204,7 +182,6 @@ def plot_sequence_venn(parquet_path_list,labels):
     plt.savefig('sequence_compare_venn.png')
 
 # gei unqnimous name
-from collections import defaultdict
 def map_protein_for_parquet(parquet_path,fasta,output_path,map_parameter,label):
     """
     according fasta database to map the proteins accessions to uniprot names.

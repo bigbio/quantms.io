@@ -9,6 +9,9 @@ import pyarrow.parquet as pq
 from Bio import SeqIO
 import ahocorasick
 import pandas as pd
+import mygene
+from collections import defaultdict
+from tools import get_unanimous_name,generate_gene_name_map,get_gene_accessions
 
 def check_string(re_exp, strings):
     res = re.search(re_exp, strings)
@@ -139,7 +142,22 @@ class Parquet:
         df[['protein_start_positions','protein_end_positions']] = (df[['sequence','protein_accessions']]
                                                                         .apply(lambda row:fill_start_and_end(row,protein_dict),axis=1,result_type="expand"))
         return df
+    
+    def inject_gene_msg(self,df:pd.DataFrame,fasta:str, map_parameter:str='map_protein_accession',species:str='human'):
+        """
+        :params df: parquet file
+        :params fasta: refence fasta file
+        :params map_parameter: map_protein_name or map_protein_accession
+        :params species: default human
+        :return df
+        """
+        map_gene_names = generate_gene_name_map(fasta,map_parameter)
+        df['gene_names'] = df['protein_accessions'].apply(lambda x: get_unanimous_name(x,map_gene_names))
+        gene_list = self.get_gene_list(map_gene_names)
+        gene_accessions = self.get_gene_accessions(gene_list,species)
+        df['gene_accessions'] = df['gene_names'].apply(lambda x:get_gene_accessions(x,gene_accessions))
 
+        return df
 
     def generate_spectrum_msg(self, mzml_directory: str,output_path:str,label:str,partition:str=None,file_num:int=2):
         """
@@ -284,6 +302,15 @@ class Parquet:
         unique_prts = self.parquet_db.sql(f"SELECT DISTINCT protein_accessions FROM parquet_db").df()
 
         return unique_prts['protein_accessions'].tolist()
+    
+    def get_unique_genes(self):
+        """
+        return: A list of deduplicated genes.
+        """
+
+        unique_prts = self.parquet_db.sql(f"SELECT DISTINCT gene_names FROM parquet_db").df()
+
+        return unique_prts['gene_names'].tolist()
 
     def query_peptide(self, peptide: str):
         """
@@ -299,10 +326,33 @@ class Parquet:
 
     def query_protein(self, protein: str):
         """
-        protein: Protein that need to be queried.
+        :params protein: Protein that need to be queried.
         return: A DataFrame of all information about query protein.
         """
         if check_string('^[A-Z]+', protein):
             return self.parquet_db.sql(f"SELECT * FROM parquet_db WHERE protein_accessions ='{protein}'").df()
         else:
             return KeyError('Illegal protein!')
+    
+    def get_gene_list(self,map_gene_names:dict):
+        """
+        :params map_gene_names: protenin => gene
+        return: unique gene list
+        """
+        unique_prts = self.get_unique_proteins()
+        gene_names = [get_unanimous_name(proteins,map_gene_names) for proteins in unique_prts]
+        gene_list = list(set([item for sublist in gene_names for item in sublist]))
+
+        return gene_list
+
+    def get_gene_accessions(self,gene_list:list,species:str='human'):
+        """
+        :params gene_list
+        """
+        mg = mygene.MyGeneInfo()
+        gene_accessions = mg.querymany(gene_list, scopes='symbol',species=species,fields='accession')
+        gene_accessions_maps = defaultdict(list)
+        for obj in gene_accessions:
+            if 'accession' in obj:
+                gene_accessions_maps[obj['query']].append(obj['accession'])
+        return gene_accessions_maps
