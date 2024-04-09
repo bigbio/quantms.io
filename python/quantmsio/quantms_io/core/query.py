@@ -11,7 +11,7 @@ import ahocorasick
 import pandas as pd
 import mygene
 from collections import defaultdict
-from tools import get_unanimous_name,generate_gene_name_map,get_gene_accessions
+from quantms_io.utils.pride_utils import get_unanimous_name,generate_gene_name_map,get_gene_accessions
 
 def check_string(re_exp, strings):
     res = re.search(re_exp, strings)
@@ -74,7 +74,33 @@ class Parquet:
         ) 
         report = database.df()
         return report
-    
+
+    def get_samples_from_database(self, samples: list):
+        """
+        This function loads the report from the duckdb database for a group of samples.
+        :param runs: A list of samples
+        :return: The report
+        """
+        database = self.parquet_db.sql(
+                        """
+            select * from parquet_db
+            where sample_accession IN {}
+            """.format(tuple(samples))
+        ) 
+        report = database.df()
+        return report
+
+    def iter_samples(self,file_num:int=20):
+        """
+        :params file_num: The number of files being processed at the same time(default 10)
+        :yield: _description_
+        """
+        samples = self.get_unique_samples()
+        ref_list =  [samples[i:i+file_num] for i in range(0,len(samples), file_num)]
+        for refs in ref_list:
+            batch_df = self.get_report_from_database(refs)
+            yield refs,batch_df
+
     def iter_chunk(self, batch_size: int = 500000):
         """_summary_
         :param batch_size: _description_, defaults to 100000
@@ -311,6 +337,13 @@ class Parquet:
         unique_prts = self.parquet_db.sql(f"SELECT DISTINCT gene_names FROM parquet_db").df()
 
         return unique_prts['gene_names'].tolist()
+
+    def get_unique_samples(self):
+        """
+        return: A list of deduplicated sampless.
+        """
+        unique_peps = self.parquet_db.sql(f"SELECT DISTINCT sample_accession FROM parquet_db").df()
+        return unique_peps['sample_accession'].tolist()
 
     def query_peptide(self, peptide: str):
         """

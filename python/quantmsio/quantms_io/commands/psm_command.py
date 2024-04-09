@@ -16,6 +16,12 @@ from quantms_io.core.tools import plot_peptidoform_charge_venn, plot_sequence_ve
     required=True,
 )
 @click.option(
+    "--use_cache",
+    help="Use cache instead of in memory conversion",
+    required=False,
+    is_flag=True,
+)
+@click.option(
     "--output_prefix_file",
               help="Prefix of the parquet file needed to generate the file name",
               required=False)
@@ -23,7 +29,7 @@ from quantms_io.core.tools import plot_peptidoform_charge_venn, plot_sequence_ve
     "--verbose",
               help="Output debug information.",
     default=False, is_flag=True)
-def convert_psm_file(mztab_file: str, output_folder: str, output_prefix_file: str=None, verbose: bool = False):
+def convert_psm_file(mztab_file: str, output_folder: str, use_cache: bool,output_prefix_file: str=None, verbose: bool = False):
     """
     convert mztab psm section to a parquet file. The parquet file will contain the features and the metadata.
     :param mztab_file: the mzTab file, this will be used to extract the protein information
@@ -43,7 +49,7 @@ def convert_psm_file(mztab_file: str, output_folder: str, output_prefix_file: st
     psm_manager = PSMHandler()
     psm_manager.parquet_path = output_folder + "/" + create_uuid_filename(output_prefix_file,'.psm.parquet')
     psm_manager.convert_mztab_to_psm(
-        mztab_path=mztab_file, parquet_path=psm_manager.parquet_path, verbose=verbose
+        mztab_path=mztab_file, parquet_path=psm_manager.parquet_path, verbose=verbose,use_cache=use_cache
     )
 
 

@@ -262,6 +262,7 @@ Example:
 
 .. code:: shell
 
+   --use_cache    Whether to use diskcache instead of memory(default True)
    --output_prefix_file   The prefix of the result file(like {prefix}-{uu.id}-{extension})
    --verbose  Output debug information(default True)
 

@@ -30,7 +30,7 @@ def get_modifications(mztab_path):
 
 
 class FeatureInMemory:
-    def __init__(self, experiment_type, schema):
+    def __init__(self, experiment_type=None, schema=None):
         self.mzml_directory = None
         self.experiment_type = experiment_type
         self.schema = schema
@@ -162,7 +162,8 @@ class FeatureInMemory:
         if os.stat(fle).st_size == 0:
             raise ValueError("File is empty")
         f = open(fle)
-        pos = 0
+        pos = self._get_pos(header)
+        f.seek(pos)
         line = f.readline()
         while not line.startswith(header):
             pos = f.tell()
@@ -178,6 +179,14 @@ class FeatureInMemory:
             line = f.readline()
         f.close()
         return fle_len, pos
+
+    def _get_pos(self,header):
+        if header == 'PSH' and self._pep_pos is not None:
+            return self._pep_pos + self._pep_len - 1
+        elif header == 'PEH' and self._prt_pos is not None:
+            return self._prt_pos + self._prt_len - 1
+        else:
+            return 0
 
     def skip_and_load_csv(self, fle, header, **kwargs):
         """
@@ -281,7 +290,7 @@ class FeatureInMemory:
         return score_names
 
     @staticmethod
-    def __handle_protein_map(protein_map, key):
+    def _handle_protein_map(protein_map, key):
         """
         map protein score from accession
         """
@@ -622,7 +631,7 @@ class FeatureInMemory:
             msstats_in['Reference'] = msstats_in['Reference'].swifter.apply(
                 lambda x: x.split(".")[0])
             msstats_in.loc[:, 'protein_global_qvalue'] = msstats_in['ProteinName'].swifter.apply(
-                lambda x: self.__handle_protein_map(protein_map, x))
+                lambda x: self._handle_protein_map(protein_map, x))
             msstats_in.loc[:, 'sequence'] = (msstats_in['PeptideSequence']
                                              .swifter.apply(lambda x: clean_peptidoform_sequence(x)))
             

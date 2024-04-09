@@ -13,7 +13,7 @@ from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.openms import OpenMSHandler
 from quantms_io.core.psm import PSMHandler
 from quantms_io.core.project import ProjectHandler
-#from quantms_io.utils.file_utils import extract_len
+from quantms_io.utils.pride_utils import get_unanimous_name,generate_gene_name_map,get_gene_accessions
 import duckdb
 from quantms_io.core.statistics import ParquetStatistics, IbaqStatistics
 import string
@@ -25,7 +25,7 @@ from quantms_io.core.plots import (plot_peptides_of_lfq_condition, plot_distribu
                                    plot_intensity_distribution_of_samples, plot_peptide_distribution_of_protein,
                                    plot_intensity_box_of_samples)
 from quantms_io.utils.report import report
-from quantms.io.core.query import Parquet
+from quantms_io.core.query import Parquet
 import swifter
 
 # optional about spectrum
@@ -89,30 +89,6 @@ def generate_features_of_spectrum(parquet_path: str, mzml_directory: str,output_
 
 
 # option about gene
-def generate_gene_name_map(fasta,map_parameter):
-    """
-    according fasta database to map the proteins accessions to uniprot names.
-    :param parquet_path: psm_parquet_path or feature_parquet_path
-    :param fasta: Reference fasta database
-    :param output_path: output file path
-    :param map_parameter: map_protein_name or map_protein_accession
-    :param label: feature or psm
-    retrun: None
-    """
-    map_gene_names = defaultdict(set)
-    if map_parameter == 'map_protein_name':
-        for seq_record in SeqIO.parse(fasta, "fasta"):
-            name = seq_record.id.split("|")[-1]
-            gene_list = re.findall('GN=(\S+)',seq_record.description)
-            gene_name = gene_list[0] if len(gene_list)>0 else None
-            map_gene_names[name].add(gene_name)
-    else:
-        for seq_record in SeqIO.parse(fasta, "fasta"):
-            accession = seq_record.id.split("|")[-2]
-            gene_list = re.findall('GN=(\S+)',seq_record.description)
-            gene_name = gene_list[0] if len(gene_list)>0 else None
-            map_gene_names[accession].add(gene_name)
-    return map_gene_names
 
 def generate_gene_acession_map(gene_names,species='human'):
     mg = mygene.MyGeneInfo()
@@ -123,16 +99,6 @@ def generate_gene_acession_map(gene_names,species='human'):
             gene_accessions_maps[obj['query']].append(obj['accession'])
     return gene_accessions_maps
 
-def get_gene_accessions(gene_list,map_dict):
-    if len(gene_list) == 0:
-        return []
-    else:
-        accessions = []
-        for gene in gene_list:
-            accession = map_dict[gene]
-            if len(accession)>0:
-                accessions.append(str(accession[0]))
-        return accessions
 
 def map_gene_msgs_to_parquet(parquet_path: str, fasta_path: str,map_parameter:str,output_path:str,label:str,species:str):
     map_gene_names = generate_gene_name_map(fasta_path,map_parameter)
@@ -266,17 +232,6 @@ def change_and_save_parquet(parquet_path,map_dict,output_path,label):
     if pqwriter:
         pqwriter.close()
         
-def get_unanimous_name(protein_accessions,map_dict):
-    if isinstance(protein_accessions,str):
-        if ';' in protein_accessions:
-            protein_accessions = protein_accessions.split(";")
-        else:
-            protein_accessions = protein_accessions.split(",")
-    unqnimous_names = []
-    for accession in protein_accessions:
-        if accession in map_dict:
-            unqnimous_names.append(list(map_dict[accession])[0])
-    return unqnimous_names
         
 def read_large_parquet(parquet_path: str, batch_size: int = 500000):
     """_summary_

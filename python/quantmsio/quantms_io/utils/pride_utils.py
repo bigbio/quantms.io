@@ -11,6 +11,54 @@ import logging
 logging.basicConfig(level = logging.INFO)
 logger = logging.getLogger(__name__)
 
+def get_unanimous_name(protein_accessions,map_dict):
+    if isinstance(protein_accessions,str):
+        if ';' in protein_accessions:
+            protein_accessions = protein_accessions.split(";")
+        else:
+            protein_accessions = protein_accessions.split(",")
+    unqnimous_names = []
+    for accession in protein_accessions:
+        if accession in map_dict:
+            unqnimous_names.append(list(map_dict[accession])[0])
+    return unqnimous_names
+
+def generate_gene_name_map(fasta,map_parameter):
+    """
+    according fasta database to map the proteins accessions to uniprot names.
+    :param parquet_path: psm_parquet_path or feature_parquet_path
+    :param fasta: Reference fasta database
+    :param output_path: output file path
+    :param map_parameter: map_protein_name or map_protein_accession
+    :param label: feature or psm
+    retrun: None
+    """
+    map_gene_names = defaultdict(set)
+    if map_parameter == 'map_protein_name':
+        for seq_record in SeqIO.parse(fasta, "fasta"):
+            name = seq_record.id.split("|")[-1]
+            gene_list = re.findall('GN=(\S+)',seq_record.description)
+            gene_name = gene_list[0] if len(gene_list)>0 else None
+            map_gene_names[name].add(gene_name)
+    else:
+        for seq_record in SeqIO.parse(fasta, "fasta"):
+            accession = seq_record.id.split("|")[-2]
+            gene_list = re.findall('GN=(\S+)',seq_record.description)
+            gene_name = gene_list[0] if len(gene_list)>0 else None
+            map_gene_names[accession].add(gene_name)
+    return map_gene_names
+
+def get_gene_accessions(gene_list,map_dict):
+    if len(gene_list) == 0:
+        return []
+    else:
+        accessions = []
+        for gene in gene_list:
+            accession = map_dict[gene]
+            if len(accession)>0:
+                accessions.append(str(accession[0]))
+        return accessions
+
 def generate_scan_number(spectra_ref:str):
     if 'scan' in spectra_ref:
         return re.findall(r"scan=(\d+)", spectra_ref)[0]
