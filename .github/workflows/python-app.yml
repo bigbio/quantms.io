@@ -53,7 +53,7 @@ jobs:
         uses: isort/isort-action@v0.1.0
         with:
           isortVersion: "latest"
-          requirementsFiles: "requirements.txt requirements-dev.txt"
+          requirementsFiles: "python/quantmsio/requirements.txt"
 
   build:
 
