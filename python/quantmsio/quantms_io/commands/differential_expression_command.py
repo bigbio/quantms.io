@@ -2,6 +2,7 @@ import click
 
 from quantms_io.core.de import DifferentialExpressionHandler
 
+
 @click.command("convert-de", short_help="Convert a MSstats differential file into a quantms.io file format")
 @click.option("--msstats_file", help="MSstats differential file", required=True)
 @click.option(
@@ -20,21 +21,17 @@ from quantms_io.core.de import DifferentialExpressionHandler
     required=False,
     default="0.05",
 )
-@click.option(
-    "--output_folder", help="Folder to generate the df expression file.", required=True
-)
+@click.option("--output_folder", help="Folder to generate the df expression file.", required=True)
 @click.option("--output_prefix_file", help="Prefix of the df expression file", required=False)
-@click.option(
-    "--delete_existing", help="Delete existing files in the output folder", is_flag=True
-)
+@click.option("--delete_existing", help="Delete existing files in the output folder", is_flag=True)
 def convert_msstats_differential(
     msstats_file: str,
     sdrf_file: str,
-    project_file:str,
+    project_file: str,
     fdr_threshold: float,
     output_folder: str,
     output_prefix_file: str,
-    delete_existing: bool=True,
+    delete_existing: bool = True,
 ):
     """
     Convert a MSstats differential file into a quantms.io file format. The file definition is available in the docs

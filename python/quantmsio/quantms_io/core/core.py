@@ -1,6 +1,7 @@
 """
 Core classes for quantms_io provide utilitiy classes for the quantms.io format.
 """
+
 import shutil
 import uuid
 
@@ -17,9 +18,7 @@ class DiskCache:
         # Create a cache name using a hash and uuid
         if name_prefix is None:
             name_prefix = "generic"
-        self._cache_name = str(
-            "_cache_name_{}_{}".format(name_prefix, uuid.uuid4().hex)
-        )
+        self._cache_name = str("_cache_name_{}_{}".format(name_prefix, uuid.uuid4().hex))
         self.cache = diskcache.Cache(self._cache_name, statistics=True)
         self.cache.create_tag_index()
 

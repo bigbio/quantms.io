@@ -1,8 +1,9 @@
 import os
 from abc import ABC
 
-import pandas as pd
 import duckdb
+import pandas as pd
+
 
 class Statistics(ABC):
 
@@ -26,23 +27,24 @@ class IbaqStatistics(Statistics):
 
     def __init__(self, ibaq_path: str) -> None:
         self.ibaq_path = ibaq_path
-        self.ibaq_db = pd.read_csv(ibaq_path, sep=None, comment='#', engine='python')
+        self.ibaq_db = pd.read_csv(ibaq_path, sep=None, comment="#", engine="python")
 
     def get_number_of_proteins(self) -> int:
-        if 'ProteinName' in self.ibaq_db.columns:
-            return len(self.ibaq_db['ProteinName'].unique())
-        elif 'protein' in self.ibaq_db.columns:
-            return len(self.ibaq_db['protein'].unique())
+        if "ProteinName" in self.ibaq_db.columns:
+            return len(self.ibaq_db["ProteinName"].unique())
+        elif "protein" in self.ibaq_db.columns:
+            return len(self.ibaq_db["protein"].unique())
         else:
             raise ValueError("No protein column found in the ibaq file")
 
     def get_number_of_samples(self) -> int:
-        if 'SampleID' in self.ibaq_db.columns:
-            return len(self.ibaq_db['SampleID'].unique())
-        elif 'sample_accession' in self.ibaq_db.columns:
-            return len(self.ibaq_db['sample_accession'].unique())
+        if "SampleID" in self.ibaq_db.columns:
+            return len(self.ibaq_db["SampleID"].unique())
+        elif "sample_accession" in self.ibaq_db.columns:
+            return len(self.ibaq_db["sample_accession"].unique())
         else:
             raise ValueError("No SampleID column found in the ibaq file")
+
 
 class ParquetStatistics(Statistics):
 
@@ -50,9 +52,10 @@ class ParquetStatistics(Statistics):
         if os.path.exists(parquet_path):
             self.parquet_db = duckdb.connect()
             self.parquet_db = self.parquet_db.execute(
-                "CREATE VIEW parquet_db AS SELECT * FROM parquet_scan('{}')".format(parquet_path))
+                "CREATE VIEW parquet_db AS SELECT * FROM parquet_scan('{}')".format(parquet_path)
+            )
         else:
-            raise FileNotFoundError(f'the file {parquet_path} does not exist.')
+            raise FileNotFoundError(f"the file {parquet_path} does not exist.")
 
     def get_number_of_peptides(self) -> int:
         count = self.parquet_db.sql(f"SELECT COUNT(DISTINCT sequence) FROM parquet_db").fetchone()[0]
@@ -89,9 +92,3 @@ class ParquetStatistics(Statistics):
         """
         count = self.parquet_db.sql(f"SELECT COUNT(*) FROM parquet_db").fetchone()[0]
         return count
-
-
-
-
-
-

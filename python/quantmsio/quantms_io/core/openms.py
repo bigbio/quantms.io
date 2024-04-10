@@ -1,9 +1,10 @@
-from typing import Any, Tuple
+import warnings
+from typing import Any
+from typing import Tuple
 
 import numpy as np
 import pyopenms as oms
 from pyopenms import SpectrumLookup
-import warnings
 
 
 class OpenMSHandler:
@@ -12,9 +13,7 @@ class OpenMSHandler:
         self._consensus_xml_path = None
         self._spec_lookup = None
 
-    def get_spectrum_from_scan(
-        self, mzml_path: str, scan_number: int
-    ) -> Tuple[Any, Any]:
+    def get_spectrum_from_scan(self, mzml_path: str, scan_number: int) -> Tuple[Any, Any]:
         """
         Get a spectrum from a mzML file using the scan number
         :param mzml_path: path to the mzML file
@@ -29,16 +28,14 @@ class OpenMSHandler:
         try:
             index = self._spec_lookup.findByScanNumber(scan_number)
         except:
-            message = 'scan_number' + str(scan_number) + 'not found in file: ' + mzml_path
+            message = "scan_number" + str(scan_number) + "not found in file: " + mzml_path
             warnings.warn(message, category=None, stacklevel=1, source=None)
-            return [],[]
+            return [], []
         spectrum = self._mzml_exp.getSpectrum(index)
         spectrum_mz, spectrum_intensities = spectrum.get_peaks()
         return spectrum_mz, spectrum_intensities
 
-    def get_intensity_map(
-        self, consensusxml_path: str, experiment_type: str = None
-    ) -> dict:
+    def get_intensity_map(self, consensusxml_path: str, experiment_type: str = None) -> dict:
         """
         Get the intensity map from a consensusxml file. The intensity map is a dictionary with the following structure:
         - key: peptide sequence + ":_:" + charge + ":_:" + reference file
@@ -59,12 +56,10 @@ class OpenMSHandler:
         if experiment_type is not None and "LABEL FREE" in experiment_type.upper():
             return self._get_intensity_map_lfq(df)
         elif experiment_type is not None and "TMT" in experiment_type.upper():
-            return self._get_intensity_map_tmt_or_itraq(df,experiment_type)
-        elif experiment_type is not None and 'ITRAQ' in experiment_type.upper():
-            return self._get_intensity_map_tmt_or_itraq(df,experiment_type)
-        return self._get_intensity_map_lfq(
-            df
-        )  # If not experiment type is provided, we assume it is label free
+            return self._get_intensity_map_tmt_or_itraq(df, experiment_type)
+        elif experiment_type is not None and "ITRAQ" in experiment_type.upper():
+            return self._get_intensity_map_tmt_or_itraq(df, experiment_type)
+        return self._get_intensity_map_lfq(df)  # If not experiment type is provided, we assume it is label free
 
     @staticmethod
     def _get_intensity_map_lfq(df):
@@ -74,17 +69,13 @@ class OpenMSHandler:
         :return: intensity map
         """
         peptide_columns = ["sequence", "charge", "RT", "mz", "quality"]
-        intensity_columns = [
-            column for column in df.columns if column not in peptide_columns
-        ]
+        intensity_columns = [column for column in df.columns if column not in peptide_columns]
         intensity_map = {}
         for index, row in df.iterrows():
             for column in intensity_columns:
                 if np.float64(row[f"{column}"]) > 0.0:
                     reference_file = column.split(".")[0]
-                    key = (
-                        row.sequence + ":_:" + str(row.charge) + ":_:" + reference_file
-                    )
+                    key = row.sequence + ":_:" + str(row.charge) + ":_:" + reference_file
                     if key not in intensity_map:
                         intensity_map[key] = {
                             "rt": row.RT,
@@ -101,39 +92,25 @@ class OpenMSHandler:
         return intensity_map
 
     @staticmethod
-    def _get_intensity_map_tmt_or_itraq(df,experiment_type):
+    def _get_intensity_map_tmt_or_itraq(df, experiment_type):
         """
         Get the intensity map for TMT experiments
         :param df: pandas dataframe with the consensusxml data
         :return: intensity map
         """
         peptide_columns = ["sequence", "charge", "RT", "mz", "quality", "file"]
-        intensity_columns = [
-            column for column in df.columns if column not in peptide_columns
-        ]
+        intensity_columns = [column for column in df.columns if column not in peptide_columns]
         intensity_map = {}
         for index, row in df.iterrows():
             for column in intensity_columns:
                 if np.float64(row[f"{column}"]) > 0.0:
                     reference_file = row.file.split(".")[0]
                     if "TMT" in experiment_type.upper():
-                        channel = (
-                            "TMT" + column.split("_")[1]
-                        )  # A TMT channel has in consesusXML the following format:
+                        channel = "TMT" + column.split("_")[1]  # A TMT channel has in consesusXML the following format:
                         # tmt10plex_129N -> TMT129N
                     else:
-                        channel = (
-                            "ITRAQ" + column.split("_")[1]
-                        ) 
-                    key = (
-                        row.sequence
-                        + ":_:"
-                        + str(row.charge)
-                        + ":_:"
-                        + reference_file
-                        + ":_:"
-                        + channel
-                    )
+                        channel = "ITRAQ" + column.split("_")[1]
+                    key = row.sequence + ":_:" + str(row.charge) + ":_:" + reference_file + ":_:" + channel
                     if key not in intensity_map:
                         intensity_map[key] = {
                             "rt": row.RT,

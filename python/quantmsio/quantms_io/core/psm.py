@@ -1,16 +1,18 @@
+import logging
+
 import numpy as np
 import pandas as pd
-
 import pyarrow as pa
 import pyarrow.parquet as pq
+
 from quantms_io.core.mztab import MztabHandler
 from quantms_io.core.parquet_handler import ParquetHandler
 from quantms_io.core.psm_in_memory import PsmInMemory
 from quantms_io.utils.file_utils import extract_len
-from quantms_io.utils.pride_utils import (get_quantmsio_modifications,
-                                          standardize_protein_list_accession)
-import logging
-logging.basicConfig(level = logging.INFO)
+from quantms_io.utils.pride_utils import get_quantmsio_modifications
+from quantms_io.utils.pride_utils import standardize_protein_list_accession
+
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -26,8 +28,9 @@ def get_psm_in_batches(mztab_file: str, batch_size: int) -> int:
     else:
         return total_len // batch_size
 
-def check_start_or_end(value_str:str):
-    values = value_str.split(',')
+
+def check_start_or_end(value_str: str):
+    values = value_str.split(",")
     if values[0].isdigit():
         return [int(v) for v in values]
     else:
@@ -59,25 +62,19 @@ class PSMHandler(ParquetHandler):
         pa.field(
             "protein_global_qvalue",
             pa.float64(),
-            metadata={
-                "description": "global q-value of the associated protein or protein group"
-            },
+            metadata={"description": "global q-value of the associated protein or protein group"},
         ),
         pa.field(
             "unique",
             pa.int32(),
-            metadata={
-                "description": "if the peptide is unique to a particular protein"
-            },
+            metadata={"description": "if the peptide is unique to a particular protein"},
         ),
         pa.field(
             "modifications",
             pa.list_(pa.string()),
             metadata={"description": "peptide modifications"},
         ),
-        pa.field(
-            "retention_time", pa.float64(), metadata={"description": "retention time"}
-        ),
+        pa.field("retention_time", pa.float64(), metadata={"description": "retention time"}),
         pa.field(
             "charge",
             pa.int32(),
@@ -103,15 +100,11 @@ class PSMHandler(ParquetHandler):
             pa.float64(),
             metadata={"description": "posterior error probability"},
         ),
-        pa.field(
-            "global_qvalue", pa.float64(), metadata={"description": "global q-value"}
-        ),
+        pa.field("global_qvalue", pa.float64(), metadata={"description": "global q-value"}),
         pa.field(
             "is_decoy",
             pa.int32(),
-            metadata={
-                "description": "flag indicating if the feature is a decoy (1 is decoy, 0 is not decoy)"
-            },
+            metadata={"description": "flag indicating if the feature is a decoy (1 is decoy, 0 is not decoy)"},
         ),
         pa.field(
             "id_scores",
@@ -173,7 +166,14 @@ class PSMHandler(ParquetHandler):
     def _create_psm_table(self, psm_list: list) -> pa.Table:
         return pa.Table.from_pandas(pd.DataFrame(psm_list), schema=self.schema)
 
-    def convert_mztab_to_psm(self, mztab_path: str, parquet_path: str = None, verbose: bool = False,batch_size: int = 100000,use_cache: bool = False):
+    def convert_mztab_to_psm(
+        self,
+        mztab_path: str,
+        parquet_path: str = None,
+        verbose: bool = False,
+        batch_size: int = 100000,
+        use_cache: bool = False,
+    ):
         """
         convert a mzTab file to a feature file
         :param mztab_path: path to the mzTab file
@@ -221,9 +221,8 @@ class PSMHandler(ParquetHandler):
             logger.info("The parquet file was generated in: {}".format(self.parquet_path))
         else:
             convert = PsmInMemory(self.schema)
-            convert.generate_psm_parquet(mztab_path,self.parquet_path,chunksize=batch_size)
+            convert.generate_psm_parquet(mztab_path, self.parquet_path, chunksize=batch_size)
             logger.info("The parquet file was generated in: {}".format(self.parquet_path))
-
 
     @staticmethod
     def _transform_psm_from_mztab(psm, mztab_handler) -> dict:
@@ -245,7 +244,7 @@ class PSMHandler(ParquetHandler):
             protein_accession_list=protein_accession_nredundant
         )
         protein_qvalue = (
-            None if (protein_qvalue is None or protein_qvalue[0] == 'null') else np.float64(protein_qvalue[0])
+            None if (protein_qvalue is None or protein_qvalue[0] == "null") else np.float64(protein_qvalue[0])
         )
 
         retention_time = (
@@ -271,29 +270,27 @@ class PSMHandler(ParquetHandler):
             modification_definition=mztab_handler.get_modifications_definition(),
         )
 
-        modifications_string = "-".join("|".join(map(str, value["position"])) + "-"
-                                        + value["unimod_accession"]
-                                        for key, value in modifications.items()) if modifications else None
+        modifications_string = (
+            "-".join(
+                "|".join(map(str, value["position"])) + "-" + value["unimod_accession"]
+                for key, value in modifications.items()
+            )
+            if modifications
+            else None
+        )
 
-        modification_list = (None if modifications_string is None else modifications_string.split(","))
+        modification_list = None if modifications_string is None else modifications_string.split(",")
         posterior_error_probability = (
             None
-            if (
-                "posterior_error_probability" not in psm
-                or psm["posterior_error_probability"] is None
-            )
+            if ("posterior_error_probability" not in psm or psm["posterior_error_probability"] is None)
             else np.float64(psm["posterior_error_probability"])
         )
 
         global_qvalue = (
-            None
-            if ("global_qvalue" not in psm or psm["global_qvalue"] is None)
-            else np.float64(psm["global_qvalue"])
+            None if ("global_qvalue" not in psm or psm["global_qvalue"] is None) else np.float64(psm["global_qvalue"])
         )
 
-        consensus_support = (
-            None if psm["consensus_support"] else np.float32(psm["consensus_support"])
-        )
+        consensus_support = None if psm["consensus_support"] else np.float32(psm["consensus_support"])
 
         psm_score = np.float64(psm["score"])
         peptide_score_name = mztab_handler.get_search_engine_scores()["psm_score"]
@@ -309,9 +306,7 @@ class PSMHandler(ParquetHandler):
             "retention_time": retention_time,
             "charge": charge,
             "calc_mass_to_charge": calc_mass_to_charge,
-            "peptidoform": psm[
-                "proforma_peptidoform"
-            ],  # Peptidoform in proforma notation
+            "peptidoform": psm["proforma_peptidoform"],  # Peptidoform in proforma notation
             "posterior_error_probability": posterior_error_probability,
             "global_qvalue": global_qvalue,
             "is_decoy": int(psm["is_decoy"]),

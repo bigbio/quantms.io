@@ -1,12 +1,14 @@
 from unittest import TestCase
-from quantms_io.core.statistics import ParquetStatistics, IbaqStatistics
+
+from quantms_io.core.statistics import IbaqStatistics
+from quantms_io.core.statistics import ParquetStatistics
 
 
 class TestStatistics(TestCase):
 
     def test_feature_get_number_of_peptides(self):
         # Mock the duckdb.sql method to return a DataFrame with a single column 'sequence'
-        parquet_path = __package__ + '/examples/JSON/PXD040438.feature.parquet'
+        parquet_path = __package__ + "/examples/JSON/PXD040438.feature.parquet"
         # Create an instance of ParquetStatistics
         parquet_stats = ParquetStatistics(parquet_path)
 
@@ -26,7 +28,7 @@ class TestStatistics(TestCase):
 
     def test_ibaq_get_number_of_proteins(self):
         # Mock the duckdb.sql method to return a DataFrame with a single column 'sequence'
-        ibaq_path = __package__ + '/examples/JSON/PXD016999.absolute.tsv'
+        ibaq_path = __package__ + "/examples/JSON/PXD016999.absolute.tsv"
         # Create an instance of ParquetStatistics
         ibaq_stats = IbaqStatistics(ibaq_path)
 

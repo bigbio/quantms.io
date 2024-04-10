@@ -1,19 +1,21 @@
 from unittest import TestCase
 from unittest.mock import patch
-from ddt import data,ddt
+
 import requests
+from ddt import data
+from ddt import ddt
 
 from quantms_io.core.project import ProjectHandler
+
 
 @ddt
 class TestProjectHandler(TestCase):
     global test_datas
     test_datas = [
-        ("PXD040438","/examples/DDA-lfq/PXD040438.sdrf.tsv","/examples/output/DDA-lfq/"), 
-        ("MSV000079033","/examples/DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv","/examples/output/DDA-plex/"),
-        ("PXD037682","/examples/DIA-lfq/PXD037682.sdrf.tsv","/examples/output/DIA-lfq/")
+        ("PXD040438", "/examples/DDA-lfq/PXD040438.sdrf.tsv", "/examples/output/DDA-lfq/"),
+        ("MSV000079033", "/examples/DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv", "/examples/output/DDA-plex/"),
+        ("PXD037682", "/examples/DIA-lfq/PXD037682.sdrf.tsv", "/examples/output/DIA-lfq/"),
     ]
-
 
     @patch("requests.get")
     def test_populate_from_pride_archive_successful(self, mock_get):
@@ -37,9 +39,7 @@ class TestProjectHandler(TestCase):
         project_manager.populate_from_pride_archive()
 
         # Assert that the project_info has been updated
-        self.assertEqual(
-            project_manager.project.project_info["project_title"], "Test Project"
-        )
+        self.assertEqual(project_manager.project.project_info["project_title"], "Test Project")
         self.assertEqual(
             project_manager.project.project_info["project_description"],
             "Test description",
@@ -62,7 +62,7 @@ class TestProjectHandler(TestCase):
         print(project_manager.project.project_info)
 
     @data(*test_datas)
-    def test_save_project_info(self,test_data):
+    def test_save_project_info(self, test_data):
         project_accession = test_data[0]
         sdrf_file = __package__ + test_data[1]
         output_folder = __package__ + test_data[2]
@@ -75,5 +75,4 @@ class TestProjectHandler(TestCase):
             output_folder=output_folder,
             delete_existing=False,
         )
-        project_manager.save_updated_project_info(output_file_name=output_folder+'peoject.json')
-
+        project_manager.save_updated_project_info(output_file_name=output_folder + "peoject.json")

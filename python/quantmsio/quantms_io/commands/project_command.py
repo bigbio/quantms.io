@@ -2,6 +2,7 @@ import click
 
 from quantms_io.core.project import check_directory
 
+
 @click.command(
     "generate-pride-project-json",
     short_help="Generate a json project file from original pride accession",
@@ -27,7 +28,9 @@ from quantms_io.core.project import check_directory
     required=False,
 )
 @click.option(
-    "--delete_existing", help="Delete existing files in the output folder", is_flag=False,
+    "--delete_existing",
+    help="Delete existing files in the output folder",
+    is_flag=False,
 )
 def generate_pride_project_json(
     project_accession: str,
@@ -48,23 +51,16 @@ def generate_pride_project_json(
     :param delete_existing: Delete existing files in the output folder
     :return: none
     """
-    if (
-        project_accession is None
-        or sdrf_file is None
-        or output_folder is None
-    ):
+    if project_accession is None or sdrf_file is None or output_folder is None:
         raise click.UsageError("Please provide all the required parameters")
-    
-    
 
-
-    project_handler = check_directory(output_folder,project_accession)
+    project_handler = check_directory(output_folder, project_accession)
 
     # Populate the project handler with the metadata from Pride Archive and the SDRF file
     project_handler.populate_from_pride_archive()
     project_handler.populate_from_sdrf(sdrf_file)
     project_handler.add_quantms_version(quantms_version=quantms_version)
-    project_path = output_folder + '/' + 'project.json'
+    project_path = output_folder + "/" + "project.json"
     project_handler.add_sdrf_file(
         sdrf_file_path=sdrf_file,
         output_folder=output_folder,

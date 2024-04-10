@@ -1,19 +1,22 @@
 """
 This file contains utility functions for parsing PRIDE JSON files
 """
-import itertools
-import re
-from builtins import sorted
-import pandas as pd
-import time
 
+import itertools
 import logging
-logging.basicConfig(level = logging.INFO)
+import re
+import time
+from builtins import sorted
+
+import pandas as pd
+
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def get_unanimous_name(protein_accessions,map_dict):
-    if isinstance(protein_accessions,str):
-        if ';' in protein_accessions:
+
+def get_unanimous_name(protein_accessions, map_dict):
+    if isinstance(protein_accessions, str):
+        if ";" in protein_accessions:
             protein_accessions = protein_accessions.split(";")
         else:
             protein_accessions = protein_accessions.split(",")
@@ -23,7 +26,8 @@ def get_unanimous_name(protein_accessions,map_dict):
             unqnimous_names.append(list(map_dict[accession])[0])
     return unqnimous_names
 
-def generate_gene_name_map(fasta,map_parameter):
+
+def generate_gene_name_map(fasta, map_parameter):
     """
     according fasta database to map the proteins accessions to uniprot names.
     :param parquet_path: psm_parquet_path or feature_parquet_path
@@ -34,36 +38,39 @@ def generate_gene_name_map(fasta,map_parameter):
     retrun: None
     """
     map_gene_names = defaultdict(set)
-    if map_parameter == 'map_protein_name':
+    if map_parameter == "map_protein_name":
         for seq_record in SeqIO.parse(fasta, "fasta"):
             name = seq_record.id.split("|")[-1]
-            gene_list = re.findall('GN=(\S+)',seq_record.description)
-            gene_name = gene_list[0] if len(gene_list)>0 else None
+            gene_list = re.findall("GN=(\S+)", seq_record.description)
+            gene_name = gene_list[0] if len(gene_list) > 0 else None
             map_gene_names[name].add(gene_name)
     else:
         for seq_record in SeqIO.parse(fasta, "fasta"):
             accession = seq_record.id.split("|")[-2]
-            gene_list = re.findall('GN=(\S+)',seq_record.description)
-            gene_name = gene_list[0] if len(gene_list)>0 else None
+            gene_list = re.findall("GN=(\S+)", seq_record.description)
+            gene_name = gene_list[0] if len(gene_list) > 0 else None
             map_gene_names[accession].add(gene_name)
     return map_gene_names
 
-def get_gene_accessions(gene_list,map_dict):
+
+def get_gene_accessions(gene_list, map_dict):
     if len(gene_list) == 0:
         return []
     else:
         accessions = []
         for gene in gene_list:
             accession = map_dict[gene]
-            if len(accession)>0:
+            if len(accession) > 0:
                 accessions.append(str(accession[0]))
         return accessions
 
-def generate_scan_number(spectra_ref:str):
-    if 'scan' in spectra_ref:
+
+def generate_scan_number(spectra_ref: str):
+    if "scan" in spectra_ref:
         return re.findall(r"scan=(\d+)", spectra_ref)[0]
     else:
-        return ",".join(re.findall(r'=(\d+)', spectra_ref))
+        return ",".join(re.findall(r"=(\d+)", spectra_ref))
+
 
 def get_pubmed_id_pride_json(pride_json: dict) -> str:
     """
@@ -95,9 +102,7 @@ def get_set_of_experiment_keywords(pride_json: dict) -> list:
     return list(experiment_types)
 
 
-def get_key_peptide_combination(
-    msstats_peptidoform: str, charge: str, reference_file: str = None
-):
+def get_key_peptide_combination(msstats_peptidoform: str, charge: str, reference_file: str = None):
     """
     Get the key for a peptide or psm in mztab. For peptides the key is:
      - sequence peptidoform in msstats notation (e.g. PEPTIDE(Oxidation))
@@ -157,9 +162,7 @@ def compare_protein_lists(protein_list_1: list, protein_list_2: list) -> bool:
     return protein_list_1 == protein_list_2
 
 
-def standardize_protein_string_accession(
-    protein_string: str, sorted: bool = False
-) -> str:
+def standardize_protein_string_accession(protein_string: str, sorted: bool = False) -> str:
     """
     standardize the protein string accession, in some cases the protein string accession is decided by commas
     instead of semicolons.
@@ -194,16 +197,12 @@ def parse_score_name_in_mztab(score_name_mztab_line: str) -> str:
     score_values = lines[2].replace("[", "").replace("]", "").split(",")
     score_name = score_values[2].strip()
     if ":" in score_name:
-        score_name = "'{}'".format(
-            score_name
-        )  # add quotes to the score name if it contains a colon like
+        score_name = "'{}'".format(score_name)  # add quotes to the score name if it contains a colon like
         # "OpenMS:Target-decoy protein q-value"
     return score_name
 
 
-def get_modifications_object_from_mztab_line(
-    modification_string: str, modifications_definition: dict
-) -> dict:
+def get_modifications_object_from_mztab_line(modification_string: str, modifications_definition: dict) -> dict:
     """
     get the modifications from a mztab line. This method is used to transform peptide + modification strings to
     proteoform notations, for msstats notation and for proforma notation.
@@ -215,33 +214,21 @@ def get_modifications_object_from_mztab_line(
     modification_values = re.split(r",(?![^\[]*\])", modification_string)
     for modification in modification_values:
         modification = modification.strip()
-        if modification == '':
+        if modification == "":
             return {}
         accession = modification.split("-")[1]
         unimod_accession = accession
         if accession not in modifications_definition:
-            raise Exception(
-                "The modification {} is not in the modifications definition".format(
-                    accession
-                )
-            )
-        accession = modifications_definition[accession][
-            0
-        ]  # get the name of the modification
+            raise Exception("The modification {} is not in the modifications definition".format(accession))
+        accession = modifications_definition[accession][0]  # get the name of the modification
         position = []
         position_probability_string = modification.split("-")[0]
-        if (
-            "[" not in position_probability_string
-            and "|" not in position_probability_string
-        ):  # only one position
+        if "[" not in position_probability_string and "|" not in position_probability_string:  # only one position
             position = [position_probability_string]
         elif (
-            "[" not in position_probability_string
-            and "|" in position_probability_string
+            "[" not in position_probability_string and "|" in position_probability_string
         ):  # multiple positions not probability
-            position = position_probability_string.split(
-                "|"
-            )  # multiple positions not probability
+            position = position_probability_string.split("|")  # multiple positions not probability
         else:
             positions_probabilities = position_probability_string.split("|")
             for position_probability in positions_probabilities:
@@ -267,9 +254,7 @@ def get_modifications_object_from_mztab_line(
     return modifications
 
 
-def get_quantmsio_modifications(
-    modifications_string: str, modification_definition: dict
-) -> dict:
+def get_quantmsio_modifications(modifications_string: str, modification_definition: dict) -> dict:
     """
     Get the modifications in quantms.io format from a string of modifications in mztab format.
     :param modifications_string: Modifications string in mztab format
@@ -293,14 +278,12 @@ def fetch_peptide_spectra_ref(peptide_spectra_ref: str):
     :return: ms run and scan number
     """
     ms_run = peptide_spectra_ref.split(":")[0]
-    #scan_number = peptide_spectra_ref.split(":")[1].split(" ")[-1].split("=")[-1]
+    # scan_number = peptide_spectra_ref.split(":")[1].split(" ")[-1].split("=")[-1]
     scan_number = generate_scan_number(peptide_spectra_ref)
     return ms_run, scan_number
 
 
-def compare_msstats_peptidoform_with_proforma(
-    msstats_peptidoform: str, proforma: str
-) -> bool:
+def compare_msstats_peptidoform_with_proforma(msstats_peptidoform: str, proforma: str) -> bool:
     """
     Compare a msstats peptidoform with a proforma representation.
     - [Acetyl]-EM[Oxidation]EVEES[Phospho]PEK vs .(Acetyl)EM(Oxidation)EVEES(Phospho)PEK
@@ -312,9 +295,7 @@ def compare_msstats_peptidoform_with_proforma(
     if "-" in proforma:
         proforma_parts = proforma.split("-")
         if len(proforma_parts) > 3:
-            raise Exception(
-                "The proforma peptidoform is not valid has more than 3 termini modifications"
-            )
+            raise Exception("The proforma peptidoform is not valid has more than 3 termini modifications")
         result_proforma = ""
         par_index = 0
         for part in proforma_parts:
@@ -342,11 +323,7 @@ def get_petidoform_msstats_notation(
     :param modifications_definition: dictionary modifications definition
     :return: peptidoform in msstats
     """
-    if (
-        modification_string == "null"
-        or modification_string is None
-        or modification_string == ""
-    ):
+    if modification_string == "null" or modification_string is None or modification_string == "":
         return peptide_sequence
 
     modifications = get_modifications_object_from_mztab_line(
@@ -395,17 +372,13 @@ def fetch_peptide_from_mztab_line(
     peptide["accession"] = standardize_protein_string_accession(peptide["accession"])
     peptide["score"] = peptide_dict["best_search_engine_score[1]"]
 
-    if (
-        "opt_global_cv_MS:1002217_decoy_peptide" in peptide_dict
-    ):  # check if the peptide is a decoy
+    if "opt_global_cv_MS:1002217_decoy_peptide" in peptide_dict:  # check if the peptide is a decoy
         peptide["is_decoy"] = peptide_dict["opt_global_cv_MS:1002217_decoy_peptide"]
     else:
         peptide["is_decoy"] = None  # if the information is not available
 
     if "opt_global_cv_MS:1000889_peptidoform_sequence" in peptide_dict:
-        peptide["peptidoform"] = peptide_dict[
-            "opt_global_cv_MS:1000889_peptidoform_sequence"
-        ]
+        peptide["peptidoform"] = peptide_dict["opt_global_cv_MS:1000889_peptidoform_sequence"]
     else:
         peptide["peptidoform"] = get_petidoform_msstats_notation(
             peptide["sequence"], peptide["modifications"], modification_definition
@@ -451,9 +424,7 @@ def fetch_protein_from_mztab_line(protein_dict: dict):
     :param protein_dict: dictionary with the protein information
     :return: protein dictionary
     """
-    accession_string = standardize_protein_string_accession(
-        protein_dict["ambiguity_members"]
-    )
+    accession_string = standardize_protein_string_accession(protein_dict["ambiguity_members"])
     return {
         "accession": accession_string,
         "score": protein_dict["best_search_engine_score[1]"],
@@ -472,14 +443,11 @@ def fetch_ms_runs_from_mztab_line(mztab_line: str, ms_runs: dict) -> dict:
     mztab_line = mztab_line.strip()
     line_parts = mztab_line.split("\t")
     if line_parts[0] == "MTD" and line_parts[1].split("-")[-1] == "location":
-        ms_runs[line_parts[1].split("-")[0]] = (
-            line_parts[2].split("//")[-1].split(".")[0]
-        )
+        ms_runs[line_parts[1].split("-")[0]] = line_parts[2].split("//")[-1].split(".")[0]
     return ms_runs
 
 
-def fetch_psm_from_mztab_line(es: dict, ms_runs: dict = None, modifications_definition: dict = None
-) -> dict:
+def fetch_psm_from_mztab_line(es: dict, ms_runs: dict = None, modifications_definition: dict = None) -> dict:
     """
     Get the psm from a mztab line include the post.
     :param es: dictionary with the psm information
@@ -507,7 +475,7 @@ def fetch_psm_from_mztab_line(es: dict, ms_runs: dict = None, modifications_defi
 
     if "opt_global_consensus_support" not in es:
         keys.remove("opt_global_consensus_support")
-    
+
     if "opt_global_Posterior_Error_Probability_score" not in es:
         keys.remove("opt_global_Posterior_Error_Probability_score")
 
@@ -516,17 +484,13 @@ def fetch_psm_from_mztab_line(es: dict, ms_runs: dict = None, modifications_defi
     psm["accession"] = standardize_protein_string_accession(psm["accession"])
     psm["score"] = es["search_engine_score[1]"]
 
-    if (
-        "opt_global_cv_MS:1002217_decoy_peptide" in es
-    ):  # check if the peptide is a decoy
+    if "opt_global_cv_MS:1002217_decoy_peptide" in es:  # check if the peptide is a decoy
         psm["is_decoy"] = es["opt_global_cv_MS:1002217_decoy_peptide"]
     else:
         psm["is_decoy"] = None  # if the information is not available
 
     if "opt_global_Posterior_Error_Probability_score" in es:
-        psm["posterior_error_probability"] = es[
-            "opt_global_Posterior_Error_Probability_score"
-        ]
+        psm["posterior_error_probability"] = es["opt_global_Posterior_Error_Probability_score"]
     else:
         psm["posterior_error_probability"] = None
 
@@ -597,9 +561,7 @@ def fetch_modifications_from_mztab_line(line: str, _modifications: dict) -> dict
             for (
                 key,
                 value,
-            ) in (
-                _modifications.items()
-            ):  # for name, age in dictionary.iteritems():  (for Python 2.x)
+            ) in _modifications.items():  # for name, age in dictionary.iteritems():  (for Python 2.x)
                 if value[1] == index:
                     accession = key
             if accession is None:
@@ -634,7 +596,12 @@ def get_peptidoform_proforma_version_in_mztab(
     :param modifications_definition: dictionary modifications definition
     :return: peptidoform in proforma
     """
-    if modification_string == "null" or modification_string is None or modification_string == "" or pd.isna(modification_string):
+    if (
+        modification_string == "null"
+        or modification_string is None
+        or modification_string == ""
+        or pd.isna(modification_string)
+    ):
         return peptide_sequence
 
     modifications = get_modifications_object_from_mztab_line(
@@ -678,6 +645,7 @@ def get_permutations_of_original_list(original_elems: list):
             continue
         else:
             yield permutation
+
 
 def print_estimated_time(original_time, step: str):
     """

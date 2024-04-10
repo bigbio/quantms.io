@@ -1,11 +1,11 @@
-import os
-
 import logging
+import os
 
 import psutil
 
-logging.basicConfig(level = logging.INFO)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 def delete_files_extension(folder: str, extension: str) -> None:
     """
@@ -17,6 +17,7 @@ def delete_files_extension(folder: str, extension: str) -> None:
         if file.endswith(extension):
             os.remove(f"{folder}/{file}")
             logger.info(f"Deleted {folder}/{file}")
+
 
 def extract_len(fle, header):
     map_tag = {"PSH": "PSM", "PEH": "PEP", "PRH": "PRT"}
@@ -35,6 +36,7 @@ def extract_len(fle, header):
         line = f.readline()
     f.close()
     return fle_len, pos
+
 
 def calculate_buffer_size(file_path: str) -> int:
     # Get the total available system memory
