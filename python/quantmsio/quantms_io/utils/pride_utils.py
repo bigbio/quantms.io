@@ -7,8 +7,10 @@ import logging
 import re
 import time
 from builtins import sorted
+from collections import defaultdict
 
 import pandas as pd
+from Bio import SeqIO
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
