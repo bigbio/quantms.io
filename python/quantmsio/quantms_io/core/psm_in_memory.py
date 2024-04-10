@@ -68,7 +68,8 @@ class PsmInMemory:
                 lambda x: self._ms_runs[x.split(":")[0]]
             )
             self._psm_usecols.append('scan_number')
-            psm = psm[self._psm_usecols] 
+            psm = psm[self._psm_usecols]
+            self._psm_usecols.pop()
             psm.rename(columns=self._psm_map,inplace=True)
             psm.loc[:,'global_qvalue'] = psm[
                     ['peptidoform', 'charge']
@@ -86,13 +87,14 @@ class PsmInMemory:
             + "Best PSM PEP:" + psm["posterior_error_probability"].astype(str)
             )
             psm.drop(['search_engine_score[1]'],inplace=True, axis=1)
-            psm.loc[:,'peptidoform'] = psm[['sequence','modifications']].apply(lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'],row['modifications'],self._modifications),axis=1)
+            psm.loc[:,'peptidoform'] = psm[['sequence','modifications']].apply(lambda row: get_peptidoform_proforma_version_in_mztab(row['sequence'],row['modifications'],self._modifications),axis=1)       
             parquet_table = self.convert_to_parquet(psm)
             if not pqwriter:
                 pqwriter = pq.ParquetWriter(output_path, parquet_table.schema)
             pqwriter.write_table(parquet_table)
         if pqwriter:
-            pqwriter.close()
+            pqwriter.close() 
+            
     
     @staticmethod
     def __split_start_or_end(value):
@@ -146,5 +148,4 @@ class PsmInMemory:
 
         res.loc[:, "gene_accessions"] = None
         res.loc[:, "gene_names"] = None
-
         return pa.Table.from_pandas(res, schema=self.schema)
