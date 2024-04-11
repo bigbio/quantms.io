@@ -5,7 +5,7 @@ import requests
 from ddt import data
 from ddt import ddt
 
-from quantms_io.core.project import ProjectHandler
+from core.project import ProjectHandler
 
 
 @ddt

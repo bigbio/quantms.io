@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from quantms_io.core.sdrf import SDRFHandler
+from core.sdrf import SDRFHandler
 
 
 class TestSDRFHandler(TestCase):

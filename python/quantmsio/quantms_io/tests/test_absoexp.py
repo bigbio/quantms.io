@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from quantms_io.core.ae import AbsoluteExpressionHander
+from core.ae import AbsoluteExpressionHander
 
 
 class TestAEHandler(TestCase):

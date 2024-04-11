@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from quantms_io.core.statistics import IbaqStatistics
-from quantms_io.core.statistics import ParquetStatistics
+from core.statistics import IbaqStatistics
+from core.statistics import ParquetStatistics
 
 
 class TestStatistics(TestCase):

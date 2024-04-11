@@ -5,9 +5,9 @@ from unittest import TestCase
 from ddt import data
 from ddt import ddt
 
-from quantms_io.core.feature_in_memory import FeatureInMemory
-from quantms_io.core.feature import FeatureHandler
-from quantms_io.core.project import create_uuid_filename
+from core.feature_in_memory import FeatureInMemory
+from core.feature import FeatureHandler
+from core.project import create_uuid_filename
 
 
 @ddt

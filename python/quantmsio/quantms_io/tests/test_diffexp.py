@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from quantms_io.core.de import DifferentialExpressionHandler
+from core.de import DifferentialExpressionHandler
 
 
 class TestDEHandler(TestCase):

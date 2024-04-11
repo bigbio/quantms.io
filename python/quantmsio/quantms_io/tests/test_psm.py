@@ -3,9 +3,9 @@ from unittest import TestCase
 from ddt import data
 from ddt import ddt
 
-from quantms_io.core.project import create_uuid_filename
-from quantms_io.core.psm import PSMHandler
-from quantms_io.core.psm_in_memory import PsmInMemory
+from core.project import create_uuid_filename
+from core.psm import PSMHandler
+from core.psm_in_memory import PsmInMemory
 
 #@ddt
 class TestPSMHandler(TestCase):
