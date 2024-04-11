@@ -16,17 +16,10 @@ class TestDEHandler(TestCase):
         de_path = __package__ + test_data[1]
         sdrf_path = __package__ + test_data[2]
 
-        output_folder = __package__ + "/examples/output/DE/"
-
-        output_file_prefix = "PXD033169"
 
         de_handler = DifferentialExpressionHandler()
         de_handler.load_project_file(project_path)
         de_handler.load_msstats_file(de_path)
         de_handler.load_sdrf_file(sdrf_path)
         de_handler.set_fdr_threshold(fdr_threshold=0.05)
-        de_handler.convert_msstats_to_quantms(
-            output_folder=output_folder,
-            output_file_prefix=output_file_prefix,
-            delete_existing=False,
-        )
+

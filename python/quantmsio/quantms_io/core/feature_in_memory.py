@@ -609,20 +609,18 @@ class FeatureInMemory:
         return msstats_in
 
     def merge_mztab_and_sdrf_to_msstats_in(
-        self, mztab_path, msstats_path, sdrf_path, output_path, msstats_chunksize=1000000, intensity_map=None
+        self, mztab_path, msstats_path, sdrf_path, msstats_chunksize=1000000, intensity_map=None
     ):
         """
         mzTab_path: mzTab file path
         msstats_path: msstats_in file path
         sdrf_path: sdrf file path
-        output_path: output path of parquet file
         msstats_chunksize: the large of msstats chunk
         """
         protein_map = self._get_protein_map(mztab_path)
         map_dict = self._extract_psm_pep_msg(mztab_path)
         msstats_ins = pd.read_csv(msstats_path, chunksize=msstats_chunksize)
         spectra_count_dict = self.__get_spectra_count(mztab_path, 500000)
-        pqwriter = None
         for msstats_in in msstats_ins:
             msstats_in["Reference"] = msstats_in["Reference"].swifter.apply(lambda x: x.split(".")[0])
             msstats_in.loc[:, "protein_global_qvalue"] = msstats_in["ProteinName"].swifter.apply(
@@ -672,10 +670,7 @@ class FeatureInMemory:
                     msstats_in = self._extract_rt_from_consensus_xml(intensity_map, msstats_in)
                 table = self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
                 parquet_table = self.convert_to_parquet(table)
-                if not pqwriter:
-                    # create a parquet write object giving it an output file
-                    pqwriter = pq.ParquetWriter(output_path, parquet_table.schema)
-                pqwriter.write_table(parquet_table)
+                yield parquet_table
             else:
                 no_lfq_usecols = [col for col in self._lfq_msstats_usecols if col not in msstats_in.columns]
                 for col in no_lfq_usecols:
@@ -705,10 +700,18 @@ class FeatureInMemory:
                     msstats_in = self._extract_rt_from_consensus_xml(intensity_map, msstats_in)
                 table = self._merge_sdrf_to_msstats_in(sdrf_path, msstats_in)
                 parquet_table = self.convert_to_parquet(table)
-                if not pqwriter:
-                    # create a parquet write object giving it an output file
-                    pqwriter = pq.ParquetWriter(output_path, parquet_table.schema)
-                pqwriter.write_table(parquet_table)
+                yield parquet_table
+
+
+    def write_feature_to_file(self, mztab_path, msstats_path, sdrf_path, output_path, msstats_chunksize=1000000, intensity_map=None):
+        '''
+        write parquet to file
+        '''
+        pqwriter = None
+        for feature in self.merge_mztab_and_sdrf_to_msstats_in(mztab_path, msstats_path, sdrf_path, msstats_chunksize=msstats_chunksize, intensity_map=intensity_map):
+            if not pqwriter:
+                pqwriter = pq.ParquetWriter(output_path, feature.schema)
+            pqwriter.write_table(feature)
         if pqwriter:
             pqwriter.close()
 

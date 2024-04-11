@@ -509,7 +509,7 @@ class FeatureHandler(ParquetHandler):
             mztab_handler.close()
         else:
             convert = FeatureInMemory(experiment_type, self.schema)
-            convert.merge_mztab_and_sdrf_to_msstats_in(
+            convert.write_feature_to_file(
                 mztab_file,
                 msstats_file,
                 sdrf_file,

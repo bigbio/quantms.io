@@ -73,8 +73,7 @@ def plot_peptides_of_lfq_condition(psm_parquet_path: str, sdrf_path: str, save_p
         sns.despine(ax=img, top=True, right=True)
         if save_path:
             img.figure.savefig(save_path, dpi=500)
-        return plt
-
+        return img
     else:
         df = pd.DataFrame([list(f_count.values)], columns=f_count.index)
         num_subplots = math.ceil(len(f_count) / 20)

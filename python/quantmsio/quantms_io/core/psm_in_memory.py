@@ -48,7 +48,7 @@ class PsmInMemory:
             "opt_global_consensus_support": "consensus_support",
         }
 
-    def generate_psm_parquet(self, mztab_path, output_path, chunksize=1000000):
+    def generate_psm_parquet(self, mztab_path, chunksize=1000000):
         protein_map = self._feature._get_protein_map(mztab_path)
         self._ms_runs = self._feature.extract_ms_runs(mztab_path)
         self._feature._ms_runs = self._ms_runs
@@ -59,7 +59,6 @@ class PsmInMemory:
         )
         self._psms_columns = self._feature._psms_columns
         self._modifications = get_modifications(mztab_path)
-        pqwriter = None
         for psm in psms:
             if "opt_global_cv_MS:1000889_peptidoform_sequence" not in psm.columns:
                 psm.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = psm[["modifications", "sequence"]].apply(
@@ -107,9 +106,17 @@ class PsmInMemory:
                 axis=1,
             )
             parquet_table = self.convert_to_parquet(psm)
+            yield parquet_table
+    
+    def write_feature_to_file(self, mztab_path, output_path, chunksize=1000000):
+        '''
+        write parquet to file
+        '''
+        pqwriter = None
+        for feature in self.generate_psm_parquet(mztab_path, chunksize=chunksize):
             if not pqwriter:
-                pqwriter = pq.ParquetWriter(output_path, parquet_table.schema)
-            pqwriter.write_table(parquet_table)
+                pqwriter = pq.ParquetWriter(output_path, feature.schema)
+            pqwriter.write_table(feature)
         if pqwriter:
             pqwriter.close()
 

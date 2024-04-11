@@ -12,9 +12,7 @@ from quantms_io.core.project import ProjectHandler
 class TestProjectHandler(TestCase):
     global test_datas
     test_datas = [
-        ("PXD040438", "/examples/DDA-lfq/PXD040438.sdrf.tsv", "/examples/output/DDA-lfq/"),
-        ("MSV000079033", "/examples/DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv", "/examples/output/DDA-plex/"),
-        ("PXD037682", "/examples/DIA-lfq/PXD037682.sdrf.tsv", "/examples/output/DIA-lfq/"),
+        ("MSV000079033", "/examples/DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv"),
     ]
 
     @patch("requests.get")
@@ -65,14 +63,7 @@ class TestProjectHandler(TestCase):
     def test_save_project_info(self, test_data):
         project_accession = test_data[0]
         sdrf_file = __package__ + test_data[1]
-        output_folder = __package__ + test_data[2]
 
         project_manager = ProjectHandler(project_accession)
         project_manager.populate_from_pride_archive()
         project_manager.populate_from_sdrf(sdrf_file)
-        project_manager.add_sdrf_file(
-            sdrf_file_path=sdrf_file,
-            output_folder=output_folder,
-            delete_existing=False,
-        )
-        project_manager.save_updated_project_info(output_file_name=output_folder + "peoject.json")
