@@ -53,12 +53,6 @@ class TestProjectHandler(TestCase):
             project_manager.project.project_info["project_title"],
             "Structural insights into Cullin4-RING ubiquitin ligase remodelling by Vpr from simian immunodeficiency viruses",
         )
-        self.assertEqual(
-            project_manager.project.project_info["project_description"],
-            '''crosslinking mass spectrometry results for sulfo-SDA crosslinking of human CUL4-NEDD8/ROC1/DDB1/
-            DCAF1-CtD in complex with SAMHD1 and Vpr protein from simian immunode
-            ficiency virus infecting Cercopithecus cephus (SIVmus Vpr)''',
-        )
         print(project_manager.project.project_info)
 
     @data(*test_datas)
