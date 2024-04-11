@@ -108,7 +108,7 @@ class Parquet:
         :yield: _description_
         """
         samples = self.get_unique_samples()
-        ref_list = [samples[i : i + file_num] for i in range(0, len(samples), file_num)]
+        ref_list = [samples[i: i + file_num] for i in range(0, len(samples), file_num)]
         for refs in ref_list:
             batch_df = self.get_report_from_database(refs)
             yield refs, batch_df
@@ -130,7 +130,7 @@ class Parquet:
         """
         references = self.get_unique_references()
         ref_list = [
-            references[i : i + file_num] for i in range(0, len(references), file_num)
+            references[i: i + file_num] for i in range(0, len(references), file_num)
         ]
         for refs in ref_list:
             batch_df = self.get_report_from_database(refs)
@@ -189,11 +189,11 @@ class Parquet:
         return df
 
     def inject_gene_msg(
-        self,
-        df: pd.DataFrame,
-        fasta: str,
-        map_parameter: str = "map_protein_accession",
-        species: str = "human",
+            self,
+            df: pd.DataFrame,
+            fasta: str,
+            map_parameter: str = "map_protein_accession",
+            species: str = "human",
     ):
         """
         :params df: parquet file

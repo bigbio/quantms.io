@@ -33,11 +33,8 @@ def get_unanimous_name(protein_accessions, map_dict):
 def generate_gene_name_map(fasta, map_parameter):
     """
     according fasta database to map the proteins accessions to uniprot names.
-    :param parquet_path: psm_parquet_path or feature_parquet_path
     :param fasta: Reference fasta database
-    :param output_path: output file path
     :param map_parameter: map_protein_name or map_protein_accession
-    :param label: feature or psm
     retrun: None
     """
     map_gene_names = defaultdict(set)

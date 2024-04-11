@@ -38,11 +38,11 @@ def get_exp_design_dfs(exp_design_file):
             lambda x: _true_stem(x["Spectra_Filepath"]), axis=1
         )
         f_table.rename(columns={"Fraction_Group": "ms_run", "run": "Run"}, inplace=True)
-        s_table = [i.replace("\n", "").split("\t") for i in data[empty_row + 1 :]][1:]
+        s_table = [i.replace("\n", "").split("\t") for i in data[empty_row + 1:]][1:]
         s_header = data[empty_row + 1].replace("\n", "").split("\t")
-        s_DataFrame = pd.DataFrame(s_table, columns=s_header)
+        s_data_frame = pd.DataFrame(s_table, columns=s_header)
 
-    return s_DataFrame, f_table
+    return s_data_frame, f_table
 
 
 def _true_stem(x):
@@ -347,11 +347,11 @@ class DiaNNConvert:
         return fix_s, variable_s
 
     def main_report_df(
-        self,
-        report_path: str,
-        qvalue_threshold: float,
-        mzml_info_folder: str,
-        file_num: int,
+            self,
+            report_path: str,
+            qvalue_threshold: float,
+            mzml_info_folder: str,
+            file_num: int,
     ) -> pd.DataFrame:
         def intergrate_msg(n):
             nonlocal report
@@ -388,7 +388,7 @@ class DiaNNConvert:
             if mzml.endswith("_mzml_info.tsv")
         ]
         info_list = [
-            info_list[i : i + file_num] for i in range(0, len(info_list), file_num)
+            info_list[i: i + file_num] for i in range(0, len(info_list), file_num)
         ]
         for refs in info_list:
             report = self.get_report_from_database(refs)
@@ -411,8 +411,8 @@ class DiaNNConvert:
             # cal value and mod
             mass_vector = report["Modified.Sequence"].map(masses_map)
             report["Calculate.Precursor.Mz"] = (
-                mass_vector + (PROTON_MASS_U * report["Precursor.Charge"].values)
-            ) / report["Precursor.Charge"].values
+                                                       mass_vector + (PROTON_MASS_U * report["Precursor.Charge"].values)
+                                               ) / report["Precursor.Charge"].values
             report["modifications"] = report["Modified.Sequence"].swifter.apply(
                 lambda x: find_modification(x)
             )
@@ -429,17 +429,17 @@ class DiaNNConvert:
             yield report
 
     def generate_psm_and_feature_file(
-        self,
-        report_path: str,
-        qvalue_threshold: float,
-        mzml_info_folder: str,
-        design_file: str,
-        sdrf_path: str,
-        psm_output_path: str,
-        feature_output_path: str,
-        duckdb_max_memory: str = None,
-        duckdb_threads: int = None,
-        file_num: int = 2,
+            self,
+            report_path: str,
+            qvalue_threshold: float,
+            mzml_info_folder: str,
+            design_file: str,
+            sdrf_path: str,
+            psm_output_path: str,
+            feature_output_path: str,
+            duckdb_max_memory: str = None,
+            duckdb_threads: int = None,
+            file_num: int = 2,
     ):
         psm_pqwriter = None
         feature_pqwriter = None
@@ -453,7 +453,7 @@ class DiaNNConvert:
         fix_mods, variable_mods = sdrf_handle.get_mods()
         self._modifications = get_modifications(fix_mods, variable_mods)
         for report in self.main_report_df(
-            report_path, qvalue_threshold, mzml_info_folder, file_num
+                report_path, qvalue_threshold, mzml_info_folder, file_num
         ):
             s = time.time()
             psm_pqwriter = self.generate_psm_file(report, psm_pqwriter, psm_output_path)
@@ -522,13 +522,13 @@ class DiaNNConvert:
         return psm_pqwriter
 
     def generate_feature_file(
-        self,
-        report,
-        s_data_frame,
-        f_table,
-        sdrf_path,
-        feature_pqwriter,
-        feature_output_path,
+            self,
+            report,
+            s_data_frame,
+            f_table,
+            sdrf_path,
+            feature_pqwriter,
+            feature_output_path,
     ):
 
         sdrf = pd.read_csv(

@@ -25,8 +25,8 @@ class TestFeatureHandler(TestCase):
         msstats_file = __package__ + test_data[1]
         sdrf_file = __package__ + test_data[2]
         expertment_type = test_data[3]
-        F = FeatureHandler()
-        feature_manager = FeatureInMemory(expertment_type, F.schema)
+        f = FeatureHandler()
+        feature_manager = FeatureInMemory(expertment_type, f.schema)
         for _ in feature_manager.merge_mztab_and_sdrf_to_msstats_in(
             mztab_path=mztab_file, msstats_path=msstats_file, sdrf_path=sdrf_file
         ):
