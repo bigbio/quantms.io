@@ -5,9 +5,9 @@ import re
 import numpy as np
 import pyarrow.parquet as pq
 
-from quantms_io.core.sdrf import SDRFHandler
-from quantms_io.core.tools import load_de_or_ae
-from quantms_io.core.tools import read_large_parquet
+from core.sdrf import SDRFHandler
+from core.tools import load_de_or_ae
+from core.tools import read_large_parquet
 
 
 class Npencoder(json.JSONEncoder):

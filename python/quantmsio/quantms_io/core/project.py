@@ -7,10 +7,10 @@ from pathlib import Path
 
 import requests
 
-from quantms_io.core.sdrf import SDRFHandler
-from quantms_io.utils.file_utils import delete_files_extension
-from quantms_io.utils.pride_utils import get_pubmed_id_pride_json
-from quantms_io.utils.pride_utils import get_set_of_experiment_keywords
+from core.sdrf import SDRFHandler
+from utils.file_utils import delete_files_extension
+from utils.pride_utils import get_pubmed_id_pride_json
+from utils.pride_utils import get_set_of_experiment_keywords
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

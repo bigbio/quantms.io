@@ -15,13 +15,13 @@ from pyopenms import AASequence
 from pyopenms import ModificationsDB
 from pyopenms.Constants import PROTON_MASS_U
 
-from quantms_io.core.feature import FeatureHandler
-from quantms_io.core.feature_in_memory import FeatureInMemory
-from quantms_io.core.mztab import fetch_modifications_from_mztab_line
-from quantms_io.core.project import create_uuid_filename
-from quantms_io.core.psm import PSMHandler
-from quantms_io.core.sdrf import SDRFHandler
-from quantms_io.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
+from core.feature import FeatureHandler
+from core.feature_in_memory import FeatureInMemory
+from core.mztab import fetch_modifications_from_mztab_line
+from core.project import create_uuid_filename
+from core.psm import PSMHandler
+from core.sdrf import SDRFHandler
+from utils.pride_utils import get_peptidoform_proforma_version_in_mztab
 
 MODIFICATION_PATTERN = re.compile(r"\((.*?)\)")
 

@@ -2,18 +2,18 @@ import logging
 
 import numpy as np
 
-from quantms_io.core.core import DiskCache
-from quantms_io.utils.constants import PROTEIN_DETAILS
-from quantms_io.utils.file_utils import calculate_buffer_size
-from quantms_io.utils.pride_utils import fetch_modifications_from_mztab_line
-from quantms_io.utils.pride_utils import fetch_ms_runs_from_mztab_line
-from quantms_io.utils.pride_utils import fetch_peptide_from_mztab_line
-from quantms_io.utils.pride_utils import fetch_protein_from_mztab_line
-from quantms_io.utils.pride_utils import fetch_psm_from_mztab_line
-from quantms_io.utils.pride_utils import get_key_peptide_combination
-from quantms_io.utils.pride_utils import get_permutations_of_original_list
-from quantms_io.utils.pride_utils import parse_score_name_in_mztab
-from quantms_io.utils.pride_utils import standardize_protein_string_accession
+from core.core import DiskCache
+from utils.constants import PROTEIN_DETAILS
+from utils.file_utils import calculate_buffer_size
+from utils.pride_utils import fetch_modifications_from_mztab_line
+from utils.pride_utils import fetch_ms_runs_from_mztab_line
+from utils.pride_utils import fetch_peptide_from_mztab_line
+from utils.pride_utils import fetch_protein_from_mztab_line
+from utils.pride_utils import fetch_psm_from_mztab_line
+from utils.pride_utils import get_key_peptide_combination
+from utils.pride_utils import get_permutations_of_original_list
+from utils.pride_utils import parse_score_name_in_mztab
+from utils.pride_utils import standardize_protein_string_accession
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
