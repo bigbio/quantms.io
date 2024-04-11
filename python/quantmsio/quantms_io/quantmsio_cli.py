@@ -29,7 +29,6 @@ from quantms_io.commands.get_unanimous_command import get_unanimous_for_tsv
 from quantms_io.commands.load_best_scan_number_command import (
     inject_bset_psm_scan_number,
 )
-from quantms_io.commands.parquet_command import compare_two_parquet
 from quantms_io.commands.parquet_to_json import convert_parquet_to_json
 from quantms_io.commands.plot import plot
 from quantms_io.commands.project_command import generate_pride_project_json
@@ -55,7 +54,6 @@ cli.add_command(convert_feature_file)
 cli.add_command(convert_psm_file)
 cli.add_command(compare_set_of_psms)
 cli.add_command(diann_convert_to_parquet)
-cli.add_command(compare_two_parquet)
 cli.add_command(attach_file_to_json)
 cli.add_command(get_unanimous_for_parquet)
 cli.add_command(get_unanimous_for_tsv)
