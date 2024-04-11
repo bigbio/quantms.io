@@ -44,13 +44,13 @@ def generate_gene_name_map(fasta, map_parameter):
     if map_parameter == "map_protein_name":
         for seq_record in SeqIO.parse(fasta, "fasta"):
             name = seq_record.id.split("|")[-1]
-            gene_list = re.findall("GN=(\\S+)", seq_record.description)
+            gene_list = re.findall("GN=(\S+)", seq_record.description)
             gene_name = gene_list[0] if len(gene_list) > 0 else None
             map_gene_names[name].add(gene_name)
     else:
         for seq_record in SeqIO.parse(fasta, "fasta"):
             accession = seq_record.id.split("|")[-2]
-            gene_list = re.findall("GN=(\\S+)", seq_record.description)
+            gene_list = re.findall("GN=(\S+)", seq_record.description)
             gene_name = gene_list[0] if len(gene_list) > 0 else None
             map_gene_names[accession].add(gene_name)
     return map_gene_names
@@ -150,7 +150,7 @@ def clean_peptidoform_sequence(sequence: str) -> str:
         return sequence
 
     # remove any modification if a proforma sequence is provided
-    sequence = re.sub("[\\(\\[].*?[\\)\\]]", "", sequence)
+    sequence = re.sub("[\(\[].*?[\)\]]", "", sequence)
     sequence = sequence.replace(".", "").replace(" ", "").replace("-", "")
     return sequence
 
