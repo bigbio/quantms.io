@@ -62,9 +62,9 @@ def generate_features_of_spectrum(
     """
     pqwriters = {}
     pqwriter_no_part = None
-    P = Parquet(parquet_path)
-    for table in P.iter_file(file_num=file_num):
-        table = P.inject_spectrum_msg(table, mzml_directory)
+    p = Parquet(parquet_path)
+    for table in p.iter_file(file_num=file_num):
+        table = p.inject_spectrum_msg(table, mzml_directory)
         if label == "feature":
             hander = FeatureHandler()
         else:
@@ -105,9 +105,7 @@ def generate_features_of_spectrum(
 
 def generate_gene_acession_map(gene_names, species="human"):
     mg = mygene.MyGeneInfo()
-    gene_accessions = mg.querymany(
-        gene_names, scopes="symbol", species=species, fields="accession"
-    )
+    gene_accessions = mg.querymany(gene_names, scopes="symbol", species=species, fields="accession")
     gene_accessions_maps = defaultdict(list)
     for obj in gene_accessions:
         if "accession" in obj:
@@ -126,16 +124,10 @@ def map_gene_msgs_to_parquet(
     map_gene_names = generate_gene_name_map(fasta_path, map_parameter)
     pqwriter = None
     for df in read_large_parquet(parquet_path):
-        df["gene_names"] = df["protein_accessions"].swifter.apply(
-            lambda x: get_unanimous_name(x, map_gene_names)
-        )
-        gene_names = list(
-            set([item for sublist in df["gene_names"] for item in sublist])
-        )
+        df["gene_names"] = df["protein_accessions"].swifter.apply(lambda x: get_unanimous_name(x, map_gene_names))
+        gene_names = list(set([item for sublist in df["gene_names"] for item in sublist]))
         gene_accessions_maps = generate_gene_acession_map(gene_names, species)
-        df["gene_accessions"] = df["gene_names"].swifter.apply(
-            lambda x: get_gene_accessions(x, gene_accessions_maps)
-        )
+        df["gene_accessions"] = df["gene_names"].swifter.apply(lambda x: get_gene_accessions(x, gene_accessions_maps))
         if label == "feature":
             hander = FeatureHandler()
         elif label == "psm":
@@ -157,12 +149,7 @@ def plot_peptidoform_charge_venn(parquet_path_list, labels):
         psm_message = "Total number of PSM for " + label + ": " + str(len(df))
         print(psm_message)
         unique_pep_forms = set((df["peptidoform"] + df["charge"].astype(str)).to_list())
-        pep_form_message = (
-            "Total number of Peptidoform for "
-            + label
-            + ": "
-            + str(len(unique_pep_forms))
-        )
+        pep_form_message = "Total number of Peptidoform for " + label + ": " + str(len(unique_pep_forms))
         print(pep_form_message)
         data_map[label] = unique_pep_forms
     plt.figure(figsize=(16, 12), dpi=500)
@@ -180,9 +167,7 @@ def plot_sequence_venn(parquet_path_list, labels):
     for parquet_path, label in zip(parquet_path_list, labels):
         sequence = pd.read_parquet(parquet_path, columns=["sequence"])
         unique_seqs = set(sequence["sequence"].to_list())
-        pep_message = (
-            "Total number of peptide for " + label + ": " + str(len(unique_seqs))
-        )
+        pep_message = "Total number of peptide for " + label + ": " + str(len(unique_seqs))
         print(pep_message)
         data_map[label] = unique_seqs
     plt.figure(figsize=(16, 12), dpi=500)
@@ -247,9 +232,7 @@ def map_protein_for_tsv(path: str, fasta: str, output_path: str, map_parameter: 
             map_protein_names[accession].add(accession)
             map_protein_names[name].add(accession)
     df, content = load_de_or_ae(path)
-    df["protein"] = df["protein"].apply(
-        lambda x: get_unanimous_name(x, map_protein_names)
-    )
+    df["protein"] = df["protein"].apply(lambda x: get_unanimous_name(x, map_protein_names))
     content += df.columns.str.cat(sep="\t") + "\n"
     for index, row in df.iterrows():
         content += "\t".join(map(str, row)).strip() + "\n"
@@ -273,9 +256,7 @@ def load_de_or_ae(path):
 def change_and_save_parquet(parquet_path, map_dict, output_path, label):
     pqwriter = None
     for df in read_large_parquet(parquet_path):
-        df["protein_accessions"] = df["protein_accessions"].apply(
-            lambda x: get_unanimous_name(x, map_dict)
-        )
+        df["protein_accessions"] = df["protein_accessions"].apply(lambda x: get_unanimous_name(x, map_dict))
         if label == "feature":
             hander = FeatureHandler()
         elif label == "psm":
@@ -309,9 +290,7 @@ def register_file_to_json(project_file, attach_file, category, replace_existing)
 
 
 # get best_scan_number
-def load_best_scan_number(
-    diann_psm_path: str, diann_feature_path: str, output_path: str
-):
+def load_best_scan_number(diann_psm_path: str, diann_feature_path: str, output_path: str):
     p = Parquet(diann_psm_path)
     psm_df = p.load_psm_scan()
     pqwriter = None
@@ -352,9 +331,7 @@ def generate_start_and_end_from_fasta(parquet_path, fasta_path, label, output_pa
         hander = PSMHandler()
     pqwriter = None
     for df in read_large_parquet(parquet_path):
-        df[["protein_start_positions", "protein_end_positions"]] = df[
-            ["sequence", "protein_accessions"]
-        ].swifter.apply(
+        df[["protein_start_positions", "protein_end_positions"]] = df[["sequence", "protein_accessions"]].swifter.apply(
             lambda row: fill_start_and_end(row, protein_dict),
             axis=1,
             result_type="expand",
@@ -430,15 +407,9 @@ def generate_project_report(project_folder):
         msgs["featureSamples"] = feature_statistics.get_number_of_samples()
         msgs["featurePeptidoforms"] = feature_statistics.get_number_of_peptidoforms()
         msgs["featureMsruns"] = feature_statistics.get_number_msruns()
-        msgs["featureImg1"] = convert_to_base64(
-            plot_intensity_distribution_of_samples(feature_paths[0])
-        )
-        msgs["featureImg2"] = convert_to_base64(
-            plot_peptide_distribution_of_protein(feature_paths[0])
-        )
-        msgs["featureImg3"] = convert_to_base64(
-            plot_intensity_box_of_samples(feature_paths[0])
-        )
+        msgs["featureImg1"] = convert_to_base64(plot_intensity_distribution_of_samples(feature_paths[0]))
+        msgs["featureImg2"] = convert_to_base64(plot_peptide_distribution_of_protein(feature_paths[0]))
+        msgs["featureImg3"] = convert_to_base64(plot_intensity_box_of_samples(feature_paths[0]))
     psm_paths = [f for f in file_list if f.endswith(".psm.parquet")]
     if len(psm_paths) > 0:
         psm_statistics = ParquetStatistics(psm_paths[0])
@@ -449,9 +420,7 @@ def generate_project_report(project_folder):
         msgs["psmMsruns"] = psm_statistics.get_number_msruns()
         sdrf_paths = [f for f in file_list if f.endswith(".sdrf.tsv")]
         if len(sdrf_paths) > 0:
-            msgs["psmImg1"] = convert_to_base64(
-                plot_peptides_of_lfq_condition(psm_paths[0], sdrf_paths[0])
-            )
+            msgs["psmImg1"] = convert_to_base64(plot_peptides_of_lfq_condition(psm_paths[0], sdrf_paths[0]))
     ae_paths = [f for f in file_list if f.endswith(".absolute.tsv")]
     if len(ae_paths) > 0:
         absolute_stats = IbaqStatistics(ibaq_path=ae_paths[0])

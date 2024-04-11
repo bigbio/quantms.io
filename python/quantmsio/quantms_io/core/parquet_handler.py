@@ -20,9 +20,7 @@ class ParquetHandler:
         """
         pass
 
-    def write_single_file_parquet(
-        self, table: pa.Table, parquet_output: str = None, write_metadata: bool = False
-    ):
+    def write_single_file_parquet(self, table: pa.Table, parquet_output: str = None, write_metadata: bool = False):
         """
         Write a single file parquet file. If parquet_output is not specified, the parquet_path will be used. Pyarrow
         is still not writing the metadata of each field in the schema (

@@ -57,13 +57,9 @@ class Parquet:
     def __init__(self, parquet_path: str):
         if os.path.exists(parquet_path):
             self._path = parquet_path
-            self.parquet_db = duckdb.connect(
-                config={"max_memory": "16GB", "worker_threads": 4}
-            )
+            self.parquet_db = duckdb.connect(config={"max_memory": "16GB", "worker_threads": 4})
             self.parquet_db = self.parquet_db.execute(
-                "CREATE VIEW parquet_db AS SELECT * FROM parquet_scan('{}')".format(
-                    parquet_path
-                )
+                "CREATE VIEW parquet_db AS SELECT * FROM parquet_scan('{}')".format(parquet_path)
             )
         else:
             raise FileNotFoundError(f"the file {parquet_path} does not exist.")
@@ -108,7 +104,7 @@ class Parquet:
         :yield: _description_
         """
         samples = self.get_unique_samples()
-        ref_list = [samples[i: i + file_num] for i in range(0, len(samples), file_num)]
+        ref_list = [samples[i : i + file_num] for i in range(0, len(samples), file_num)]
         for refs in ref_list:
             batch_df = self.get_report_from_database(refs)
             yield refs, batch_df
@@ -129,9 +125,7 @@ class Parquet:
         :yield: _description_
         """
         references = self.get_unique_references()
-        ref_list = [
-            references[i: i + file_num] for i in range(0, len(references), file_num)
-        ]
+        ref_list = [references[i : i + file_num] for i in range(0, len(references), file_num)]
         for refs in ref_list:
             batch_df = self.get_report_from_database(refs)
             yield batch_df
@@ -159,9 +153,7 @@ class Parquet:
             )
             return df
         elif "reference_file_name" in df.columns:
-            df[["mz_array", "intensity_array", "num_peaks"]] = df[
-                ["reference_file_name", "scan_number"]
-            ].apply(
+            df[["mz_array", "intensity_array", "num_peaks"]] = df[["reference_file_name", "scan_number"]].apply(
                 lambda x: map_spectrum_mz(
                     x["reference_file_name"],
                     x["scan_number"],
@@ -179,9 +171,7 @@ class Parquet:
         :params protein_dict: {protein_accession:seq}
         :retrun df
         """
-        df[["protein_start_positions", "protein_end_positions"]] = df[
-            ["sequence", "protein_accessions"]
-        ].apply(
+        df[["protein_start_positions", "protein_end_positions"]] = df[["sequence", "protein_accessions"]].apply(
             lambda row: fill_start_and_end(row, protein_dict),
             axis=1,
             result_type="expand",
@@ -189,11 +179,11 @@ class Parquet:
         return df
 
     def inject_gene_msg(
-            self,
-            df: pd.DataFrame,
-            fasta: str,
-            map_parameter: str = "map_protein_accession",
-            species: str = "human",
+        self,
+        df: pd.DataFrame,
+        fasta: str,
+        map_parameter: str = "map_protein_accession",
+        species: str = "human",
     ):
         """
         :params df: parquet file
@@ -203,14 +193,10 @@ class Parquet:
         :return df
         """
         map_gene_names = generate_gene_name_map(fasta, map_parameter)
-        df["gene_names"] = df["protein_accessions"].apply(
-            lambda x: get_unanimous_name(x, map_gene_names)
-        )
+        df["gene_names"] = df["protein_accessions"].apply(lambda x: get_unanimous_name(x, map_gene_names))
         gene_list = self.get_gene_list(map_gene_names)
         gene_accessions = self.get_gene_accessions(gene_list, species)
-        df["gene_accessions"] = df["gene_names"].apply(
-            lambda x: get_gene_accessions(x, gene_accessions)
-        )
+        df["gene_accessions"] = df["gene_names"].apply(lambda x: get_gene_accessions(x, gene_accessions))
 
         return df
 
@@ -218,9 +204,7 @@ class Parquet:
         """
         return: protein_map {protein_accession:seq}
         """
-        df = self.parquet_db.sql(
-            "SELECT DISTINCT protein_accessions FROM parquet_db"
-        ).df()
+        df = self.parquet_db.sql("SELECT DISTINCT protein_accessions FROM parquet_db").df()
         proteins = set()
         for protein_accessions in df["protein_accessions"].tolist():
             proteins.update(set(protein_accessions))
@@ -249,9 +233,7 @@ class Parquet:
         """
         return: A list of deduplicated reference
         """
-        unique_reference = self.parquet_db.sql(
-            "SELECT DISTINCT reference_file_name FROM parquet_db"
-        ).df()
+        unique_reference = self.parquet_db.sql("SELECT DISTINCT reference_file_name FROM parquet_db").df()
 
         return unique_reference["reference_file_name"].tolist()
 
@@ -259,9 +241,7 @@ class Parquet:
         """
         return: A list of deduplicated peptides.
         """
-        unique_peps = self.parquet_db.sql(
-            "SELECT DISTINCT sequence FROM parquet_db"
-        ).df()
+        unique_peps = self.parquet_db.sql("SELECT DISTINCT sequence FROM parquet_db").df()
 
         return unique_peps["sequence"].tolist()
 
@@ -270,9 +250,7 @@ class Parquet:
         return: A list of deduplicated proteins.
         """
 
-        unique_prts = self.parquet_db.sql(
-            "SELECT DISTINCT protein_accessions FROM parquet_db"
-        ).df()
+        unique_prts = self.parquet_db.sql("SELECT DISTINCT protein_accessions FROM parquet_db").df()
 
         return unique_prts["protein_accessions"].tolist()
 
@@ -281,9 +259,7 @@ class Parquet:
         return: A list of deduplicated genes.
         """
 
-        unique_prts = self.parquet_db.sql(
-            "SELECT DISTINCT gene_names FROM parquet_db"
-        ).df()
+        unique_prts = self.parquet_db.sql("SELECT DISTINCT gene_names FROM parquet_db").df()
 
         return unique_prts["gene_names"].tolist()
 
@@ -291,9 +267,7 @@ class Parquet:
         """
         return: A list of deduplicated sampless.
         """
-        unique_peps = self.parquet_db.sql(
-            "SELECT DISTINCT sample_accession FROM parquet_db"
-        ).df()
+        unique_peps = self.parquet_db.sql("SELECT DISTINCT sample_accession FROM parquet_db").df()
         return unique_peps["sample_accession"].tolist()
 
     def query_peptide(self, peptide: str):
@@ -303,9 +277,7 @@ class Parquet:
         """
 
         if check_string("^[A-Z]+$", peptide):
-            return self.parquet_db.sql(
-                f"SELECT * FROM parquet_db WHERE sequence ='{peptide}'"
-            ).df()
+            return self.parquet_db.sql(f"SELECT * FROM parquet_db WHERE sequence ='{peptide}'").df()
         else:
             return KeyError("Illegal peptide!")
 
@@ -315,9 +287,7 @@ class Parquet:
         return: A DataFrame of all information about query protein.
         """
         if check_string("^[A-Z]+", protein):
-            return self.parquet_db.sql(
-                f"SELECT * FROM parquet_db WHERE protein_accessions ='{protein}'"
-            ).df()
+            return self.parquet_db.sql(f"SELECT * FROM parquet_db WHERE protein_accessions ='{protein}'").df()
         else:
             return KeyError("Illegal protein!")
 
@@ -327,9 +297,7 @@ class Parquet:
         return: unique gene list
         """
         unique_prts = self.get_unique_proteins()
-        gene_names = [
-            get_unanimous_name(proteins, map_gene_names) for proteins in unique_prts
-        ]
+        gene_names = [get_unanimous_name(proteins, map_gene_names) for proteins in unique_prts]
         gene_list = list(set([item for sublist in gene_names for item in sublist]))
 
         return gene_list
@@ -339,9 +307,7 @@ class Parquet:
         :params gene_list
         """
         mg = mygene.MyGeneInfo()
-        gene_accessions = mg.querymany(
-            gene_list, scopes="symbol", species=species, fields="accession"
-        )
+        gene_accessions = mg.querymany(gene_list, scopes="symbol", species=species, fields="accession")
         gene_accessions_maps = defaultdict(list)
         for obj in gene_accessions:
             if "accession" in obj:

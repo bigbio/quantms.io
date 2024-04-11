@@ -14,9 +14,7 @@ from quantms_io.core.tools import map_gene_msgs_to_parquet
 )
 @click.option(
     "--map_parameter",
-    type=click.Choice(
-        ["map_protein_name", "map_protein_accession"], case_sensitive=False
-    ),
+    type=click.Choice(["map_protein_name", "map_protein_accession"], case_sensitive=False),
     help="map type",
 )
 @click.option("--species", help="species", default="human")
@@ -40,6 +38,4 @@ def map_gene_msg_to_parquet(
     if not output_path.endswith("parquet"):
         raise click.UsageError("Please provide file extension(.parquet)")
 
-    map_gene_msgs_to_parquet(
-        parquet_path, fasta_path, map_parameter, output_path, label, species
-    )
+    map_gene_msgs_to_parquet(parquet_path, fasta_path, map_parameter, output_path, label, species)

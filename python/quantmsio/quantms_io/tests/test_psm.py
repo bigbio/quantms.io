@@ -10,6 +10,6 @@ class TestPSMHandler(TestCase):
         mztab_path = __package__ + "/examples/DDA-plex/MSV000079033.mzTab"
 
         p = PSMHandler()
-        Psm = PsmInMemory(p.schema)
-        for _ in Psm.generate_psm_parquet(mztab_path):
+        psm = PsmInMemory(p.schema)
+        for _ in psm.generate_psm_parquet(mztab_path):
             print("ok")
