@@ -19,18 +19,18 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from core.feature_in_memory import FeatureInMemory
-from core.mztab import MztabHandler
-from core.openms import OpenMSHandler
-from core.parquet_handler import ParquetHandler
-from core.sdrf import SDRFHandler
-from utils.constants import ITRAQ_CHANNEL
-from utils.constants import TMT_CHANNELS
-from utils.pride_utils import clean_peptidoform_sequence
-from utils.pride_utils import compare_protein_lists
-from utils.pride_utils import get_quantmsio_modifications
-from utils.pride_utils import standardize_protein_list_accession
-from utils.pride_utils import standardize_protein_string_accession
+from quantms_io.core.feature_in_memory import FeatureInMemory
+from quantms_io.core.mztab import MztabHandler
+from quantms_io.core.openms import OpenMSHandler
+from quantms_io.core.parquet_handler import ParquetHandler
+from quantms_io.core.sdrf import SDRFHandler
+from quantms_io.utils.constants import ITRAQ_CHANNEL
+from quantms_io.utils.constants import TMT_CHANNELS
+from quantms_io.utils.pride_utils import clean_peptidoform_sequence
+from quantms_io.utils.pride_utils import compare_protein_lists
+from quantms_io.utils.pride_utils import get_quantmsio_modifications
+from quantms_io.utils.pride_utils import standardize_protein_list_accession
+from quantms_io.utils.pride_utils import standardize_protein_string_accession
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

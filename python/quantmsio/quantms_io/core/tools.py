@@ -15,22 +15,22 @@ import swifter
 from Bio import SeqIO
 from venn import venn
 
-from core.feature import FeatureHandler
-from core.openms import OpenMSHandler
-from core.plots import plot_distribution_of_ibaq
-from core.plots import plot_intensity_box_of_samples
-from core.plots import plot_intensity_distribution_of_samples
-from core.plots import plot_peptide_distribution_of_protein
-from core.plots import plot_peptides_of_lfq_condition
-from core.project import ProjectHandler
-from core.psm import PSMHandler
-from core.query import Parquet
-from core.statistics import IbaqStatistics
-from core.statistics import ParquetStatistics
-from utils.pride_utils import generate_gene_name_map
-from utils.pride_utils import get_gene_accessions
-from utils.pride_utils import get_unanimous_name
-from utils.report import report
+from quantms_io.core.feature import FeatureHandler
+from quantms_io.core.openms import OpenMSHandler
+from quantms_io.core.plots import plot_distribution_of_ibaq
+from quantms_io.core.plots import plot_intensity_box_of_samples
+from quantms_io.core.plots import plot_intensity_distribution_of_samples
+from quantms_io.core.plots import plot_peptide_distribution_of_protein
+from quantms_io.core.plots import plot_peptides_of_lfq_condition
+from quantms_io.core.project import ProjectHandler
+from quantms_io.core.psm import PSMHandler
+from quantms_io.core.query import Parquet
+from quantms_io.core.statistics import IbaqStatistics
+from quantms_io.core.statistics import ParquetStatistics
+from quantms_io.utils.pride_utils import generate_gene_name_map
+from quantms_io.utils.pride_utils import get_gene_accessions
+from quantms_io.utils.pride_utils import get_unanimous_name
+from quantms_io.utils.report import report
 
 
 # optional about spectrum

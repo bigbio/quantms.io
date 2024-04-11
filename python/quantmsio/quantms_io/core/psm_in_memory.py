@@ -3,11 +3,11 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from core.feature_in_memory import FeatureInMemory
-from core.feature_in_memory import get_modifications
-from utils.pride_utils import generate_scan_number
-from utils.pride_utils import get_peptidoform_proforma_version_in_mztab
-from utils.pride_utils import get_petidoform_msstats_notation
+from quantms_io.core.feature_in_memory import FeatureInMemory
+from quantms_io.core.feature_in_memory import get_modifications
+from quantms_io.utils.pride_utils import generate_scan_number
+from quantms_io.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
+from quantms_io.utils.pride_utils import get_petidoform_msstats_notation
 
 
 class PsmInMemory:

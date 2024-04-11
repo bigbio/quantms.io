@@ -47,5 +47,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=30 --max-line-length=130 --statistics --ignore F401,W503,W504
     - name: Test with pytest
       run: |
-        cd python/quantmsio/quantms_io
+        cd python/quantmsio
+        python setup.py install
+        cd quantms_io
         python -m unittest

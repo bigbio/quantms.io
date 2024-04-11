@@ -7,10 +7,10 @@ import mygene
 import pandas as pd
 import pyarrow.parquet as pq
 from Bio import SeqIO
-from core.openms import OpenMSHandler
-from utils.pride_utils import generate_gene_name_map
-from utils.pride_utils import get_gene_accessions
-from utils.pride_utils import get_unanimous_name
+from quantms_io.core.openms import OpenMSHandler
+from quantms_io.utils.pride_utils import generate_gene_name_map
+from quantms_io.utils.pride_utils import get_gene_accessions
+from quantms_io.utils.pride_utils import get_unanimous_name
 
 
 def check_string(re_exp, strings):

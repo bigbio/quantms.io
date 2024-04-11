@@ -7,14 +7,14 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import swifter
 
-from core.mztab import fetch_modifications_from_mztab_line
-from utils.constants import ITRAQ_CHANNEL
-from utils.constants import TMT_CHANNELS
-from utils.pride_utils import clean_peptidoform_sequence
-from utils.pride_utils import generate_scan_number
-from utils.pride_utils import get_peptidoform_proforma_version_in_mztab
-from utils.pride_utils import get_petidoform_msstats_notation
-from utils.pride_utils import get_quantmsio_modifications
+from quantms_io.core.mztab import fetch_modifications_from_mztab_line
+from quantms_io.utils.constants import ITRAQ_CHANNEL
+from quantms_io.utils.constants import TMT_CHANNELS
+from quantms_io.utils.pride_utils import clean_peptidoform_sequence
+from quantms_io.utils.pride_utils import generate_scan_number
+from quantms_io.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
+from quantms_io.utils.pride_utils import get_petidoform_msstats_notation
+from quantms_io.utils.pride_utils import get_quantmsio_modifications
 
 
 def get_modifications(mztab_path):

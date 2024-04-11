@@ -5,12 +5,12 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from core.mztab import MztabHandler
-from core.parquet_handler import ParquetHandler
-from core.psm_in_memory import PsmInMemory
-from utils.file_utils import extract_len
-from utils.pride_utils import get_quantmsio_modifications
-from utils.pride_utils import standardize_protein_list_accession
+from quantms_io.core.mztab import MztabHandler
+from quantms_io.core.parquet_handler import ParquetHandler
+from quantms_io.core.psm_in_memory import PsmInMemory
+from quantms_io.utils.file_utils import extract_len
+from quantms_io.utils.pride_utils import get_quantmsio_modifications
+from quantms_io.utils.pride_utils import standardize_protein_list_accession
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

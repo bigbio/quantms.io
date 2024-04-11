@@ -12,7 +12,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from core.parquet_handler import ParquetHandler
+from quantms_io.core.parquet_handler import ParquetHandler
 
 
 class ProteinHandler(ParquetHandler):

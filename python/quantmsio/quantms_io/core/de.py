@@ -20,9 +20,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from core.project import ProjectHandler
-from core.sdrf import SDRFHandler
-from utils.file_utils import delete_files_extension
+from quantms_io.core.project import ProjectHandler
+from quantms_io.core.sdrf import SDRFHandler
+from quantms_io.utils.file_utils import delete_files_extension
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
