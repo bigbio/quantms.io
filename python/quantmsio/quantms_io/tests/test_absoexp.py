@@ -15,7 +15,6 @@ class TestAEHandler(TestCase):
         project_path = __package__ + test_data[0]
         ibaq_path = __package__ + test_data[1]
         sdrf_path = __package__ + test_data[2]
-
         ae_handler = AbsoluteExpressionHander()
         ae_handler.load_project_file(project_path)
         ae_handler.load_ibaq_file(ibaq_path)

@@ -45,13 +45,15 @@ class DifferentialExpressionHandler:
     ISSUE_COLUMN = {"msstats_column": "issue", "quantms_column": "issue"}
 
     DE_HEADER = """#INFO=<ID=protein, Number=inf, Type=String, Description="Protein Accession">
-#INFO=<ID=label,Number=1, Type=String, Description="Label for the Conditions combination">
-#INFO=<ID=log2fc, Number=1, Type=Double, Description="Log2 Fold Change">
-#INFO=<ID=se, Number=1, Type=Double, Description="Standard error of the log2 fold change">
-#INFO=<ID=df, Number=1, Type=Integer, Description="Degree of freedom of the Student test"> 
-#INFO=<ID=pvalue, Number=1, Type=Double, Description="Raw p-values">
-#INFO=<ID=adj.pvalue, Number=1, Type=Double, Description="P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg">
-#INFO=<ID=issue, Number=1, Type=String, Description="Issue column shows if there is any issue for inference in corresponding protein and comparison">\n"""
+                #INFO=<ID=label,Number=1, Type=String, Description="Label for the Conditions combination">
+                #INFO=<ID=log2fc, Number=1, Type=Double, Description="Log2 Fold Change">
+                #INFO=<ID=se, Number=1, Type=Double, Description="Standard error of the log2 fold change">
+                #INFO=<ID=df, Number=1, Type=Integer, Description="Degree of freedom of the Student test">
+                #INFO=<ID=pvalue, Number=1, Type=Double, Description="Raw p-values">
+                #INFO=<ID=adj.pvalue, Number=1, Type=Double, Description="P-values adjusted among
+                all the proteins in the specific comparison using the approach by Benjamini and Hochberg">
+                #INFO=<ID=issue, Number=1, Type=String, Description="Issue column shows if there
+                is any issue for inference in corresponding protein and comparison">\n"""
 
     DIFFERENTIAL_EXPRESSION_EXTENSION = ".differential.tsv"
 

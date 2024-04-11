@@ -151,15 +151,11 @@ class SDRFHandler:
         ]
         [
             acquisition_values.append({"precursor mass tolerance": precursor_mass_tolerance_value})
-            for precursor_mass_tolerance_value in get_complex_value_sdrf_column(
-                self.sdrf_table, self.PRECURSOR_MASS_TOLERANCE
-            )
+            for precursor_mass_tolerance_value in get_complex_value_sdrf_column(self.sdrf_table, self.PRECURSOR_MASS_TOLERANCE)
         ]
         [
             acquisition_values.append({"fragment mass tolerance": fragment_mass_tolerance_value})
-            for fragment_mass_tolerance_value in get_complex_value_sdrf_column(
-                self.sdrf_table, self.FRAGMENT_MASS_TOLERANCE
-            )
+            for fragment_mass_tolerance_value in get_complex_value_sdrf_column(self.sdrf_table, self.FRAGMENT_MASS_TOLERANCE)
         ]
         return acquisition_values
 
@@ -201,13 +197,11 @@ class SDRFHandler:
                 "comment[label]": "channel",
             }
         )
-        experiment_type = re.sub("[\d]", "", experiment_type)
+        experiment_type = re.sub("[\\d]", "", experiment_type)
         # Add the channel column if it is not present
         if experiment_type.upper() not in ["TMT", "ITRAQ", "LFQ"]:
             raise ValueError(
-                "The experiment type provided is not supported: {}, available values [lfq,tmt,itraq]".format(
-                    experiment_type
-                )
+                "The experiment type provided is not supported: {}, available values [lfq,tmt,itraq]".format(experiment_type)
             )
 
         # extract

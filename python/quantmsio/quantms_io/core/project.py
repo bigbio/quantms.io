@@ -143,7 +143,7 @@ class ProjectHandler:
         quantms file naming convention in the docs folder of this repository
         (https://github.com/bigbio/quantms.io/blob/main/docs/PROJECT.md)
         :param file_name: quantms file name
-        :param file_category: quantms file category (e.g. "protein_file", "peptide_file", "psm_file", "differential_file", etc.)
+        :param file_category: quantms file category(e.g."protein_file","peptide_file","psm_file","differential_file",etc.)
         :param replace_existing: Replace existing file name.
         """
         if "quantms_files" not in self.project.project_info:
@@ -154,7 +154,7 @@ class ProjectHandler:
             for index, obj in enumerate(self.project.project_info["quantms_files"]):
                 if file_category in obj:
                     obj_index = index
-            if obj_index != None:
+            if obj_index is not None:
                 self.project.project_info["quantms_files"][obj_index][file_category] = file_name
             else:
                 self.project.project_info["quantms_files"].append({file_category: file_name})
@@ -163,7 +163,7 @@ class ProjectHandler:
             for index, obj in enumerate(self.project.project_info["quantms_files"]):
                 if file_category in obj:
                     obj_index = index
-            if obj_index != None:
+            if obj_index is not None:
                 if isinstance(self.project.project_info["quantms_files"][obj_index][file_category], list):
                     self.project.project_info["quantms_files"][obj_index][file_category].append(file_name)
                 else:
@@ -203,16 +203,14 @@ class ProjectHandler:
         if output_folder is not None and not os.path.exists(output_folder):
             Path(output_folder).mkdir(parents=True, exist_ok=True)
 
-        ## Delete existing SDRF file
+        # Delete existing SDRF file
         if delete_existing:
             delete_files_extension(output_folder, ProjectHandler.PROJECT_EXTENSION)
 
         if output_folder is None:
             output_filename = f"{output_prefix_file}-{str(uuid.uuid4())}{ProjectHandler.PROJECT_EXTENSION}"
         else:
-            output_filename = (
-                f"{output_folder}/{output_prefix_file}-{str(uuid.uuid4())}{ProjectHandler.PROJECT_EXTENSION}"
-            )
+            output_filename = f"{output_folder}/{output_prefix_file}-{str(uuid.uuid4())}{ProjectHandler.PROJECT_EXTENSION}"
 
         with open(output_filename, "w") as json_file:
             json.dump(self.project.project_info, json_file, indent=4)
@@ -250,7 +248,7 @@ class ProjectHandler:
         if output_folder is not None and not os.path.exists(output_folder):
             Path(output_folder).mkdir(parents=True, exist_ok=True)
 
-        ## Delete existing SDRF file
+        # Delete existing SDRF file
         if delete_existing:
             delete_files_extension(output_folder, extension)
 

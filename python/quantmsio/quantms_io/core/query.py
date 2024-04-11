@@ -1,18 +1,13 @@
 import os
 import re
 from collections import defaultdict
-
 import ahocorasick
 import duckdb
 import mygene
 import pandas as pd
-import pyarrow as pa
 import pyarrow.parquet as pq
 from Bio import SeqIO
-
-from core.feature import FeatureHandler
 from core.openms import OpenMSHandler
-from core.psm import PSMHandler
 from utils.pride_utils import generate_gene_name_map
 from utils.pride_utils import get_gene_accessions
 from utils.pride_utils import get_unanimous_name
@@ -62,7 +57,7 @@ class Parquet:
     def __init__(self, parquet_path: str):
         if os.path.exists(parquet_path):
             self._path = parquet_path
-            self.parquet_db = duckdb.connect()
+            self.parquet_db = duckdb.connect(config={"max_memory": "16GB", "worker_threads": 4})
             self.parquet_db = self.parquet_db.execute(
                 "CREATE VIEW parquet_db AS SELECT * FROM parquet_scan('{}')".format(parquet_path)
             )
@@ -109,7 +104,7 @@ class Parquet:
         :yield: _description_
         """
         samples = self.get_unique_samples()
-        ref_list = [samples[i : i + file_num] for i in range(0, len(samples), file_num)]
+        ref_list = [samples[i:i + file_num] for i in range(0, len(samples), file_num)]
         for refs in ref_list:
             batch_df = self.get_report_from_database(refs)
             yield refs, batch_df
@@ -130,7 +125,7 @@ class Parquet:
         :yield: _description_
         """
         references = self.get_unique_references()
-        ref_list = [references[i : i + file_num] for i in range(0, len(references), file_num)]
+        ref_list = [references[i:i + file_num] for i in range(0, len(references), file_num)]
         for refs in ref_list:
             batch_df = self.get_report_from_database(refs)
             yield batch_df
@@ -203,7 +198,7 @@ class Parquet:
         """
         return: protein_map {protein_accession:seq}
         """
-        df = self.parquet_db.sql(f"SELECT DISTINCT protein_accessions FROM parquet_db").df()
+        df = self.parquet_db.sql("SELECT DISTINCT protein_accessions FROM parquet_db").df()
         proteins = set()
         for protein_accessions in df["protein_accessions"].tolist():
             proteins.update(set(protein_accessions))
@@ -214,11 +209,25 @@ class Parquet:
                 protein_dict[p_name] = str(seq.seq)
         return protein_dict
 
+    def load_psm_scan(self):
+        psm_df = self.parquet_db.sql(
+            """
+            SELECT peptidoform,charge,scan_number
+            FROM (
+            SELECT peptidoform,charge,scan_number, ROW_NUMBER()
+            OVER (PARTITION BY peptidoform,charge ORDER BY global_qvalue ASC) AS row_num
+            FROM parquet_db
+            ) AS subquery
+            WHERE row_num = 1;
+            """
+        ).df()
+        return psm_df
+
     def get_unique_references(self):
         """
         return: A list of deduplicated reference
         """
-        unique_reference = self.parquet_db.sql(f"SELECT DISTINCT reference_file_name FROM parquet_db").df()
+        unique_reference = self.parquet_db.sql("SELECT DISTINCT reference_file_name FROM parquet_db").df()
 
         return unique_reference["reference_file_name"].tolist()
 
@@ -226,7 +235,7 @@ class Parquet:
         """
         return: A list of deduplicated peptides.
         """
-        unique_peps = self.parquet_db.sql(f"SELECT DISTINCT sequence FROM parquet_db").df()
+        unique_peps = self.parquet_db.sql("SELECT DISTINCT sequence FROM parquet_db").df()
 
         return unique_peps["sequence"].tolist()
 
@@ -235,7 +244,7 @@ class Parquet:
         return: A list of deduplicated proteins.
         """
 
-        unique_prts = self.parquet_db.sql(f"SELECT DISTINCT protein_accessions FROM parquet_db").df()
+        unique_prts = self.parquet_db.sql("SELECT DISTINCT protein_accessions FROM parquet_db").df()
 
         return unique_prts["protein_accessions"].tolist()
 
@@ -244,7 +253,7 @@ class Parquet:
         return: A list of deduplicated genes.
         """
 
-        unique_prts = self.parquet_db.sql(f"SELECT DISTINCT gene_names FROM parquet_db").df()
+        unique_prts = self.parquet_db.sql("SELECT DISTINCT gene_names FROM parquet_db").df()
 
         return unique_prts["gene_names"].tolist()
 
@@ -252,7 +261,7 @@ class Parquet:
         """
         return: A list of deduplicated sampless.
         """
-        unique_peps = self.parquet_db.sql(f"SELECT DISTINCT sample_accession FROM parquet_db").df()
+        unique_peps = self.parquet_db.sql("SELECT DISTINCT sample_accession FROM parquet_db").df()
         return unique_peps["sample_accession"].tolist()
 
     def query_peptide(self, peptide: str):

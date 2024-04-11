@@ -240,17 +240,11 @@ class PSMHandler(ParquetHandler):
         unique = 1 if len(protein_accessions) == 1 else 0
 
         protein_accession_nredundant = list(set(protein_accessions))
-        protein_qvalue = mztab_handler.get_protein_qvalue_from_index_list(
-            protein_accession_list=protein_accession_nredundant
-        )
-        protein_qvalue = (
-            None if (protein_qvalue is None or protein_qvalue[0] == "null") else np.float64(protein_qvalue[0])
-        )
+        protein_qvalue = mztab_handler.get_protein_qvalue_from_index_list(protein_accession_list=protein_accession_nredundant)
+        protein_qvalue = None if (protein_qvalue is None or protein_qvalue[0] == "null") else np.float64(protein_qvalue[0])
 
         retention_time = (
-            None
-            if ("retention_time" not in psm or psm["retention_time"] is None)
-            else np.float64(psm["retention_time"])
+            None if ("retention_time" not in psm or psm["retention_time"] is None) else np.float64(psm["retention_time"])
         )
         charge = int(psm["charge"])
         calc_mass_to_charge = (
@@ -272,8 +266,7 @@ class PSMHandler(ParquetHandler):
 
         modifications_string = (
             "-".join(
-                "|".join(map(str, value["position"])) + "-" + value["unimod_accession"]
-                for key, value in modifications.items()
+                "|".join(map(str, value["position"])) + "-" + value["unimod_accession"] for key, value in modifications.items()
             )
             if modifications
             else None

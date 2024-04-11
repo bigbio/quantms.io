@@ -40,8 +40,9 @@ def generate_pride_project_json(
     delete_existing: bool,
 ):
     """
-    Generate a json project file from the original PX accession and SDRF file. The Json file definition is available in the docs
-    folder of this repository https://github.com/bigbio/quantms.io/blob/main/docs/PROJECT.md. This command will generate
+    Generate a json project file from the original PX accession and SDRF file.
+    The Json file definition is available in the docs folder of
+    this repository https://github.com/bigbio/quantms.io/blob/main/docs/PROJECT.md. This command will generate
     the Json and attach to the project files the SDRF file provided as input.
 
     :param project_accession: Project accession to generate the json file

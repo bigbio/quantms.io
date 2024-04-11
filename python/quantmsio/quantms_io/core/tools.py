@@ -1,13 +1,11 @@
 import base64
 import json
 import os
-import re
 import string
 from collections import defaultdict
 from io import BytesIO
 
 import ahocorasick
-import duckdb
 import matplotlib.pyplot as plt
 import mygene
 import pandas as pd
@@ -273,18 +271,8 @@ def register_file_to_json(project_file, attach_file, category, replace_existing)
 
 # get best_scan_number
 def load_best_scan_number(diann_psm_path: str, diann_feature_path: str, output_path: str):
-    database = duckdb.connect(config={"max_memory": "16GB", "worker_threads": 4})
-    psm_table = database.read_parquet(diann_psm_path)
-    psm_df = database.execute(
-        """    
-        SELECT peptidoform,charge,scan_number
-        FROM (
-        SELECT peptidoform,charge,scan_number, ROW_NUMBER() OVER (PARTITION BY peptidoform,charge ORDER BY global_qvalue ASC) AS row_num
-        FROM psm_table
-        ) AS subquery
-        WHERE row_num = 1;
-        """
-    ).df()
+    p = Parquet(diann_psm_path)
+    psm_df = p.load_psm_scan()
     pqwriter = None
     hander = FeatureHandler()
     for df in read_large_parquet(diann_feature_path):
@@ -301,26 +289,6 @@ def load_best_scan_number(diann_psm_path: str, diann_feature_path: str, output_p
         pqwriter.close()
 
 
-# get start and end from fasta
-def get_protein_dict(parquet_path, fasta_path):
-
-    database = duckdb.connect(config={"max_memory": "16GB", "worker_threads": 4})
-    parquet_table = database.read_parquet(parquet_path)
-    df = database.execute(
-        """
-        select DISTINCT protein_accessions from parquet_table
-        """
-    ).df()
-    proteins = set()
-    df["protein_accessions"].apply(lambda x: proteins.update(set(x)))
-    protein_dict = {}
-    for seq in SeqIO.parse(fasta_path, "fasta"):
-        p_name = seq.id.split("|")[1]
-        if p_name in proteins and p_name not in protein_dict:
-            protein_dict[p_name] = str(seq.seq)
-    return protein_dict
-
-
 def fill_start_and_end(row, protein_dict):
     start = []
     end = []
@@ -335,7 +303,8 @@ def fill_start_and_end(row, protein_dict):
 
 
 def generate_start_and_end_from_fasta(parquet_path, fasta_path, label, output_path):
-    protein_dict = get_protein_dict(parquet_path, fasta_path)
+    p = Parquet(parquet_path)
+    protein_dict = p.get_protein_dict(fasta_path)
     if label == "feature":
         hander = FeatureHandler()
     elif label == "psm":

@@ -24,10 +24,10 @@ class OpenMSHandler:
             self._mzml_exp = oms.MSExperiment()
             oms.MzMLFile().load(mzml_path, self._mzml_exp)
             self._spec_lookup = SpectrumLookup()
-            self._spec_lookup.readSpectra(self._mzml_exp, "scan=(?<SCAN>\d+)")
+            self._spec_lookup.readSpectra(self._mzml_exp, "scan=(?<SCAN>\\d+)")
         try:
             index = self._spec_lookup.findByScanNumber(scan_number)
-        except:
+        except IndexError:
             message = "scan_number" + str(scan_number) + "not found in file: " + mzml_path
             warnings.warn(message, category=None, stacklevel=1, source=None)
             return [], []

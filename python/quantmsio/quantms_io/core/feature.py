@@ -166,7 +166,7 @@ def _fetch_msstats_feature(
     try:
         protein_qvalue_object = mztab_handler.get_protein_qvalue_from_index(protein_accession=protein_accessions_string)
         protein_qvalue = protein_qvalue_object[0]  # Protein q-value index 0
-    except:
+    except ValueError:
         logger.error("Error in line: {}".format(feature_dict))
         return None
 
@@ -190,9 +190,7 @@ def _fetch_msstats_feature(
         if "LABEL FREE" in feature_dict["Channel"]:
             key = peptidoform + ":_:" + str(charge) + ":_:" + feature_dict["Reference"]
         elif "TMT" in feature_dict["Channel"] or "ITRAQ" in feature_dict["Channel"]:
-            key = (
-                peptidoform + ":_:" + str(charge) + ":_:" + feature_dict["Reference"] + ":_:" + feature_dict["Channel"]
-            )
+            key = peptidoform + ":_:" + str(charge) + ":_:" + feature_dict["Reference"] + ":_:" + feature_dict["Channel"]
         if key is not None and key in intensity_map:
             consensus_intensity = intensity_map[key]["intensity"]
             if abs(consensus_intensity - np.float64(feature_dict["Intensity"])) < 0.1:
@@ -416,9 +414,7 @@ class FeatureHandler(ParquetHandler):
         )
 
     def read_feature_table(self) -> pa.Table:
-        table = pq.ParquetDataset(
-            self.parquet_path, use_legacy_dataset=False, schema=self.schema
-        ).read()  # type: pa.Table
+        table = pq.ParquetDataset(self.parquet_path, use_legacy_dataset=False, schema=self.schema).read()  # type: pa.Table
         return table
 
     def create_feature_table(self, feature_list: list) -> pa.Table:

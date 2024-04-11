@@ -1,10 +1,7 @@
 import json
 import logging
 import re
-
 import numpy as np
-import pyarrow.parquet as pq
-
 from core.sdrf import SDRFHandler
 from core.tools import load_de_or_ae
 from core.tools import read_large_parquet
@@ -57,15 +54,11 @@ def feature_json(feature_row) -> dict:
     )
     feature_dic["modifications"] = (
         list(feature_dic["modifications"])
-        if "modifications" in feature_dic
-        and feature_dic["modifications"] is not None
-        and feature_dic["modifications"].any()
+        if "modifications" in feature_dic and feature_dic["modifications"] is not None and feature_dic["modifications"].any()
         else []
     )
     feature_dic["gene_names"] = (
-        list(feature_dic["gene_names"])
-        if feature_dic["gene_names"] is not None and feature_dic["gene_names"].any()
-        else []
+        list(feature_dic["gene_names"]) if feature_dic["gene_names"] is not None and feature_dic["gene_names"].any() else []
     )
     feature_dic["gene_accessions"] = (
         list(feature_dic["gene_accessions"])

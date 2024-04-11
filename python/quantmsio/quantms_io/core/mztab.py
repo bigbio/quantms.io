@@ -212,9 +212,7 @@ class MztabHandler:
                     psm["psm_protein_end"] = protein_end
                     psm["protein_accession"] = protein_accession
 
-                spectral_count = psm[
-                    "spectral_count"
-                ]  # dictionary with the spectral count reference file: spectral count
+                spectral_count = psm["spectral_count"]  # dictionary with the spectral count reference file: spectral count
                 if spectral_count is None:
                     spectral_count = {}
                 if reference_file not in spectral_count:
@@ -263,9 +261,7 @@ class MztabHandler:
                     psm["psm_protein_start"] = protein_start
                     psm["psm_protein_end"] = protein_end
 
-                spectral_count = psm[
-                    "spectral_count"
-                ]  # dictionary with the spectral count reference file: spectral count
+                spectral_count = psm["spectral_count"]  # dictionary with the spectral count reference file: spectral count
                 if spectral_count is None:
                     spectral_count = {}
                 if reference_file not in spectral_count:
@@ -449,9 +445,7 @@ class MztabHandler:
         #     return None
 
         protein_accession_string = ";".join(protein_accession_list)
-        protein_accession_string = standardize_protein_string_accession(
-            protein_string=protein_accession_string, sorted=True
-        )
+        protein_accession_string = standardize_protein_string_accession(protein_string=protein_accession_string, sorted=True)
         if protein_accession_string in self._protein_details:
             return self._protein_details[protein_accession_string]
 

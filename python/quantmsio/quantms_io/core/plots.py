@@ -64,9 +64,7 @@ def plot_peptides_of_lfq_condition(psm_parquet_path: str, sdrf_path: str, save_p
     if len(f_count) < 20:
         i = math.ceil(len(f_count) / 5)
         plt.figure(dpi=500, igsize=(6 * i, 4 * i))
-        img = sns.barplot(
-            y=f_count.values, x=f_count.index, hue=f_count.index.astype(str), palette="bone_r", legend=True
-        )
+        img = sns.barplot(y=f_count.values, x=f_count.index, hue=f_count.index.astype(str), palette="bone_r", legend=True)
         img.set(xlabel=None)
         for tick in img.get_xticklabels():
             tick.set_rotation(30)

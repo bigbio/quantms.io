@@ -111,9 +111,7 @@ class ProteinHandler(ParquetHandler):
         )
 
     def read_protein_dataset(self) -> pa.Table:
-        table = pq.ParquetDataset(
-            self.parquet_path, use_legacy_dataset=False, schema=self.schema
-        ).read()  # type: pa.Table
+        table = pq.ParquetDataset(self.parquet_path, use_legacy_dataset=False, schema=self.schema).read()  # type: pa.Table
         return table
 
     def create_proteins_table(self, protein_list: list):

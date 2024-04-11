@@ -36,8 +36,7 @@ def get_exp_design_dfs(exp_design_file):
         f_table = pd.DataFrame(f_table, columns=f_header)
         f_table.loc[:, "run"] = f_table.apply(lambda x: _true_stem(x["Spectra_Filepath"]), axis=1)
         f_table.rename(columns={"Fraction_Group": "ms_run", "run": "Run"}, inplace=True)
-
-        s_table = [i.replace("\n", "").split("\t") for i in data[empty_row + 1 :]][1:]
+        s_table = [i.replace("\n", "").split("\t") for i in data[empty_row + 1:]][1:]
         s_header = data[empty_row + 1].replace("\n", "").split("\t")
         s_DataFrame = pd.DataFrame(s_table, columns=s_header)
 
@@ -244,10 +243,11 @@ class DiaNNConvert:
     def get_peptide_map_from_database(self):
         s = time.time()
         database = self._duckdb.query(
-            """    
+            """
             SELECT "Precursor.Id","Q.Value","Run"
             FROM (
-            SELECT "Precursor.Id", "Q.Value","Run", ROW_NUMBER() OVER (PARTITION BY "Precursor.Id" ORDER BY "Q.Value" ASC) AS row_num
+            SELECT "Precursor.Id", "Q.Value","Run", ROW_NUMBER()
+            OVER (PARTITION BY "Precursor.Id" ORDER BY "Q.Value" ASC) AS row_num
             FROM diann_report
             ) AS subquery
             WHERE row_num = 1;
@@ -270,7 +270,7 @@ class DiaNNConvert:
         s = time.time()
         database = self._duckdb.query(
             """
-            select "File.Name", "Run", "Protein.Ids", "RT.Start", "Precursor.Id", "Q.Value", "Global.Q.Value", "PEP", 
+            select "File.Name", "Run", "Protein.Ids", "RT.Start", "Precursor.Id", "Q.Value", "Global.Q.Value", "PEP",
                    "Global.PG.Q.Value", "Modified.Sequence", "Stripped.Sequence", "Precursor.Charge", "Precursor.Quantity"
                     from diann_report
             where Run IN {}
@@ -314,9 +314,7 @@ class DiaNNConvert:
 
         return fix_s, variable_s
 
-    def main_report_df(
-        self, report_path: str, qvalue_threshold: float, mzml_info_folder: str, file_num: int
-    ) -> pd.DataFrame:
+    def main_report_df(self, report_path: str, qvalue_threshold: float, mzml_info_folder: str, file_num: int) -> pd.DataFrame:
         def intergrate_msg(n):
             nonlocal report
             nonlocal mzml_info_folder
@@ -343,11 +341,9 @@ class DiaNNConvert:
         masses_map, modifications_map = self.get_masses_and_modifications_map()
 
         info_list = [
-            mzml.replace("_mzml_info.tsv", "")
-            for mzml in os.listdir(mzml_info_folder)
-            if mzml.endswith("_mzml_info.tsv")
+            mzml.replace("_mzml_info.tsv", "") for mzml in os.listdir(mzml_info_folder) if mzml.endswith("_mzml_info.tsv")
         ]
-        info_list = [info_list[i : i + file_num] for i in range(0, len(info_list), file_num)]
+        info_list = [info_list[i:i + file_num] for i in range(0, len(info_list), file_num)]
         for refs in info_list:
             report = self.get_report_from_database(refs)
 
@@ -360,14 +356,12 @@ class DiaNNConvert:
             report = pd.DataFrame(report, columns=usecols)
 
             # spectral count
-            report["spectral_count"] = report.groupby(["Modified.Sequence", "Precursor.Charge", "Run"]).transform(
-                "size"
-            )
+            report["spectral_count"] = report.groupby(["Modified.Sequence", "Precursor.Charge", "Run"]).transform("size")
             # cal value and mod
             mass_vector = report["Modified.Sequence"].map(masses_map)
-            report["Calculate.Precursor.Mz"] = (
-                mass_vector + (PROTON_MASS_U * report["Precursor.Charge"].values)
-            ) / report["Precursor.Charge"].values
+            report["Calculate.Precursor.Mz"] = (mass_vector + (PROTON_MASS_U * report["Precursor.Charge"].values)) / report[
+                "Precursor.Charge"
+            ].values
             report["modifications"] = report["Modified.Sequence"].swifter.apply(lambda x: find_modification(x))
             report["Modified.Sequence"] = report["Modified.Sequence"].map(modifications_map)
             # pep
@@ -430,14 +424,13 @@ class DiaNNConvert:
         report.loc[:, null_col] = None
 
         report["peptidoform"] = report[["sequence", "modifications"]].swifter.apply(
-            lambda row: get_peptidoform_proforma_version_in_mztab(
-                row["sequence"], row["modifications"], self._modifications
-            ),
+            lambda row: get_peptidoform_proforma_version_in_mztab(row["sequence"], row["modifications"], self._modifications),
             axis=1,
         )
 
         report["id_scores"] = report[["Q.Value", "posterior_error_probability", "global_qvalue"]].swifter.apply(
-            lambda x: f"q-value: {x['Q.Value']},global q-value: {x['global_qvalue']},posterior error probability: {x['posterior_error_probability']}",
+            lambda x: f'''q-value: {x['Q.Value']},global q-value: {x['global_qvalue']},
+            posterior error probability:{x['posterior_error_probability']}''',
             axis=1,
         )
 
@@ -483,7 +476,7 @@ class DiaNNConvert:
             },
             inplace=True,
         )
-        peptide_score_name = self._score_names["peptide_score"]
+        # peptide_score_name = self._score_names["peptide_score"]
         report.loc[:, "sample_accession"] = report["reference_file_name"].map(sdrf_map)
         schema = FeatureHandler()
         feature = FeatureInMemory("LFQ", schema.schema)
@@ -524,9 +517,7 @@ class DiaNNConvert:
         feature._score_names = self._score_names
         res["sequence"] = res["sequence"].astype(str)
         res["protein_accessions"] = res["protein_accessions"].str.split(";")
-        res["protein_start_positions"] = (
-            res["protein_start_positions"].swifter.apply(self.__split_start_or_end).to_list()
-        )
+        res["protein_start_positions"] = res["protein_start_positions"].swifter.apply(self.__split_start_or_end).to_list()
         res["protein_end_positions"] = res["protein_end_positions"].swifter.apply(self.__split_start_or_end).to_list()
         res["protein_global_qvalue"] = res["protein_global_qvalue"].astype(float)
         res["unique"] = res["unique"].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype("Int32")

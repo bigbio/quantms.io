@@ -1,17 +1,11 @@
 from unittest import TestCase
 
-from ddt import data
-from ddt import ddt
-
-from core.project import create_uuid_filename
 from core.psm import PSMHandler
 from core.psm_in_memory import PsmInMemory
 
-#@ddt
+
 class TestPSMHandler(TestCase):
-    #global test_data
-    
-    #@data(*test_data)
+
     def test_convert_mztab_to_feature(self):
         mztab_path = __package__ + "/examples/DDA-plex/MSV000079033.mzTab"
 

@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import pandas as pd
 import pyarrow as pa
@@ -62,9 +60,7 @@ class PsmInMemory:
         for psm in psms:
             if "opt_global_cv_MS:1000889_peptidoform_sequence" not in psm.columns:
                 psm.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = psm[["modifications", "sequence"]].apply(
-                    lambda row: get_petidoform_msstats_notation(
-                        row["sequence"], row["modifications"], self._modifications
-                    ),
+                    lambda row: get_petidoform_msstats_notation(row["sequence"], row["modifications"], self._modifications),
                     axis=1,
                 )
             if "opt_global_cv_MS:1002217_decoy_peptide" not in psm.columns:
@@ -107,11 +103,11 @@ class PsmInMemory:
             )
             parquet_table = self.convert_to_parquet(psm)
             yield parquet_table
-    
+
     def write_feature_to_file(self, mztab_path, output_path, chunksize=1000000):
-        '''
+        """
         write parquet to file
-        '''
+        """
         pqwriter = None
         for feature in self.generate_psm_parquet(mztab_path, chunksize=chunksize):
             if not pqwriter:

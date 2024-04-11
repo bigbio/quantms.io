@@ -15,11 +15,8 @@ class TestDEHandler(TestCase):
         project_path = __package__ + test_data[0]
         de_path = __package__ + test_data[1]
         sdrf_path = __package__ + test_data[2]
-
-
         de_handler = DifferentialExpressionHandler()
         de_handler.load_project_file(project_path)
         de_handler.load_msstats_file(de_path)
         de_handler.load_sdrf_file(sdrf_path)
         de_handler.set_fdr_threshold(fdr_threshold=0.05)
-

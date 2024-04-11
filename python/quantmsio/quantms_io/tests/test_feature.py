@@ -1,5 +1,3 @@
-import random
-import unittest
 from unittest import TestCase
 
 from ddt import data
@@ -7,7 +5,6 @@ from ddt import ddt
 
 from core.feature_in_memory import FeatureInMemory
 from core.feature import FeatureHandler
-from core.project import create_uuid_filename
 
 
 @ddt
@@ -29,10 +26,10 @@ class TestFeatureHandler(TestCase):
         sdrf_file = __package__ + test_data[2]
         expertment_type = test_data[3]
         F = FeatureHandler()
-        feature_manager = FeatureInMemory(expertment_type,F.schema)
+        feature_manager = FeatureInMemory(expertment_type, F.schema)
         for _ in feature_manager.merge_mztab_and_sdrf_to_msstats_in(
             mztab_path=mztab_file,
             msstats_path=msstats_file,
-            sdrf_path=sdrf_file,
+            sdrf_path=sdrf_file
         ):
             print('ok')

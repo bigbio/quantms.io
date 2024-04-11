@@ -1,3 +1,4 @@
+# flake8: noqa
 report = """
 <!DOCTYPE html>
 <html lang="en">
@@ -34,7 +35,7 @@ report = """
             position: fixed;
             background-color: #dedede;
         }
-        .nav ul { 
+        .nav ul {
             margin-top: 20px;
             text-align: center;
         }
@@ -97,7 +98,7 @@ report = """
         }
         td {
             text-align: center;
-        } 
+        }
         .tab_list {
             margin-top: 10px;
         }
@@ -267,5 +268,5 @@ report = """
     }
     cols.forEach(key => key.addEventListener('click',swith))
 
-</script>  
+</script>
 """

@@ -84,21 +84,15 @@ class AbsoluteExpressionHander:
     ):
         output_lines = ""
         if self.project_manager:
-            output_lines += (
-                "#project_accession: " + self.project_manager.project.project_info["project_accession"] + "\n"
-            )
+            output_lines += "#project_accession: " + self.project_manager.project.project_info["project_accession"] + "\n"
             output_lines += "#project_title: " + self.project_manager.project.project_info["project_title"] + "\n"
-            output_lines += (
-                "#project_description: " + self.project_manager.project.project_info["project_description"] + "\n"
-            )
+            output_lines += "#project_description: " + self.project_manager.project.project_info["project_description"] + "\n"
             output_lines += "#quantms_version: " + self.project_manager.project.project_info["quantms_version"] + "\n"
         factor_value = self.get_factor_value()
         if factor_value is not None:
             output_lines += "#factor_value: " + factor_value + "\n"
         # Combine comments and DataFrame into a single list
-        output_lines += AbsoluteExpressionHander.AE_HEADER + str(
-            self.ibaq_df.to_csv(sep="\t", index=False, header=True)
-        )
+        output_lines += AbsoluteExpressionHander.AE_HEADER + str(self.ibaq_df.to_csv(sep="\t", index=False, header=True))
         output_lines = output_lines.replace("\r", "")
         # Create the output file name
         base_name = output_file_prefix
