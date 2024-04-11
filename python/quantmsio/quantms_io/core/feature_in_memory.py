@@ -419,8 +419,8 @@ class FeatureInMemory:
                     map_dict[key].append(df["unique"].values[0])
                     map_dict[key].append(df["modifications"].values[0])
                 if (
-                    "opt_global_Posterior_Error_Probability_score" in df.columns
-                    or "opt_global_Posterior_Error_Probability" in df.columns
+                    "opt_global_Posterior_Error_Probability_score" in df.columns or
+                    "opt_global_Posterior_Error_Probability" in df.columns
                 ):
                     if len(map_dict[key]) != 7:
                         if "opt_global_Posterior_Error_Probability_score" in df.columns:
@@ -584,14 +584,10 @@ class FeatureInMemory:
                     axis=1,
                 )
         peptide_score_name = self._score_names["peptide_score"]
-        msstats_in["id_scores"] = (
-            peptide_score_name
-            + ":"
-            + msstats_in["global_qvalue"].astype(str)
-            + ","
-            + "Best PSM PEP:"
-            + msstats_in["posterior_error_probability"].astype(str)
-        )
+        msstats_in["id_scores"] = f"""
+            ${peptide_score_name}: ${msstats_in["global_qvalue"].astype(str)},
+            Best PSM PEP: ${msstats_in["posterior_error_probability"].astype(str)}
+        """
         return msstats_in
 
     def merge_mztab_and_sdrf_to_msstats_in(

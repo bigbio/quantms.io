@@ -243,8 +243,7 @@ class MztabHandler:
                 peptide_protein_start = psm["psm_protein_start"]
                 peptide_protein_end = psm["psm_protein_end"]
                 if (
-                    posterior_error_probability is not None
-                    and posterior_error_probability < psm["posterior_error_probability"]
+                    posterior_error_probability is not None and posterior_error_probability < psm["posterior_error_probability"]
                 ):
                     psm["posterior_error_probability"] = posterior_error_probability
                 if (peptide_protein_start is not None and peptide_protein_end is not None) and [
