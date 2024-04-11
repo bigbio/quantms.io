@@ -6,7 +6,10 @@ from quantms_io.core.diann_convert import DiaNNConvert
 from quantms_io.core.project import create_uuid_filename
 
 
-@click.command("convert-diann", short_help="Convert diann_report to parquet and psm file of quantms.io format")
+@click.command(
+    "convert-diann",
+    short_help="Convert diann_report to parquet and psm file of quantms.io format",
+)
 @click.option(
     "--report_path",
     help="the diann report file path",
@@ -17,7 +20,9 @@ from quantms_io.core.project import create_uuid_filename
     help="the design file path",
     required=True,
 )
-@click.option("--qvalue_threshold", help="qvalue_threshold", required=True, default=0.05)
+@click.option(
+    "--qvalue_threshold", help="qvalue_threshold", required=True, default=0.05
+)
 @click.option(
     "--mzml_info_folder",
     help="the foldef of mzml_info tsv file",
@@ -33,10 +38,23 @@ from quantms_io.core.project import create_uuid_filename
     help="Folder where the Json file will be generated",
     required=True,
 )
-@click.option("--output_prefix_file", help="Prefix of the Json file needed to generate the file name", required=False)
-@click.option("--duckdb_max_memory", help="The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)")
-@click.option("--duckdb_threads", help="The number of threads for the DuckDB engine (e.g 4)")
-@click.option("--file_num", help="The number of files being processed at the same time", default=100)
+@click.option(
+    "--output_prefix_file",
+    help="Prefix of the Json file needed to generate the file name",
+    required=False,
+)
+@click.option(
+    "--duckdb_max_memory",
+    help="The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)",
+)
+@click.option(
+    "--duckdb_threads", help="The number of threads for the DuckDB engine (e.g 4)"
+)
+@click.option(
+    "--file_num",
+    help="The number of files being processed at the same time",
+    default=100,
+)
 def diann_convert_to_parquet(
     report_path: str,
     design_file: str,
@@ -67,8 +85,14 @@ def diann_convert_to_parquet(
     if not output_prefix_file:
         output_prefix_file = ""
 
-    feature_output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".feature.parquet")
-    psm_output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
+    feature_output_path = (
+        output_folder
+        + "/"
+        + create_uuid_filename(output_prefix_file, ".feature.parquet")
+    )
+    psm_output_path = (
+        output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
+    )
 
     dia_nn = DiaNNConvert()
 

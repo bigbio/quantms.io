@@ -12,4 +12,4 @@ class TestPSMHandler(TestCase):
         p = PSMHandler()
         Psm = PsmInMemory(p.schema)
         for _ in Psm.generate_psm_parquet(mztab_path):
-            print('ok')
+            print("ok")

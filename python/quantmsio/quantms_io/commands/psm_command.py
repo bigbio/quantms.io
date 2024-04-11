@@ -27,11 +27,19 @@ from quantms_io.core.tools import plot_sequence_venn
     is_flag=True,
 )
 @click.option(
-    "--output_prefix_file", help="Prefix of the parquet file needed to generate the file name", required=False
+    "--output_prefix_file",
+    help="Prefix of the parquet file needed to generate the file name",
+    required=False,
 )
-@click.option("--verbose", help="Output debug information.", default=False, is_flag=True)
+@click.option(
+    "--verbose", help="Output debug information.", default=False, is_flag=True
+)
 def convert_psm_file(
-    mztab_file: str, output_folder: str, use_cache: bool, output_prefix_file: str = None, verbose: bool = False
+    mztab_file: str,
+    output_folder: str,
+    use_cache: bool,
+    output_prefix_file: str = None,
+    verbose: bool = False,
 ):
     """
     convert mztab psm section to a parquet file. The parquet file will contain the features and the metadata.
@@ -49,14 +57,21 @@ def convert_psm_file(
         output_prefix_file = ""
 
     psm_manager = PSMHandler()
-    psm_manager.parquet_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
+    psm_manager.parquet_path = (
+        output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
+    )
     psm_manager.convert_mztab_to_psm(
-        mztab_path=mztab_file, parquet_path=psm_manager.parquet_path, verbose=verbose, use_cache=use_cache
+        mztab_path=mztab_file,
+        parquet_path=psm_manager.parquet_path,
+        verbose=verbose,
+        use_cache=use_cache,
     )
 
 
 @click.command("compare-set-psms", short_help="plot venn for a set of Psms parquet")
-@click.option("-p", "--parquets", type=str, help="List of psm parquet path", multiple=True)
+@click.option(
+    "-p", "--parquets", type=str, help="List of psm parquet path", multiple=True
+)
 @click.option("-t", "--tags", type=str, help="List of parquet label", multiple=True)
 def compare_set_of_psms(parquets, tags):
     """
@@ -65,7 +80,9 @@ def compare_set_of_psms(parquets, tags):
     :param tags: a set of psm label
     """
     if len(parquets) != len(tags):
-        raise click.UsageError("Please provide same length of parquet_list and label_list")
+        raise click.UsageError(
+            "Please provide same length of parquet_list and label_list"
+        )
 
     plot_peptidoform_charge_venn(parquets, tags)
     plot_sequence_venn(parquets, tags)

@@ -36,7 +36,11 @@ from quantms_io.core.project import create_uuid_filename
     help="Folder where the Json file will be generated",
     required=True,
 )
-@click.option("--output_prefix_file", help="Prefix of the Json file needed to generate the file name", required=False)
+@click.option(
+    "--output_prefix_file",
+    help="Prefix of the Json file needed to generate the file name",
+    required=False,
+)
 def convert_feature_file(
     sdrf_file: str,
     msstats_file: str,
@@ -58,7 +62,12 @@ def convert_feature_file(
     :return: none
     """
 
-    if sdrf_file is None or msstats_file is None or mztab_file is None or output_folder is None:
+    if (
+        sdrf_file is None
+        or msstats_file is None
+        or mztab_file is None
+        or output_folder is None
+    ):
         raise click.UsageError("Please provide all the required parameters")
     if use_cache is None:
         use_cache = False
@@ -66,7 +75,11 @@ def convert_feature_file(
     feature_manager = FeatureHandler()
     if not output_prefix_file:
         output_prefix_file = ""
-    feature_manager.parquet_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".feature.parquet")
+    feature_manager.parquet_path = (
+        output_folder
+        + "/"
+        + create_uuid_filename(output_prefix_file, ".feature.parquet")
+    )
     if consensusxml_file is not None:
         feature_manager.convert_mztab_msstats_to_feature(
             mztab_file=mztab_file,

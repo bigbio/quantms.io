@@ -44,25 +44,38 @@ def feature_json(feature_row) -> dict:
     feature_dic = feature_row.to_dict()
 
     feature_dic["protein_accessions"] = (
-        list(feature_dic["protein_accessions"]) if feature_dic["protein_accessions"].any() else []
+        list(feature_dic["protein_accessions"])
+        if feature_dic["protein_accessions"].any()
+        else []
     )
     feature_dic["protein_start_positions"] = (
-        list(feature_dic["protein_start_positions"]) if feature_dic["protein_start_positions"].any() else []
+        list(feature_dic["protein_start_positions"])
+        if feature_dic["protein_start_positions"].any()
+        else []
     )
     feature_dic["protein_end_positions"] = (
-        list(feature_dic["protein_end_positions"]) if feature_dic["protein_end_positions"].any() else []
+        list(feature_dic["protein_end_positions"])
+        if feature_dic["protein_end_positions"].any()
+        else []
     )
     feature_dic["modifications"] = (
         list(feature_dic["modifications"])
-        if "modifications" in feature_dic and feature_dic["modifications"] is not None and feature_dic["modifications"].any()
+        if "modifications" in feature_dic
+        and feature_dic["modifications"] is not None
+        and feature_dic["modifications"].any()
         else []
     )
     feature_dic["gene_names"] = (
-        list(feature_dic["gene_names"]) if feature_dic["gene_names"] is not None and feature_dic["gene_names"].any() else []
+        list(feature_dic["gene_names"])
+        if feature_dic["gene_names"] is not None and feature_dic["gene_names"].any()
+        else []
     )
     feature_dic["gene_accessions"] = (
         list(feature_dic["gene_accessions"])
-        if (feature_dic["gene_accessions"] is not None and feature_dic["gene_accessions"].any())
+        if (
+            feature_dic["gene_accessions"] is not None
+            and feature_dic["gene_accessions"].any()
+        )
         else []
     )
 
@@ -104,7 +117,9 @@ class JsonConverter:
 
         chunks = read_large_parquet(parquet_psm_path)
         for psm_df in chunks:
-            psm_df.to_json(json_psm_path, orient="records", lines=True, compression="gzip")
+            psm_df.to_json(
+                json_psm_path, orient="records", lines=True, compression="gzip"
+            )
         return json_psm_path
 
     def convert_tsv_to_json(self, file_path: str, json_path: str):
@@ -137,7 +152,9 @@ class JsonConverter:
         sdrf_json["cell_lines"] = sdrf_handler.get_cell_lines()
         sdrf_json["method"] = sdrf_handler.get_acquisition_properties()
         sdrf_json["experiment_type"] = sdrf_handler.get_experiment_type_from_sdrf()
-        sdrf_json["feature_msg"] = sdrf_handler.extract_feature_properties().to_json(orient="values")
+        sdrf_json["feature_msg"] = sdrf_handler.extract_feature_properties().to_json(
+            orient="values"
+        )
         sdrf_json["sample_map"] = sdrf_handler.get_sample_map()
         fix_m, var_m = sdrf_handler.get_mods()
 

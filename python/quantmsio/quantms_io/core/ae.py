@@ -84,15 +84,33 @@ class AbsoluteExpressionHander:
     ):
         output_lines = ""
         if self.project_manager:
-            output_lines += "#project_accession: " + self.project_manager.project.project_info["project_accession"] + "\n"
-            output_lines += "#project_title: " + self.project_manager.project.project_info["project_title"] + "\n"
-            output_lines += "#project_description: " + self.project_manager.project.project_info["project_description"] + "\n"
-            output_lines += "#quantms_version: " + self.project_manager.project.project_info["quantms_version"] + "\n"
+            output_lines += (
+                "#project_accession: "
+                + self.project_manager.project.project_info["project_accession"]
+                + "\n"
+            )
+            output_lines += (
+                "#project_title: "
+                + self.project_manager.project.project_info["project_title"]
+                + "\n"
+            )
+            output_lines += (
+                "#project_description: "
+                + self.project_manager.project.project_info["project_description"]
+                + "\n"
+            )
+            output_lines += (
+                "#quantms_version: "
+                + self.project_manager.project.project_info["quantms_version"]
+                + "\n"
+            )
         factor_value = self.get_factor_value()
         if factor_value is not None:
             output_lines += "#factor_value: " + factor_value + "\n"
         # Combine comments and DataFrame into a single list
-        output_lines += AbsoluteExpressionHander.AE_HEADER + str(self.ibaq_df.to_csv(sep="\t", index=False, header=True))
+        output_lines += AbsoluteExpressionHander.AE_HEADER + str(
+            self.ibaq_df.to_csv(sep="\t", index=False, header=True)
+        )
         output_lines = output_lines.replace("\r", "")
         # Create the output file name
         base_name = output_file_prefix
@@ -121,8 +139,12 @@ class AbsoluteExpressionHander:
             f.write(output_lines)
 
         if self.project_manager:
-            self.project_manager.add_quantms_file(file_category="absolute_file", file_name=output_filename)
-        logger.info(f"Absolute expression file copied to {output_filename} and added to the project information")
+            self.project_manager.add_quantms_file(
+                file_category="absolute_file", file_name=output_filename
+            )
+        logger.info(
+            f"Absolute expression file copied to {output_filename} and added to the project information"
+        )
 
     def get_factor_value(self):
         """

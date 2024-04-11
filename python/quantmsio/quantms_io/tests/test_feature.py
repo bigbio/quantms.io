@@ -15,7 +15,7 @@ class TestFeatureHandler(TestCase):
             "/examples/DDA-plex/MSV000079033.mzTab",
             "/examples/DDA-plex/MSV000079033_msstats_in.csv",
             "/examples/DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv",
-            "ITRAQ4"
+            "ITRAQ4",
         ),
     ]
 
@@ -28,8 +28,6 @@ class TestFeatureHandler(TestCase):
         F = FeatureHandler()
         feature_manager = FeatureInMemory(expertment_type, F.schema)
         for _ in feature_manager.merge_mztab_and_sdrf_to_msstats_in(
-            mztab_path=mztab_file,
-            msstats_path=msstats_file,
-            sdrf_path=sdrf_file
+            mztab_path=mztab_file, msstats_path=msstats_file, sdrf_path=sdrf_file
         ):
-            print('ok')
+            print("ok")

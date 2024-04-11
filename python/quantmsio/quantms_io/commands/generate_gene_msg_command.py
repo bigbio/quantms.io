@@ -7,15 +7,26 @@ from quantms_io.core.tools import map_gene_msgs_to_parquet
 @click.option("--parquet_path", help="Psm or feature parquet path")
 @click.option("--fasta_path", help="fasta file path")
 @click.option("--output_path", help="output file path(.parquet)")
-@click.option("--label", type=click.Choice(["feature", "psm"], case_sensitive=False), help="parquet type")
+@click.option(
+    "--label",
+    type=click.Choice(["feature", "psm"], case_sensitive=False),
+    help="parquet type",
+)
 @click.option(
     "--map_parameter",
-    type=click.Choice(["map_protein_name", "map_protein_accession"], case_sensitive=False),
+    type=click.Choice(
+        ["map_protein_name", "map_protein_accession"], case_sensitive=False
+    ),
     help="map type",
 )
 @click.option("--species", help="species", default="human")
 def map_gene_msg_to_parquet(
-    parquet_path: str, fasta_path: str, output_path: str, label: str, map_parameter: str, species: str
+    parquet_path: str,
+    fasta_path: str,
+    output_path: str,
+    label: str,
+    map_parameter: str,
+    species: str,
 ):
     """
     according mzML file to map the spectrum message to parquet.
@@ -29,4 +40,6 @@ def map_gene_msg_to_parquet(
     if not output_path.endswith("parquet"):
         raise click.UsageError("Please provide file extension(.parquet)")
 
-    map_gene_msgs_to_parquet(parquet_path, fasta_path, map_parameter, output_path, label, species)
+    map_gene_msgs_to_parquet(
+        parquet_path, fasta_path, map_parameter, output_path, label, species
+    )

@@ -34,13 +34,19 @@ class ProteinHandler(ParquetHandler):
         pa.field(
             "abundance",
             pa.float64(),
-            metadata={"description": "protein abundance value selected by the workflow (e.g. MaxLFQ, iBAQ, etc)"},
+            metadata={
+                "description": "protein abundance value selected by the workflow (e.g. MaxLFQ, iBAQ, etc)"
+            },
         ),
-        pa.field("global_qvalue", pa.float64(), metadata={"description": "global q-value"}),
+        pa.field(
+            "global_qvalue", pa.float64(), metadata={"description": "global q-value"}
+        ),
         pa.field(
             "is_decoy",
             pa.int32(),
-            metadata={"description": "flag indicating if the protein is a decoy (1 is decoy, 0 is not decoy)"},
+            metadata={
+                "description": "flag indicating if the protein is a decoy (1 is decoy, 0 is not decoy)"
+            },
         ),
         pa.field(
             "best_id_score",
@@ -60,17 +66,23 @@ class ProteinHandler(ParquetHandler):
         pa.field(
             "number_of_peptides",
             pa.int32(),
-            metadata={"description": "number of peptides associated with the protein in the given sample"},
+            metadata={
+                "description": "number of peptides associated with the protein in the given sample"
+            },
         ),
         pa.field(
             "number_of_psms",
             pa.int32(),
-            metadata={"description": "number of peptide spectrum matches in the given sample"},
+            metadata={
+                "description": "number of peptide spectrum matches in the given sample"
+            },
         ),
         pa.field(
             "number_of_unique_peptides",
             pa.int32(),
-            metadata={"description": "number of unique peptides associated with the protein"},
+            metadata={
+                "description": "number of unique peptides associated with the protein"
+            },
         ),
         pa.field(
             "protein_descriptions",
@@ -85,7 +97,9 @@ class ProteinHandler(ParquetHandler):
         pa.field(
             "ribaq",
             pa.float64(),
-            metadata={"description": "normalized intensity-based absolute quantification value"},
+            metadata={
+                "description": "normalized intensity-based absolute quantification value"
+            },
         ),
         pa.field(
             "intensity",
@@ -111,7 +125,9 @@ class ProteinHandler(ParquetHandler):
         )
 
     def read_protein_dataset(self) -> pa.Table:
-        table = pq.ParquetDataset(self.parquet_path, use_legacy_dataset=False, schema=self.schema).read()  # type: pa.Table
+        table = pq.ParquetDataset(
+            self.parquet_path, use_legacy_dataset=False, schema=self.schema
+        ).read()  # type: pa.Table
         return table
 
     def create_proteins_table(self, protein_list: list):
