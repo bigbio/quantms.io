@@ -151,7 +151,9 @@ class MztabHandler:
         if self._use_cache:
             if self._peptide_index.contains(peptide_key):
                 pep = self._peptide_index.get_item(peptide_key)
-                if float(peptide_value["peptide_qvalue"]) < float(pep["peptide_qvalue"]):
+                if float(peptide_value["peptide_qvalue"]) < float(
+                    pep["peptide_qvalue"]
+                ):
                     self._peptide_index.add_item(peptide_key, peptide_value)
             else:
                 self._peptide_index.add_item(peptide_key, peptide_value)
@@ -188,16 +190,28 @@ class MztabHandler:
         if self._use_cache:
             if self._peptide_index.contains(psm_key):
                 psm = self._peptide_index.get_item(psm_key)
-                peptide_protein_accession = psm["protein_accession"] if "protein_accession" in psm else None
-                peptide_protein_start = psm["psm_protein_start"] if "psm_protein_start" in psm else None
-                peptide_protein_end = psm["psm_protein_end"] if "psm_protein_end" in psm else None
+                peptide_protein_accession = (
+                    psm["protein_accession"] if "protein_accession" in psm else None
+                )
+                peptide_protein_start = (
+                    psm["psm_protein_start"] if "psm_protein_start" in psm else None
+                )
+                peptide_protein_end = (
+                    psm["psm_protein_end"] if "psm_protein_end" in psm else None
+                )
                 if posterior_error_probability is not None:
                     if psm["posterior_error_probability"] is None or (
-                        np.float64(posterior_error_probability) < psm["posterior_error_probability"]
+                        np.float64(posterior_error_probability)
+                        < psm["posterior_error_probability"]
                     ):
-                        psm["posterior_error_probability"] = np.float64(posterior_error_probability)
+                        psm["posterior_error_probability"] = np.float64(
+                            posterior_error_probability
+                        )
 
-                if (peptide_protein_start is not None and peptide_protein_end is not None) and [
+                if (
+                    peptide_protein_start is not None
+                    and peptide_protein_end is not None
+                ) and [
                     peptide_protein_accession,
                     peptide_protein_start,
                     peptide_protein_end,
@@ -206,7 +220,9 @@ class MztabHandler:
                     protein_start,
                     protein_end,
                 ]:
-                    raise Exception("The protein information is different for the same psm key")
+                    raise Exception(
+                        "The protein information is different for the same psm key"
+                    )
                 else:
                     psm["psm_protein_start"] = protein_start
                     psm["psm_protein_end"] = protein_end
@@ -249,7 +265,10 @@ class MztabHandler:
                     and posterior_error_probability < psm["posterior_error_probability"]
                 ):
                     psm["posterior_error_probability"] = posterior_error_probability
-                if (peptide_protein_start is not None and peptide_protein_end is not None) and [
+                if (
+                    peptide_protein_start is not None
+                    and peptide_protein_end is not None
+                ) and [
                     peptide_protein_accession,
                     peptide_protein_start,
                     peptide_protein_end,
@@ -258,7 +277,9 @@ class MztabHandler:
                     protein_start,
                     protein_end,
                 ]:
-                    raise Exception("The protein information is different for the same psm key")
+                    raise Exception(
+                        "The protein information is different for the same psm key"
+                    )
                 else:
                     psm["psm_protein_start"] = protein_start
                     psm["psm_protein_end"] = protein_end
@@ -289,7 +310,9 @@ class MztabHandler:
 
                 self._peptide_index[psm_key] = psm
 
-    def create_mztab_index(self, mztab_file: str, qvalue_index: bool = True, psm_count_index: bool = True):
+    def create_mztab_index(
+        self, mztab_file: str, qvalue_index: bool = True, psm_count_index: bool = True
+    ):
         """
         create an index for a mztab file; the index contains a structure with the position of each psm, peptide and
         protein in the file.
@@ -309,7 +332,9 @@ class MztabHandler:
                 if line.startswith("MTD") and "search_engine_score" in line:
                     self._get_search_engine_scores(line)
                 if line.startswith("MTD") and "_mod[":
-                    self._modifications = fetch_modifications_from_mztab_line(line, self._modifications)
+                    self._modifications = fetch_modifications_from_mztab_line(
+                        line, self._modifications
+                    )
                 elif line.startswith("PRH"):
                     logger.info("-- End of the Metadata section of the mztab file -- ")
                     protein_columns = line.split("\t")
@@ -320,7 +345,9 @@ class MztabHandler:
                         protein = fetch_protein_from_mztab_line(es)
                         self._protein_details[protein["accession"]] = [protein["score"]]
                 elif line.startswith("PEH"):
-                    logger.info("-- All proteins have been read, starting peptide section -- ")
+                    logger.info(
+                        "-- All proteins have been read, starting peptide section -- "
+                    )
                     peptide_columns = line.split("\t")
                 elif line.startswith("PEP"):
                     peptide_info = line.split("\t")
@@ -346,7 +373,9 @@ class MztabHandler:
                     )
                     self.add_peptide_to_index(peptide_key, peptide_value)
                 elif line.startswith("PSH"):
-                    logger.info("-- All peptides have been read, starting psm section -- ")
+                    logger.info(
+                        "-- All peptides have been read, starting psm section -- "
+                    )
                     psm_columns = line.split("\t")
                 elif line.startswith("PSM"):
                     psm_info = line.split("\t")
@@ -356,7 +385,9 @@ class MztabHandler:
                         ms_runs=self._ms_runs,
                         modifications_definition=self._modifications,
                     )
-                    psm_key = get_key_peptide_combination(psm["peptidoform"], psm["charge"])
+                    psm_key = get_key_peptide_combination(
+                        psm["peptidoform"], psm["charge"]
+                    )
                     self.add_psm_to_count(
                         psm_key=psm_key,
                         protein_accession=psm["accession"],
@@ -387,10 +418,14 @@ class MztabHandler:
         """
         if self._use_cache:
             for key in self._peptide_index.get_all_keys():
-                logger.debug("Key {} Value {}".format(key, self._peptide_index.get_item(key)))
+                logger.debug(
+                    "Key {} Value {}".format(key, self._peptide_index.get_item(key))
+                )
         else:
             for peptide in self._peptide_index.keys():
-                logger.debug("Key {} Value {}".format(peptide, self._peptide_index[peptide]))
+                logger.debug(
+                    "Key {} Value {}".format(peptide, self._peptide_index[peptide])
+                )
 
     def print_mztab_stats(self):
         """
@@ -430,8 +465,14 @@ class MztabHandler:
         :param protein_accession: protein accession
         :return: protein qvalue object
         """
-        if protein_accession is None or self._protein_details is None or protein_accession not in self._protein_details:
-            raise Exception("Protein accession to be search is None or the protein accession is not in the index")
+        if (
+            protein_accession is None
+            or self._protein_details is None
+            or protein_accession not in self._protein_details
+        ):
+            raise Exception(
+                "Protein accession to be search is None or the protein accession is not in the index"
+            )
         return self._protein_details[protein_accession]
 
     def get_protein_qvalue_from_index_list(self, protein_accession_list: list):
@@ -442,7 +483,9 @@ class MztabHandler:
         """
 
         if protein_accession_list is None or self._protein_details is None:
-            raise Exception("Protein accession to be search is None or the protein accession is not in the index")
+            raise Exception(
+                "Protein accession to be search is None or the protein accession is not in the index"
+            )
 
         # # If the number of proteins where the peptide maps is to big, we will have an error in the permutations.
         # if len(protein_accession_list) > 4:
@@ -468,9 +511,13 @@ class MztabHandler:
 
     def _get_search_engine_scores(self, line: str):
         if line.lower().__contains__("protein_search_engine_score"):
-            self._search_engine_scores["protein_score"] = parse_score_name_in_mztab(line)
+            self._search_engine_scores["protein_score"] = parse_score_name_in_mztab(
+                line
+            )
         elif line.lower().__contains__("peptide_search_engine_score"):
-            self._search_engine_scores["peptide_score"] = parse_score_name_in_mztab(line)
+            self._search_engine_scores["peptide_score"] = parse_score_name_in_mztab(
+                line
+            )
         elif line.lower().__contains__("psm_search_engine_score"):
             self._search_engine_scores["psm_score"] = parse_score_name_in_mztab(line)
 
@@ -487,7 +534,9 @@ class MztabHandler:
         :return: None
         """
         self._protein_details = {}
-        self._psm_iterator = open(mztab_file, "r", buffering=calculate_buffer_size(mztab_file))
+        self._psm_iterator = open(
+            mztab_file, "r", buffering=calculate_buffer_size(mztab_file)
+        )
         line = self._psm_iterator.readline()
         while line != "":
             line = line.strip()
@@ -496,7 +545,9 @@ class MztabHandler:
             if line.startswith("MTD") and "search_engine_score" in line:
                 self._get_search_engine_scores(line)
             if line.startswith("MTD") and "_mod[":
-                self._modifications = fetch_modifications_from_mztab_line(line, self._modifications)
+                self._modifications = fetch_modifications_from_mztab_line(
+                    line, self._modifications
+                )
             elif line.startswith("PRH"):
                 logger.info("-- End of the Metadata section of the mztab file -- ")
                 protein_columns = line.split("\t")
@@ -506,9 +557,15 @@ class MztabHandler:
                 if PROTEIN_DETAILS not in line:
                     es = dict(zip(protein_columns, protein_info))
                     protein = fetch_protein_from_mztab_line(es)
-                    protein["accession"] = standardize_protein_string_accession(protein["accession"], sorted=True)
+                    protein["accession"] = standardize_protein_string_accession(
+                        protein["accession"], sorted=True
+                    )
                     self._protein_details[protein["accession"]] = [protein["score"]]
-                    logger.info("Added protein to the protein index -- {}".format(protein["accession"]))
+                    logger.info(
+                        "Added protein to the protein index -- {}".format(
+                            protein["accession"]
+                        )
+                    )
             elif line.startswith("PSH"):
                 logger.info("-- All peptides have been read, starting psm section -- ")
                 self._psm_columns = line.split("\t")
@@ -522,7 +579,9 @@ class MztabHandler:
         :return: psm dictionary
         """
         if self._psm_iterator is None:
-            raise Exception("The mztab file has not been loaded or the iterator has not been created")
+            raise Exception(
+                "The mztab file has not been loaded or the iterator has not been created"
+            )
 
         line = self._psm_iterator.readline()
         if line != "" and line.startswith("PSM"):

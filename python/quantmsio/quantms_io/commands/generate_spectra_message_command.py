@@ -46,4 +46,6 @@ def map_spectrum_message_to_parquet(
     """
     if not output_path.endswith("parquet"):
         raise click.UsageError("Please provide file extension(.parquet)")
-    generate_features_of_spectrum(parquet_path, mzml_directory, output_path, label, chunksize, partition)
+    generate_features_of_spectrum(
+        parquet_path, mzml_directory, output_path, label, chunksize, partition
+    )

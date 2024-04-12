@@ -37,7 +37,9 @@ class TestProjectHandler(TestCase):
         project_manager.populate_from_pride_archive()
 
         # Assert that the project_info has been updated
-        self.assertEqual(project_manager.project.project_info["project_title"], "Test Project")
+        self.assertEqual(
+            project_manager.project.project_info["project_title"], "Test Project"
+        )
         self.assertEqual(
             project_manager.project.project_info["project_description"],
             "Test description",

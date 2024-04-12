@@ -15,7 +15,9 @@ from quantms_io.core.tools import generate_start_and_end_from_fasta
     help="parquet type",
 )
 @click.option("--output_path", help="save path", required=True)
-def inject_start_and_end_from_fasta(parquet_path: str, fasta_path: str, label: str, output_path: str):
+def inject_start_and_end_from_fasta(
+    parquet_path: str, fasta_path: str, label: str, output_path: str
+):
     """
     Register the file with project.json
     :param parquet_path: psm or feature parquet file path
