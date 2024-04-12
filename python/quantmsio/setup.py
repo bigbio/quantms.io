@@ -40,7 +40,6 @@ setup(
     install_requires=[
         "click",
         "pandas",
-        "pandas_schema",
         "requests",
         "pytest",
         "pyyaml",
@@ -50,6 +49,15 @@ setup(
         "scipy",
         "biopython",
         "seaborn",
+        "numpy",
+        "biopython",
+        "matplotlib",
+        "duckdb",
+        "mygene",
+        "pyahocorasick",
+        "swifter",
+        "ddt",
+        "psutil"
     ],
     entry_points={
         "console_scripts": ["quantmsio_cli = quantms_io.quantmsio_cli:quantms_io_main"]
