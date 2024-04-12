@@ -11,9 +11,11 @@ The feature file is defined in the docs folder of this repository.
 The feature file is a column format that defines the peptide quantification/identification and its relation with each
 sample in the experiment.
 """
+
+import logging
+
 import numpy as np
 import pandas as pd
-
 import pyarrow as pa
 import pyarrow.parquet as pq
 
@@ -22,16 +24,17 @@ from quantms_io.core.mztab import MztabHandler
 from quantms_io.core.openms import OpenMSHandler
 from quantms_io.core.parquet_handler import ParquetHandler
 from quantms_io.core.sdrf import SDRFHandler
-from quantms_io.utils.constants import ITRAQ_CHANNEL, TMT_CHANNELS
-from quantms_io.utils.pride_utils import (clean_peptidoform_sequence,
-                                          compare_protein_lists,
-                                          get_quantmsio_modifications,
-                                          standardize_protein_list_accession,
-                                          standardize_protein_string_accession)
+from quantms_io.utils.constants import ITRAQ_CHANNEL
+from quantms_io.utils.constants import TMT_CHANNELS
+from quantms_io.utils.pride_utils import clean_peptidoform_sequence
+from quantms_io.utils.pride_utils import compare_protein_lists
+from quantms_io.utils.pride_utils import get_quantmsio_modifications
+from quantms_io.utils.pride_utils import standardize_protein_list_accession
+from quantms_io.utils.pride_utils import standardize_protein_string_accession
 
-import logging
-logging.basicConfig(level = logging.INFO)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 def get_msstats_in_batches(msstats_file: str, batch_size: int) -> int:
     """
@@ -203,7 +206,7 @@ def _fetch_msstats_feature(
             protein_accession=protein_accessions_string
         )
         protein_qvalue = protein_qvalue_object[0]  # Protein q-value index 0
-    except:
+    except ValueError:
         logger.error("Error in line: {}".format(feature_dict))
         return None
 
@@ -527,7 +530,7 @@ class FeatureHandler(ParquetHandler):
         if consesusxml_file is not None:
             consensus_handler = OpenMSHandler()
             intensity_map = consensus_handler.get_intensity_map(
-                    consensusxml_path=consesusxml_file, experiment_type=experiment_type
+                consensusxml_path=consesusxml_file, experiment_type=experiment_type
             )
         if use_cache:
             sdrf_samples = sdrf_handler.get_sample_map()
@@ -590,7 +593,7 @@ class FeatureHandler(ParquetHandler):
             mztab_handler.close()
         else:
             convert = FeatureInMemory(experiment_type, self.schema)
-            convert.merge_mztab_and_sdrf_to_msstats_in(
+            convert.write_feature_to_file(
                 mztab_file,
                 msstats_file,
                 sdrf_file,

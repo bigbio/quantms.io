@@ -13,6 +13,7 @@ The quantms.io differential expression file format is described in the docs fold
 (https://github.com/bigbio/quantms.io/blob/main/docs/DE.md)
 """
 
+import logging
 import os
 import uuid
 from pathlib import Path
@@ -22,8 +23,6 @@ import pandas as pd
 from quantms_io.core.project import ProjectHandler
 from quantms_io.core.sdrf import SDRFHandler
 from quantms_io.utils.file_utils import delete_files_extension
-
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -46,13 +45,15 @@ class DifferentialExpressionHandler:
     ISSUE_COLUMN = {"msstats_column": "issue", "quantms_column": "issue"}
 
     DE_HEADER = """#INFO=<ID=protein, Number=inf, Type=String, Description="Protein Accession">
-#INFO=<ID=label,Number=1, Type=String, Description="Label for the Conditions combination">
-#INFO=<ID=log2fc, Number=1, Type=Double, Description="Log2 Fold Change">
-#INFO=<ID=se, Number=1, Type=Double, Description="Standard error of the log2 fold change">
-#INFO=<ID=df, Number=1, Type=Integer, Description="Degree of freedom of the Student test"> 
-#INFO=<ID=pvalue, Number=1, Type=Double, Description="Raw p-values">
-#INFO=<ID=adj.pvalue, Number=1, Type=Double, Description="P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg">
-#INFO=<ID=issue, Number=1, Type=String, Description="Issue column shows if there is any issue for inference in corresponding protein and comparison">\n"""
+                #INFO=<ID=label,Number=1, Type=String, Description="Label for the Conditions combination">
+                #INFO=<ID=log2fc, Number=1, Type=Double, Description="Log2 Fold Change">
+                #INFO=<ID=se, Number=1, Type=Double, Description="Standard error of the log2 fold change">
+                #INFO=<ID=df, Number=1, Type=Integer, Description="Degree of freedom of the Student test">
+                #INFO=<ID=pvalue, Number=1, Type=Double, Description="Raw p-values">
+                #INFO=<ID=adj.pvalue, Number=1, Type=Double, Description="P-values adjusted among
+                all the proteins in the specific comparison using the approach by Benjamini and Hochberg">
+                #INFO=<ID=issue, Number=1, Type=String, Description="Issue column shows if there
+                is any issue for inference in corresponding protein and comparison">\n"""
 
     DIFFERENTIAL_EXPRESSION_EXTENSION = ".differential.tsv"
 
@@ -110,10 +111,10 @@ class DifferentialExpressionHandler:
         self.project_manager.load_project_info(project_file)
 
     def convert_msstats_to_quantms(
-            self,
-            output_folder: str = None,
-            output_file_prefix: str = None,
-            delete_existing: bool = False,
+        self,
+        output_folder: str = None,
+        output_file_prefix: str = None,
+        delete_existing: bool = False,
     ):
         """
         Convert a MSstats differential file to quantms.io format
@@ -138,27 +139,27 @@ class DifferentialExpressionHandler:
         ].copy()
 
         # Add project information
-        output_lines = ''
+        output_lines = ""
         if self.project_manager:
             output_lines += (
-                    "#project_accession: "
-                    + self.project_manager.project.project_info["project_accession"]
-                    + "\n"
+                "#project_accession: "
+                + self.project_manager.project.project_info["project_accession"]
+                + "\n"
             )
             output_lines += (
-                    "#project_title: "
-                    + self.project_manager.project.project_info["project_title"]
-                    + "\n"
+                "#project_title: "
+                + self.project_manager.project.project_info["project_title"]
+                + "\n"
             )
             output_lines += (
-                    "#project_description: "
-                    + self.project_manager.project.project_info["project_description"]
-                    + "\n"
+                "#project_description: "
+                + self.project_manager.project.project_info["project_description"]
+                + "\n"
             )
             output_lines += (
-                    "#quantms_version: "
-                    + self.project_manager.project.project_info["quantms_version"]
-                    + "\n"
+                "#quantms_version: "
+                + self.project_manager.project.project_info["quantms_version"]
+                + "\n"
             )
         factor_value = self.get_factor_value()
         if factor_value is not None:
@@ -173,7 +174,7 @@ class DifferentialExpressionHandler:
         output_lines += DifferentialExpressionHandler.DE_HEADER
         output_lines += quantms_df.columns.str.cat(sep="\t") + "\n"
         for index, row in quantms_df.iterrows():
-            output_lines += '\t'.join(map(str, row)).strip() + "\n"
+            output_lines += "\t".join(map(str, row)).strip() + "\n"
 
         # Create the output file name
         base_name = output_file_prefix
@@ -198,7 +199,7 @@ class DifferentialExpressionHandler:
             output_filename_path = f"{output_folder}/{output_filename}"
 
         # Save the combined lines to a TSV file
-        with open(output_filename_path, "w", encoding='utf8') as f:
+        with open(output_filename_path, "w", encoding="utf8") as f:
             f.write(output_lines)
         if self.project_manager:
             self.project_manager.add_quantms_file(
@@ -231,14 +232,14 @@ class DifferentialExpressionHandler:
         for label in quantms_df["label"].unique():
             for condition in label.split("-", 1):
                 unique_labels.append(condition)
-        '''
+        """
         if len(unique_label) == 1:
             labels = unique_label[0].split("-")
             first_contrast = labels[0].strip()
             second_contrast = labels[1].strip()
         else:
             raise ValueError("QuantMS file has more than one label divided by '-'")
-        '''
+        """
         return list(set(unique_labels))
 
     def get_factor_value(self):

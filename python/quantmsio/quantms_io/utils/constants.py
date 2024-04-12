@@ -60,7 +60,7 @@ ITRAQ_CHANNEL = {
         "ITRAQ118",
         "ITRAQ119",
         "ITRAQ121",
-    ]
+    ],
     # NO EXAMPLES.
 }
 

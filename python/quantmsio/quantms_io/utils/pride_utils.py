@@ -1,21 +1,76 @@
 """
 This file contains utility functions for parsing PRIDE JSON files
 """
+
 import itertools
+import logging
 import re
-from builtins import sorted
-import pandas as pd
 import time
 
-import logging
-logging.basicConfig(level = logging.INFO)
+# from builtins import sorted
+from collections import defaultdict
+
+import pandas as pd
+from Bio import SeqIO
+
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def generate_scan_number(spectra_ref:str):
-    if 'scan' in spectra_ref:
+
+def get_unanimous_name(protein_accessions, map_dict):
+    if isinstance(protein_accessions, str):
+        if ";" in protein_accessions:
+            protein_accessions = protein_accessions.split(";")
+        else:
+            protein_accessions = protein_accessions.split(",")
+    unqnimous_names = []
+    for accession in protein_accessions:
+        if accession in map_dict:
+            unqnimous_names.append(list(map_dict[accession])[0])
+    return unqnimous_names
+
+
+def generate_gene_name_map(fasta, map_parameter):
+    """
+    according fasta database to map the proteins accessions to uniprot names.
+    :param fasta: Reference fasta database
+    :param map_parameter: map_protein_name or map_protein_accession
+    retrun: None
+    """
+    map_gene_names = defaultdict(set)
+    if map_parameter == "map_protein_name":
+        for seq_record in SeqIO.parse(fasta, "fasta"):
+            name = seq_record.id.split("|")[-1]
+            gene_list = re.findall("GN=(\S+)", seq_record.description)
+            gene_name = gene_list[0] if len(gene_list) > 0 else None
+            map_gene_names[name].add(gene_name)
+    else:
+        for seq_record in SeqIO.parse(fasta, "fasta"):
+            accession = seq_record.id.split("|")[-2]
+            gene_list = re.findall("GN=(\S+)", seq_record.description)
+            gene_name = gene_list[0] if len(gene_list) > 0 else None
+            map_gene_names[accession].add(gene_name)
+    return map_gene_names
+
+
+def get_gene_accessions(gene_list, map_dict):
+    if len(gene_list) == 0:
+        return []
+    else:
+        accessions = []
+        for gene in gene_list:
+            accession = map_dict[gene]
+            if len(accession) > 0:
+                accessions.append(str(accession[0]))
+        return accessions
+
+
+def generate_scan_number(spectra_ref: str):
+    if "scan" in spectra_ref:
         return re.findall(r"scan=(\d+)", spectra_ref)[0]
     else:
-        return ",".join(re.findall(r'=(\d+)', spectra_ref))
+        return ",".join(re.findall(r"=(\d+)", spectra_ref))
+
 
 def get_pubmed_id_pride_json(pride_json: dict) -> str:
     """
@@ -167,6 +222,8 @@ def get_modifications_object_from_mztab_line(
     modification_values = re.split(r",(?![^\[]*\])", modification_string)
     for modification in modification_values:
         modification = modification.strip()
+        if modification == "":
+            return {}
         accession = modification.split("-")[1]
         unimod_accession = accession
         if accession not in modifications_definition:
@@ -243,7 +300,7 @@ def fetch_peptide_spectra_ref(peptide_spectra_ref: str):
     :return: ms run and scan number
     """
     ms_run = peptide_spectra_ref.split(":")[0]
-    #scan_number = peptide_spectra_ref.split(":")[1].split(" ")[-1].split("=")[-1]
+    # scan_number = peptide_spectra_ref.split(":")[1].split(" ")[-1].split("=")[-1]
     scan_number = generate_scan_number(peptide_spectra_ref)
     return ms_run, scan_number
 
@@ -428,7 +485,8 @@ def fetch_ms_runs_from_mztab_line(mztab_line: str, ms_runs: dict) -> dict:
     return ms_runs
 
 
-def fetch_psm_from_mztab_line(es: dict, ms_runs: dict = None, modifications_definition: dict = None
+def fetch_psm_from_mztab_line(
+    es: dict, ms_runs: dict = None, modifications_definition: dict = None
 ) -> dict:
     """
     Get the psm from a mztab line include the post.
@@ -457,7 +515,7 @@ def fetch_psm_from_mztab_line(es: dict, ms_runs: dict = None, modifications_defi
 
     if "opt_global_consensus_support" not in es:
         keys.remove("opt_global_consensus_support")
-    
+
     if "opt_global_Posterior_Error_Probability_score" not in es:
         keys.remove("opt_global_Posterior_Error_Probability_score")
 
@@ -584,7 +642,12 @@ def get_peptidoform_proforma_version_in_mztab(
     :param modifications_definition: dictionary modifications definition
     :return: peptidoform in proforma
     """
-    if modification_string == "null" or modification_string is None or modification_string == "" or pd.isna(modification_string):
+    if (
+        modification_string == "null"
+        or modification_string is None
+        or modification_string == ""
+        or pd.isna(modification_string)
+    ):
         return peptide_sequence
 
     modifications = get_modifications_object_from_mztab_line(
@@ -628,6 +691,7 @@ def get_permutations_of_original_list(original_elems: list):
             continue
         else:
             yield permutation
+
 
 def print_estimated_time(original_time, step: str):
     """

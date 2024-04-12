@@ -1,20 +1,21 @@
+import logging
+
 import numpy as np
 
 from quantms_io.core.core import DiskCache
 from quantms_io.utils.constants import PROTEIN_DETAILS
 from quantms_io.utils.file_utils import calculate_buffer_size
-from quantms_io.utils.pride_utils import (fetch_modifications_from_mztab_line,
-                                          fetch_ms_runs_from_mztab_line,
-                                          fetch_peptide_from_mztab_line,
-                                          fetch_protein_from_mztab_line,
-                                          fetch_psm_from_mztab_line,
-                                          get_key_peptide_combination,
-                                          get_permutations_of_original_list,
-                                          parse_score_name_in_mztab,
-                                          standardize_protein_string_accession)
+from quantms_io.utils.pride_utils import fetch_modifications_from_mztab_line
+from quantms_io.utils.pride_utils import fetch_ms_runs_from_mztab_line
+from quantms_io.utils.pride_utils import fetch_peptide_from_mztab_line
+from quantms_io.utils.pride_utils import fetch_protein_from_mztab_line
+from quantms_io.utils.pride_utils import fetch_psm_from_mztab_line
+from quantms_io.utils.pride_utils import get_key_peptide_combination
+from quantms_io.utils.pride_utils import get_permutations_of_original_list
+from quantms_io.utils.pride_utils import parse_score_name_in_mztab
+from quantms_io.utils.pride_utils import standardize_protein_string_accession
 
-import logging
-logging.basicConfig(level = logging.INFO)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -150,7 +151,9 @@ class MztabHandler:
         if self._use_cache:
             if self._peptide_index.contains(peptide_key):
                 pep = self._peptide_index.get_item(peptide_key)
-                if float(peptide_value['peptide_qvalue']) < float(pep['peptide_qvalue']):
+                if float(peptide_value["peptide_qvalue"]) < float(
+                    pep["peptide_qvalue"]
+                ):
                     self._peptide_index.add_item(peptide_key, peptide_value)
             else:
                 self._peptide_index.add_item(peptide_key, peptide_value)
@@ -340,11 +343,11 @@ class MztabHandler:
                     if PROTEIN_DETAILS not in line:
                         es = dict(zip(protein_columns, protein_info))
                         protein = fetch_protein_from_mztab_line(es)
-                        self._protein_details[protein["accession"]] = [
-                            protein["score"]
-                        ]
+                        self._protein_details[protein["accession"]] = [protein["score"]]
                 elif line.startswith("PEH"):
-                    logger.info("-- All proteins have been read, starting peptide section -- ")
+                    logger.info(
+                        "-- All proteins have been read, starting peptide section -- "
+                    )
                     peptide_columns = line.split("\t")
                 elif line.startswith("PEP"):
                     peptide_info = line.split("\t")
@@ -370,7 +373,9 @@ class MztabHandler:
                     )
                     self.add_peptide_to_index(peptide_key, peptide_value)
                 elif line.startswith("PSH"):
-                    logger.info("-- All peptides have been read, starting psm section -- ")
+                    logger.info(
+                        "-- All peptides have been read, starting psm section -- "
+                    )
                     psm_columns = line.split("\t")
                 elif line.startswith("PSM"):
                     psm_info = line.split("\t")
@@ -413,10 +418,14 @@ class MztabHandler:
         """
         if self._use_cache:
             for key in self._peptide_index.get_all_keys():
-                logger.debug("Key {} Value {}".format(key, self._peptide_index.get_item(key)))
+                logger.debug(
+                    "Key {} Value {}".format(key, self._peptide_index.get_item(key))
+                )
         else:
             for peptide in self._peptide_index.keys():
-                logger.debug("Key {} Value {}".format(peptide, self._peptide_index[peptide]))
+                logger.debug(
+                    "Key {} Value {}".format(peptide, self._peptide_index[peptide])
+                )
 
     def print_mztab_stats(self):
         """
@@ -525,7 +534,9 @@ class MztabHandler:
         :return: None
         """
         self._protein_details = {}
-        self._psm_iterator = open(mztab_file, "r", buffering=calculate_buffer_size(mztab_file))
+        self._psm_iterator = open(
+            mztab_file, "r", buffering=calculate_buffer_size(mztab_file)
+        )
         line = self._psm_iterator.readline()
         while line != "":
             line = line.strip()
@@ -549,8 +560,12 @@ class MztabHandler:
                     protein["accession"] = standardize_protein_string_accession(
                         protein["accession"], sorted=True
                     )
-                    self._protein_details[protein["accession"]] = [ protein["score"]]
-                    logger.info("Added protein to the protein index -- {}".format(protein["accession"]))
+                    self._protein_details[protein["accession"]] = [protein["score"]]
+                    logger.info(
+                        "Added protein to the protein index -- {}".format(
+                            protein["accession"]
+                        )
+                    )
             elif line.startswith("PSH"):
                 logger.info("-- All peptides have been read, starting psm section -- ")
                 self._psm_columns = line.split("\t")

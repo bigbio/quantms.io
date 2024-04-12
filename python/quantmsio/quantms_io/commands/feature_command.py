@@ -2,14 +2,7 @@ import click
 
 from quantms_io.core.feature import FeatureHandler
 from quantms_io.core.project import create_uuid_filename
-CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
-
-@click.group(context_settings=CONTEXT_SETTINGS)
-def cli():
-    """
-    This is the main tool that gives access to all commands.
-    """
 
 @click.command("convert-feature", short_help="Convert msstats/mztab to parquet file")
 @click.option(
@@ -43,10 +36,12 @@ def cli():
     help="Folder where the Json file will be generated",
     required=True,
 )
-@click.option("--output_prefix_file", help="Prefix of the Json file needed to generate the file name", required=False)
-@click.pass_context
+@click.option(
+    "--output_prefix_file",
+    help="Prefix of the Json file needed to generate the file name",
+    required=False,
+)
 def convert_feature_file(
-    ctx,
     sdrf_file: str,
     msstats_file: str,
     mztab_file: str,
@@ -79,14 +74,17 @@ def convert_feature_file(
 
     feature_manager = FeatureHandler()
     if not output_prefix_file:
-        output_prefix_file = ''
-    feature_manager.parquet_path = output_folder + "/" + create_uuid_filename(output_prefix_file,'.feature.parquet')
+        output_prefix_file = ""
+    feature_manager.parquet_path = (
+        output_folder
+        + "/"
+        + create_uuid_filename(output_prefix_file, ".feature.parquet")
+    )
     if consensusxml_file is not None:
         feature_manager.convert_mztab_msstats_to_feature(
             mztab_file=mztab_file,
             msstats_file=msstats_file,
             sdrf_file=sdrf_file,
-            output_folder = output_folder,
             consesusxml_file=consensusxml_file,
             use_cache=use_cache,
         )
@@ -95,10 +93,5 @@ def convert_feature_file(
             mztab_file=mztab_file,
             msstats_file=msstats_file,
             sdrf_file=sdrf_file,
-            output_folder = output_folder,
             use_cache=use_cache,
         )
-
-cli.add_command(convert_feature_file)
-if __name__ == '__main__':
-    cli()

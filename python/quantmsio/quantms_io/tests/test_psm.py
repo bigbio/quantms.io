@@ -1,12 +1,15 @@
 from unittest import TestCase
 
-from quantms_io.core.psm import PSMHandler
+from core.psm import PSMHandler
+from core.psm_in_memory import PsmInMemory
 
 
 class TestPSMHandler(TestCase):
+
     def test_convert_mztab_to_feature(self):
-        psm_handler = PSMHandler()
-        psm_handler.convert_mztab_to_psm(
-            mztab_path="data/raw_ae_example/PXD009219.sdrf_openms_design_openms.mzTab",
-            parquet_path="output.parquet",
-        )
+        mztab_path = __package__ + "/examples/DDA-plex/MSV000079033.mzTab"
+
+        p = PSMHandler()
+        psm = PsmInMemory(p.schema)
+        for _ in psm.generate_psm_parquet(mztab_path):
+            print("ok")

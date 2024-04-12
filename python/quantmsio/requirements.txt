@@ -8,10 +8,12 @@ diskcache~=5.6.3
 pyopenms~=3.0.0
 scipy
 biopython
-datacompy~=0.10.3
 venn~=0.1.3
 seaborn~=0.13.0
 matplotlib~=3.7.2
 duckdb~=0.8.1
 swifter~=1.4.0
 psutil~=5.9.5
+pyahocorasick
+ddt
+mygene

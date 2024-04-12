@@ -1,11 +1,13 @@
+import logging
 import os
 import uuid
 from pathlib import Path
+
 import pandas as pd
+
 from quantms_io.core.project import ProjectHandler
 from quantms_io.core.sdrf import SDRFHandler
 from quantms_io.utils.file_utils import delete_files_extension
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -14,16 +16,16 @@ logger = logging.getLogger(__name__)
 def get_ibaq_columns(path):
     with open(path) as f:
         line = f.readline()
-        return line.split('\n')[0].split(',')
+        return line.split("\n")[0].split(",")
 
 
 class AbsoluteExpressionHander:
     LABEL_MAP = {
-        'ProteinName': 'protein',
-        'SampleID': 'sample_accession',
-        'Condition': 'condition',
-        'Ibaq': 'ibaq',
-        'IbaqLog': 'ribaq'
+        "ProteinName": "protein",
+        "SampleID": "sample_accession",
+        "Condition": "condition",
+        "Ibaq": "ibaq",
+        "IbaqLog": "ribaq",
     }
     AE_HEADER = """#INFO=<ID=protein, Number=inf, Type=String, Description="Protein Accession">
 #INFO=<ID=sample_accession, Number=1, Type=String, Description="Sample Accession in the SDRF">
@@ -56,7 +58,7 @@ class AbsoluteExpressionHander:
         self.project_manager.load_project_info(project_file)
 
     def load_ibaq_file(self, path):
-        usecols = ['ProteinName', 'SampleID', 'Condition', 'Ibaq', 'IbaqLog']
+        usecols = ["ProteinName", "SampleID", "Condition", "Ibaq", "IbaqLog"]
         ibaq_columns = get_ibaq_columns(path)
         for col in usecols:
             if col not in ibaq_columns:
@@ -75,32 +77,32 @@ class AbsoluteExpressionHander:
         self.sdrf_manager = SDRFHandler(sdrf_file=sdrf_file)
 
     def convert_ibaq_to_quantms(
-            self,
-            output_folder: str = None,
-            output_file_prefix: str = None,
-            delete_existing: bool = False,
+        self,
+        output_folder: str = None,
+        output_file_prefix: str = None,
+        delete_existing: bool = False,
     ):
-        output_lines = ''
+        output_lines = ""
         if self.project_manager:
             output_lines += (
-                    "#project_accession: "
-                    + self.project_manager.project.project_info["project_accession"]
-                    + "\n"
+                "#project_accession: "
+                + self.project_manager.project.project_info["project_accession"]
+                + "\n"
             )
             output_lines += (
-                    "#project_title: "
-                    + self.project_manager.project.project_info["project_title"]
-                    + "\n"
+                "#project_title: "
+                + self.project_manager.project.project_info["project_title"]
+                + "\n"
             )
             output_lines += (
-                    "#project_description: "
-                    + self.project_manager.project.project_info["project_description"]
-                    + "\n"
+                "#project_description: "
+                + self.project_manager.project.project_info["project_description"]
+                + "\n"
             )
             output_lines += (
-                    "#quantms_version: "
-                    + self.project_manager.project.project_info["quantms_version"]
-                    + "\n"
+                "#quantms_version: "
+                + self.project_manager.project.project_info["quantms_version"]
+                + "\n"
             )
         factor_value = self.get_factor_value()
         if factor_value is not None:
@@ -109,7 +111,7 @@ class AbsoluteExpressionHander:
         output_lines += AbsoluteExpressionHander.AE_HEADER + str(
             self.ibaq_df.to_csv(sep="\t", index=False, header=True)
         )
-        output_lines = output_lines.replace('\r', '')
+        output_lines = output_lines.replace("\r", "")
         # Create the output file name
         base_name = output_file_prefix
         if output_file_prefix is None:
@@ -133,7 +135,7 @@ class AbsoluteExpressionHander:
             output_filename_path = f"{output_folder}/{output_filename}"
 
         # Save the combined lines to a TSV file
-        with open(output_filename_path, "w", encoding='utf8') as f:
+        with open(output_filename_path, "w", encoding="utf8") as f:
             f.write(output_lines)
 
         if self.project_manager:

@@ -1,9 +1,10 @@
-from typing import Any, Tuple
+import warnings
+from typing import Any
+from typing import Tuple
 
 import numpy as np
 import pyopenms as oms
 from pyopenms import SpectrumLookup
-import warnings
 
 
 class OpenMSHandler:
@@ -28,10 +29,12 @@ class OpenMSHandler:
             self._spec_lookup.readSpectra(self._mzml_exp, "scan=(?<SCAN>\\d+)")
         try:
             index = self._spec_lookup.findByScanNumber(scan_number)
-        except:
-            message = 'scan_number' + str(scan_number) + 'not found in file: ' + mzml_path
+        except IndexError:
+            message = (
+                "scan_number" + str(scan_number) + "not found in file: " + mzml_path
+            )
             warnings.warn(message, category=None, stacklevel=1, source=None)
-            return [],[]
+            return [], []
         spectrum = self._mzml_exp.getSpectrum(index)
         spectrum_mz, spectrum_intensities = spectrum.get_peaks()
         return spectrum_mz, spectrum_intensities
@@ -59,9 +62,9 @@ class OpenMSHandler:
         if experiment_type is not None and "LABEL FREE" in experiment_type.upper():
             return self._get_intensity_map_lfq(df)
         elif experiment_type is not None and "TMT" in experiment_type.upper():
-            return self._get_intensity_map_tmt_or_itraq(df,experiment_type)
-        elif experiment_type is not None and 'ITRAQ' in experiment_type.upper():
-            return self._get_intensity_map_tmt_or_itraq(df,experiment_type)
+            return self._get_intensity_map_tmt_or_itraq(df, experiment_type)
+        elif experiment_type is not None and "ITRAQ" in experiment_type.upper():
+            return self._get_intensity_map_tmt_or_itraq(df, experiment_type)
         return self._get_intensity_map_lfq(
             df
         )  # If not experiment type is provided, we assume it is label free
@@ -101,7 +104,7 @@ class OpenMSHandler:
         return intensity_map
 
     @staticmethod
-    def _get_intensity_map_tmt_or_itraq(df,experiment_type):
+    def _get_intensity_map_tmt_or_itraq(df, experiment_type):
         """
         Get the intensity map for TMT experiments
         :param df: pandas dataframe with the consensusxml data
@@ -122,9 +125,7 @@ class OpenMSHandler:
                         )  # A TMT channel has in consesusXML the following format:
                         # tmt10plex_129N -> TMT129N
                     else:
-                        channel = (
-                            "ITRAQ" + column.split("_")[1]
-                        ) 
+                        channel = "ITRAQ" + column.split("_")[1]
                     key = (
                         row.sequence
                         + ":_:"
