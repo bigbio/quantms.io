@@ -57,11 +57,9 @@ setup(
         "pyahocorasick",
         "swifter",
         "ddt",
-        "psutil"
+        "psutil",
     ],
-    entry_points={
-        "console_scripts": ["quantmsio_cli = quantms_io.quantmsio_cli:quantms_io_main"]
-    },
+    entry_points={"console_scripts": ["quantmsio_cli = quantms_io.quantmsio_cli:quantms_io_main"]},
     platforms=["any"],
     classifiers=[
         "Programming Language :: Python :: 3",
