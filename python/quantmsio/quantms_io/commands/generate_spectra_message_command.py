@@ -16,9 +16,9 @@ from quantms_io.core.tools import generate_features_of_spectrum
     help="parquet type",
 )
 @click.option(
-    "--chunksize",
+    "--file_num",
     help="The number of rows of parquet read using pandas streaming",
-    default=100000,
+    default=10,
 )
 @click.option(
     "--partition",
@@ -31,7 +31,7 @@ def map_spectrum_message_to_parquet(
     mzml_directory: str,
     output_path: str,
     label: str,
-    chunksize,
+    file_num: int,
     partition: str = None,
 ):
     """
@@ -40,12 +40,12 @@ def map_spectrum_message_to_parquet(
     :param mzml_directory: mzml file folder
     :param output_path: output file path(extension[.parquet])
     :param label: feature or psm
-    :param chunksize: batch size
+    :param file_num: reference num
     :param partition: charge or reference_file_name
     retrun: None
     """
     if not output_path.endswith("parquet"):
         raise click.UsageError("Please provide file extension(.parquet)")
     generate_features_of_spectrum(
-        parquet_path, mzml_directory, output_path, label, chunksize, partition
+        parquet_path, mzml_directory, output_path, label, file_num, partition
     )

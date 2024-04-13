@@ -27,11 +27,14 @@ def map_spectrum_mz(mz_path: str, scan: str, mzml: dict, mzml_directory: str):
     scan: scan number
     mzml: OpenMSHandler object
     """
+    reference = mz_path
     if mzml_directory.endswith("/"):
         mz_path = mzml_directory + mz_path + ".mzML"
     else:
         mz_path = mzml_directory + "/" + mz_path + ".mzML"
-    mz_array, array_intensity = mzml[mz_path].get_spectrum_from_scan(mz_path, int(scan))
+    mz_array, array_intensity = mzml[reference].get_spectrum_from_scan(
+        mz_path, int(scan)
+    )
     return mz_array, array_intensity, 0
 
 
