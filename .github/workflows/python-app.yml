@@ -35,7 +35,6 @@ jobs:
         python-version: "3.10"
     - name: Install dependencies
       run: |
-        cd python/quantmsio/
         python -m pip install --upgrade pip
         pip install flake8==7.0.0
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
@@ -47,7 +46,6 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=30 --max-line-length=130 --statistics --ignore F401,W503,W504
     - name: Test with pytest
       run: |
-        cd python/quantmsio
         python setup.py install
-        cd quantms_io
+        cd quantmsio
         python -m unittest
