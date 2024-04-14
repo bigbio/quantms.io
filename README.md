@@ -1,5 +1,6 @@
 # quantms.io
 [![Python application](https://github.com/bigbio/quantms.io/actions/workflows/python-app.yml/badge.svg?branch=dev)](https://github.com/bigbio/quantms.io/actions/workflows/python-app.yml)
+[![Upload Python Package](https://github.com/bigbio/quantms.io/actions/workflows/python-publish.yml/badge.svg)](https://github.com/bigbio/quantms.io/actions/workflows/python-publish.yml)
 
 [quantms](https://docs.quantms.org) is a nf-core pipeline for the analysis of quantitative proteomics data. The pipeline is based on the [OpenMS](https://www.openms.de/) framework and [DIA-NN](https://github.com/vdemichev/DiaNN); and it is designed to analyze large scale experiments. the main outputs of quantms tools are the following: 
 
