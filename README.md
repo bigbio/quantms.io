@@ -5,6 +5,7 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/e71a662e8d4f483094576c1d8f8888c3)](https://app.codacy.com/gh/bigbio/quantms.io/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_Coverage)
 [![Documentation Status](https://readthedocs.org/projects/quantmsio/badge/?version=latest)](https://quantmsio.readthedocs.io/en/latest/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/quantmsio.svg)](https://badge.fury.io/py/quantmsio)
+
 [quantms](https://docs.quantms.org) is a nf-core pipeline for the analysis of quantitative proteomics data. The pipeline is based on the [OpenMS](https://www.openms.de/) framework and [DIA-NN](https://github.com/vdemichev/DiaNN); and it is designed to analyze large scale experiments. the main outputs of quantms tools are the following: 
 
 - [mzTab](https://github.com/HUPO-PSI/mzTab) files with the identification and quantification information.
