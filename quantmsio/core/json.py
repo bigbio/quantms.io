@@ -1,4 +1,4 @@
-import quantmsio.core.json
+import json
 import logging
 import re
 import numpy as np
