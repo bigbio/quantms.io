@@ -786,6 +786,7 @@ class FeatureInMemory:
                 factor,
                 "comment[fraction identifier]",
                 "comment[label]",
+                "comment[technical replicate]",
             ]
         ]
         sdrf["comment[data file]"] = sdrf["comment[data file]"].swifter.apply(lambda x: x.split(".")[0])
@@ -797,7 +798,7 @@ class FeatureInMemory:
                 right_on=["comment[data file]", "comment[label]"],
                 how="left",
             )
-            res.drop(["comment[data file]", "comment[label]"], axis=1, inplace=True)
+            res.drop(["comment[data file]", "comment[label]", "comment[technical replicate]"], axis=1, inplace=True)
             res.rename(columns=self._map_tmt, inplace=True)
             res.rename(columns={factor: "condition"}, inplace=True)
             return res
@@ -809,7 +810,19 @@ class FeatureInMemory:
                 right_on=["comment[data file]"],
                 how="left",
             )
-            res.drop(["comment[data file]", "comment[label]"], axis=1, inplace=True)
+            samples = sdrf["source name"].unique()
+            mixed_map = dict(zip(samples, range(1, len(samples) + 1)))
+            res.loc[:, "Run"] = res[
+                ["source name", "comment[technical replicate]", "comment[fraction identifier]"]
+            ].swifter.apply(
+                lambda row: str(mixed_map[row["source name"]])
+                + "-"
+                + str(row["comment[technical replicate]"])
+                + "-"
+                + str(row["comment[fraction identifier]"]),
+                axis=1,
+            )
+            res.drop(["comment[data file]", "comment[label]", "comment[technical replicate]"], axis=1, inplace=True)
             res.rename(columns=self._map_lfq, inplace=True)
             res.rename(columns={factor: "condition"}, inplace=True)
             return res
