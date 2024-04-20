@@ -816,9 +816,9 @@ class FeatureInMemory:
                 ["source name", "comment[technical replicate]", "comment[fraction identifier]"]
             ].swifter.apply(
                 lambda row: str(mixed_map[row["source name"]])
-                + "-"
+                + "_"
                 + str(row["comment[technical replicate]"])
-                + "-"
+                + "_"
                 + str(row["comment[fraction identifier]"]),
                 axis=1,
             )
