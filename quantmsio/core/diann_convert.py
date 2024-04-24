@@ -481,10 +481,15 @@ class DiaNNConvert:
         feature_output_path,
     ):
 
-        sdrf = pd.read_csv(sdrf_path, sep="\t", usecols=["source name", "comment[data file]"])
+        sdrf = pd.read_csv(
+            sdrf_path, sep="\t", usecols=["source name", "comment[data file]", "comment[technical replicate]"]
+        )
+        samples = sdrf["source name"].unique()
+        mixed_map = dict(zip(samples, range(1, len(samples) + 1)))
         sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(lambda x: x.split(".")[0])
         sdrf = sdrf.set_index(["comment[data file]"])
         sdrf_map = sdrf.to_dict()["source name"]
+        tec_map = sdrf.to_dict()["comment[technical replicate]"]
         report = report[report["intensity"] != 0]
         report.loc[:, "fragment_ion"] = "NA"
         report.loc[:, "isotope_label_type"] = "L"
@@ -515,6 +520,16 @@ class DiaNNConvert:
         )
         # peptide_score_name = self._score_names["peptide_score"]
         report.loc[:, "sample_accession"] = report["reference_file_name"].map(sdrf_map)
+        report.loc[:, "comment[technical replicate]"] = report["reference_file_name"].map(tec_map)
+        report.loc[:, "run"] = report[["sample_accession", "comment[technical replicate]", "fraction"]].swifter.apply(
+            lambda row: str(mixed_map[row["sample_accession"]])
+            + "_"
+            + str(row["comment[technical replicate]"])
+            + "_"
+            + str(row["fraction"]),
+            axis=1,
+        )
+        report.drop(["comment[technical replicate]"], axis=1, inplace=True)
         schema = FeatureHandler()
         feature = FeatureInMemory("LFQ", schema.schema)
         feature._modifications = self._modifications
