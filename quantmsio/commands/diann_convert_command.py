@@ -20,7 +20,9 @@ from quantmsio.core.project import create_uuid_filename
     help="the design file path",
     required=True,
 )
-@click.option("--qvalue_threshold", help="qvalue_threshold", required=True, default=0.05)
+@click.option(
+    "--qvalue_threshold", help="qvalue_threshold", required=True, default=0.05
+)
 @click.option(
     "--mzml_info_folder",
     help="the foldef of mzml_info tsv file",
@@ -45,7 +47,9 @@ from quantmsio.core.project import create_uuid_filename
     "--duckdb_max_memory",
     help="The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)",
 )
-@click.option("--duckdb_threads", help="The number of threads for the DuckDB engine (e.g 4)")
+@click.option(
+    "--duckdb_threads", help="The number of threads for the DuckDB engine (e.g 4)"
+)
 @click.option(
     "--file_num",
     help="The number of files being processed at the same time",
@@ -81,8 +85,14 @@ def diann_convert_to_parquet(
     if not output_prefix_file:
         output_prefix_file = ""
 
-    feature_output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".feature.parquet")
-    psm_output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
+    feature_output_path = (
+        output_folder
+        + "/"
+        + create_uuid_filename(output_prefix_file, ".feature.parquet")
+    )
+    psm_output_path = (
+        output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
+    )
 
     dia_nn = DiaNNConvert()
 

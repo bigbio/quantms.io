@@ -23,7 +23,9 @@ def check_directory(output_folder: str, project_accession: str = None):
     :param project_accession: Prefix of the Json file needed to generate the file name
     """
     if project_accession is None:
-        project_json = [f for f in os.listdir(output_folder) if f.endswith("project.json")]
+        project_json = [
+            f for f in os.listdir(output_folder) if f.endswith("project.json")
+        ]
         if len(project_json) == 1:
             json_path = output_folder + "/" + project_json[0]
             project = ProjectHandler(project_json_file=json_path)
@@ -32,7 +34,9 @@ def check_directory(output_folder: str, project_accession: str = None):
             raise Exception(f"More than one project json file found in {output_folder}")
     else:
         if os.path.exists(output_folder):
-            project_json = [f for f in os.listdir(output_folder) if f.endswith("project.json")]
+            project_json = [
+                f for f in os.listdir(output_folder) if f.endswith("project.json")
+            ]
             for json_file in project_json:
                 json_path = output_folder + "/" + json_file
                 project = ProjectHandler(project_json_file=json_path)
@@ -109,11 +113,21 @@ class ProjectHandler:
             pride_data = response.json()
             self.project.project_info["project_accession"] = self.project_accession
             self.project.project_info["project_title"] = pride_data["title"]
-            self.project.project_info["project_description"] = pride_data["projectDescription"]
-            self.project.project_info["project_sample_description"] = pride_data["sampleProcessingProtocol"]
-            self.project.project_info["project_data_description"] = pride_data["dataProcessingProtocol"]
-            self.project.project_info["project_pubmed_id"] = get_pubmed_id_pride_json(pride_data)
-            self.project.project_info["experiment_type"] = get_set_of_experiment_keywords(pride_data)
+            self.project.project_info["project_description"] = pride_data[
+                "projectDescription"
+            ]
+            self.project.project_info["project_sample_description"] = pride_data[
+                "sampleProcessingProtocol"
+            ]
+            self.project.project_info["project_data_description"] = pride_data[
+                "dataProcessingProtocol"
+            ]
+            self.project.project_info["project_pubmed_id"] = get_pubmed_id_pride_json(
+                pride_data
+            )
+            self.project.project_info["experiment_type"] = (
+                get_set_of_experiment_keywords(pride_data)
+            )
         else:
             logger.info("A non-pride project is being created.")
 
@@ -135,9 +149,13 @@ class ProjectHandler:
         self.project.project_info["cell_lines"] = sdrf.get_cell_lines()
         self.project.project_info["instruments"] = sdrf.get_instruments()
         self.project.project_info["enzymes"] = sdrf.get_enzymes()
-        self.project.project_info["acquisition_properties"] = sdrf.get_acquisition_properties()
+        self.project.project_info["acquisition_properties"] = (
+            sdrf.get_acquisition_properties()
+        )
 
-    def add_quantms_file(self, file_name: str, file_category: str, replace_existing: bool = True):
+    def add_quantms_file(
+        self, file_name: str, file_category: str, replace_existing: bool = True
+    ):
         """
         Add a quantms file to the project information. The file name will be generated automatically. Read more about the
         quantms file naming convention in the docs folder of this repository
@@ -148,16 +166,22 @@ class ProjectHandler:
         """
         if "quantms_files" not in self.project.project_info:
             self.project.project_info["quantms_files"] = []
-            self.project.project_info["quantms_files"].append({file_category: file_name})
+            self.project.project_info["quantms_files"].append(
+                {file_category: file_name}
+            )
         elif replace_existing:
             obj_index = None
             for index, obj in enumerate(self.project.project_info["quantms_files"]):
                 if file_category in obj:
                     obj_index = index
             if obj_index is not None:
-                self.project.project_info["quantms_files"][obj_index][file_category] = file_name
+                self.project.project_info["quantms_files"][obj_index][
+                    file_category
+                ] = file_name
             else:
-                self.project.project_info["quantms_files"].append({file_category: file_name})
+                self.project.project_info["quantms_files"].append(
+                    {file_category: file_name}
+                )
         else:
             obj_index = None
             for index, obj in enumerate(self.project.project_info["quantms_files"]):
@@ -165,17 +189,27 @@ class ProjectHandler:
                     obj_index = index
             if obj_index is not None:
                 if isinstance(
-                    self.project.project_info["quantms_files"][obj_index][file_category],
+                    self.project.project_info["quantms_files"][obj_index][
+                        file_category
+                    ],
                     list,
                 ):
-                    self.project.project_info["quantms_files"][obj_index][file_category].append(file_name)
+                    self.project.project_info["quantms_files"][obj_index][
+                        file_category
+                    ].append(file_name)
                 else:
-                    self.project.project_info["quantms_files"][obj_index][file_category] = self.project.project_info[
-                        "quantms_files"
-                    ][obj_index][file_category].split()
-                    self.project.project_info["quantms_files"][obj_index][file_category].append(file_name)
+                    self.project.project_info["quantms_files"][obj_index][
+                        file_category
+                    ] = self.project.project_info["quantms_files"][obj_index][
+                        file_category
+                    ].split()
+                    self.project.project_info["quantms_files"][obj_index][
+                        file_category
+                    ].append(file_name)
             else:
-                self.project.project_info["quantms_files"].append({file_category: [file_name]})
+                self.project.project_info["quantms_files"].append(
+                    {file_category: [file_name]}
+                )
 
     def register_file(self, output_path, extension):
         extension_map = {
@@ -213,9 +247,7 @@ class ProjectHandler:
         if output_folder is None:
             output_filename = f"{output_prefix_file}-{str(uuid.uuid4())}{ProjectHandler.PROJECT_EXTENSION}"
         else:
-            output_filename = (
-                f"{output_folder}/{output_prefix_file}-{str(uuid.uuid4())}{ProjectHandler.PROJECT_EXTENSION}"
-            )
+            output_filename = f"{output_folder}/{output_prefix_file}-{str(uuid.uuid4())}{ProjectHandler.PROJECT_EXTENSION}"
 
         with open(output_filename, "w") as json_file:
             json.dump(self.project.project_info, json_file, indent=4)
@@ -239,7 +271,9 @@ class ProjectHandler:
         sdrf = SDRFHandler(sdrf_file)
         self.add_sdrf_project_properties(sdrf)
 
-    def add_sdrf_file(self, sdrf_file_path: str, output_folder: str, delete_existing: bool = True) -> None:
+    def add_sdrf_file(
+        self, sdrf_file_path: str, output_folder: str, delete_existing: bool = True
+    ) -> None:
         """
         Copy the given file to the project folder and add the file name to the project information.
         :param sdrf_file_path: SDRF file path
@@ -261,12 +295,16 @@ class ProjectHandler:
         if output_folder is None:
             output_filename_path = output_filename
         else:
-            output_filename_path = f"{output_folder}/{base_name}-{str(uuid.uuid4())}{extension}"
+            output_filename_path = (
+                f"{output_folder}/{base_name}-{str(uuid.uuid4())}{extension}"
+            )
 
         shutil.copyfile(sdrf_file_path, output_filename_path)
         # self.project.project_info["sdrf_file"] = output_filename
         self.register_file(output_filename, ".sdrf.tsv")
-        logger.info(f"SDRF file copied to {output_filename} and added to the project information")
+        logger.info(
+            f"SDRF file copied to {output_filename} and added to the project information"
+        )
 
 
 class ProjectDefinition:

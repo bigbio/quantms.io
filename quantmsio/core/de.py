@@ -64,7 +64,9 @@ class DifferentialExpressionHandler:
         https://github.com/bigbio/quantms.io/blob/main/docs/DE.md
         """
         # SDRF file information
-        self.fdr_threshold = 0.05  # FDR threshold to consider a protein as differentially expressed
+        self.fdr_threshold = (
+            0.05  # FDR threshold to consider a protein as differentially expressed
+        )
         self.sdrf_manager = None
         self.sdrf_file_path = None
 
@@ -85,7 +87,9 @@ class DifferentialExpressionHandler:
         self.de_file_path = msstats_file_path
 
         if not os.path.isfile(msstats_file_path):
-            raise FileNotFoundError("MSstats differential file not found: " + msstats_file_path)
+            raise FileNotFoundError(
+                "MSstats differential file not found: " + msstats_file_path
+            )
 
         self.msstats_df = pd.read_csv(msstats_file_path, sep="\t")
         # Rename columns to a lower case
@@ -121,7 +125,9 @@ class DifferentialExpressionHandler:
 
         quantms_df = self.msstats_df[
             [
-                DifferentialExpressionHandler.PROTEIN_ACCESSION_COLUMN["msstats_column"],
+                DifferentialExpressionHandler.PROTEIN_ACCESSION_COLUMN[
+                    "msstats_column"
+                ],
                 DifferentialExpressionHandler.LABEL_COLUMN["msstats_column"],
                 DifferentialExpressionHandler.log2FC_COLUMN["msstats_column"],
                 DifferentialExpressionHandler.SE_COLUMN["msstats_column"],
@@ -136,13 +142,25 @@ class DifferentialExpressionHandler:
         output_lines = ""
         if self.project_manager:
             output_lines += (
-                "#project_accession: " + self.project_manager.project.project_info["project_accession"] + "\n"
+                "#project_accession: "
+                + self.project_manager.project.project_info["project_accession"]
+                + "\n"
             )
-            output_lines += "#project_title: " + self.project_manager.project.project_info["project_title"] + "\n"
             output_lines += (
-                "#project_description: " + self.project_manager.project.project_info["project_description"] + "\n"
+                "#project_title: "
+                + self.project_manager.project.project_info["project_title"]
+                + "\n"
             )
-            output_lines += "#quantms_version: " + self.project_manager.project.project_info["quantms_version"] + "\n"
+            output_lines += (
+                "#project_description: "
+                + self.project_manager.project.project_info["project_description"]
+                + "\n"
+            )
+            output_lines += (
+                "#quantms_version: "
+                + self.project_manager.project.project_info["quantms_version"]
+                + "\n"
+            )
         factor_value = self.get_factor_value()
         if factor_value is not None:
             output_lines += "#factor_value: " + factor_value + "\n"
@@ -174,9 +192,7 @@ class DifferentialExpressionHandler:
                 DifferentialExpressionHandler.DIFFERENTIAL_EXPRESSION_EXTENSION,
             )
 
-        output_filename = (
-            f"{base_name}-{str(uuid.uuid4())}{DifferentialExpressionHandler.DIFFERENTIAL_EXPRESSION_EXTENSION}"
-        )
+        output_filename = f"{base_name}-{str(uuid.uuid4())}{DifferentialExpressionHandler.DIFFERENTIAL_EXPRESSION_EXTENSION}"
         if output_folder is None:
             output_filename_path = output_filename
         else:
@@ -186,8 +202,12 @@ class DifferentialExpressionHandler:
         with open(output_filename_path, "w", encoding="utf8") as f:
             f.write(output_lines)
         if self.project_manager:
-            self.project_manager.add_quantms_file(file_category="differential_file", file_name=output_filename)
-        logger.info(f"Differential expression file copied to {output_filename} and added to the project information")
+            self.project_manager.add_quantms_file(
+                file_category="differential_file", file_name=output_filename
+            )
+        logger.info(
+            f"Differential expression file copied to {output_filename} and added to the project information"
+        )
 
     def update_project_file(self, project_file: str = None):
         """

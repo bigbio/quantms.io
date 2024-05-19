@@ -50,7 +50,9 @@ def get_complex_value_sdrf_column(sdrf_table: DataFrame, column: str) -> list:
     return [get_name_from_complex_sdrf_value(value) for value in values]
 
 
-def get_acquisition_method(sdrf_table: DataFrame, acquisition_method_column: str, column_labeling: str) -> list:
+def get_acquisition_method(
+    sdrf_table: DataFrame, acquisition_method_column: str, column_labeling: str
+) -> list:
     """
     Get the acquisition method from the SDRF table.Returns the acquisition method and the labeling method.
     Three different methods are supported: label free, TMT and iTRAQ.
@@ -60,11 +62,16 @@ def get_acquisition_method(sdrf_table: DataFrame, acquisition_method_column: str
     :param acquisition_method_column: acquisition method column name
     :param column_labeling: labeling column name
     """
-    acquisition_values = get_complex_value_sdrf_column(sdrf_table, acquisition_method_column)
+    acquisition_values = get_complex_value_sdrf_column(
+        sdrf_table, acquisition_method_column
+    )
     labeling_values = get_complex_value_sdrf_column(sdrf_table, column_labeling)
     if len(acquisition_values) == 0 and len(labeling_values) > 0:
         for labeling_value in labeling_values:
-            if "label free" in labeling_value.lower() or "label-free" in labeling_value.lower():
+            if (
+                "label free" in labeling_value.lower()
+                or "label-free" in labeling_value.lower()
+            ):
                 acquisition_values.append("Label free")
                 acquisition_values.append("Data-dependent acquisition")
             elif "tmt" in labeling_value.lower():
@@ -142,21 +149,31 @@ class SDRFHandler:
         """
         acquisition_values = []
         [
-            acquisition_values.append({"proteomics data acquisition method": acquisition_value})
-            for acquisition_value in get_acquisition_method(self.sdrf_table, self.ACQUISITION_METHOD, self.LABELING)
+            acquisition_values.append(
+                {"proteomics data acquisition method": acquisition_value}
+            )
+            for acquisition_value in get_acquisition_method(
+                self.sdrf_table, self.ACQUISITION_METHOD, self.LABELING
+            )
         ]
         [
             acquisition_values.append({"dissociation method": dissociation_value})
-            for dissociation_value in get_complex_value_sdrf_column(self.sdrf_table, self.DISSOCIATION_METHOD)
+            for dissociation_value in get_complex_value_sdrf_column(
+                self.sdrf_table, self.DISSOCIATION_METHOD
+            )
         ]
         [
-            acquisition_values.append({"precursor mass tolerance": precursor_mass_tolerance_value})
+            acquisition_values.append(
+                {"precursor mass tolerance": precursor_mass_tolerance_value}
+            )
             for precursor_mass_tolerance_value in get_complex_value_sdrf_column(
                 self.sdrf_table, self.PRECURSOR_MASS_TOLERANCE
             )
         ]
         [
-            acquisition_values.append({"fragment mass tolerance": fragment_mass_tolerance_value})
+            acquisition_values.append(
+                {"fragment mass tolerance": fragment_mass_tolerance_value}
+            )
             for fragment_mass_tolerance_value in get_complex_value_sdrf_column(
                 self.sdrf_table, self.FRAGMENT_MASS_TOLERANCE
             )
@@ -167,7 +184,9 @@ class SDRFHandler:
         """
         Get the factor value
         """
-        selected_columns = [column for column in self.sdrf_table.columns if "factor value" in column]
+        selected_columns = [
+            column for column in self.sdrf_table.columns if "factor value" in column
+        ]
         if len(selected_columns) != 1:
             return None
         values = re.findall(r"\[(.*?)\]", selected_columns[0])
@@ -184,9 +203,13 @@ class SDRFHandler:
         experiment_type = self.get_experiment_type_from_sdrf()
         sdrf_pd = self.sdrf_table.copy()  # type: DataFrame
 
-        sdrf_pd["comment[data file]"] = sdrf_pd["comment[data file]"].apply(lambda x: x.split(".")[0])
+        sdrf_pd["comment[data file]"] = sdrf_pd["comment[data file]"].apply(
+            lambda x: x.split(".")[0]
+        )
 
-        factor_columns = [column for column in sdrf_pd.columns if "factor value" in column]
+        factor_columns = [
+            column for column in sdrf_pd.columns if "factor value" in column
+        ]
         if len(factor_columns) != 1:
             raise ValueError("The number of factor columns should be 1")
 
@@ -240,11 +263,15 @@ class SDRFHandler:
         The three possible values supported in SDRF are lfq, tmt and itraq.
         """
         if self.LABELING not in self.sdrf_table.columns:
-            raise ValueError("The SDRF file provided does not contain the comment[label] column")
+            raise ValueError(
+                "The SDRF file provided does not contain the comment[label] column"
+            )
 
         labeling_values = get_complex_value_sdrf_column(self.sdrf_table, self.LABELING)
         if len(labeling_values) == 0:
-            raise ValueError("The SDRF file provided does not contain any comment[label] value")
+            raise ValueError(
+                "The SDRF file provided does not contain any comment[label] value"
+            )
 
         labeling_values = [i.upper() for i in labeling_values]
 
@@ -260,16 +287,22 @@ class SDRFHandler:
             elif len(labeling_values) == 6:
                 return "TMT6"
             else:
-                raise ValueError("The SDRF file provided does not contain a supported TMT comment[label] value")
+                raise ValueError(
+                    "The SDRF file provided does not contain a supported TMT comment[label] value"
+                )
         elif len([i for i in labeling_values if "ITRAQ" in i]) > 0:
             if len(labeling_values) == 4:
                 return "ITRAQ4"
             elif len(labeling_values) == 8:
                 return "ITRAQ8"
             else:
-                raise ValueError("The SDRF file provided does not contain a supported iTRAQ comment[label] value")
+                raise ValueError(
+                    "The SDRF file provided does not contain a supported iTRAQ comment[label] value"
+                )
         else:
-            raise ValueError("The SDRF file provided does not contain any supported comment[label] value")
+            raise ValueError(
+                "The SDRF file provided does not contain any supported comment[label] value"
+            )
 
     def get_sample_labels(self):
         """
@@ -288,14 +321,27 @@ class SDRFHandler:
         """
         sample_map = {}
         sdrf_pd = self.sdrf_table.copy()  # type: DataFrame
-        sdrf_pd["comment[data file]"] = sdrf_pd["comment[data file]"].apply(lambda x: x.split(".")[0])
+        sdrf_pd["comment[data file]"] = sdrf_pd["comment[data file]"].apply(
+            lambda x: x.split(".")[0]
+        )
         for index, row in sdrf_pd.iterrows():
-            channel = "LABEL FREE SAMPLE" if "LABEL FREE" in row["comment[label]"].upper() else row["comment[label]"]
+            channel = (
+                "LABEL FREE SAMPLE"
+                if "LABEL FREE" in row["comment[label]"].upper()
+                else row["comment[label]"]
+            )
             if row["comment[data file]"] + ":_:" + channel in sample_map:
-                if sample_map[row["comment[data file]"] + ":_:" + channel] != row["source name"]:
+                if (
+                    sample_map[row["comment[data file]"] + ":_:" + channel]
+                    != row["source name"]
+                ):
                     raise ValueError("The sample map is not unique")
                 else:
-                    print("channel {} for sample {} already in the sample map".format(channel, row["source name"]))
+                    print(
+                        "channel {} for sample {} already in the sample map".format(
+                            channel, row["source name"]
+                        )
+                    )
             sample_map[row["comment[data file]"] + ":_:" + channel] = row["source name"]
         return sample_map
 
@@ -304,14 +350,21 @@ class SDRFHandler:
         mod_cols = [
             col
             for col in sdrf.columns
-            if (col.startswith("comment[modification parameter]") | col.startswith("comment[modification parameters]"))
+            if (
+                col.startswith("comment[modification parameter]")
+                | col.startswith("comment[modification parameters]")
+            )
         ]
         fix_m = []
         variable_m = []
         for col in mod_cols:
             mod_msg = sdrf[col].values[0].split(";")
             mod_dict = {k.split("=")[0]: k.split("=")[1] for k in mod_msg}
-            mod = f"{mod_dict['NT']} ({mod_dict['TA']})" if "TA" in mod_dict else f"{mod_dict['NT']} ({mod_dict['PP']})"
+            mod = (
+                f"{mod_dict['NT']} ({mod_dict['TA']})"
+                if "TA" in mod_dict
+                else f"{mod_dict['NT']} ({mod_dict['PP']})"
+            )
             if mod_dict["MT"] == "Variable" or mod_dict["MT"] == "variable":
                 variable_m.append(mod)
             else:
