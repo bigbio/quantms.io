@@ -31,9 +31,7 @@ class TestSDRFHandler(TestCase):
         print(sdrf_handler.get_experiment_type_from_sdrf())
 
     def test_get_labels(self):
-        file = (
-            __package__ + "/examples/DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv"
-        )
+        file = __package__ + "/examples/DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv"
         sdrf_handler = SDRFHandler(file)
         self.assertEqual(len(sdrf_handler.get_sample_labels()), 4)
 

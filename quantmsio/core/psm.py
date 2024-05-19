@@ -62,25 +62,19 @@ class PSMHandler(ParquetHandler):
         pa.field(
             "protein_global_qvalue",
             pa.float64(),
-            metadata={
-                "description": "global q-value of the associated protein or protein group"
-            },
+            metadata={"description": "global q-value of the associated protein or protein group"},
         ),
         pa.field(
             "unique",
             pa.int32(),
-            metadata={
-                "description": "if the peptide is unique to a particular protein"
-            },
+            metadata={"description": "if the peptide is unique to a particular protein"},
         ),
         pa.field(
             "modifications",
             pa.list_(pa.string()),
             metadata={"description": "peptide modifications"},
         ),
-        pa.field(
-            "retention_time", pa.float64(), metadata={"description": "retention time"}
-        ),
+        pa.field("retention_time", pa.float64(), metadata={"description": "retention time"}),
         pa.field(
             "charge",
             pa.int32(),
@@ -106,15 +100,11 @@ class PSMHandler(ParquetHandler):
             pa.float64(),
             metadata={"description": "posterior error probability"},
         ),
-        pa.field(
-            "global_qvalue", pa.float64(), metadata={"description": "global q-value"}
-        ),
+        pa.field("global_qvalue", pa.float64(), metadata={"description": "global q-value"}),
         pa.field(
             "is_decoy",
             pa.int32(),
-            metadata={
-                "description": "flag indicating if the feature is a decoy (1 is decoy, 0 is not decoy)"
-            },
+            metadata={"description": "flag indicating if the feature is a decoy (1 is decoy, 0 is not decoy)"},
         ),
         pa.field(
             "id_scores",
@@ -208,22 +198,12 @@ class PSMHandler(ParquetHandler):
 
             for it in iter(mztab_handler.read_next_psm, None):
                 if verbose:
-                    logger.info(
-                        "Sequence: {} -- Protein: {}".format(
-                            it["sequence"], it["accession"]
-                        )
-                    )
-                psm_list.append(
-                    self._transform_psm_from_mztab(psm=it, mztab_handler=mztab_handler)
-                )
-                if (
-                    len(psm_list) == batch_size and batch_count < batches
-                ):  # write in batches
+                    logger.info("Sequence: {} -- Protein: {}".format(it["sequence"], it["accession"]))
+                psm_list.append(self._transform_psm_from_mztab(psm=it, mztab_handler=mztab_handler))
+                if len(psm_list) == batch_size and batch_count < batches:  # write in batches
                     feature_table = self._create_psm_table(psm_list)
                     if not pq_writer:
-                        pq_writer = pq.ParquetWriter(
-                            self.parquet_path, feature_table.schema
-                        )
+                        pq_writer = pq.ParquetWriter(self.parquet_path, feature_table.schema)
                     pq_writer.write_table(feature_table)
                     psm_list = []
                     batch_count += 1
@@ -238,17 +218,11 @@ class PSMHandler(ParquetHandler):
 
             if pq_writer:
                 pq_writer.close()
-            logger.info(
-                "The parquet file was generated in: {}".format(self.parquet_path)
-            )
+            logger.info("The parquet file was generated in: {}".format(self.parquet_path))
         else:
             convert = PsmInMemory(self.schema)
-            convert.write_feature_to_file(
-                mztab_path, self.parquet_path, chunksize=batch_size
-            )
-            logger.info(
-                "The parquet file was generated in: {}".format(self.parquet_path)
-            )
+            convert.write_feature_to_file(mztab_path, self.parquet_path, chunksize=batch_size)
+            logger.info("The parquet file was generated in: {}".format(self.parquet_path))
 
     @staticmethod
     def _transform_psm_from_mztab(psm, mztab_handler) -> dict:
@@ -270,9 +244,7 @@ class PSMHandler(ParquetHandler):
             protein_accession_list=protein_accession_nredundant
         )
         protein_qvalue = (
-            None
-            if (protein_qvalue is None or protein_qvalue[0] == "null")
-            else np.float64(protein_qvalue[0])
+            None if (protein_qvalue is None or protein_qvalue[0] == "null") else np.float64(protein_qvalue[0])
         )
 
         retention_time = (
@@ -307,27 +279,18 @@ class PSMHandler(ParquetHandler):
             else None
         )
 
-        modification_list = (
-            None if modifications_string is None else modifications_string.split(",")
-        )
+        modification_list = None if modifications_string is None else modifications_string.split(",")
         posterior_error_probability = (
             None
-            if (
-                "posterior_error_probability" not in psm
-                or psm["posterior_error_probability"] is None
-            )
+            if ("posterior_error_probability" not in psm or psm["posterior_error_probability"] is None)
             else np.float64(psm["posterior_error_probability"])
         )
 
         global_qvalue = (
-            None
-            if ("global_qvalue" not in psm or psm["global_qvalue"] is None)
-            else np.float64(psm["global_qvalue"])
+            None if ("global_qvalue" not in psm or psm["global_qvalue"] is None) else np.float64(psm["global_qvalue"])
         )
 
-        consensus_support = (
-            None if psm["consensus_support"] else np.float32(psm["consensus_support"])
-        )
+        consensus_support = None if psm["consensus_support"] else np.float32(psm["consensus_support"])
 
         psm_score = np.float64(psm["score"])
         peptide_score_name = mztab_handler.get_search_engine_scores()["psm_score"]
@@ -343,9 +306,7 @@ class PSMHandler(ParquetHandler):
             "retention_time": retention_time,
             "charge": charge,
             "calc_mass_to_charge": calc_mass_to_charge,
-            "peptidoform": psm[
-                "proforma_peptidoform"
-            ],  # Peptidoform in proforma notation
+            "peptidoform": psm["proforma_peptidoform"],  # Peptidoform in proforma notation
             "posterior_error_probability": posterior_error_probability,
             "global_qvalue": global_qvalue,
             "is_decoy": int(psm["is_decoy"]),

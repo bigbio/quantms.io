@@ -8,9 +8,7 @@ from quantmsio.core.tools import register_file_to_json
     short_help="Register the file to project.json.",
 )
 @click.option("--project_file", help="the project.json file", required=True)
-@click.option(
-    "--attach_file", help="The path of the file that will be registered", required=True
-)
+@click.option("--attach_file", help="The path of the file that will be registered", required=True)
 @click.option(
     "--category",
     type=click.Choice(

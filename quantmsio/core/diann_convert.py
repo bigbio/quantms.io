@@ -34,9 +34,7 @@ def get_exp_design_dfs(exp_design_file):
         f_table = [i.replace("\n", "").split("\t") for i in data[1:empty_row]]
         f_header = data[0].replace("\n", "").split("\t")
         f_table = pd.DataFrame(f_table, columns=f_header)
-        f_table.loc[:, "run"] = f_table.apply(
-            lambda x: _true_stem(x["Spectra_Filepath"]), axis=1
-        )
+        f_table.loc[:, "run"] = f_table.apply(lambda x: _true_stem(x["Spectra_Filepath"]), axis=1)
         f_table.rename(columns={"Fraction_Group": "ms_run", "run": "Run"}, inplace=True)
         s_table = [i.replace("\n", "").split("\t") for i in data[empty_row + 1 :]][1:]
         s_header = data[empty_row + 1].replace("\n", "").split("\t")
@@ -94,9 +92,7 @@ def find_modification(peptide):
     for k in range(0, len(original_mods)):
         original_mods[k] = str(position[k]) + "-" + original_mods[k].upper()
 
-    original_mods = (
-        ",".join(str(i) for i in original_mods) if len(original_mods) > 0 else "null"
-    )
+    original_mods = ",".join(str(i) for i in original_mods) if len(original_mods) > 0 else "null"
 
     return original_mods
 
@@ -123,9 +119,7 @@ def mtd_mod_info(fix_mod, var_mod):
             mod_name = mod_obj.getId()
             mod_accession = mod_obj.getUniModAccession()
             site = mod_obj.getOrigin()
-            fix_ptm.append(
-                ("[UNIMOD, " + mod_accession.upper() + ", " + mod_name + ", ]", site)
-            )
+            fix_ptm.append(("[UNIMOD, " + mod_accession.upper() + ", " + mod_name + ", ]", site))
     else:
         fix_flag = 0
         fix_ptm.append("[MS, MS:1002453, No fixed modifications searched, ]")
@@ -137,9 +131,7 @@ def mtd_mod_info(fix_mod, var_mod):
             mod_name = mod_obj.getId()
             mod_accession = mod_obj.getUniModAccession()
             site = mod_obj.getOrigin()
-            var_ptm.append(
-                ("[UNIMOD, " + mod_accession.upper() + ", " + mod_name + ", ]", site)
-            )
+            var_ptm.append(("[UNIMOD, " + mod_accession.upper() + ", " + mod_name + ", ]", site))
     else:
         var_flag = 0
         var_ptm.append("[MS, MS:1002454, No variable modifications searched, ]")
@@ -148,31 +140,21 @@ def mtd_mod_info(fix_mod, var_mod):
 
 
 def get_modifications(fix_modifications: str, variable_modifications: str):
-    (fixed_mods, variable_mods, fix_flag, var_flag) = mtd_mod_info(
-        fix_modifications, variable_modifications
-    )
+    (fixed_mods, variable_mods, fix_flag, var_flag) = mtd_mod_info(fix_modifications, variable_modifications)
 
     modifications_list = []
     if fix_flag == 1:
         for i in range(1, len(fixed_mods) + 1):
-            modifications_list.append(
-                f"MTD\tfixed_mod[{str(i)}]\t{fixed_mods[i - 1][0]}"
-            )
-            modifications_list.append(
-                f"MTD\tfixed_mod[{str(i)}]-site\t{fixed_mods[i - 1][1]}"
-            )
+            modifications_list.append(f"MTD\tfixed_mod[{str(i)}]\t{fixed_mods[i - 1][0]}")
+            modifications_list.append(f"MTD\tfixed_mod[{str(i)}]-site\t{fixed_mods[i - 1][1]}")
             modifications_list.append(f"MTD\tfixed_mod[{str(i)}]-position\tAnywhere")
     else:
         modifications_list.append(f"MTD\tfixed_mod[1]\t{fixed_mods[0]}")
 
     if var_flag == 1:
         for i in range(1, len(variable_mods) + 1):
-            modifications_list.append(
-                f"MTD\tvariable_mod[{str(i)}]\t{variable_mods[i - 1][0]}"
-            )
-            modifications_list.append(
-                f"MTD\tvariable_mod[{str(i)}]-site\t{variable_mods[i - 1][1]}"
-            )
+            modifications_list.append(f"MTD\tvariable_mod[{str(i)}]\t{variable_mods[i - 1][0]}")
+            modifications_list.append(f"MTD\tvariable_mod[{str(i)}]-site\t{variable_mods[i - 1][1]}")
             modifications_list.append(f"MTD\tvariable_mod[{str(i)}]-position\tAnywhere")
     else:
         modifications_list.append(f"MTD\tvariable_mod[1]\t{variable_mods[0]}")
@@ -229,18 +211,12 @@ class DiaNNConvert:
         if worker_threads is not None:
             database.execute("SET worker_threads='{}'".format(worker_threads))
 
-        msg = database.execute(
-            "SELECT * FROM duckdb_settings() where name in ('worker_threads', 'max_memory')"
-        ).df()
+        msg = database.execute("SELECT * FROM duckdb_settings() where name in ('worker_threads', 'max_memory')").df()
         logging.info("Duckdb uses {} threads.".format(str(msg["value"][0])))
         logging.info("duckdb uses {} of memory.".format(str(msg["value"][1])))
 
-        database.execute(
-            "CREATE TABLE diann_report AS SELECT * FROM '{}'".format(report_path)
-        )
-        database.execute(
-            """CREATE INDEX idx_precursor_q ON diann_report ("Precursor.Id", "Q.Value")"""
-        )
+        database.execute("CREATE TABLE diann_report AS SELECT * FROM '{}'".format(report_path))
+        database.execute("""CREATE INDEX idx_precursor_q ON diann_report ("Precursor.Id", "Q.Value")""")
         database.execute("""CREATE INDEX idx_run ON diann_report ("Run")""")
 
         et = time.time() - s
@@ -322,21 +298,13 @@ class DiaNNConvert:
 
     def get_mods(self, sdrf_path):
         sdrf = pd.read_csv(sdrf_path, sep="\t", nrows=1)
-        mod_cols = [
-            col
-            for col in sdrf.columns
-            if col.startswith("comment[modification parameter]")
-        ]
+        mod_cols = [col for col in sdrf.columns if col.startswith("comment[modification parameter]")]
         fix_m = []
         variable_m = []
         for col in mod_cols:
             mod_msg = sdrf[col].values[0].split(";")
             mod_dict = {k.split("=")[0]: k.split("=")[1] for k in mod_msg}
-            mod = (
-                f"{mod_dict['NT']} ({mod_dict['TA']})"
-                if "TA" in mod_dict
-                else f"{mod_dict['NT']} ({mod_dict['PP']})"
-            )
+            mod = f"{mod_dict['NT']} ({mod_dict['TA']})" if "TA" in mod_dict else f"{mod_dict['NT']} ({mod_dict['PP']})"
             if mod_dict["MT"] == "Variable" or mod_dict["MT"] == "variable":
                 variable_m.append(mod)
             else:
@@ -387,9 +355,7 @@ class DiaNNConvert:
             for mzml in os.listdir(mzml_info_folder)
             if mzml.endswith("_mzml_info.tsv")
         ]
-        info_list = [
-            info_list[i : i + file_num] for i in range(0, len(info_list), file_num)
-        ]
+        info_list = [info_list[i : i + file_num] for i in range(0, len(info_list), file_num)]
         for refs in info_list:
             report = self.get_report_from_database(refs)
 
@@ -405,24 +371,18 @@ class DiaNNConvert:
             report = pd.DataFrame(report, columns=usecols)
 
             # spectral count
-            report["spectral_count"] = report.groupby(
-                ["Modified.Sequence", "Precursor.Charge", "Run"]
-            ).transform("size")
+            report["spectral_count"] = report.groupby(["Modified.Sequence", "Precursor.Charge", "Run"]).transform(
+                "size"
+            )
             # cal value and mod
             mass_vector = report["Modified.Sequence"].map(masses_map)
             report["Calculate.Precursor.Mz"] = (
                 mass_vector + (PROTON_MASS_U * report["Precursor.Charge"].values)
             ) / report["Precursor.Charge"].values
-            report["modifications"] = report["Modified.Sequence"].swifter.apply(
-                lambda x: find_modification(x)
-            )
-            report["Modified.Sequence"] = report["Modified.Sequence"].map(
-                modifications_map
-            )
+            report["modifications"] = report["Modified.Sequence"].swifter.apply(lambda x: find_modification(x))
+            report["Modified.Sequence"] = report["Modified.Sequence"].map(modifications_map)
             # pep
-            report["best_psm_reference_file_name"] = report["Precursor.Id"].map(
-                best_ref_map
-            )
+            report["best_psm_reference_file_name"] = report["Precursor.Id"].map(best_ref_map)
             report["best_psm_scan_number"] = None
             # add extra msg
             report = self.add_additional_msg(report)
@@ -444,17 +404,13 @@ class DiaNNConvert:
         psm_pqwriter = None
         feature_pqwriter = None
 
-        self._duckdb = self.create_duckdb_from_diann_report(
-            report_path, duckdb_max_memory, duckdb_threads
-        )
+        self._duckdb = self.create_duckdb_from_diann_report(report_path, duckdb_max_memory, duckdb_threads)
 
         s_data_frame, f_table = get_exp_design_dfs(design_file)
         sdrf_handle = SDRFHandler(sdrf_path)
         fix_mods, variable_mods = sdrf_handle.get_mods()
         self._modifications = get_modifications(fix_mods, variable_mods)
-        for report in self.main_report_df(
-            report_path, qvalue_threshold, mzml_info_folder, file_num
-        ):
+        for report in self.main_report_df(report_path, qvalue_threshold, mzml_info_folder, file_num):
             s = time.time()
             psm_pqwriter = self.generate_psm_file(report, psm_pqwriter, psm_output_path)
             feature_pqwriter = self.generate_feature_file(
@@ -481,14 +437,10 @@ class DiaNNConvert:
         :return: The report dataframe with the transformations
         """
         report.rename(columns=self._columns_map, inplace=True)
-        report["reference_file_name"] = report["reference_file_name"].swifter.apply(
-            lambda x: x.split(".")[0]
-        )
+        report["reference_file_name"] = report["reference_file_name"].swifter.apply(lambda x: x.split(".")[0])
 
         report.loc[:, "is_decoy"] = "0"
-        report.loc[:, "unique"] = report["protein_accessions"].swifter.apply(
-            lambda x: "0" if ";" in str(x) else "1"
-        )
+        report.loc[:, "unique"] = report["protein_accessions"].swifter.apply(lambda x: "0" if ";" in str(x) else "1")
 
         null_col = ["protein_start_positions", "protein_end_positions"]
         report.loc[:, null_col] = None
@@ -500,9 +452,7 @@ class DiaNNConvert:
             axis=1,
         )
 
-        report["id_scores"] = report[
-            ["Q.Value", "posterior_error_probability", "global_qvalue"]
-        ].swifter.apply(
+        report["id_scores"] = report[["Q.Value", "posterior_error_probability", "global_qvalue"]].swifter.apply(
             lambda x: f"""q-value: {x['Q.Value']},global q-value: {x['global_qvalue']},
             posterior error probability:{x['posterior_error_probability']}""",
             axis=1,
@@ -542,9 +492,7 @@ class DiaNNConvert:
         )
         samples = sdrf["source name"].unique()
         mixed_map = dict(zip(samples, range(1, len(samples) + 1)))
-        sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(
-            lambda x: x.split(".")[0]
-        )
+        sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(lambda x: x.split(".")[0])
         sdrf = sdrf.set_index(["comment[data file]"])
         sdrf_map = sdrf.to_dict()["source name"]
         tec_map = sdrf.to_dict()["comment[technical replicate]"]
@@ -578,12 +526,8 @@ class DiaNNConvert:
         )
         # peptide_score_name = self._score_names["peptide_score"]
         report.loc[:, "sample_accession"] = report["reference_file_name"].map(sdrf_map)
-        report.loc[:, "comment[technical replicate]"] = report[
-            "reference_file_name"
-        ].map(tec_map)
-        report.loc[:, "run"] = report[
-            ["sample_accession", "comment[technical replicate]", "fraction"]
-        ].swifter.apply(
+        report.loc[:, "comment[technical replicate]"] = report["reference_file_name"].map(tec_map)
+        report.loc[:, "run"] = report[["sample_accession", "comment[technical replicate]", "fraction"]].swifter.apply(
             lambda row: str(mixed_map[row["sample_accession"]])
             + "_"
             + str(row["comment[technical replicate]"])
@@ -600,9 +544,7 @@ class DiaNNConvert:
 
         if not feature_pqwriter:
             # create a parquet write object giving it an output file
-            feature_pqwriter = pq.ParquetWriter(
-                feature_output_path, parquet_table.schema
-            )
+            feature_pqwriter = pq.ParquetWriter(feature_output_path, parquet_table.schema)
         feature_pqwriter.write_table(parquet_table)
 
         return feature_pqwriter
@@ -634,38 +576,20 @@ class DiaNNConvert:
         res["sequence"] = res["sequence"].astype(str)
         res["protein_accessions"] = res["protein_accessions"].str.split(";")
         res["protein_start_positions"] = (
-            res["protein_start_positions"]
-            .swifter.apply(self.__split_start_or_end)
-            .to_list()
+            res["protein_start_positions"].swifter.apply(self.__split_start_or_end).to_list()
         )
-        res["protein_end_positions"] = (
-            res["protein_end_positions"]
-            .swifter.apply(self.__split_start_or_end)
-            .to_list()
-        )
+        res["protein_end_positions"] = res["protein_end_positions"].swifter.apply(self.__split_start_or_end).to_list()
         res["protein_global_qvalue"] = res["protein_global_qvalue"].astype(float)
-        res["unique"] = (
-            res["unique"].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype("Int32")
-        )
-        res["modifications"] = res["modifications"].swifter.apply(
-            lambda x: feature._generate_modification_list(x)
-        )
+        res["unique"] = res["unique"].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype("Int32")
+        res["modifications"] = res["modifications"].swifter.apply(lambda x: feature._generate_modification_list(x))
         res["retention_time"] = res["retention_time"].astype(float)
-        res["charge"] = (
-            res["charge"].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype("Int32")
-        )
+        res["charge"] = res["charge"].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype("Int32")
         res["exp_mass_to_charge"] = res["exp_mass_to_charge"].astype(float)
         res["calc_mass_to_charge"] = res["calc_mass_to_charge"].astype(float)
-        res["posterior_error_probability"] = res["posterior_error_probability"].astype(
-            float
-        )
+        res["posterior_error_probability"] = res["posterior_error_probability"].astype(float)
         res["global_qvalue"] = res["global_qvalue"].astype(float)
 
-        res["is_decoy"] = (
-            res["is_decoy"]
-            .map(lambda x: pd.NA if pd.isna(x) else int(x))
-            .astype("Int32")
-        )
+        res["is_decoy"] = res["is_decoy"].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype("Int32")
 
         res.loc[:, "num_peaks"] = None
         res.loc[:, "mz_array"] = None

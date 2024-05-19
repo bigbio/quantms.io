@@ -63,9 +63,7 @@ class PsmInMemory:
         self._modifications = get_modifications(mztab_path)
         for psm in psms:
             if "opt_global_cv_MS:1000889_peptidoform_sequence" not in psm.columns:
-                psm.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = psm[
-                    ["modifications", "sequence"]
-                ].apply(
+                psm.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = psm[["modifications", "sequence"]].apply(
                     lambda row: get_petidoform_msstats_notation(
                         row["sequence"], row["modifications"], self._modifications
                     ),
@@ -76,12 +74,8 @@ class PsmInMemory:
             for col in self._psm_usecols:
                 if col not in psm.columns:
                     psm.loc[:, col] = None
-            psm.loc[:, "scan_number"] = psm["spectra_ref"].apply(
-                lambda x: generate_scan_number(x)
-            )
-            psm["spectra_ref"] = psm["spectra_ref"].apply(
-                lambda x: self._ms_runs[x.split(":")[0]]
-            )
+            psm.loc[:, "scan_number"] = psm["spectra_ref"].apply(lambda x: generate_scan_number(x))
+            psm["spectra_ref"] = psm["spectra_ref"].apply(lambda x: self._ms_runs[x.split(":")[0]])
             self._psm_usecols.append("scan_number")
             psm = psm[self._psm_usecols]
             self._psm_usecols.pop()
@@ -153,33 +147,17 @@ class PsmInMemory:
         res["id_scores"] = res["id_scores"].apply(lambda x: x.split(","))
         res["sequence"] = res["sequence"].astype(str)
         res["protein_accessions"] = res["protein_accessions"].str.split(";")
-        res["protein_start_positions"] = (
-            res["protein_start_positions"].apply(self.__split_start_or_end).to_list()
-        )
-        res["protein_end_positions"] = (
-            res["protein_end_positions"].apply(self.__split_start_or_end).to_list()
-        )
+        res["protein_start_positions"] = res["protein_start_positions"].apply(self.__split_start_or_end).to_list()
+        res["protein_end_positions"] = res["protein_end_positions"].apply(self.__split_start_or_end).to_list()
         res["protein_global_qvalue"] = res["protein_global_qvalue"].astype(float)
-        res["unique"] = (
-            res["unique"].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype("Int32")
-        )
-        res["modifications"] = res["modifications"].apply(
-            lambda x: self._feature._generate_modification_list(x)
-        )
-        res["charge"] = (
-            res["charge"].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype("Int32")
-        )
+        res["unique"] = res["unique"].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype("Int32")
+        res["modifications"] = res["modifications"].apply(lambda x: self._feature._generate_modification_list(x))
+        res["charge"] = res["charge"].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype("Int32")
         res["exp_mass_to_charge"] = res["exp_mass_to_charge"].astype(float)
         res["calc_mass_to_charge"] = res["calc_mass_to_charge"].astype(float)
-        res["posterior_error_probability"] = res["posterior_error_probability"].astype(
-            float
-        )
+        res["posterior_error_probability"] = res["posterior_error_probability"].astype(float)
         res["global_qvalue"] = res["global_qvalue"].astype(float)
-        res["is_decoy"] = (
-            res["is_decoy"]
-            .map(lambda x: pd.NA if pd.isna(x) else int(x))
-            .astype("Int32")
-        )
+        res["is_decoy"] = res["is_decoy"].map(lambda x: pd.NA if pd.isna(x) else int(x)).astype("Int32")
         res["consensus_support"] = res["consensus_support"].astype(float)
         res["scan_number"] = res["scan_number"].astype(str)
 
