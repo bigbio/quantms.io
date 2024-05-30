@@ -27,6 +27,11 @@ from quantmsio.core.tools import plot_sequence_venn
     is_flag=True,
 )
 @click.option(
+    "--protein_file",
+    help="the mzTab file, this will be used to extract the protein information",
+    required=False,
+)
+@click.option(
     "--output_prefix_file",
     help="Prefix of the parquet file needed to generate the file name",
     required=False,
@@ -36,6 +41,7 @@ def convert_psm_file(
     mztab_file: str,
     output_folder: str,
     use_cache: bool,
+    protein_file:str=None,
     output_prefix_file: str = None,
     verbose: bool = False,
 ):
@@ -61,6 +67,7 @@ def convert_psm_file(
         parquet_path=psm_manager.parquet_path,
         verbose=verbose,
         use_cache=use_cache,
+        protein_file=protein_file,
     )
 
 
