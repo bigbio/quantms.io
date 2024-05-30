@@ -32,6 +32,11 @@ from quantmsio.core.project import create_uuid_filename
     is_flag=True,
 )
 @click.option(
+    "--protein_file",
+    help="the mzTab file, this will be used to extract the protein information",
+    required=False,
+)
+@click.option(
     "--output_folder",
     help="Folder where the Json file will be generated",
     required=True,
@@ -47,6 +52,7 @@ def convert_feature_file(
     mztab_file: str,
     consensusxml_file: str,
     use_cache: bool,
+    protein_file:str,
     output_folder: str,
     output_prefix_file: str,
 ):
@@ -77,6 +83,7 @@ def convert_feature_file(
             msstats_file=msstats_file,
             sdrf_file=sdrf_file,
             consesusxml_file=consensusxml_file,
+            protein_file=protein_file,
             use_cache=use_cache,
         )
     else:
@@ -84,5 +91,6 @@ def convert_feature_file(
             mztab_file=mztab_file,
             msstats_file=msstats_file,
             sdrf_file=sdrf_file,
+            protein_file=protein_file,
             use_cache=use_cache,
         )

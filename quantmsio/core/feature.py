@@ -431,6 +431,7 @@ class FeatureHandler(ParquetHandler):
         mztab_file: str,
         consesusxml_file: str = None,
         batch_size: int = 1000000,
+        protein_file:str = None,
         use_cache: bool = False,
     ):
         """
@@ -514,7 +515,9 @@ class FeatureHandler(ParquetHandler):
                 msstats_file,
                 sdrf_file,
                 self.parquet_path,
+                protein_file=protein_file,
                 msstats_chunksize=batch_size,
+                intensity_map=intensity_map
             )
 
     def describe_schema(self):
