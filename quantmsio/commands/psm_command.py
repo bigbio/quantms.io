@@ -28,7 +28,7 @@ from quantmsio.core.tools import plot_sequence_venn
 )
 @click.option(
     "--protein_file",
-    help="the mzTab file, this will be used to extract the protein information",
+    help="Protein file that meets specific requirements",
     required=False,
 )
 @click.option(

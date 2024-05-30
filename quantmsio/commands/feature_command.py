@@ -33,7 +33,7 @@ from quantmsio.core.project import create_uuid_filename
 )
 @click.option(
     "--protein_file",
-    help="the mzTab file, this will be used to extract the protein information",
+    help="Protein file that meets specific requirements",
     required=False,
 )
 @click.option(
