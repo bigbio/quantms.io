@@ -17,6 +17,7 @@ from quantmsio.utils.pride_utils import get_petidoform_msstats_notation
 from quantmsio.utils.pride_utils import get_quantmsio_modifications
 from quantmsio.utils.file_utils import extract_protein_list
 
+
 def get_modifications(mztab_path):
     """
     mzTab_path: mzTab file path
@@ -214,7 +215,7 @@ class FeatureInMemory:
         self.__set_table_config(header, fle_len, pos, fle)
         return pd.read_csv(f, nrows=fle_len, **kwargs)
 
-    def __get_spectra_count(self, mztab_path, psm_chunksize,protein_str=None):
+    def __get_spectra_count(self, mztab_path, psm_chunksize, protein_str=None):
         """
         mzTab_path: mzTab file path
         psm_chunksize: the large of chunk
@@ -226,7 +227,7 @@ class FeatureInMemory:
         psms = self.skip_and_load_csv(mztab_path, "PSH", sep="\t", chunksize=psm_chunksize)
         for psm in psms:
             if protein_str:
-                psm = psm[psm['accession'].str.contains(f"{protein_str}",na=False)]
+                psm = psm[psm["accession"].str.contains(f"{protein_str}", na=False)]
             psm["spectra_ref"] = psm["spectra_ref"].swifter.apply(lambda x: self._ms_runs[x.split(":")[0]])
             if "opt_global_cv_MS:1000889_peptidoform_sequence" not in psm.columns:
                 psm.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = psm[
@@ -257,7 +258,7 @@ class FeatureInMemory:
             counter.update(spectra_dict.to_dict())
         return counter
 
-    def _get_protein_map(self, mztab_path,protein_str=None):
+    def _get_protein_map(self, mztab_path, protein_str=None):
         """
         return: a dict about protein score
         """
@@ -268,7 +269,7 @@ class FeatureInMemory:
             usecols=["ambiguity_members", "best_search_engine_score[1]"],
         )
         if protein_str:
-            prt = prt[prt['ambiguity_members'].str.contains(f"{protein_str}",na=False)]
+            prt = prt[prt["ambiguity_members"].str.contains(f"{protein_str}", na=False)]
         prt_score = prt.groupby("ambiguity_members").min()
         protein_map = prt_score.to_dict()["best_search_engine_score[1]"]
         return protein_map
@@ -377,7 +378,7 @@ class FeatureInMemory:
         map_dict = pep_msg.to_dict()["pep_msg"]
         return map_dict
 
-    def _extract_from_psm_to_pep_msg(self, mztab_path, map_dict,protein_str:None):
+    def _extract_from_psm_to_pep_msg(self, mztab_path, map_dict, protein_str: None):
         """
         return dict about pep and psm msg
         """
@@ -392,7 +393,7 @@ class FeatureInMemory:
         psm_unique_keys = []
         for psm in psms:
             if protein_str:
-                psm = psm[psm['accession'].str.contains(f"{protein_str}",na=False)]
+                psm = psm[psm["accession"].str.contains(f"{protein_str}", na=False)]
             if "opt_global_cv_MS:1000889_peptidoform_sequence" not in psm.columns:
                 psm.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = psm[
                     ["modifications", "sequence"]
@@ -490,7 +491,7 @@ class FeatureInMemory:
 
         return map_dict
 
-    def _extract_psm_pep_msg(self, mztab_path,protein_str):
+    def _extract_psm_pep_msg(self, mztab_path, protein_str):
         """
         mzTab_path: mzTab file path
         return: dict about pep and psm msg
@@ -499,7 +500,7 @@ class FeatureInMemory:
         self._ms_runs = self.extract_ms_runs(mztab_path)
         self._score_names = self._get_score_names(mztab_path)
         map_dict = self._extract_from_pep(mztab_path)
-        map_dict = self._extract_from_psm_to_pep_msg(mztab_path, map_dict,protein_str)
+        map_dict = self._extract_from_psm_to_pep_msg(mztab_path, map_dict, protein_str)
 
         return map_dict
 
@@ -654,13 +655,13 @@ class FeatureInMemory:
         sdrf_path: sdrf file path
         msstats_chunksize: the large of msstats chunk
         """
-        protein_map = self._get_protein_map(mztab_path,protein_str)
-        map_dict = self._extract_psm_pep_msg(mztab_path,protein_str)
+        protein_map = self._get_protein_map(mztab_path, protein_str)
+        map_dict = self._extract_psm_pep_msg(mztab_path, protein_str)
         msstats_ins = pd.read_csv(msstats_path, chunksize=msstats_chunksize)
         spectra_count_dict = self.__get_spectra_count(mztab_path, 500000, protein_str)
         for msstats_in in msstats_ins:
             if protein_str:
-                msstats_in = msstats_in[msstats_in['ProteinName'].str.contains(f"{protein_str}",na=False)]
+                msstats_in = msstats_in[msstats_in["ProteinName"].str.contains(f"{protein_str}", na=False)]
             msstats_in["Reference"] = msstats_in["Reference"].swifter.apply(lambda x: x.split(".")[0])
             msstats_in.loc[:, "protein_global_qvalue"] = msstats_in["ProteinName"].swifter.apply(
                 lambda x: self._handle_protein_map(protein_map, x)

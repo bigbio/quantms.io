@@ -186,8 +186,8 @@ class DiaNNConvert:
             "Modified.Sequence": "peptidoform",
             "opt_global_spectrum_reference": "scan_number",
             "File.Name": "reference_file_name",
-            #"Precursor.Quantity": "intensity",
-            'Precursor.Normalised': "intensity",
+            # "Precursor.Quantity": "intensity",
+            "Precursor.Normalised": "intensity",
             "Global.Q.Value": "global_qvalue",
             "PEP": "posterior_error_probability",
             "Global.PG.Q.Value": "protein_global_qvalue",
@@ -481,7 +481,7 @@ class DiaNNConvert:
         feature_pqwriter,
         feature_output_path,
     ):
-        report = report[(report['Q.Value'] <= 0.01) & (report['PG.Q.Value'] <= 0.01)]
+        report = report[(report["Q.Value"] <= 0.01) & (report["PG.Q.Value"] <= 0.01)]
         sdrf = pd.read_csv(
             sdrf_path,
             sep="\t",

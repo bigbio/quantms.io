@@ -52,7 +52,7 @@ def convert_feature_file(
     mztab_file: str,
     consensusxml_file: str,
     use_cache: bool,
-    protein_file:str,
+    protein_file: str,
     output_folder: str,
     output_prefix_file: str,
 ):

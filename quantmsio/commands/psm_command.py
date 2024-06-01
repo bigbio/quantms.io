@@ -41,7 +41,7 @@ def convert_psm_file(
     mztab_file: str,
     output_folder: str,
     use_cache: bool,
-    protein_file:str=None,
+    protein_file: str = None,
     output_prefix_file: str = None,
     verbose: bool = False,
 ):

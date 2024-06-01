@@ -3,6 +3,7 @@ import click
 from quantmsio.core.de import DifferentialExpressionHandler
 from quantmsio.utils.file_utils import extract_protein_list
 
+
 @click.command(
     "convert-de",
     short_help="Convert a MSstats differential file into a quantms.io file format",
@@ -36,7 +37,7 @@ def convert_msstats_differential(
     msstats_file: str,
     sdrf_file: str,
     project_file: str,
-    protein_file:str,
+    protein_file: str,
     fdr_threshold: float,
     output_folder: str,
     output_prefix_file: str,
@@ -62,7 +63,7 @@ def convert_msstats_differential(
     de_handler = DifferentialExpressionHandler()
     if project_file:
         de_handler.load_project_file(project_file)
-    de_handler.load_msstats_file(msstats_file,protein_str)
+    de_handler.load_msstats_file(msstats_file, protein_str)
     de_handler.load_sdrf_file(sdrf_file)
     de_handler.set_fdr_threshold(fdr_threshold=fdr_threshold)
     de_handler.convert_msstats_to_quantms(

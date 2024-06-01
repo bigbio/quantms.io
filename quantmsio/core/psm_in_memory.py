@@ -10,6 +10,7 @@ from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mzta
 from quantmsio.utils.pride_utils import get_petidoform_msstats_notation
 from quantmsio.utils.file_utils import extract_protein_list
 
+
 class PsmInMemory:
     def __init__(self, schema):
         self.schema = schema
@@ -46,8 +47,8 @@ class PsmInMemory:
             "opt_global_consensus_support": "consensus_support",
         }
 
-    def generate_psm_parquet(self, mztab_path, chunksize=1000000,protein_str=None):
-        protein_map = self._feature._get_protein_map(mztab_path,protein_str)
+    def generate_psm_parquet(self, mztab_path, chunksize=1000000, protein_str=None):
+        protein_map = self._feature._get_protein_map(mztab_path, protein_str)
         self._ms_runs = self._feature.extract_ms_runs(mztab_path)
         self._feature._ms_runs = self._ms_runs
         self._score_names = self._feature._get_score_names(mztab_path)
@@ -63,7 +64,7 @@ class PsmInMemory:
         self._modifications = get_modifications(mztab_path)
         for psm in psms:
             if protein_str:
-                psm = psm[psm['accession'].str.contains(f"{protein_str}",na=False)]
+                psm = psm[psm["accession"].str.contains(f"{protein_str}", na=False)]
             if "opt_global_cv_MS:1000889_peptidoform_sequence" not in psm.columns:
                 psm.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = psm[["modifications", "sequence"]].apply(
                     lambda row: get_petidoform_msstats_notation(
@@ -112,7 +113,7 @@ class PsmInMemory:
             parquet_table = self.convert_to_parquet(psm)
             yield parquet_table
 
-    def write_feature_to_file(self, mztab_path, output_path, chunksize=1000000,protein_file=None):
+    def write_feature_to_file(self, mztab_path, output_path, chunksize=1000000, protein_file=None):
         """
         write parquet to file
         """

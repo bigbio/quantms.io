@@ -3,6 +3,7 @@ import click
 from quantmsio.core.ae import AbsoluteExpressionHander
 from quantmsio.utils.file_utils import extract_protein_list
 
+
 @click.command(
     "convert-ae",
     short_help="Convert a ibaq_absolute file into a quantms.io file " "format",
@@ -34,7 +35,7 @@ def convert_ibaq_absolute(
     ibaq_file: str,
     sdrf_file: str,
     project_file: str,
-    protein_file:str,
+    protein_file: str,
     output_folder: str,
     output_prefix_file: str,
     delete_existing: bool = True,
@@ -56,7 +57,7 @@ def convert_ibaq_absolute(
     ae_handler = AbsoluteExpressionHander()
     if project_file:
         ae_handler.load_project_file(project_file)
-    ae_handler.load_ibaq_file(ibaq_file,protein_str)
+    ae_handler.load_ibaq_file(ibaq_file, protein_str)
     ae_handler.load_sdrf_file(sdrf_file)
     ae_handler.convert_ibaq_to_quantms(
         output_folder=output_folder,

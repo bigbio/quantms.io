@@ -222,7 +222,9 @@ class PSMHandler(ParquetHandler):
             logger.info("The parquet file was generated in: {}".format(self.parquet_path))
         else:
             convert = PsmInMemory(self.schema)
-            convert.write_feature_to_file(mztab_path, self.parquet_path, chunksize=batch_size,protein_file=protein_file)
+            convert.write_feature_to_file(
+                mztab_path, self.parquet_path, chunksize=batch_size, protein_file=protein_file
+            )
             logger.info("The parquet file was generated in: {}".format(self.parquet_path))
 
     @staticmethod

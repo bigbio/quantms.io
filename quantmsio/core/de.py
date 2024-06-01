@@ -76,7 +76,7 @@ class DifferentialExpressionHandler:
         self.msstats_df = None
         self.de_file_path = None
 
-    def load_msstats_file(self, msstats_file_path: str,protein_str:str=None):
+    def load_msstats_file(self, msstats_file_path: str, protein_str: str = None):
         """
         Load a MSstats differential file
         :param msstats_file_path: MSstats differential file path
@@ -91,7 +91,7 @@ class DifferentialExpressionHandler:
         # Rename columns to a lower case
         self.msstats_df.columns = self.msstats_df.columns.str.lower()
         if protein_str:
-            self.msstats_df = self.msstats_df[self.msstats_df["protein"].str.contains(f"{protein_str}",na=False)]
+            self.msstats_df = self.msstats_df[self.msstats_df["protein"].str.contains(f"{protein_str}", na=False)]
 
     def load_project_file(self, project_file: str):
         """

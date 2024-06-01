@@ -57,7 +57,7 @@ class AbsoluteExpressionHander:
         self.project_manager = ProjectHandler()
         self.project_manager.load_project_info(project_file)
 
-    def load_ibaq_file(self, path,protein_str=None):
+    def load_ibaq_file(self, path, protein_str=None):
         usecols = ["ProteinName", "SampleID", "Condition", "Ibaq", "IbaqLog"]
         ibaq_columns = get_ibaq_columns(path)
         for col in usecols:
@@ -66,7 +66,7 @@ class AbsoluteExpressionHander:
         ibaqs = pd.read_csv(path, usecols=usecols)
         ibaqs.rename(columns=AbsoluteExpressionHander.LABEL_MAP, inplace=True)
         if protein_str:
-            ibaqs = ibaqs[ibaqs["protein"].str.contains(f"{protein_str}",na=False)]
+            ibaqs = ibaqs[ibaqs["protein"].str.contains(f"{protein_str}", na=False)]
         self.ae_file_path = path
         self.ibaq_df = ibaqs
 
