@@ -15,7 +15,7 @@ from quantmsio.utils.pride_utils import generate_scan_number
 from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
 from quantmsio.utils.pride_utils import get_petidoform_msstats_notation
 from quantmsio.utils.pride_utils import get_quantmsio_modifications
-
+from quantmsio.utils.file_utils import extract_protein_list
 
 def get_modifications(mztab_path):
     """
@@ -214,7 +214,7 @@ class FeatureInMemory:
         self.__set_table_config(header, fle_len, pos, fle)
         return pd.read_csv(f, nrows=fle_len, **kwargs)
 
-    def __get_spectra_count(self, mztab_path, psm_chunksize):
+    def __get_spectra_count(self, mztab_path, psm_chunksize,protein_str=None):
         """
         mzTab_path: mzTab file path
         psm_chunksize: the large of chunk
@@ -225,6 +225,8 @@ class FeatureInMemory:
         counter = Counter()
         psms = self.skip_and_load_csv(mztab_path, "PSH", sep="\t", chunksize=psm_chunksize)
         for psm in psms:
+            if protein_str:
+                psm = psm[psm['accession'].str.contains(f"{protein_str}",na=False)]
             psm["spectra_ref"] = psm["spectra_ref"].swifter.apply(lambda x: self._ms_runs[x.split(":")[0]])
             if "opt_global_cv_MS:1000889_peptidoform_sequence" not in psm.columns:
                 psm.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = psm[
@@ -255,7 +257,7 @@ class FeatureInMemory:
             counter.update(spectra_dict.to_dict())
         return counter
 
-    def _get_protein_map(self, mztab_path):
+    def _get_protein_map(self, mztab_path,protein_str=None):
         """
         return: a dict about protein score
         """
@@ -265,6 +267,8 @@ class FeatureInMemory:
             sep="\t",
             usecols=["ambiguity_members", "best_search_engine_score[1]"],
         )
+        if protein_str:
+            prt = prt[prt['ambiguity_members'].str.contains(f"{protein_str}",na=False)]
         prt_score = prt.groupby("ambiguity_members").min()
         protein_map = prt_score.to_dict()["best_search_engine_score[1]"]
         return protein_map
@@ -373,7 +377,7 @@ class FeatureInMemory:
         map_dict = pep_msg.to_dict()["pep_msg"]
         return map_dict
 
-    def _extract_from_psm_to_pep_msg(self, mztab_path, map_dict):
+    def _extract_from_psm_to_pep_msg(self, mztab_path, map_dict,protein_str:None):
         """
         return dict about pep and psm msg
         """
@@ -387,6 +391,8 @@ class FeatureInMemory:
         self._modifications = get_modifications(mztab_path)
         psm_unique_keys = []
         for psm in psms:
+            if protein_str:
+                psm = psm[psm['accession'].str.contains(f"{protein_str}",na=False)]
             if "opt_global_cv_MS:1000889_peptidoform_sequence" not in psm.columns:
                 psm.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = psm[
                     ["modifications", "sequence"]
@@ -484,7 +490,7 @@ class FeatureInMemory:
 
         return map_dict
 
-    def _extract_psm_pep_msg(self, mztab_path):
+    def _extract_psm_pep_msg(self, mztab_path,protein_str):
         """
         mzTab_path: mzTab file path
         return: dict about pep and psm msg
@@ -493,7 +499,7 @@ class FeatureInMemory:
         self._ms_runs = self.extract_ms_runs(mztab_path)
         self._score_names = self._get_score_names(mztab_path)
         map_dict = self._extract_from_pep(mztab_path)
-        map_dict = self._extract_from_psm_to_pep_msg(mztab_path, map_dict)
+        map_dict = self._extract_from_psm_to_pep_msg(mztab_path, map_dict,protein_str)
 
         return map_dict
 
@@ -639,6 +645,7 @@ class FeatureInMemory:
         msstats_path,
         sdrf_path,
         msstats_chunksize=1000000,
+        protein_str=None,
         intensity_map=None,
     ):
         """
@@ -647,11 +654,13 @@ class FeatureInMemory:
         sdrf_path: sdrf file path
         msstats_chunksize: the large of msstats chunk
         """
-        protein_map = self._get_protein_map(mztab_path)
-        map_dict = self._extract_psm_pep_msg(mztab_path)
+        protein_map = self._get_protein_map(mztab_path,protein_str)
+        map_dict = self._extract_psm_pep_msg(mztab_path,protein_str)
         msstats_ins = pd.read_csv(msstats_path, chunksize=msstats_chunksize)
-        spectra_count_dict = self.__get_spectra_count(mztab_path, 500000)
+        spectra_count_dict = self.__get_spectra_count(mztab_path, 500000, protein_str)
         for msstats_in in msstats_ins:
+            if protein_str:
+                msstats_in = msstats_in[msstats_in['ProteinName'].str.contains(f"{protein_str}",na=False)]
             msstats_in["Reference"] = msstats_in["Reference"].swifter.apply(lambda x: x.split(".")[0])
             msstats_in.loc[:, "protein_global_qvalue"] = msstats_in["ProteinName"].swifter.apply(
                 lambda x: self._handle_protein_map(protein_map, x)
@@ -750,17 +759,21 @@ class FeatureInMemory:
         msstats_path,
         sdrf_path,
         output_path,
+        protein_file=None,
         msstats_chunksize=1000000,
         intensity_map=None,
     ):
         """
         write parquet to file
         """
+        protein_list = extract_protein_list(protein_file) if protein_file else None
+        protein_str = "|".join(protein_list) if protein_list else None
         pqwriter = None
         for feature in self.merge_mztab_and_sdrf_to_msstats_in(
             mztab_path,
             msstats_path,
             sdrf_path,
+            protein_str=protein_str,
             msstats_chunksize=msstats_chunksize,
             intensity_map=intensity_map,
         ):
@@ -798,7 +811,15 @@ class FeatureInMemory:
                 right_on=["comment[data file]", "comment[label]"],
                 how="left",
             )
-            res.drop(["comment[data file]", "comment[label]", "comment[technical replicate]"], axis=1, inplace=True)
+            res.drop(
+                [
+                    "comment[data file]",
+                    "comment[label]",
+                    "comment[technical replicate]",
+                ],
+                axis=1,
+                inplace=True,
+            )
             res.rename(columns=self._map_tmt, inplace=True)
             res.rename(columns={factor: "condition"}, inplace=True)
             return res
@@ -813,7 +834,11 @@ class FeatureInMemory:
             samples = sdrf["source name"].unique()
             mixed_map = dict(zip(samples, range(1, len(samples) + 1)))
             res.loc[:, "Run"] = res[
-                ["source name", "comment[technical replicate]", "comment[fraction identifier]"]
+                [
+                    "source name",
+                    "comment[technical replicate]",
+                    "comment[fraction identifier]",
+                ]
             ].swifter.apply(
                 lambda row: str(mixed_map[row["source name"]])
                 + "_"
@@ -822,7 +847,15 @@ class FeatureInMemory:
                 + str(row["comment[fraction identifier]"]),
                 axis=1,
             )
-            res.drop(["comment[data file]", "comment[label]", "comment[technical replicate]"], axis=1, inplace=True)
+            res.drop(
+                [
+                    "comment[data file]",
+                    "comment[label]",
+                    "comment[technical replicate]",
+                ],
+                axis=1,
+                inplace=True,
+            )
             res.rename(columns=self._map_lfq, inplace=True)
             res.rename(columns={factor: "condition"}, inplace=True)
             return res

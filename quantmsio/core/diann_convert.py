@@ -186,7 +186,8 @@ class DiaNNConvert:
             "Modified.Sequence": "peptidoform",
             "opt_global_spectrum_reference": "scan_number",
             "File.Name": "reference_file_name",
-            "Precursor.Quantity": "intensity",
+            #"Precursor.Quantity": "intensity",
+            'Precursor.Normalised': "intensity",
             "Global.Q.Value": "global_qvalue",
             "PEP": "posterior_error_probability",
             "Global.PG.Q.Value": "protein_global_qvalue",
@@ -270,8 +271,8 @@ class DiaNNConvert:
         s = time.time()
         database = self._duckdb.query(
             """
-            select "File.Name", "Run", "Protein.Ids", "RT.Start", "Precursor.Id", "Q.Value", "Global.Q.Value", "PEP",
-                   "Global.PG.Q.Value", "Modified.Sequence", "Stripped.Sequence", "Precursor.Charge", "Precursor.Quantity"
+            select "File.Name", "Run", "Protein.Ids", "RT.Start", "Precursor.Id", "Q.Value", "Global.Q.Value", "PEP","PG.Q.Value",
+                   "Global.PG.Q.Value", "Modified.Sequence", "Stripped.Sequence", "Precursor.Charge", "Precursor.Normalised"
                     from diann_report
             where Run IN {}
             """.format(
@@ -480,9 +481,15 @@ class DiaNNConvert:
         feature_pqwriter,
         feature_output_path,
     ):
-
+        report = report[(report['Q.Value'] <= 0.01) & (report['PG.Q.Value'] <= 0.01)]
         sdrf = pd.read_csv(
-            sdrf_path, sep="\t", usecols=["source name", "comment[data file]", "comment[technical replicate]"]
+            sdrf_path,
+            sep="\t",
+            usecols=[
+                "source name",
+                "comment[data file]",
+                "comment[technical replicate]",
+            ],
         )
         samples = sdrf["source name"].unique()
         mixed_map = dict(zip(samples, range(1, len(samples) + 1)))

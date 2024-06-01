@@ -271,24 +271,54 @@ class Parquet:
         unique_peps = self.parquet_db.sql("SELECT DISTINCT sample_accession FROM parquet_db").df()
         return unique_peps["sample_accession"].tolist()
 
-    def query_peptide(self, peptide: str):
+    def query_peptide(self, peptide: str, columns: list = None):
         """
         peptide: Peptide that need to be queried.
         return: A DataFrame of all information about query peptide.
         """
 
         if check_string("^[A-Z]+$", peptide):
-            return self.parquet_db.sql(f"SELECT * FROM parquet_db WHERE sequence ='{peptide}'").df()
+            cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
+            return self.parquet_db.sql(f"SELECT {cols} FROM parquet_db WHERE sequence ='{peptide}'").df()
         else:
             return KeyError("Illegal peptide!")
 
-    def query_protein(self, protein: str):
+    def query_peptides(self, peptides: list, columns: list = None):
+        """
+        :params protein: Protein that need to be queried.
+        return: A DataFrame of all information about query proteins.
+        """
+        for p in peptides:
+            if not check_string("^[A-Z]+$", p):
+                return KeyError("Illegal peptide!")
+        cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
+        database = self.parquet_db.sql(f"select {cols} from parquet_db where sequence IN {tuple(peptides)}")
+        return database.df()
+
+    def query_proteins(self, proteins: list, columns: list = None):
+        """
+        :params protein: Protein that need to be queried.
+        return: A DataFrame of all information about query proteins.
+        """
+        for p in proteins:
+            if not check_string("^[A-Z]+", p):
+                return KeyError("Illegal protein!")
+        proteins_key = [f"protein_accessions LIKE '%{p}%'" for p in proteins]
+        query_key = " OR ".join(proteins_key)
+        cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
+        database = self.parquet_db.sql(f"SELECT {cols} FROM parquet_db WHERE {query_key}")
+        return database.df()
+
+    def query_protein(self, protein: str, columns: list = None):
         """
         :params protein: Protein that need to be queried.
         return: A DataFrame of all information about query protein.
         """
+        cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
         if check_string("^[A-Z]+", protein):
-            return self.parquet_db.sql(f"SELECT * FROM parquet_db WHERE protein_accessions ='{protein}'").df()
+            return self.parquet_db.sql(
+                f"SELECT {cols} FROM parquet_db WHERE protein_accessions LIKE '%{protein}%'"
+            ).df()
         else:
             return KeyError("Illegal protein!")
 
