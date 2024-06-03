@@ -7,6 +7,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+def extract_protein_list(file):
+    f = open(file, encoding="utf-8")
+    protein_list = f.read().splitlines()
+    return protein_list
+
+
 def delete_files_extension(folder: str, extension: str) -> None:
     """
     Delete all files with the given extension in the given folder

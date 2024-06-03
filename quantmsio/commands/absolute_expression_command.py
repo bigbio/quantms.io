@@ -1,6 +1,7 @@
 import click
 
 from quantmsio.core.ae import AbsoluteExpressionHander
+from quantmsio.utils.file_utils import extract_protein_list
 
 
 @click.command(
@@ -18,6 +19,11 @@ from quantmsio.core.ae import AbsoluteExpressionHander
     required=True,
 )
 @click.option(
+    "--protein_file",
+    help="Protein file that meets specific requirements",
+    required=False,
+)
+@click.option(
     "--project_file",
     help="quantms.io project file",
     required=False,
@@ -29,6 +35,7 @@ def convert_ibaq_absolute(
     ibaq_file: str,
     sdrf_file: str,
     project_file: str,
+    protein_file: str,
     output_folder: str,
     output_prefix_file: str,
     delete_existing: bool = True,
@@ -40,14 +47,17 @@ def convert_ibaq_absolute(
     :param sdrf_file: sdrf file
     :param project_file: quantms.io project file
     :param output_folder: Folder to generate the df expression file.
+    :protein_file: Filtered protein file.
     :param output_prefix_file: Prefix of the df expression file
     :param delete_existing: Delete existing files in the output folder
     :return: none
     """
+    protein_list = extract_protein_list(protein_file) if protein_file else None
+    protein_str = "|".join(protein_list) if protein_list else None
     ae_handler = AbsoluteExpressionHander()
     if project_file:
         ae_handler.load_project_file(project_file)
-    ae_handler.load_ibaq_file(ibaq_file)
+    ae_handler.load_ibaq_file(ibaq_file, protein_str)
     ae_handler.load_sdrf_file(sdrf_file)
     ae_handler.convert_ibaq_to_quantms(
         output_folder=output_folder,

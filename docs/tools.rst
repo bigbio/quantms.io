@@ -139,6 +139,15 @@ If your project comes from the PRIDE database,
 you can use the pride accession to generate a ``project.json`` that contains 
 descriptive information about the entire project.
 Or, customize a Project Accession to generate an entirely new project.
+You can create a ``protein.txt`` to generate specific project of the protein information in it.
+It's like this:
+
+.. code:: shell
+
+   #protein.txt
+   Q07878
+   O43660
+   P63261
 
 - If you want to know more, please read :doc:`project`.
 - If your project is not from PRIDE, you can skip this step.
@@ -182,6 +191,7 @@ Example:
 .. code:: shell
 
    --project_file   Descriptive information from project.json(project json path)
+   --protein_file   Protein file that meets specific requirements(protein.txt)
    --fdr_threshold   FDR threshold to use to filter the results(default 0.05)
    --output_prefix_file   Prefix of the df expression file(like {prefix}-{uu.id}-{extension})
    --delete_existing   Delete existing files in the output folder(default True)
@@ -209,6 +219,7 @@ Example:
 .. code:: shell
 
    --project_file   Descriptive information from project.json(project json path)
+   --protein_file   Protein file that meets specific requirements(protein.txt)
    --output_prefix_file    Prefix of the df expression file(like {prefix}-{uu.id}-{extension})
    --delete_existing    Delete existing files in the output folder(default True)
 
@@ -239,6 +250,7 @@ Example:
 .. code:: shell
 
    --use_cache    Whether to use diskcache instead of memory(default True)
+   --protein_file   Protein file that meets specific requirements(protein.txt)
    --output_prefix_file   The prefix of the result file(like {prefix}-{uu.id}-{extension})
    --consensusxml_file   The consensusXML file used to retrieve the mz/rt(default None)
 
@@ -263,6 +275,7 @@ Example:
 .. code:: shell
 
    --use_cache    Whether to use diskcache instead of memory(default True)
+   --protein_file   Protein file that meets specific requirements(protein.txt)
    --output_prefix_file   The prefix of the result file(like {prefix}-{uu.id}-{extension})
    --verbose  Output debug information(default True)
 
