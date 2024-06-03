@@ -6,29 +6,46 @@
 [![Documentation Status](https://readthedocs.org/projects/quantmsio/badge/?version=latest)](https://quantmsio.readthedocs.io/en/latest/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/quantmsio.svg)](https://badge.fury.io/py/quantmsio)
 
-[quantms](https://docs.quantms.org) is a nf-core pipeline for the analysis of quantitative proteomics data. The pipeline is based on the [OpenMS](https://www.openms.de/) framework and [DIA-NN](https://github.com/vdemichev/DiaNN); and it is designed to analyze large scale experiments. the main outputs of quantms tools are the following: 
+[quantms](https://quantms.org) is a nextflow pipeline for the analysis of quantitative proteomics data. The pipeline is based on the [OpenMS](https://www.openms.de/) framework and [DIA-NN](https://github.com/vdemichev/DiaNN); and it is designed to analyze large scale experiments. The main outputs of quantms workflow are the following: 
 
 - [mzTab](https://github.com/HUPO-PSI/mzTab) files with the identification and quantification information.
 - [MSstats](https://msstats.org/wp-content/uploads/2017/01/MSstats_v3.7.3_manual.pdf) input file with the peptide quantification values needed for the MSstats analysis.
 - [MSstats](https://msstats.org/wp-content/uploads/2017/01/MSstats_v3.7.3_manual.pdf) output file with the differential expression values for each protein. 
 - The input [SDRF](https://github.com/bigbio/proteomics-sample-metadata) of the pipeline if available. 
 
-Here, we aim to formalize and develop a more standardized format that enables better representation of the identification and quantification results but also enables new and novel use cases for proteomics data analysis: 
+While all the previous formats are well-known standards and popular formats in the proteomics community; they are difficult to use in big data analysis projects. In addition, these file formats are difficult to extend and provide multiple views of the underlying data. For example, in mzTab it is extremely hard for big datasets to retrieve the identified peptides and features and the corresponding intensities. At the same time it is difficult to get the protein quantification values for a given sample.  
+
+Here, we aim to formalize and develop a more standardized format that enables better representation of the identification and quantification results but also enables new and novel use cases for proteomics data analysis. The main use cases for the format are:  
 
 - Fast and easy visualization of the identification and quantification results.
 - Easy integration with other omics data.
 - Easy integration with sample metadata.
 - AI/ML model development based on identification and quantification results.
+- Easy data retrieval for big datasets and large-scale collections of proteomics data.
 
-**Note**: We are not trying to replace the mzTab format, but to provide a new format that enables AI-related use cases. Most of the features of the mzTab format will be included in the new format.  
+>**Note**: We are not trying to replace the mzTab format, but to provide a new format that enables AI-related use cases. Most of the features of the mzTab format will be included in the new format.  
 
 ## Data model
 
-The GitHub repository aims to provide multiple formats for serialization of the data model, including:
+quantms.io could be seen as a **multiple view** representation of a proteomics data analysis results. Each view of the format can be serialized in different formats depending on the use case. the **data model** of quantms.io defines two main things, the **view** and how the view is **serialized**. 
 
-- `Tab-delimited` format similar to mzTab. 
-- `JSON` format to enable integration with other bioinformatics resources. 
-- `Parquet` format to enable integration with big data frameworks and large-scale data integration. 
+- The **data model view** defines the structure, the fields and properties that will be included in a view for each peptide, psms, feature or protein, for example.    
+- The **data serialization** defines the format in which the view will be serialized and what features of serialization will be supported, for example compression, indexing or slicing.
+
+| view         | file class        | serialization format | definition                                                      | example                                                                                                       |
+|:-------------|:------------------|:---------------------|:----------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------|
+| psm          | psm_file          | _parquet_            | [psm](docs/psm.rst)                                             | [psm example](docs/include/PXD002854-80934754-57c1-47e2-9951-787ef703a484.psm.parquet)                        |
+| feature      | feature_file      | _parquet_            | [feature](docs/feature.rst)                                     | [feature example](docs/include/PXD004683-219a8a0a-d6a8-44c9-9e51-1851876d2f69.feature.parquet)                |
+| absolute     | absolute_file     | _tsv_                | [absolute](docs/ae.rst)                                         | [absolute example](docs/include/PXD004683-quantms.tsv)                                                        |
+| differential | differential_file | _tsv_                | [differential](docs/differential.rst)                           | [differential example](docs/include/PXD004683-219a8a0a-d6a8-44c9-9e51-1851876d2f69.differential.tsv)          |
+| sdrf         | sdrf_file         | _tsv_                | [metadata](https://github.com/bigbio/proteomics-sample-metadata)| [sdrf example](https://github.com/bigbio/proteomics-sample-metadata/tree/master/annotated-projects/PXD000612) |
+|project | - | _json_ | [project](docs/project.rst) | -- |
+
+> **Note**: Views can be extended and new views can be added to the format.
+
+### Aggregation of views
+
+A quantms.io file is a collection of views, and they are aggregated into a folder and inside that folder a file collect project.json MUST be present. Please read about the [project view](docs/project.rst) for more information. 
 
 ## How to contribute
 
