@@ -43,9 +43,11 @@ quantms.io could be seen as a **multiple view** representation of a proteomics d
 
 > **Note**: Views can be extended and new views can be added to the format.
 
-### Aggregation of views
+### Introduction to quantms.io
 
 A quantms.io file is a collection of views, and they are aggregated into a folder and inside that folder a file collect project.json MUST be present. Please read about the [project view](docs/project.rst) for more information. 
+
+The introduction to the format, concepts and more details topics about serialization can be read in the introduction to the format [here](docs/introduction.rst).
 
 ## How to contribute
 
