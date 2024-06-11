@@ -59,7 +59,7 @@ setup(
         "ddt",
         "psutil",
     ],
-    entry_points={"console_scripts": ["quantmsioc = quantmsio.quantmsio_cli:quantms_io_main"]},
+    entry_points={"console_scripts": ["quantmsioc = quantmsio.quantmsioc:quantms_io_main"]},
     platforms=["any"],
     classifiers=[
         "Programming Language :: Python :: 3",
