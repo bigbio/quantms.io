@@ -154,7 +154,7 @@ It's like this:
 
 .. code:: shell
 
-   quantmsio_cli generate-pride-project-json
+   quantmsioc generate-pride-project-json
       --project_accession PXD014414
       --sdrf PXD014414.sdrf.tsv
       --output_folder result
@@ -181,7 +181,7 @@ Example:
 
 .. code:: shell
 
-   quantmsio_cli convert-de
+   quantmsioc convert-de
       --msstats_file PXD014414.sdrf_openms_design_msstats_in_comparisons.csv
       --sdrf_file PXD014414.sdrf.tsv
       --output_folder result
@@ -209,7 +209,7 @@ Example:
 
 .. code:: shell
 
-   quantmsio_cli convert-ae
+   quantmsioc convert-ae
       --ibaq_file PXD004452-ibaq.csv
       --sdrf_file PXD014414.sdrf.tsv
       --output_folder result
@@ -239,7 +239,7 @@ Example:
 
 .. code:: shell
 
-   quantmsio_cli convert-feature
+   quantmsioc convert-feature
       --sdrf_file PXD014414.sdrf.tsv
       --msstats_file PXD014414.sdrf_openms_design_msstats_in.csv
       --mztab_file PXD014414.sdrf_openms_design_openms.mzTab
@@ -266,7 +266,7 @@ Example:
     
 .. code:: shell
 
-   quantmsio_cli convert-psm
+   quantmsioc convert-psm
       --mztab_file PXD014414.sdrf_openms_design_openms.mzTab
       --output_folder result
 
@@ -289,7 +289,7 @@ Example:
 
 .. code:: shell
 
-   quantmsio_cli convert-diann
+   quantmsioc convert-diann
       --report_path diann_report.tsv
       --design_file PXD037682.sdrf_openms_design.tsv
       --qvalue_threshold 0.05
@@ -315,7 +315,7 @@ Example:
 
 .. code:: shell
 
-   quantmsio_cli inject-bset-psm-scan-number
+   quantmsioc inject-bset-psm-scan-number
       --diann_psm_path PXD010154-f75fbb29-4419-455f-a011-e4f776bcf73b.psm.parquet
       --diann_feature_path PXD010154_map_protein_accession-88d63fca-3ae6-4eab-9262-6e7a68184432.feature.parquet
       --output_path PXD010154.feature.parquet
@@ -325,7 +325,7 @@ Example:
 
 .. code:: shell
 
-   quantmsio_cli inject-start-and-end-from-fasta
+   quantmsioc inject-start-and-end-from-fasta
       --parquet_path PXD010154_map_protein_accession-88d63fca-3ae6-4eab-9262-6e7a68184432.feature.parquet
       --fasta_path Homo-sapiens-uniprot-reviewed-contaminants-decoy-202210.fasta
       --label feature
@@ -343,7 +343,7 @@ Example:
 
 .. code:: shell
 
-   quantmsio_cli compare-set-psms
+   quantmsioc compare-set-psms
       -p PXD014414-comet.parquet
       -p PXD014414-sage.parquet
       -p PXD014414-msgf.parquet
@@ -363,7 +363,7 @@ Example:
 
 .. code:: shell
 
-   quantmsio_cli map-spectrum-message-to-parquet
+   quantmsioc map-spectrum-message-to-parquet
       --parquet_path PXD014414-f4fb88f6-0a45-451d-a8a6-b6d58fb83670.psm.parquet
       --mzml_directory mzmls
       --output_path psm/PXD014414.parquet
@@ -383,7 +383,7 @@ Example:
 
 .. code:: shell
 
-   quantmsio_cli map-gene-msg-to-parquet 
+   quantmsioc map-gene-msg-to-parquet 
    --parquet_path PXD000672-0beee055-ae78-4d97-b6ac-1f191e91bdd4.featrue.parquet
    --fasta_path Homo-sapiens-uniprot-reviewed-contaminants-decoy-202210.fasta
    --output_path PXD000672-gene.parquet
@@ -435,7 +435,7 @@ Example:
 
 .. code:: shell
 
-   quantmsio_cli labels convert-accession
+   quantmsioc labels convert-accession
       --parquet_path PXD014414-f4fb88f6-0a45-451d-a8a6-b6d58fb83670.psm.parquet
       --fasta Reference fasta database
       --output_path psm/PXD014414.psm.parquet
@@ -448,7 +448,7 @@ Example:
 
 .. code:: shell
 
-   quantmsio_cli labels get-unanimous-for-tsv
+   quantmsioc labels get-unanimous-for-tsv
       --path PXD014414-c2a52d63-ea64-4a64-b241-f819a3157b77.differential.tsv
       --fasta Reference fasta database
       --output_path psm/PXD014414.de.tsv
@@ -462,7 +462,7 @@ Example:
 
 .. code:: shell
 
-   quantmsio_cli compare-parquet
+   quantmsioc compare-parquet
       --parquet_path_one res_lfq2_discache.parquet
       --parquet_path_two res_lfq2_no_cache.parquet
       --report_path report.txt
@@ -475,7 +475,7 @@ Example:
 
 .. code:: shell
 
-   quantmsio_cli generate-project-report
+   quantmsioc generate-project-report
       --project_folder PXD014414
 
 Register file 
@@ -490,7 +490,7 @@ Example:
 
 .. code:: shell
    
-   quantmsio_cli attach-file
+   quantmsioc attach-file
       --project_file PXD014414/project.json
       --attach_file PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet
       --category feature_file
@@ -506,7 +506,7 @@ Example:
 
 .. code:: shell
 
-   quantmsio_cli convert-parquet-json
+   quantmsioc convert-parquet-json
       --data_type feature
       --parquet_path PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet
       --json_path PXD014414.featrue.json
@@ -516,7 +516,7 @@ Example:
 
 .. code:: shell
 
-   quantmsio_cli json convert-tsv-to-json
+   quantmsioc json convert-tsv-to-json
       --file PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.absolute.tsv
       --json_path PXD010154.ae.json
 
@@ -525,7 +525,7 @@ Example:
 
 .. code:: shell
 
-   quantmsio_cli json convert-sdrf-to-json
+   quantmsioc json convert-sdrf-to-json
       --file MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv
       --json_path MSV000079033.sdrf.json
 
@@ -537,14 +537,14 @@ Example:
 
 .. code:: shell
 
-   quantmsio_cli project-ae-statistics
+   quantmsioc project-ae-statistics
       --absolute_path PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.absolute.tsv
       --parquet_path PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.featrue.parquet
       --save_path PXD014414.statistic.txt
 
 .. code:: shell
 
-   quantmsio_cli parquet-psm-statistics
+   quantmsioc parquet-psm-statistics
       --parquet_path PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.psm.parquet
       --save_path PXD014414.statistic.txt
 
@@ -555,7 +555,7 @@ This tool is used for visualization.
   
 .. code:: shell
 
-   quantmsio_cli plot plot-psm-peptides
+   quantmsioc plot plot-psm-peptides
       --psm_parquet_path PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.psm.parquet
       --sdrf_path PXD010154.sdrf.tsv
       --save_path PXD014414_psm_peptides.svg
@@ -564,7 +564,7 @@ This tool is used for visualization.
   
 .. code:: shell
 
-   quantmsio_cli plot plot-ibaq-distribution
+   quantmsioc plot plot-ibaq-distribution
       --ibaq_path PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.ibaq.tsv
       --select_column IbaqLog
       --save_path PXD014414_psm_peptides.svg
@@ -573,7 +573,7 @@ This tool is used for visualization.
 
 .. code:: shell
 
-      quantmsio_cli plot plot-kde-intensity-distribution
+      quantmsioc plot plot-kde-intensity-distribution
       --feature_path PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.featrue.parquet
       --num_samples 10
       --save_path PXD014414_psm_peptides.svg
@@ -582,7 +582,7 @@ This tool is used for visualization.
 
 .. code:: shell
 
-      quantmsio_cli plot plot-bar-peptide-distribution
+      quantmsioc plot plot-bar-peptide-distribution
       --feature_path PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.featrue.parquet
       --num_samples 10
       --save_path PXD014414_psm_peptides.svg
@@ -591,7 +591,7 @@ This tool is used for visualization.
 
 .. code:: shell
 
-      quantmsio_cli plot plot-box-intensity-distribution
+      quantmsioc plot plot-box-intensity-distribution
       --feature_path PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.featrue.parquet
       --num_samples 10
       --save_path PXD014414_psm_peptides.svg
