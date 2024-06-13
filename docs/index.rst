@@ -21,6 +21,7 @@ Contents
    feature
    psm
    tools
+   query
 
 |
 
