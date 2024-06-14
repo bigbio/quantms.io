@@ -285,7 +285,7 @@ class Parquet:
             cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
             return self.parquet_db.sql(f"SELECT {cols} FROM parquet_db WHERE sequence ='{peptide}'").df()
         else:
-            return KeyError("Illegal peptide!")
+            raise KeyError("Illegal peptide!")
 
     def query_peptides(self, peptides: list, columns: list = None):
         """
@@ -294,7 +294,7 @@ class Parquet:
         """
         for p in peptides:
             if not check_string("^[A-Z]+$", p):
-                return KeyError("Illegal peptide!")
+                raise KeyError("Illegal peptide!")
         cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
         database = self.parquet_db.sql(f"select {cols} from parquet_db where sequence IN {tuple(peptides)}")
         return database.df()
@@ -306,7 +306,7 @@ class Parquet:
         """
         for p in proteins:
             if not check_string("^[A-Z]+", p):
-                return KeyError("Illegal protein!")
+                raise KeyError("Illegal protein!")
         proteins_key = [f"protein_accessions LIKE '%{p}%'" for p in proteins]
         query_key = " OR ".join(proteins_key)
         cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
@@ -324,7 +324,7 @@ class Parquet:
                 f"SELECT {cols} FROM parquet_db WHERE protein_accessions LIKE '%{protein}%'"
             ).df()
         else:
-            return KeyError("Illegal protein!")
+            raise KeyError("Illegal protein!")
 
     def get_gene_list(self, map_gene_names: dict):
         """
