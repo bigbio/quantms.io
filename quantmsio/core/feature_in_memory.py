@@ -936,7 +936,7 @@ class FeatureInMemory:
         res["fragment_ion"] = res["fragment_ion"].astype(str)
         res["run"] = res["run"].astype(str)
         res["best_psm_scan_number"] = res["best_psm_scan_number"].astype(str)
-
+        res["condition"] = res["condition"].astype(str)
         if "retention_time" in res.columns:
             res["retention_time"] = res["retention_time"].astype(float)
         else:
