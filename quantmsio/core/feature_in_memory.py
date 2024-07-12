@@ -378,7 +378,7 @@ class FeatureInMemory:
         map_dict = pep_msg.to_dict()["pep_msg"]
         return map_dict
 
-    def _extract_from_psm_to_pep_msg(self, mztab_path, map_dict, protein_str: None):
+    def _extract_from_psm_to_pep_msg(self, mztab_path, map_dict, protein_str=None):
         """
         return dict about pep and psm msg
         """
@@ -391,6 +391,13 @@ class FeatureInMemory:
         )
         self._modifications = get_modifications(mztab_path)
         psm_unique_keys = []
+        P_E_P = None
+        if "opt_global_Posterior_Error_Probability_score" in self._psms_columns:
+            P_E_P = "opt_global_Posterior_Error_Probability_score"
+        elif "opt_global_Posterior_Error_Probability" in self._psms_columns:
+            P_E_P = "opt_global_Posterior_Error_Probability"
+        elif "opt_global_MS:1001493_score" in self._psms_columns:
+            P_E_P = "opt_global_MS:1001493_score"
         for psm in psms:
             if protein_str:
                 psm = psm[psm["accession"].str.contains(f"{protein_str}", na=False)]
@@ -445,22 +452,13 @@ class FeatureInMemory:
                     map_dict[key].append(df["end"].values[0])
                     map_dict[key].append(df["unique"].values[0])
                     map_dict[key].append(df["modifications"].values[0])
-                if (
-                    "opt_global_Posterior_Error_Probability_score" in df.columns
-                    or "opt_global_Posterior_Error_Probability" in df.columns
-                ):
+                if P_E_P:
                     if len(map_dict[key]) != 7:
-                        if "opt_global_Posterior_Error_Probability_score" in df.columns:
-                            probability_score = df["opt_global_Posterior_Error_Probability_score"].min()
-                        else:
-                            probability_score = df["opt_global_Posterior_Error_Probability"].min()
+                        probability_score = df[P_E_P].min()
                         if float(probability_score) < map_dict[key][7]:
                             map_dict[key][7] = probability_score
                     else:
-                        if "opt_global_Posterior_Error_Probability_score" in df.columns:
-                            map_dict[key].append(df["opt_global_Posterior_Error_Probability_score"].min())
-                        else:
-                            map_dict[key].append(df["opt_global_Posterior_Error_Probability"].min())
+                        map_dict[key].append(df[P_E_P].min())
                 else:
                     if len(map_dict[key]) == 7:
                         map_dict[key].append(None)
