@@ -6,16 +6,16 @@
 [![Documentation Status](https://readthedocs.org/projects/quantmsio/badge/?version=latest)](https://quantmsio.readthedocs.io/en/latest/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/quantmsio.svg)](https://badge.fury.io/py/quantmsio)
 
-[quantms](https://quantms.org) is a nextflow pipeline for the analysis of quantitative proteomics data. The pipeline is based on the [OpenMS](https://www.openms.de/) framework and [DIA-NN](https://github.com/vdemichev/DiaNN); and it is designed to analyze large scale experiments. The main outputs of quantms workflow are the following: 
+[quantms](https://quantms.org) is a nextflow pipeline for the analysis of quantitative proteomics data. The pipeline is based on the [OpenMS](https://www.openms.de/) framework and [DIA-NN](https://github.com/vdemichev/DiaNN); and it is designed to analyze large scale experiments. The main outputs of quantms workflow are the following:
 
 - [mzTab](https://github.com/HUPO-PSI/mzTab) files with the identification and quantification information.
 - [MSstats](https://msstats.org/wp-content/uploads/2017/01/MSstats_v3.7.3_manual.pdf) input file with the peptide quantification values needed for the MSstats analysis.
-- [MSstats](https://msstats.org/wp-content/uploads/2017/01/MSstats_v3.7.3_manual.pdf) output file with the differential expression values for each protein. 
-- The input [SDRF](https://github.com/bigbio/proteomics-sample-metadata) of the pipeline if available. 
+- [MSstats](https://msstats.org/wp-content/uploads/2017/01/MSstats_v3.7.3_manual.pdf) output file with the differential expression values for each protein.
+- The input [SDRF](https://github.com/bigbio/proteomics-sample-metadata) of the pipeline if available.
 
-While all the previous formats are well-known standards and popular formats in the proteomics community; they are difficult to use in big data analysis projects. In addition, these file formats are difficult to extend and provide multiple views of the underlying data. For example, in mzTab it is extremely hard for big datasets to retrieve the identified peptides and features and the corresponding intensities. At the same time it is difficult to get the protein quantification values for a given sample.  
+While all the previous formats are well-known standards and popular formats in the proteomics community; they are difficult to use in big data analysis projects. In addition, these file formats are difficult to extend and provide multiple views of the underlying data. For example, in mzTab it is extremely hard for big datasets to retrieve the identified peptides and features and the corresponding intensities. At the same time it is difficult to get the protein quantification values for a given sample.
 
-Here, we aim to formalize and develop a more standardized format that enables better representation of the identification and quantification results but also enables new and novel use cases for proteomics data analysis. The main use cases for the format are:  
+Here, we aim to formalize and develop a more standardized format that enables better representation of the identification and quantification results but also enables new and novel use cases for proteomics data analysis. The main use cases for the format are:
 
 - Fast and easy visualization of the identification and quantification results.
 - Easy integration with other omics data.
@@ -23,13 +23,13 @@ Here, we aim to formalize and develop a more standardized format that enables be
 - AI/ML model development based on identification and quantification results.
 - Easy data retrieval for big datasets and large-scale collections of proteomics data.
 
->**Note**: We are not trying to replace the mzTab format, but to provide a new format that enables AI-related use cases. Most of the features of the mzTab format will be included in the new format.  
+>**Note**: We are not trying to replace the mzTab format, but to provide a new format that enables AI-related use cases. Most of the features of the mzTab format will be included in the new format.
 
 ## Data model
 
-quantms.io could be seen as a **multiple view** representation of a proteomics data analysis results. Each view of the format can be serialized in different formats depending on the use case. the **data model** of quantms.io defines two main things, the **view** and how the view is **serialized**. 
+quantms.io could be seen as a **multiple view** representation of a proteomics data analysis results. Each view of the format can be serialized in different formats depending on the use case. the **data model** of quantms.io defines two main things, the **view** and how the view is **serialized**.
 
-- The **data model view** defines the structure, the fields and properties that will be included in a view for each peptide, psms, feature or protein, for example.    
+- The **data model view** defines the structure, the fields and properties that will be included in a view for each peptide, psms, feature or protein, for example.
 - The **data serialization** defines the format in which the view will be serialized and what features of serialization will be supported, for example compression, indexing or slicing.
 
 | view         | file class        | serialization format | definition                                                      | example                                                                                                       |
@@ -45,7 +45,7 @@ quantms.io could be seen as a **multiple view** representation of a proteomics d
 
 ### Introduction to quantms.io
 
-A quantms.io file is a collection of views, and they are aggregated into a folder `.qms` and inside that folder a file collect `project.json` MUST be present. Please read about the [project view](docs/project.rst) for more information. 
+A quantms.io file is a collection of views, and they are aggregated into a folder `.qms` and inside that folder a file collect `project.json` MUST be present. Please read about the [project view](docs/project.rst) for more information.
 
 The introduction to the format, concepts and more details topics about serialization can be read in the introduction to the format [here](docs/introduction.rst).
 
@@ -54,6 +54,17 @@ The introduction to the format, concepts and more details topics about serializa
 External contributors, researchers and the proteomics community are more than welcome to contribute to this project.
 
 Contribute with the specification: you can contribute to the specification with ideas or refinements by adding an issue into the [issue tracker](https://github.com/bigbio/proteomics-quant-formats/issues) or performing a PR.
+
+### Running the test suite
+
+To run the unit test suite, from the root of the repository, you can run:
+```sh
+$ python -m unittest
+```
+or
+```sh
+$ pytest quantmsio
+```
 
 ## Core contributors and collaborators
 
