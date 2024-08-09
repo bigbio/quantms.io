@@ -59,11 +59,11 @@ Contribute with the specification: you can contribute to the specification with 
 
 To run the unit test suite, from the root of the repository, you can run:
 ```sh
-$ python -m unittest
+python -m unittest
 ```
 or
 ```sh
-$ pytest quantmsio
+pytest quantmsio
 ```
 
 ## Core contributors and collaborators
