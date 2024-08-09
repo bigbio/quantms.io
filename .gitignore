@@ -4,3 +4,4 @@ build
 .idea
 data
 docs/.vscode
+__pycache__
