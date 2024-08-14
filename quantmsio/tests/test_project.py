@@ -5,14 +5,14 @@ import requests
 from ddt import data
 from ddt import ddt
 
-from core.project import ProjectHandler
-
+from quantmsio.core.project import ProjectHandler
+from quantmsio.tests.common import datafile
 
 @ddt
 class TestProjectHandler(TestCase):
     global test_datas
     test_datas = [
-        ("MSV000079033", "/examples/DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv"),
+        ("MSV000079033", datafile("/examples/DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv")),
     ]
 
     @patch("requests.get")
@@ -58,7 +58,7 @@ class TestProjectHandler(TestCase):
     @data(*test_datas)
     def test_save_project_info(self, test_data):
         project_accession = test_data[0]
-        sdrf_file = __package__ + test_data[1]
+        sdrf_file = test_data[1]
 
         project_manager = ProjectHandler(project_accession)
         project_manager.populate_from_pride_archive()
