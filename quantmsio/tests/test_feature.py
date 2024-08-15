@@ -3,8 +3,9 @@ from unittest import TestCase
 from ddt import data
 from ddt import ddt
 
-from core.feature_in_memory import FeatureInMemory
-from core.feature import FeatureHandler
+from quantmsio.core.feature_in_memory import FeatureInMemory
+from quantmsio.core.feature import FeatureHandler
+from quantmsio.tests.common import datafile
 
 
 @ddt
@@ -12,18 +13,18 @@ class TestFeatureHandler(TestCase):
     global test_datas
     test_datas = [
         (
-            "/examples/DDA-plex/MSV000079033.mzTab",
-            "/examples/DDA-plex/MSV000079033_msstats_in.csv",
-            "/examples/DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv",
+            "DDA-plex/MSV000079033.mzTab",
+            "DDA-plex/MSV000079033_msstats_in.csv",
+            "DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv",
             "ITRAQ4",
         ),
     ]
 
     @data(*test_datas)
     def test_convert_mztab_msstats_to_feature(self, test_data):
-        mztab_file = __package__ + test_data[0]
-        msstats_file = __package__ + test_data[1]
-        sdrf_file = __package__ + test_data[2]
+        mztab_file = datafile(test_data[0])
+        msstats_file = datafile(test_data[1])
+        sdrf_file = datafile(test_data[2])
         expertment_type = test_data[3]
         f = FeatureHandler()
         feature_manager = FeatureInMemory(expertment_type, f.schema)
