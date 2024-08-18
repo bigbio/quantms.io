@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from quantmsio.tests.common import datafile
+from .common import datafile
 from quantmsio.core.ae import AbsoluteExpressionHander
 
 

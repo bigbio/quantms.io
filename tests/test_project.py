@@ -6,7 +6,7 @@ from ddt import data
 from ddt import ddt
 
 from quantmsio.core.project import ProjectHandler
-from quantmsio.tests.common import datafile
+from .common import datafile
 
 @ddt
 class TestProjectHandler(TestCase):

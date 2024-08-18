@@ -3,7 +3,7 @@ from unittest import TestCase
 from quantmsio.core.statistics import IbaqStatistics
 from quantmsio.core.statistics import ParquetStatistics
 
-from quantmsio.tests.common import datafile
+from .common import datafile
 
 
 class TestStatistics(TestCase):

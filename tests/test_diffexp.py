@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from quantmsio.core.de import DifferentialExpressionHandler
-from quantmsio.tests.common import datafile
+from .common import datafile
 
 
 class TestDEHandler(TestCase):
