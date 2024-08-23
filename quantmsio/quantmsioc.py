@@ -6,6 +6,7 @@ Commandline interface for quantmsio package allows generating the quantms.io fil
 import click
 
 from quantmsio import __version__ as __version__
+from quantmsio.commands.maxquant_command import convert_maxquant
 from quantmsio.commands.absolute_expression_command import convert_ibaq_absolute
 from quantmsio.commands.attach_file_command import attach_file_to_json
 from quantmsio.commands.convert_tsv_to_json_command import json
@@ -68,7 +69,7 @@ cli.add_command(generate_pride_project_json)
 cli.add_command(json)
 cli.add_command(generate_report_about_project)
 cli.add_command(map_gene_msg_to_parquet)
-
+cli.add_command(convert_maxquant)
 
 def quantms_io_main():
     """
