@@ -5,4 +5,4 @@ include README.md
 include LICENSE
 
 # Include the data files
-recursive-include quantms_io *.xml *.yml
+recursive-include quantmsio *.xml *.yml *.tsv

@@ -5,7 +5,7 @@ from ddt import ddt
 
 from quantmsio.core.feature_in_memory import FeatureInMemory
 from quantmsio.core.feature import FeatureHandler
-from quantmsio.tests.common import datafile
+from .common import datafile
 
 
 @ddt

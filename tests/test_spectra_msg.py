@@ -4,7 +4,7 @@ from unittest import TestCase
 from ddt import data
 from ddt import ddt
 
-from quantmsio.tests.common import datafile
+from .common import datafile
 
 @ddt
 class TestFeatureHandler(TestCase):

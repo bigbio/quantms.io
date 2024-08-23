@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from quantmsio.core.sdrf import SDRFHandler
-from quantmsio.tests.common import datafile
+from .common import datafile
 
 class TestSDRFHandler(TestCase):
     def test__load_sdrf_info(self):
