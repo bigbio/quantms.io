@@ -306,6 +306,20 @@ Example:
    --duckdb_threads  The number of threads for the DuckDB engine (e.g 4)
    --file_num The number of files being processed at the same time (default 100)
 
+Maxquant convert 
+--------------------------
+Convert msstats/mztab to parquet file
+
+Example: 
+
+.. code:: shell
+
+   quantmsioc convert-maxquant
+      --sdrf_file example.sdrf.tsv
+      --evidence_file evidence.tsv
+      --output_folder result
+      --output_prefix_file example
+
 Inject some messages for DiaNN 
 -------------------------------
 For DiaNN, some field information is not available and needs to be filled with other commands.
