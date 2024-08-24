@@ -300,6 +300,8 @@ class DiaNNConvert:
     def get_mods(self, sdrf_path):
         sdrf = pd.read_csv(sdrf_path, sep="\t", nrows=1)
         mod_cols = [col for col in sdrf.columns if col.startswith("comment[modification parameter]")]
+        if not mod_cols:
+            mod_cols = [col for col in sdrf.columns if col.startswith("comment[modification parameters]")]
         fix_m = []
         variable_m = []
         for col in mod_cols:
