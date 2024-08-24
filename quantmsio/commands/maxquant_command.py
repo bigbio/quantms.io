@@ -46,4 +46,4 @@ def convert_maxquant(
 
     maxquant_manager = MaxquantConvert()
     output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
-    maxquant_manager.convert_to_parquet(evidence_file,sdrf_file,output_path)
+    maxquant_manager.convert_to_parquet(evidence_file,sdrf_file,output_path,chunksize=1000000)
