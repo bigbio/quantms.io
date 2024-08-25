@@ -325,7 +325,7 @@ Example:
 - zip file
 .. code:: shell
 
-   quantmsioc convert-maxquant
+   quantmsioc convert-zip-maxquant
       --sdrf_file example.sdrf.tsv
       --evidence_file requirement.txt
       --output_folder result
