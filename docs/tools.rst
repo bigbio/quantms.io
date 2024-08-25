@@ -308,7 +308,9 @@ Example:
 
 Maxquant convert 
 --------------------------
-Convert msstats/mztab to parquet file
+Convert Maxquant evidence.txt to parquet file
+
+- file
 
 Example: 
 
@@ -319,6 +321,23 @@ Example:
       --evidence_file evidence.tsv
       --output_folder result
       --output_prefix_file example
+
+- zip file
+.. code:: shell
+
+   quantmsioc convert-maxquant
+      --sdrf_file example.sdrf.tsv
+      --evidence_file requirement.txt
+      --output_folder result
+      --output_prefix_file example
+
+requirement.txt like this:
+
+.. code:: shell
+
+   #requirement.txt
+   2013_04_03_16_54_Q-Exactive-Orbitrap_1.zip
+   2013_04_03_17_47_Q-Exactive-Orbitrap_1.zip
 
 Inject some messages for DiaNN 
 -------------------------------

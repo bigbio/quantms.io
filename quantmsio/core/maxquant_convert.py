@@ -2,10 +2,13 @@ import pandas as pd
 import pyarrow.parquet as pq
 import re
 import pyarrow as pa
-from quantmsio.core.diann_convert import find_modification
+import zipfile
+from pathlib import Path
+
+#from quantmsio.core.diann_convert import find_modification
 from quantmsio.utils.pride_utils import get_quantmsio_modifications
 from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
-MODIFICATION_PATTERN = re.compile(r"\((.*?)\)")
+MODIFICATION_PATTERN = re.compile(r"\((.*?\))\)")
 FEATURE_FIELDS = [
     pa.field(
         "sequence",
@@ -85,6 +88,36 @@ SCHEMA =  pa.schema(
             FEATURE_FIELDS,
             metadata={"description": "Feature file in quantms.io format"},
         )
+
+def find_modification(peptide):
+    """
+    Identify the modification site based on the peptide containing modifications.
+
+    :param peptide: Sequences of peptides
+    :type peptide: str
+    :return: Modification sites
+    :rtype: str
+
+    Examples:
+    >>> find_modification("PEPM(UNIMOD:35)IDE")
+    '4-UNIMOD:35'
+    >>> find_modification("SM(UNIMOD:35)EWEIRDS(UNIMOD:21)EPTIDEK")
+    '2-UNIMOD:35,9-UNIMOD:21'
+    """
+    peptide = str(peptide)
+    original_mods = MODIFICATION_PATTERN.findall(peptide)
+    peptide = MODIFICATION_PATTERN.sub(".", peptide)
+    position = [i for i, x in enumerate(peptide) if x == "."]
+    for j in range(1, len(position)):
+        position[j] -= j
+
+    for k in range(0, len(original_mods)):
+        original_mods[k] = str(position[k]) + "-" + original_mods[k].upper()
+
+    original_mods = ",".join(str(i) for i in original_mods) if len(original_mods) > 0 else "null"
+
+    return original_mods
+
 def get_mods(sdrf_path):
     sdrf = pd.read_csv(sdrf_path, sep="\t", nrows=1)
     mod_cols = [col for col in sdrf.columns if col.startswith("comment[modification parameter]")]
@@ -121,7 +154,10 @@ def generate_mods(row, mod_map):
         if mod:
             mod = mod.group()
             if mod in mod_map.keys():
-                mod_p = mod_p.replace(mod[:2].upper(), mod_map[mod])
+                if '(' in mod_p:
+                    mod_p = mod_p.replace(mod.upper(), mod_map[mod])
+                else:
+                    mod_p = mod_p.replace(mod[:2].upper(), mod_map[mod])
     return mod_p
 
 class MaxquantConvert:
@@ -158,25 +194,41 @@ class MaxquantConvert:
 
         return modification_list
     
+    def main_operate(self,df:pd.DataFrame,mods_map:dict):
+        df.loc[:,'Modifications'] = df[['Modified sequence','Modifications']].apply(lambda row: generate_mods(row, mods_map),axis=1)
+        df = df.query('`Potential contaminant`!="+"')
+        df = df.dropna(subset=['Intensity','Proteins'])
+        df = df.drop('Potential contaminant', axis=1)
+        df = df[df['PEP']<0.01]
+        df = df.rename(columns=self.map_column_names)
+        df.loc[:, "peptidoform"] = df[["sequence", "modifications"]].apply(
+            lambda row: get_peptidoform_proforma_version_in_mztab(
+                row["sequence"], row["modifications"], self._modifications
+            ),
+            axis=1,
+        )
+        df['unique'] = df['protein_accessions'].apply(lambda x: "0" if ";" in str(x) else "1")
+        df["isotope_label_type"] = 'L'
+        df["fragment_ion"] = None
+        return df
+    
     def iter_batch(self, file_path:str, mods_map:dict, chunksize: int=None):
         for df in pd.read_csv(file_path, sep='\t', usecols=self.use_columns + ['Potential contaminant'], low_memory=False, chunksize=chunksize):
-            df.loc[:,'Modifications'] = df[['Modified sequence','Modifications']].apply(lambda row: generate_mods(row, mods_map),axis=1)
-            df = df.query('`Potential contaminant`!="+"')
-            df = df.dropna(subset=['Intensity','Proteins'])
-            df = df.drop('Potential contaminant', axis=1)
-            df = df[df['PEP']<0.01]
-            df = df.rename(columns=self.map_column_names)
-            df.loc[:, "peptidoform"] = df[["sequence", "modifications"]].apply(
-                lambda row: get_peptidoform_proforma_version_in_mztab(
-                    row["sequence"], row["modifications"], self._modifications
-                ),
-                axis=1,
-            )
-            df['unique'] = df['protein_accessions'].apply(lambda x: "0" if ";" in str(x) else "1")
-            df["isotope_label_type"] = 'L'
-            df["fragment_ion"] = None
+            df = self.main_operate(df, mods_map)
             yield df
-    
+
+    def open_from_zip_archive(self, zip_file, file_name):
+        """Open file from zip archive."""
+        with zipfile.ZipFile(zip_file) as z:
+            with z.open(file_name) as f:
+                df = pd.read_csv(f, sep='\t', usecols=self.use_columns + ['Potential contaminant'], low_memory=False)
+        return df
+
+    def read_zip_file(self, zip_path:str):
+        filepath = Path(zip_path)
+        df = self.open_from_zip_archive(zip_path,f'{filepath.stem}/evidence.txt')
+        return df
+
     def merge_sdrf(self, data:pd.DataFrame, sdrf_path:str):
         sdrf = pd.read_csv(sdrf_path, sep="\t")
         factor = "".join(filter(lambda x: x.startswith("factor"), sdrf.columns))
@@ -235,7 +287,23 @@ class MaxquantConvert:
             df = self.merge_sdrf(df,sdrf_path)
             df = self.format_to_parquet(df)
             if not pqwriter:
-                pqwriter = pq.ParquetWriter(output_path)
+                pqwriter = pq.ParquetWriter(output_path, df.schema)
+            pqwriter.write_table(df)
+        if pqwriter:
+            pqwriter.close()
+
+    def convert_zip_to_parquet(self, files: list, sdrf_path:str,output_path:str):
+        self._modifications = get_mods(sdrf_path)
+        mods_map = get_mod_map(sdrf_path)
+        pqwriter = None
+        for file in files:
+            df = self.read_zip_file(file)
+            df = self.main_operate(df,mods_map)
+            df.loc[:,'reference_file_name'] = file.split('.')[0]
+            df = self.merge_sdrf(df,sdrf_path)
+            df = self.format_to_parquet(df)
+            if not pqwriter:
+                pqwriter = pq.ParquetWriter(output_path, df.schema)
             pqwriter.write_table(df)
         if pqwriter:
             pqwriter.close()
