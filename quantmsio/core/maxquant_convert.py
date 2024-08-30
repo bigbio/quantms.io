@@ -297,11 +297,14 @@ class MaxquantConvert:
         mods_map = get_mod_map(sdrf_path)
         pqwriter = None
         for file in files:
-            df = self.read_zip_file(file)
-            df = self.main_operate(df,mods_map)
-            df.loc[:,'reference_file_name'] = file.split('.')[0]
-            df = self.merge_sdrf(df,sdrf_path)
-            df = self.format_to_parquet(df)
+            try:
+                df = self.read_zip_file(file)
+                df = self.main_operate(df,mods_map)
+                df.loc[:,'reference_file_name'] = file.split('.')[0]
+                df = self.merge_sdrf(df,sdrf_path)
+                df = self.format_to_parquet(df)
+            except Exception as e:
+                print(f"Error processing file {file}: {e}")
             if not pqwriter:
                 pqwriter = pq.ParquetWriter(output_path, df.schema)
             pqwriter.write_table(df)
