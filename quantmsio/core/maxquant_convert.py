@@ -8,6 +8,11 @@ from pathlib import Path
 #from quantmsio.core.diann_convert import find_modification
 from quantmsio.utils.pride_utils import get_quantmsio_modifications
 from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
+
+import logging
+#format the log entries
+logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
+
 MODIFICATION_PATTERN = re.compile(r"\((.*?\))\)")
 FEATURE_FIELDS = [
     pa.field(
@@ -147,7 +152,7 @@ def get_mod_map(sdrf_path):
 def generate_mods(row, mod_map):
     mod_seq = row['Modified sequence'].replace("_","")
     mod_p = find_modification(mod_seq)
-    if(mod_p=='null' or mod_p==None):
+    if mod_p== 'null' or mod_p==None:
         return None
     for mod in row['Modifications'].split(','):
         mod = re.search(r"[A-Za-z]+.*\)$", mod)
@@ -303,8 +308,9 @@ class MaxquantConvert:
                 df.loc[:,'reference_file_name'] = file.split('.')[0]
                 df = self.merge_sdrf(df,sdrf_path)
                 df = self.format_to_parquet(df)
+                logging.log(logging.INFO, f"Processing file {file}")
             except Exception as e:
-                print(f"Error processing file {file}: {e}")
+                logging.log(logging.ERROR, f"Error processing file {file}: {e}")
             if not pqwriter:
                 pqwriter = pq.ParquetWriter(output_path, df.schema)
             pqwriter.write_table(df)
