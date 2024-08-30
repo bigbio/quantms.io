@@ -306,6 +306,39 @@ Example:
    --duckdb_threads  The number of threads for the DuckDB engine (e.g 4)
    --file_num The number of files being processed at the same time (default 100)
 
+Maxquant convert 
+--------------------------
+Convert Maxquant evidence.txt to parquet file
+
+- file
+
+Example: 
+
+.. code:: shell
+
+   quantmsioc convert-maxquant
+      --sdrf_file example.sdrf.tsv
+      --evidence_file evidence.tsv
+      --output_folder result
+      --output_prefix_file example
+
+- zip file
+.. code:: shell
+
+   quantmsioc convert-zip-maxquant
+      --sdrf_file example.sdrf.tsv
+      --evidence_file requirement.txt
+      --output_folder result
+      --output_prefix_file example
+
+requirement.txt like this:
+
+.. code:: shell
+
+   #requirement.txt
+   2013_04_03_16_54_Q-Exactive-Orbitrap_1.zip
+   2013_04_03_17_47_Q-Exactive-Orbitrap_1.zip
+
 Inject some messages for DiaNN 
 -------------------------------
 For DiaNN, some field information is not available and needs to be filled with other commands.
