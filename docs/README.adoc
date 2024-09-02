@@ -114,19 +114,24 @@ https://github.com/apache/parquet-format[Parquet] is a columnar storage format t
 | Data stored in Apache Parquet Format | 130 GB              | 6.78 seconds     | 2.51 GB
 |===
 
+[[sdrf]]
+== Sample and Data Relationship Format (SDRF) View
+
+The Sample and Data Relationship Format (SDRF) is a tab-delimited file format that describes the relationship between samples, data files, and the experimental factors. The SDRF is a key file in the proteomics data analysis workflow as it describes the relationship between the samples and the data files. The specification of the SDRF can be found in the https://github.com/bigbio/proteomics-sample-metadata[SDRF GitHub repository].
+
 [[absolute]]
-=== Absolute Quantification View
+== Absolute Quantification View
 
 Absolute quantification is the process of determining the absolute amount of a target protein in a sample. In proteomics, the main computational method to determine the absolute quantification is the intensity-based absolute quantification (iBAQ) method.
 
-==== Absolute Quantification Use cases
+=== Absolute Quantification Use cases
 
 - Fast and easy visualization absolute expression (AE) results using iBAQ values.
 - Store the AE results of each protein on each sample.
 - Provide information about the condition (factor value) of each sample for easy integration.
 - Store metadata information about the project, the workflow and the columns in the file.
 
-==== Format
+=== Format
 
 The absolute expression format is a tab-delimited file format that contains the following fields:
 
@@ -143,7 +148,7 @@ Example:
 | LV861_HUMAN  | Sample-1           | heart       | 1234.1  | 12.34
 |===
 
-===== AE Header
+==== AE Header
 
 By default, the MSstats format does not have any header of metadata. We suggest adding a header to the output for better understanding of the file. By default, MSstats allows comments in the file if the line starts
 with ``#``. The quantms output will start with some key value pairs that describe the project, the workflow and also the columns in the file. For
@@ -174,25 +179,143 @@ We _RECOMMEND_ including the following properties in the header:
 Please check also the differential expression example for more information: <<differential>>
 
 [[differential]]
-=== Differential Expression View
+== Differential Expression View
+
+The differential expression view is a tab-delimited file format that contains the differential expression results between two contrasts, with the corresponding fold changes and p-values. The differential expression view is a key file in the proteomics data analysis workflow as it describes the differential expression between two conditions.
+
+=== Differential Expression Use cases
+
+-  Store the differential express proteins between two contrasts, with the corresponding fold changes and p-values.
+-  Enable easy visualization using tools like `Volcano Plot <https://en.wikipedia.org/wiki/Volcano_plot_(statistics)>`__.
+-  Enable easy integration with other omics data resources.
+-  Store metadata information about the project, the workflow and the columns in the file.
+
+=== Format
+
+The differential expression format by quantms is based on the https://msstats.org/wp-content/uploads/2017/01/MSstats_v3.7.3_manual.pdf[MSstats] output:
+
+- ``protein`` -> Protein Accession
+- ``label`` -> Label for the contrast on which the fold changes and p-values are based on
+- ``log2fc`` -> Log2 Fold Change
+- ``se`` -> Standard error of the log2 fold change
+- ``df`` -> Degree of freedom of the t-student test
+- ``pvalue`` -> Raw p-values
+- ``adj.pvalue`` -> P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg
+- ``issue`` -> Issue column shows if there is any issue for inference in corresponding protein and comparison, for example, OneConditionMissing or CompleteMissing.
+
+Example:
+
+|===
+| *protein*   | *label*                          | *log 2fc* | *se* | *df* | *pvalue* | *adj.pvalue* | *issue*
+| ADA2_HUMAN  | normal - squamous cell carcinoma | 0.3057    | 0.26 | 37   | 0.02     | 0.43         |
+|===
+
+==== DE Header
+
+By default, the MSstats format does not have any header of metadata. We suggest adding a header to the output for better understanding of the file. By default, MSstats allows comments in the file if the line starts with ``#``. The quantms output will start with some key value pairs that describe the project, the workflow and also the columns in the file. For example:
+
+``#project_accession=PXD000000``
+
+In addition, for each ``Default`` column of the matrix the following information should be added:
+
+   #INFO=<ID=protein, Number=inf, Type=String, Description="Protein Accession">
+   #INFO=<ID=label, Number=1, Type=String, Description="Label for the Conditions combination">
+   #INFO=<ID=log2fc, Number=1, Type=Double, Description="Log2 Fold Change">
+   #INFO=<ID=se, Number=1, Type=Double, Description="Standard error of the log2 fold change">
+   #INFO=<ID=df, Number=1, Type=Integer, Description="Degree of freedom of the Student test">
+   #INFO=<ID=pvalue, Number=1, Type=Double, Description="Raw p-values">
+   #INFO=<ID=adj.pvalue, Number=1, Type=Double, Description="P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg">
+   #INFO=<ID=issue, Number=1, Type=String, Description="Issue column shows if there is any issue for inference in corresponding protein and comparison">
+
+-  The ``ID`` is the column name in the matrix, the ``Number`` is the number of values in the column (separated by ``;``), the ``Type`` is the type of the values in the column and the ``Description`` is a description of the column. The number of values in the column can go from 1 to ``inf`` (infinity).
+-  Protein groups are written as a list of protein accessions separated by ``;`` (e.g. `P12345;P12346``)
+
+We suggest including the following properties in the header:
+
+- project_accession: The project accession in PRIDE Archive
+- project_title: The project title in PRIDE Archive
+- project_description: The project description in PRIDE Archive
+- quanmts_version: The version of the quantms workflow used to generate the file.
+- factor_value: The factor values used in the analysis (e.g. ``phenotype``)
+- adj.pvalue: The FDR threshold used to filter the protein lists (e.g. ``adj.pvalue < 0.05``)
 
 [[psm]]
 == Peptide Spectrum Match (PSM) View
 
-Peptide spectrum matches (PSMs) are the results of the identification of peptides in mass spectrometry data. Most of the cases are the results of peptide identified by database search engines on data-dependent acquisition (DDA) experiments.
+Peptide spectrum matches (PSMs) are the results of the **identification** of peptides in mass spectrometry data. Most of the cases are the results of peptide identified by database search engines on data-dependent acquisition (DDA) experiments.
 
-==== PSM Use cases
+=== PSM Use cases
 
 -  The PSM table aims to cover detail on PSM level for AI/ML training and other use-cases.
 -  Most of the content is similar to mzTab, a PSM would be a peptide identification in a specific msrun file.
 -  Store details on PSM level including spectrum mz/intensity for specific use-cases such as AI/ML training.
 -  Fast and easy visualization and scanning on PSM level.
 
-==== Format
+=== Format
 
 The PSM view can be found in link:psm.avro[psm.avro].
 
 [[feature]]
+== Peptide Feature View
 
-Feature
+The peptide feature view (peptide features) aims to cover detail on quantified peptide information level, including peptide intensity in relation to the sample metadata. The ``feature parquet file`` is the combination of between the mzTab peptide table, MSstats input file.
+
+=== Feature Use cases
+
+-  Store peptide intensities in relation to the sample metadata to perform down-stream analysis and integration.
+-  Enable peptide level statistics and algorithms to move from peptide level to protein level.
+
+NOTE: quantms also release the peptide table for MSstats. The objective of the feature table is to provide a more general peptide table and improve the annotations of the peptides with more columns.
+
+=== Format
+
+The feature view can be found in link:feature.avro[feature.avro].
+
+|===
+| *Field*              | *Description*                                                                   | *Type*
+| `sequence`           | The peptide’s (not including post-translational modifications)                  | `string`
+| `peptidoform`        | Peptidoform of the PSM, see more <<peptidoform>>                                | `string`
+| `unique`             | Indicates whether the peptide sequence is unique to one protein in the database | [``null``, `int (0/1)`]
+| `modifications`      | List of modifications for a given peptide `[modification1,...]`. A modification should be recorded as string like <<modifications>> | `list[string]`
+| `charge`             | The charge assigned by the search engine/software                              | `integer`
+| `calc_mass_to_charge`  | Theoretical peptide mass-to-charge ratio based on an identified sequence and modifications   | `double`
+| `exp_mass_to_charge`            | The PSM’s experimental mass to charge (m/z)                                         | `double`
+| `posterior_error_probability`   | Posterior Error Probability score from quantms                                      | `double`
+| `global_qvalue`                 | Global q-value for the feature for the peptide identification in the experiment     | `double`
+| `is_decoy`                      | Indicates whether the peptide sequence (coming from the PSM) is decoy               | `boolean (0/1)`
+| `intensity`                     | The intensity-based abundance of the peptide in the sample. This is a raw intensity from the software output | [``null``,`double`]
+| `spectral_count`                | The number of spectra that match is given peptidoform                               | [``null``,`integer`]
+| `retention_time`                | The retention time of the feature                                                   | `double`
+
+| *Properties and Columns from Sample* |                                                                                                           |
+| `sample_accession`                   | The sample accession in the SDRF, which column is called `source name`                                    | `string`
+| `condition`                          | The value for the factor value column in the SDRF, for example, the tissue `factor value[organism part]`  | `string`
+| `fraction`                           | The index value in the SDRF for the fraction column                                                       | `string`
+| `biological_replicate`               | The value of the biological replicate column in the SDRF in relation to the condition                     | `string`
+| `isotope_label_type`                 | The column indicates whether the measurement is based on an endogenous peptide (indicated by value `L` or `light`) or reference peptide (indicated by value `H` or `heavy`) | `string`
+| `run`                                | The column stores IDs of mass spectrometry runs for LFQ experiments (e.g., 1). For TMT/iTRAQ experiments, it is an identifier of mixture combined with technical replicate and fractions `{mixture}_{technical_replicate}_{fraction}` (e.g., 1_2_3)                                                      | `string`
+| `channel`                            | The channel used to label the sample (e.g., TMT115)                                                       | `string`
+| `reference_file_name`                | The reference file name that contains the feature                                                         | `string`
+
+| *Protein Group Samples*              |                                                                                                                                     |
+| `protein_accessions`                 | A list of protein accessions.                                                                                                       | `list[string]`
+| `protein_start_positions`            | A list of protein start positions.                                                                                                  | `list[int]`
+| `protein_end_positions`              | A list of protein end positions.                                                                                                    | `list[int]`
+| `protein_global_qvalue`              | Global q-value associated with the protein or protein group.                                                                        | `double`
+
+| *Optional Fields*                    |                                                                                                                                     |
+| `gene_accessions`                    | A list of gene accessions.                                                                                                          | `list[string]`
+| `gene_names`                         | A list of gene names.                                                                                                               | `list[string]`
+| `id_scores`                          | A list of identification scores, search engine, percolator, etc. Each search engine score will be a key/value pair (e.g., "MS-GF:RawScore": 78.9). | `list[string]`
+| `best_psm_reference_file_name`       | The reference file containing the best PSM that identified the feature. **Note**: This file can be different from the file that contains the feature (`reference_file_name`). | `string`
+| `best_psm_scan_number`               | The scan number of the spectrum. The scan number or index of the spectrum in the file.                                               | `string`
+| `mz_array`                           | A list of m/z values for the spectrum.                                                                                              | `list[double]`
+| `intensity_array`                    | A list of intensity values for the spectrum.                                                                                        | `list[float]`
+| `num_peaks`                          | The number of peaks in the spectrum, this is the size of previous lists (intensity and m/z).                                         | `integer`
+|===
+
+
+[[project]]
+
+
 
