@@ -114,6 +114,71 @@ https://github.com/apache/parquet-format[Parquet] is a columnar storage format t
 | Data stored in Apache Parquet Format | 130 GB              | 6.78 seconds     | 2.51 GB
 |===
 
+[[project]]
+== Project quantms.io
+
+* `project.json` -> contains descriptive information about the entire project.
+
+Example:
+
+```json
+
+   {
+    "project_accession": "PXD014414",
+    "project_title": "",
+    "project_sample_description": "",
+    "project_data_description": "",
+    "project_pubmed_id": 32265444,
+    "organisms": [
+        "Homo sapiens"
+    ],
+    "organism_parts": [
+        "mammary gland",
+        "adjacent normal tissue"
+    ],
+    "diseases": [
+        "metaplastic breast carcinomas",
+        "Triple-negative breast cancer",
+        "Normal",
+        "not applicable"
+    ],
+    "cell_lines": [
+        "not applicable"
+    ],
+    "instruments": [
+        "Orbitrap Fusion"
+    ],
+    "enzymes": [
+        "Trypsin"
+    ],
+    "experiment_type": [
+        "Triple-negative breast cancer",
+        "Wisp3",
+        "Tandem mass tag (tmt) labeling",
+        "Ccn6",
+        "Metaplastic breast carcinoma",
+        "Precision therapy",
+        "Lc-ms/ms shotgun proteomics"
+    ],
+    "acquisition_properties": [
+        {"proteomics data acquisition method": "TMT"},
+        {"proteomics data acquisition method": "Data-dependent acquisition"},
+        {"dissociation method": "HCD"},
+        {"precursor mass tolerance": "20 ppm"},
+        {"fragment mass tolerance": "0.6 Da"}
+    ],
+    "quantms_files": [
+        {"feature_file": "PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet"},
+        {"sdrf_file": "PXD014414-f05eca35-9381-40d8-a7da-2fe57745afaf.sdrf.tsv"},
+        {"psm_file": "PXD014414-f4fb88f6-0a45-451d-a8a6-b6d58fb83670.psm.parquet"},
+        {"differential_file": "PXD014414-3026e5d5-fb0e-45e9-a4f0-c97d86536716.differential.tsv"}
+    ],
+    "quantms_version": "1.1.1",
+    "comments": []
+   }
+
+```
+
 [[sdrf]]
 == Sample and Data Relationship Format (SDRF) View
 
