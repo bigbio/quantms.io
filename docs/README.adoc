@@ -473,7 +473,7 @@ NOTE: quantms also release the peptide table for MSstats. The objective of the f
 | *Field*          | *Description*                                             | *Type*
 3+^| Feature quantify fields <<feature>>
 | `intensity`      | The intensity-based abundance of the peptide in the sample. | double, null
-| `spectral_count` | The number of spectra that match is given peptidoform       | intenger, null
+| `spectral_count` | The number of spectra that match is given peptidoform       | integer, null
 3+^| Sample properties for <<feature>>
 | `sample_accession`  | The sample accession in the SDRF, which column is called `source name`  | string, null
 | `condition`         | The value for the factor value column in the SDRF, for example, the tissue `factor value[organism part]`  | string, null
