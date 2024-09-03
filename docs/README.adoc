@@ -453,7 +453,7 @@ The fields that are unique to the PSM view are:
 
 ==== Format
 
-The PSM view can be found in link:psm.avro[psm.avro].
+The PSM view can be found in link:psm.avsc[psm.avsc].
 
 [[feature]]
 === Peptide Feature View
@@ -489,7 +489,7 @@ NOTE: quantms also release the peptide table for MSstats. The objective of the f
 
 ==== Format
 
-The feature view can be found in link:feature.avro[feature.avro].
+The feature view can be found in link:feature.avsc[feature.avsc].
 
 
 == Get in touch
