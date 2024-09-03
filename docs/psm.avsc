@@ -4,14 +4,21 @@
   "fields": [
     {"name": "sequence", "type": "string", "doc": "The peptide’s sequence corresponding to the PSM"},
     {"name": "peptidoform", "type": "string", "doc": "Peptide sequence with modifications: Read the specification for more details"},
-    {"name": "protein_accessions",
-     "type": ["null",{"type": "array","items": "string"}], "doc": "Protein accessions, where all the proteins are found"},
-    {"name": "protein_positions",
-     "type": ["null",{"type": "array","items": "string"}],
-     "doc": "Protein start and end positions written as start_post:end_post"},
-    {"name": "charge", "type": "int", "doc": "Precursor charge"},
-    {"name": "calc_mass_to_charge", "type": "double", "doc": "Theoretical peptide mass-to-charge ratio based on identified sequence and modifications"},
+
+    {"name": "protein_accessions", "type": ["null",{"type": "array","items": "string"}], "doc": "Protein accessions, where all the proteins are found"},
+    {"name": "protein_positions", "type": ["null",{"type": "array","items": "string"}], "doc": "Protein start and end positions written as start_post:end_post"},
+    {"name": "gene_accessions", "type": ["null", {"type": "array", "items": "string"}], "doc": "Gene accessions, as string array"},
+    {"name": "gene_names", "type": ["null", {"type": "array", "items": "string"}], "doc": "Gene names, as string array"},
+    {"name": "protein_global_qvalue", "type": ["null", "double"], "doc": "Global q-value of the protein group, if the PSM was filtered by protein q-value"},
     {"name": "unique", "type": ["null", "int"], "doc": "Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0"},
+
+    {"name": "is_decoy", "type": "int", "doc": "Decoy indicator, 1 if the PSM is a decoy, 0 target"},
+    {"name": "modifications", "type": ["null", {"type": "array", "items": "string"}], "doc": "List of modifications as string array, easy for search and filter"},
+    {"name": "modification_details",
+     "type": ["null", {"type": "array", "items": "string"}],
+     "doc": "List of alternative site probabilities for the modification format: read the specification for more details"
+    },
+    {"name": "charge", "type": "int", "doc": "Precursor charge"},
     {"name": "retention_time", "type": ["null", "double"], "doc": "MS2 scan’s precursor retention time (in seconds)"},
     {"name": "exp_mass_to_charge", "type": "double", "doc": "Experimental peptide mass-to-charge ratio of identified peptide (in Da)"},
     {"name": "posterior_error_probability", "type": ["null", "double"], "doc": "Posterior error probability for the given peptide spectrum match"},
@@ -19,35 +26,15 @@
     {"name": "id_scores",
      "type": {"type": "array", "items": "string"},
      "doc": "List of search engine scores as key-value pairs, read the specification for more details"},
+
+    {"name": "calc_mass_to_charge", "type": "double", "doc": "Theoretical peptide mass-to-charge ratio based on identified sequence and modifications"},
     {"name": "reference_file_name", "type": "string", "doc": "Spectrum file name with no path information and not including the file extension"},
     {"name": "scan_number", "type": "string", "doc": "Scan number of the spectrum"},
-    {"name": "is_decoy", "type": "int", "doc": "Decoy indicator, 1 if the PSM is a decoy, 0 target"},
-    {"name": "protein_global_qvalue", "type": ["null", "double"], "doc": "Global q-value of the protein group, if the PSM was filtered by protein q-value"},
-    {"name": "modifications",
-     "type": ["null", {"type": "array", "items": "string"}],
-     "doc": "List of modifications as string array, easy for search and filter"
-    },
     {"name": "ion_mobility", "type": ["null", "double"], "doc": "Ion mobility value for the precursor ion"},
-    {"name": "modification_details",
-     "type": ["null", {"type": "array", "items": "string"}],
-     "doc": "List of alternative site probabilities for the modification format: read the specification for more details"
-    },
-    {"name": "consensus_support", "type": "float", "doc": "Consensus support for the given peptide spectrum match, when multiple search engines are used"},
+    {"name": "consensus_support", "type": "double", "doc": "Consensus support for the given peptide spectrum match, when multiple search engines are used"},
     {"name": "num_peaks", "type": ["null", "int"], "doc": "Number of peaks in the spectrum used for the peptide spectrum match"},
-    {"name": "mz_array",
-     "type": ["null", {"type": "array", "items": "double"}],
-     "doc": "Array of m/z values for the spectrum used for the peptide spectrum match"
-    },
-    {"name": "intensity_array",
-     "type": ["null", {"type": "array", "items": "float"}],
-     "doc": "Array of intensity values for the spectrum used for the peptide spectrum match"
-    },
-    {"name": "gene_accessions",
-     "type": ["null", {"type": "array", "items": "string"}], "doc": "Gene accessions, as string array"
-    },
-    {"name": "gene_names",
-     "type": ["null", {"type": "array", "items": "string"}],
-     "doc": "Gene names, as string array"
+    {"name": "mz_array", "type": ["null", {"type": "array", "items": "double"}], "doc": "Array of m/z values for the spectrum used for the peptide spectrum match"},
+    {"name": "intensity_array", "type": ["null", {"type": "array", "items": "double"}], "doc": "Array of intensity values for the spectrum used for the peptide spectrum match"
     }
   ]
 }
