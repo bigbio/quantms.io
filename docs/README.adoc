@@ -124,7 +124,7 @@ File extensions are used to identify the file type. In quantms.io the extensions
 - A feature file: PXD000000-943a8f02-0527-4528-b1a3-b96de99ebe75.feature.parquet
 - A psm file: PXD000000-943a8f02-0527-4528-b1a3-b96de99ebe75.psm.parquet
 
-NOTE: In quantms.io we use the UUID to identify the project and the files `{PREFIX}-{UUID}.{view}.{format}`, it is optional, but for most of the code examples we will use it.
+NOTE: In quantms.io we use the UUID to identify the project and the files `{PREFIX}-{UUID}.{view}.{format}`, it is optional, but for most of the code examples we will use it. *uuids*: A Universally Unique Identifier (UUID) URN Namespace, as defined in RFC 4122, provides a standardized method for generating globally unique identifiers across various systems and applications. The UUID URN Namespace ensures that each generated UUID is highly unlikely to collide with any other UUID, even when produced by different entities and systems.
 
 [[project]]
 == Project quantms.io
@@ -134,7 +134,7 @@ The project view is the file that stores the metadata of the entire quantms.io p
 === Project fields
 
 |===
-| Field                     | Description                                  | Type
+| **Field**                 | **Description**                              | **Type**
 | `project_accession`       | Project accession identifier                 | string
 | `project_title`           | Title of the project                         | string
 | `project_sample_description` | Description of the project sample         | string
@@ -147,17 +147,49 @@ The project view is the file that stores the metadata of the entire quantms.io p
 | `instruments`             | Instruments used for data acquisition        | list[string]
 | `enzymes`                 | Enzymes used in the study                    | list[string]
 | `experiment_type`         | Types of experiments conducted               | list[string]
-| `acquisition_properties`  | Properties of the data acquisition methods   | list[string]
-| `quantms_files`           | Files related to quantMS analysis            | Dict[string]
+| `acquisition_properties`  | Properties of the data acquisition methods   | list[key/value]
+| `quantms_files`           | Files related to quantMS analysis            | list[key/value]
 | `quantms.io_version`      | Version of the quantms.io                    | String
 | `quantms_version`         | Version of the quantms workflow              | String
 | `comments`                | Additional comments or notes                 | List of Strings
 |===
 
-Example:
+Key/Value pair object: The key/value pairs are used to store the acquisition properties, and the  quantms files.
+
+Example of ``acquisition_properties``:
 
 ```json
+   "acquisition_properties": [
+        {"precursor tolerance": "0.05 Da"},
+        {"dissociation method": "HCD"}
+   ]
+```
 
+=== Project files
+
+Recommendations for the file name in the quantms project.
+
+Example of ``quantms_files``:
+
+[source,json]
+----
+   "quantms_files": [
+        {"psm_file":   ["PXD004683-550e8400-e29b-41d4.1.psm.parquet",
+                        "PXD004683-550e8400-e29b-41d4.2.psm.parquet"
+        ]},
+        {"feature_file": ["PXD004683-958e8400-e29b-41f4.feature.parquet"]},
+        {"differential_file": ["PXD004683-a716.differential.tsv"]},
+        {"absolute_file":     ["PXD004683-e29b-41f4-a716.absolute.tsv"]},
+        {"sdrf_file":         ["PXD004683-e29b-41f4-a716.sdrf.tsv"]}
+   ]
+----
+
+
+
+Example:
+
+[source,json]
+----
    {
     "project_accession": "PXD014414",
     "project_title": "",
@@ -203,16 +235,16 @@ Example:
         {"fragment mass tolerance": "0.6 Da"}
     ],
     "quantms_files": [
-        {"feature_file": "PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet"},
-        {"sdrf_file": "PXD014414-f05eca35-9381-40d8-a7da-2fe57745afaf.sdrf.tsv"},
-        {"psm_file": "PXD014414-f4fb88f6-0a45-451d-a8a6-b6d58fb83670.psm.parquet"},
-        {"differential_file": "PXD014414-3026e5d5-fb0e-45e9-a4f0-c97d86536716.differential.tsv"}
+        {"feature_file": ["PXD014414.feature.parquet"]},
+        {"sdrf_file": ["PXD014414.sdrf.tsv"]},
+        {"psm_file": ["PXD014414-f4fb88f6-0a45-451d-a8a6-b6d58fb83670.psm.parquet"]},
+        {"differential_file": ["PXD014414-3026e5d5-fb0e-45e9-a4f0-c97d86536716.differential.tsv"]}
     ],
     "quantms_version": "1.1.1",
+    "quantms.io_version": "1.0.0",
     "comments": []
    }
-
-```
+----
 
 [[sdrf]]
 == Sample and Data Relationship Format (SDRF) View
@@ -351,7 +383,7 @@ Multiple views are available for the quantms.io format that is based on the pept
 [[peptide-fields]]
 === Peptide Fields
 
-The following fields are shared amoung Peptide-based views: <<psm>>, <<feature>>, <<peptide>>.
+The following fields are shared among Peptide-based views: <<psm>>, <<feature>>, <<peptide>>.
 
 [cols="1,2,1", options="header"]
 |===
@@ -456,9 +488,10 @@ The feature view can be found in link:feature.avro[feature.avro].
 
 The query module provides the ability to quickly search through Parquet files.
 
-Basic query operations allow you to query all ``samples``, ``peptides``, ``proteins``, ``genes``, and ``MZML`` files. The query results will be deduplicated and then returned in a list format.
+Basic query operations allow you to query all ``samples``, ``peptides``, ``proteins``, ``genes``, and ``mzML`` files. The query results will be deduplicated and then returned in a list format.
 
-```python
+[source,python]
+----
     from quantmsio.core.query import Parquet
     P = Parquet('PXD007683.feature.parquet')
     P.get_unique_samples()
@@ -479,12 +512,13 @@ Basic query operations allow you to query all ``samples``, ``peptides``, ``prote
     P.get_unique_proteins()
     P.get_unique_genes()
     P.get_unique_references()
-```
+----
 
 Specific queries allow you to individually search for certain values based on specific conditions.
 The results are returned in the form of a ``DataFrame``.
 
-```python
+[source,python]
+----
     P.query_peptide('QPAYVSK')
     """
         sequence    protein_accessions	    protein_start_positions ...
@@ -494,9 +528,10 @@ The results are returned in the form of a ``DataFrame``.
         ...
     """
     P.query_peptide('QPAYVSK',columns=['protein_start_positions','protein_end_positions'])
-```
+----
 
-```python
+[source,python]
+----
     P.query_protein('P36016',columns=None)
     P.query_proteins(['P36016','O95861'],columns=None)
     """
@@ -523,11 +558,12 @@ The results are returned in the form of a ``DataFrame``.
     AAAAAAALQAK [sp|P36578|RL4_HUMAN]   a05063
     AAAAAAALQAK [sp|P36578|RL4_HUMAN]   a05063
     """
-```
+----
 
 You can use the following method to produce values in batches.
 
-```python
+[source,python]
+----
     for samples,df in P.iter_samples(file_num=10,columns=None):
         # A batch contains ten samples.
         print(samples,df)
@@ -539,7 +575,7 @@ You can use the following method to produce values in batches.
     for refs,df in P.iter_file(file_num=20,columns=None): # mzml
         # A batch contains 20 mzML files.
         print(refs,df)
-```
+----
 
 
 == Get in touch
