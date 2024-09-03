@@ -479,7 +479,7 @@ NOTE: quantms also release the peptide table for MSstats. The objective of the f
 | `condition`         | The value for the factor value column in the SDRF, for example, the tissue `factor value[organism part]`  | string, null
 | `fraction`              | The index value in the SDRF for the fraction column                 | string, null
 | `biological_replicate`  | The value of the biological replicate column in the SDRF in relation to the condition  | string, null
-| `run`                   | The column stores IDs of mass spectrometry runs for LFQ experiments (e.g., 1). For TMT/iTRAQ experiments, it is an identifier of mixture combined with technical replicate and fractions `{mixture}_{technical_replicate}_{fraction}` (e.g., 1_2_3)                                                      | `string`
+| `run`                   | The column stores IDs of mass spectrometry runs for LFQ experiments (e.g., 1). For TMT/iTRAQ experiments, it is an identifier of mixture combined with technical replicate and fractions `{mixture}_{technical_replicate}_{fraction}` (e.g., 1_2_3)                                                      | string
 | `channel`               | The channel used to label the sample (e.g., TMT115)                | string, null
 | `reference_file_name`   | The reference file name that contains the feature                  | string
 3+^| Spectra information for best PSM, see more info for PSM view <<psm>>
