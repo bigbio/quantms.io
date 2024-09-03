@@ -447,7 +447,7 @@ The fields that are unique to the PSM view are:
 | `consensus_support`   | Consensus support for the given peptide spectrum match, when multiple search engines are used | float, null
 | `num_peaks`           | Number of peaks in the spectrum used for the peptide spectrum match | int, null
 | `mz_array`            | Array of m/z values for the spectrum used for the peptide spectrum match | array[double], null
-| `intensity_array`     | Array of intensity values for the spectrum used for the peptide spectrum match | array[double], null
+| `intensity_array`     | Array of intensity values for the spectrum used for the peptide spectrum match | array[float], null
 | `rank`                | Rank of the peptide spectrum match in the search engine output | int, null
 |===
 

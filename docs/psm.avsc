@@ -31,10 +31,10 @@
     {"name": "reference_file_name", "type": "string", "doc": "Spectrum file name with no path information and not including the file extension"},
     {"name": "scan_number", "type": "string", "doc": "Scan number of the spectrum"},
     {"name": "ion_mobility", "type": ["null", "double"], "doc": "Ion mobility value for the precursor ion"},
-    {"name": "consensus_support", "type": "double", "doc": "Consensus support for the given peptide spectrum match, when multiple search engines are used"},
+    {"name": "consensus_support", "type": "float", "doc": "Consensus support for the given peptide spectrum match, when multiple search engines are used"},
     {"name": "num_peaks", "type": ["null", "int"], "doc": "Number of peaks in the spectrum used for the peptide spectrum match"},
     {"name": "mz_array", "type": ["null", {"type": "array", "items": "double"}], "doc": "Array of m/z values for the spectrum used for the peptide spectrum match"},
-    {"name": "intensity_array", "type": ["null", {"type": "array", "items": "double"}], "doc": "Array of intensity values for the spectrum used for the peptide spectrum match"
+    {"name": "intensity_array", "type": ["null", {"type": "array", "items": "float"}], "doc": "Array of intensity values for the spectrum used for the peptide spectrum match"
     }
   ]
 }
