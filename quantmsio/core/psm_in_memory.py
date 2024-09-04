@@ -5,10 +5,10 @@ import pyarrow.parquet as pq
 
 from quantmsio.core.feature_in_memory import FeatureInMemory
 from quantmsio.core.feature_in_memory import get_modifications
+from quantmsio.utils.file_utils import extract_protein_list
 from quantmsio.utils.pride_utils import generate_scan_number
 from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
 from quantmsio.utils.pride_utils import get_petidoform_msstats_notation
-from quantmsio.utils.file_utils import extract_protein_list
 
 
 class PsmInMemory:

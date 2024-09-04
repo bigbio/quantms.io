@@ -1,15 +1,15 @@
-import pandas as pd
-import pyarrow.parquet as pq
+import logging
 import re
-import pyarrow as pa
 import zipfile
 from pathlib import Path
 
-# from quantmsio.core.diann_convert import find_modification
-from quantmsio.utils.pride_utils import get_quantmsio_modifications
-from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
+import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 
-import logging
+# from quantmsio.core.diann_convert import find_modification
+from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
+from quantmsio.utils.pride_utils import get_quantmsio_modifications
 
 # format the log entries
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)

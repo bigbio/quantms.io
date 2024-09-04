@@ -2,6 +2,7 @@ from unittest import TestCase
 
 from quantmsio.core.psm import PSMHandler
 from quantmsio.core.psm_in_memory import PsmInMemory
+
 from .common import datafile
 
 

@@ -2,8 +2,10 @@ from unittest import TestCase
 
 from ddt import data
 from ddt import ddt
+
 from quantmsio.core.maxquant_convert import MaxquantConvert
-from quantmsio.core.maxquant_convert import get_mods, get_mod_map
+from quantmsio.core.maxquant_convert import get_mod_map
+from quantmsio.core.maxquant_convert import get_mods
 from quantmsio.tests.common import datafile
 
 

@@ -6,6 +6,7 @@ from ddt import data
 from ddt import ddt
 
 from quantmsio.core.project import ProjectHandler
+
 from .common import datafile
 
 

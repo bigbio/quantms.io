@@ -3,8 +3,9 @@ from unittest import TestCase
 from ddt import data
 from ddt import ddt
 
-from quantmsio.core.feature_in_memory import FeatureInMemory
 from quantmsio.core.feature import FeatureHandler
+from quantmsio.core.feature_in_memory import FeatureInMemory
+
 from .common import datafile
 
 

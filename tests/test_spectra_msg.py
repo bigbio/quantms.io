@@ -1,8 +1,9 @@
-from quantmsio.core.query import Parquet
 from unittest import TestCase
 
 from ddt import data
 from ddt import ddt
+
+from quantmsio.core.query import Parquet
 
 from .common import datafile
 

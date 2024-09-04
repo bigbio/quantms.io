@@ -10,12 +10,12 @@ import swifter
 from quantmsio.core.mztab import fetch_modifications_from_mztab_line
 from quantmsio.utils.constants import ITRAQ_CHANNEL
 from quantmsio.utils.constants import TMT_CHANNELS
+from quantmsio.utils.file_utils import extract_protein_list
 from quantmsio.utils.pride_utils import clean_peptidoform_sequence
 from quantmsio.utils.pride_utils import generate_scan_number
 from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
 from quantmsio.utils.pride_utils import get_petidoform_msstats_notation
 from quantmsio.utils.pride_utils import get_quantmsio_modifications
-from quantmsio.utils.file_utils import extract_protein_list
 
 
 def get_modifications(mztab_path):

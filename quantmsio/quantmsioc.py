@@ -6,7 +6,6 @@ Commandline interface for quantmsio package allows generating the quantms.io fil
 import click
 
 from quantmsio import __version__ as __version__
-from quantmsio.commands.maxquant_command import convert_maxquant, convert_zip_maxquant
 from quantmsio.commands.absolute_expression_command import convert_ibaq_absolute
 from quantmsio.commands.attach_file_command import attach_file_to_json
 from quantmsio.commands.convert_tsv_to_json_command import json
@@ -27,9 +26,9 @@ from quantmsio.commands.generate_start_and_end_command import (
 )
 from quantmsio.commands.get_unanimous_command import get_unanimous_for_parquet
 from quantmsio.commands.get_unanimous_command import get_unanimous_for_tsv
-from quantmsio.commands.load_best_scan_number_command import (
-    inject_bset_psm_scan_number,
-)
+from quantmsio.commands.load_best_scan_number_command import inject_bset_psm_scan_number
+from quantmsio.commands.maxquant_command import convert_maxquant
+from quantmsio.commands.maxquant_command import convert_zip_maxquant
 from quantmsio.commands.parquet_to_json import convert_parquet_to_json
 from quantmsio.commands.plot import plot
 from quantmsio.commands.project_command import generate_pride_project_json

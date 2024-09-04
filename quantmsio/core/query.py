@@ -1,12 +1,14 @@
 import os
 import re
 from collections import defaultdict
+
 import ahocorasick
 import duckdb
 import mygene
 import pandas as pd
 import pyarrow.parquet as pq
 from Bio import SeqIO
+
 from quantmsio.core.openms import OpenMSHandler
 from quantmsio.utils.pride_utils import generate_gene_name_map
 from quantmsio.utils.pride_utils import get_gene_accessions
