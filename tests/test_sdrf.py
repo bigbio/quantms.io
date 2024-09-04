@@ -3,6 +3,7 @@ from unittest import TestCase
 from quantmsio.core.sdrf import SDRFHandler
 from .common import datafile
 
+
 class TestSDRFHandler(TestCase):
     def test__load_sdrf_info(self):
         file = datafile("/examples/DDA-lfq/PXD040438.sdrf.tsv")

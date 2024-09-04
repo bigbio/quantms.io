@@ -8,6 +8,7 @@ from ddt import ddt
 from quantmsio.core.project import ProjectHandler
 from .common import datafile
 
+
 @ddt
 class TestProjectHandler(TestCase):
     global test_datas

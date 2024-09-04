@@ -2,10 +2,12 @@ import click
 from quantmsio.core.maxquant_convert import MaxquantConvert
 from quantmsio.core.project import create_uuid_filename
 
+
 def extract_zip_list(file):
     f = open(file, encoding="utf-8")
     zip_list = f.read().splitlines()
     return zip_list
+
 
 @click.command("convert-maxquant", short_help="Convert msstats/mztab to parquet file")
 @click.option(
@@ -51,7 +53,7 @@ def convert_maxquant(
 
     maxquant_manager = MaxquantConvert()
     output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".maxquant.parquet")
-    maxquant_manager.convert_to_parquet(evidence_file,sdrf_file,output_path,chunksize=1000000)
+    maxquant_manager.convert_to_parquet(evidence_file, sdrf_file, output_path, chunksize=1000000)
 
 
 @click.command("convert-zip-maxquant", short_help="Convert msstats/mztab to parquet file")
@@ -95,8 +97,8 @@ def convert_zip_maxquant(
 
     if not output_prefix_file:
         output_prefix_file = ""
-    
+
     maxquant_manager = MaxquantConvert()
     output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".maxquant.parquet")
     zip_list = extract_zip_list(maxquant_zip_files)
-    maxquant_manager.convert_zip_to_parquet(zip_list,sdrf_file,output_path)
+    maxquant_manager.convert_zip_to_parquet(zip_list, sdrf_file, output_path)

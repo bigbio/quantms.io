@@ -6,6 +6,7 @@ from ddt import ddt
 
 from .common import datafile
 
+
 @ddt
 class TestFeatureHandler(TestCase):
     global test_datas

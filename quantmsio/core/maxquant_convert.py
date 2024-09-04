@@ -5,13 +5,14 @@ import pyarrow as pa
 import zipfile
 from pathlib import Path
 
-#from quantmsio.core.diann_convert import find_modification
+# from quantmsio.core.diann_convert import find_modification
 from quantmsio.utils.pride_utils import get_quantmsio_modifications
 from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
 
 import logging
-#format the log entries
-logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
+
+# format the log entries
+logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
 MODIFICATION_PATTERN = re.compile(r"\((.*?\))\)")
 FEATURE_FIELDS = [
@@ -89,10 +90,11 @@ FEATURE_FIELDS = [
         metadata={"description": "file name of the reference file for the feature"},
     ),
 ]
-SCHEMA =  pa.schema(
-            FEATURE_FIELDS,
-            metadata={"description": "Feature file in quantms.io format"},
-        )
+SCHEMA = pa.schema(
+    FEATURE_FIELDS,
+    metadata={"description": "Feature file in quantms.io format"},
+)
+
 
 def find_modification(peptide):
     """
@@ -123,19 +125,26 @@ def find_modification(peptide):
 
     return original_mods
 
+
 def get_mods(sdrf_path):
     sdrf = pd.read_csv(sdrf_path, sep="\t", nrows=1)
     mod_cols = [col for col in sdrf.columns if col.startswith("comment[modification parameter]")]
     if not mod_cols:
         mod_cols = [col for col in sdrf.columns if col.startswith("comment[modification parameters]")]
     mods = {}
-    for i,col in enumerate(mod_cols):
+    for i, col in enumerate(mod_cols):
         mod_msg = sdrf[col].values[0].split(";")
         mod_dict = {k.split("=")[0]: k.split("=")[1] for k in mod_msg}
-        mod = [mod_dict['NT'],str(i),mod_dict['TA'] if "TA" in mod_dict else 'X',mod_dict['PP'] if 'PP' in mod_dict else 'Anywhere']
-        mods[mod_dict['AC']] = mod
+        mod = [
+            mod_dict["NT"],
+            str(i),
+            mod_dict["TA"] if "TA" in mod_dict else "X",
+            mod_dict["PP"] if "PP" in mod_dict else "Anywhere",
+        ]
+        mods[mod_dict["AC"]] = mod
 
     return mods
+
 
 def get_mod_map(sdrf_path):
     sdrf = pd.read_csv(sdrf_path, sep="\t", nrows=1)
@@ -145,37 +154,39 @@ def get_mod_map(sdrf_path):
         mod_msg = sdrf[col].values[0].split(";")
         mod_dict = {k.split("=")[0]: k.split("=")[1] for k in mod_msg}
         mod = f"{mod_dict['NT']} ({mod_dict['TA']})" if "TA" in mod_dict else f"{mod_dict['NT']} ({mod_dict['PP']})"
-        mod_map[mod] = mod_dict['AC']
+        mod_map[mod] = mod_dict["AC"]
 
     return mod_map
 
+
 def generate_mods(row, mod_map):
-    mod_seq = row['Modified sequence'].replace("_","")
+    mod_seq = row["Modified sequence"].replace("_", "")
     mod_p = find_modification(mod_seq)
-    if mod_p== 'null' or mod_p==None:
+    if mod_p == "null" or mod_p == None:
         return None
-    for mod in row['Modifications'].split(','):
+    for mod in row["Modifications"].split(","):
         mod = re.search(r"[A-Za-z]+.*\)$", mod)
         if mod:
             mod = mod.group()
             if mod in mod_map.keys():
-                if '(' in mod_p:
+                if "(" in mod_p:
                     mod_p = mod_p.replace(mod.upper(), mod_map[mod])
                 else:
                     mod_p = mod_p.replace(mod[:2].upper(), mod_map[mod])
     return mod_p
 
+
 class MaxquantConvert:
     def __init__(self):
         self.map_column_names = {
-            'Sequence': 'sequence',
-            'Proteins': 'protein_accessions',
-            'PEP': 'posterior_error_probability',
-            'Modifications': 'modifications',
-            'Charge': 'charge',
-            'Modified sequence': 'peptidoform',
-            'Raw file': 'reference_file_name',
-            'Intensity': "intensity",
+            "Sequence": "sequence",
+            "Proteins": "protein_accessions",
+            "PEP": "posterior_error_probability",
+            "Modifications": "modifications",
+            "Charge": "charge",
+            "Modified sequence": "peptidoform",
+            "Raw file": "reference_file_name",
+            "Intensity": "intensity",
         }
         self.use_columns = list(self.map_column_names.keys())
         self.sdrf_map = {
@@ -198,13 +209,15 @@ class MaxquantConvert:
         modification_list = modifications_string.split(",")
 
         return modification_list
-    
-    def main_operate(self,df:pd.DataFrame,mods_map:dict):
-        df.loc[:,'Modifications'] = df[['Modified sequence','Modifications']].apply(lambda row: generate_mods(row, mods_map),axis=1)
+
+    def main_operate(self, df: pd.DataFrame, mods_map: dict):
+        df.loc[:, "Modifications"] = df[["Modified sequence", "Modifications"]].apply(
+            lambda row: generate_mods(row, mods_map), axis=1
+        )
         df = df.query('`Potential contaminant`!="+"')
-        df = df.dropna(subset=['Intensity','Proteins'])
-        df = df.drop('Potential contaminant', axis=1)
-        df = df[df['PEP']<0.01]
+        df = df.dropna(subset=["Intensity", "Proteins"])
+        df = df.drop("Potential contaminant", axis=1)
+        df = df[df["PEP"] < 0.01]
         df = df.rename(columns=self.map_column_names)
         df.loc[:, "peptidoform"] = df[["sequence", "modifications"]].apply(
             lambda row: get_peptidoform_proforma_version_in_mztab(
@@ -212,13 +225,19 @@ class MaxquantConvert:
             ),
             axis=1,
         )
-        df['unique'] = df['protein_accessions'].apply(lambda x: "0" if ";" in str(x) else "1")
-        df["isotope_label_type"] = 'L'
+        df["unique"] = df["protein_accessions"].apply(lambda x: "0" if ";" in str(x) else "1")
+        df["isotope_label_type"] = "L"
         df["fragment_ion"] = None
         return df
-    
-    def iter_batch(self, file_path:str, mods_map:dict, chunksize: int=None):
-        for df in pd.read_csv(file_path, sep='\t', usecols=self.use_columns + ['Potential contaminant'], low_memory=False, chunksize=chunksize):
+
+    def iter_batch(self, file_path: str, mods_map: dict, chunksize: int = None):
+        for df in pd.read_csv(
+            file_path,
+            sep="\t",
+            usecols=self.use_columns + ["Potential contaminant"],
+            low_memory=False,
+            chunksize=chunksize,
+        ):
             df = self.main_operate(df, mods_map)
             yield df
 
@@ -226,15 +245,15 @@ class MaxquantConvert:
         """Open file from zip archive."""
         with zipfile.ZipFile(zip_file) as z:
             with z.open(file_name) as f:
-                df = pd.read_csv(f, sep='\t', usecols=self.use_columns + ['Potential contaminant'], low_memory=False)
+                df = pd.read_csv(f, sep="\t", usecols=self.use_columns + ["Potential contaminant"], low_memory=False)
         return df
 
-    def read_zip_file(self, zip_path:str):
+    def read_zip_file(self, zip_path: str):
         filepath = Path(zip_path)
-        df = self.open_from_zip_archive(zip_path,f'{filepath.stem}/evidence.txt')
+        df = self.open_from_zip_archive(zip_path, f"{filepath.stem}/evidence.txt")
         return df
 
-    def merge_sdrf(self, data:pd.DataFrame, sdrf_path:str):
+    def merge_sdrf(self, data: pd.DataFrame, sdrf_path: str):
         sdrf = pd.read_csv(sdrf_path, sep="\t")
         factor = "".join(filter(lambda x: x.startswith("factor"), sdrf.columns))
         sdrf = sdrf[
@@ -245,17 +264,17 @@ class MaxquantConvert:
                 "comment[fraction identifier]",
                 "comment[label]",
                 "comment[technical replicate]",
-                "characteristics[biological replicate]"
+                "characteristics[biological replicate]",
             ]
         ]
         sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(lambda x: x.split(".")[0])
         res = pd.merge(
-                data,
-                sdrf,
-                left_on=["reference_file_name"],
-                right_on=["comment[data file]"],
-                how="left",
-            )
+            data,
+            sdrf,
+            left_on=["reference_file_name"],
+            right_on=["comment[data file]"],
+            how="left",
+        )
         samples = sdrf["source name"].unique()
         mixed_map = dict(zip(samples, range(1, len(samples) + 1)))
         res.loc[:, "run"] = res[
@@ -284,12 +303,12 @@ class MaxquantConvert:
         res.rename(columns={factor: "condition"}, inplace=True)
         return res
 
-    def convert_to_parquet(self, file_path:str, sdrf_path:str, output_path:str, chunksize: int=None):
+    def convert_to_parquet(self, file_path: str, sdrf_path: str, output_path: str, chunksize: int = None):
         self._modifications = get_mods(sdrf_path)
         mods_map = get_mod_map(sdrf_path)
         pqwriter = None
-        for df in self.iter_batch(file_path,mods_map,chunksize=chunksize):
-            df = self.merge_sdrf(df,sdrf_path)
+        for df in self.iter_batch(file_path, mods_map, chunksize=chunksize):
+            df = self.merge_sdrf(df, sdrf_path)
             df = self.format_to_parquet(df)
             if not pqwriter:
                 pqwriter = pq.ParquetWriter(output_path, df.schema)
@@ -297,16 +316,16 @@ class MaxquantConvert:
         if pqwriter:
             pqwriter.close()
 
-    def convert_zip_to_parquet(self, files: list, sdrf_path:str,output_path:str):
+    def convert_zip_to_parquet(self, files: list, sdrf_path: str, output_path: str):
         self._modifications = get_mods(sdrf_path)
         mods_map = get_mod_map(sdrf_path)
         pqwriter = None
         for file in files:
             try:
                 df = self.read_zip_file(file)
-                df = self.main_operate(df,mods_map)
-                df.loc[:,'reference_file_name'] = file.split('.')[0]
-                df = self.merge_sdrf(df,sdrf_path)
+                df = self.main_operate(df, mods_map)
+                df.loc[:, "reference_file_name"] = file.split(".")[0]
+                df = self.merge_sdrf(df, sdrf_path)
                 df = self.format_to_parquet(df)
                 logging.log(logging.INFO, f"Processing file {file}")
             except Exception as e:
@@ -317,7 +336,7 @@ class MaxquantConvert:
         if pqwriter:
             pqwriter.close()
 
-    def format_to_parquet(self,res:pd.DataFrame):
+    def format_to_parquet(self, res: pd.DataFrame):
 
         res["sequence"] = res["sequence"].astype(str)
         res["protein_accessions"] = res["protein_accessions"].str.split(";")
@@ -334,23 +353,22 @@ class MaxquantConvert:
 
         return pa.Table.from_pandas(res, schema=SCHEMA)
 
-    def add_additional_msg(self, df:pd.DataFrame):
+    def add_additional_msg(self, df: pd.DataFrame):
         # ?????
-        df.loc[:,'best_psm_reference_file_name'] = None
-        df.loc[:,'best_psm_scan_number'] = None
-        df.loc[:,'exp_mass_to_charge'] = None
-        df.loc[:,'gene_accessions'] = None
-        df.loc[:,'gene_names'] = None
-        df.loc[:,'global_qvalue'] = None
-        df.loc[:,'id_scores'] = None
-        df.loc[:,'intensity_array'] = None
-        df.loc[:,'is_decoy'] = None
-        df.loc[:,'mz_array'] = None
-        df.loc[:,'num_peaks'] = None
-        df.loc[:,'protein_end_positions'] = None
-        df.loc[:,'protein_global_qvalue'] = None
-        df.loc[:,'protein_start_positions'] = None
-        df.loc[:,'retention_time'] = None
-        df.loc[:,'spectral_count'] = None
+        df.loc[:, "best_psm_reference_file_name"] = None
+        df.loc[:, "best_psm_scan_number"] = None
+        df.loc[:, "exp_mass_to_charge"] = None
+        df.loc[:, "gene_accessions"] = None
+        df.loc[:, "gene_names"] = None
+        df.loc[:, "global_qvalue"] = None
+        df.loc[:, "id_scores"] = None
+        df.loc[:, "intensity_array"] = None
+        df.loc[:, "is_decoy"] = None
+        df.loc[:, "mz_array"] = None
+        df.loc[:, "num_peaks"] = None
+        df.loc[:, "protein_end_positions"] = None
+        df.loc[:, "protein_global_qvalue"] = None
+        df.loc[:, "protein_start_positions"] = None
+        df.loc[:, "retention_time"] = None
+        df.loc[:, "spectral_count"] = None
         return df
-    
