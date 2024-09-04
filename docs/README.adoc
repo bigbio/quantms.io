@@ -513,7 +513,7 @@ The peptide view aims to cover detail on peptides quantified in the experiment a
 ==== Peptide Use cases
 
 - It serves as a report file with all peptides quantified in the experiment for each protein.
-- It can be used to generate a peptide reports for integration with tools and services.
+- It can be used to generate peptide reports for integration with tools and services.
 
 ==== Peptide Fields
 
