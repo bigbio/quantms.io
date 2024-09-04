@@ -36,6 +36,10 @@ NOTE: We are not trying to replace the mzTab format, but to provide a new format
 
 The quantms.io (.qms) could be seen as a **multiple view** representation of a proteomics data analysis results. Each view of the format can be serialized in different formats depending on the use case. The **data model** defines two main things, the **view** and how the view is **serialized**.
 
+image::docs/formats-relation.svg[width=80%]
+   :width: 80%
+   :align: center
+
 - The **data model view** defines the structure, the fields and properties that will be included in a view for each peptide, psms, feature or protein, or ptms.
 - The **data serialization** defines the format in which the view will be serialized and what features of serialization will be supported, for example, compression, indexing, or slicing.
 
