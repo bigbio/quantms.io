@@ -2,21 +2,21 @@
 	"name": "feature",
 	"type": "record",
 	"fields": [
+		{"name": "quantmsio_version", "type": "string", "doc": "The version of the quantms.io specification"},
 		{"name": "sequence", "type": "string", "doc": "The peptide’s sequence corresponding to the PSM"},
         {"name": "peptidoform", "type": "string", "doc": "Peptide sequence with modifications: Read the specification for more details"},
-
         {"name": "protein_accessions", "type": ["null",{"type": "array","items": "string"}], "doc": "Protein accessions, where all the proteins are found"},
         {"name": "protein_positions", "type": ["null",{"type": "array","items": "string"}], "doc": "Protein start and end positions written as start_post:end_post"},
         {"name": "gene_accessions", "type": ["null", {"type": "array", "items": "string"}], "doc": "Gene accessions, as string array"},
         {"name": "gene_names", "type": ["null", {"type": "array", "items": "string"}], "doc": "Gene names, as string array"},
         {"name": "protein_global_qvalue", "type": ["null", "double"], "doc": "Global q-value of the protein group, if the PSM was filtered by protein q-value"},
         {"name": "unique", "type": ["null", "int"], "doc": "Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0"},
-
-		{"name": "is_decoy", "type": "int", "doc": "Decoy indicator, 1 if the PSM is a decoy, 0 target"},
         {"name": "modifications", "type": ["null", {"type": "array", "items": "string"}], "doc": "List of modifications as string array, easy for search and filter"},
         {"name": "modification_details",
 		 "type": ["null", {"type": "array", "items": "string"}],
 		 "doc": "List of alternative site probabilities for the modification format: read the specification for more details"},
+		{"name": "is_decoy", "type": "int", "doc": "Decoy indicator, 1 if the PSM is a decoy, 0 target"},
+
         {"name": "charge", "type": "int", "doc": "Precursor charge"},
         {"name": "retention_time", "type": ["null", "double"], "doc": "MS2 scan’s precursor retention time (in seconds)"},
         {"name": "exp_mass_to_charge", "type": "double", "doc": "Experimental peptide mass-to-charge ratio of identified peptide (in Da)"},
@@ -29,7 +29,6 @@
 		{"name": "best_psm_reference_file_name","type": ["null","string"],
 		 "doc": "The reference file containing the best PSM that identified the feature. This file can be different from the file that contains the feature (`reference_file_name`)."},
 		{"name": "best_psm_scan_number","type": ["null","string"], "doc": "The scan number of the spectrum. The scan number or index of the spectrum in the file"},
-		{"name": "spectral_count", "type":  ["null","int"], "doc": "The number of spectra that match is given peptidoform"},
 		{"name": "intensity", "type":  ["null","double"], "doc": "The intensity-based abundance of the peptide in the sample"},
 		{"name": "sample_accession", "type":  "string", "doc": "The sample accession in the SDRF, which column is called source name"},
 		{"name": "condition", "type":  "string", "doc": "The value for the factor value column in the SDRF, for example, the tissue factor value[organism part]"},

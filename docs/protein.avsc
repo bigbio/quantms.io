@@ -2,6 +2,7 @@
 	"name": "protein",
 	"type": "record",
 	"fields": [
+		{"name": "quantmsio_version", "type": "string", "doc": "The version of the quantms.io specification"},
         {"name": "protein_accessions", "type": {"type": "array","items": "string"}},
 		{"name": "abundance","type": "float"},
 		{"name": "global_qvalue","type": "double"},

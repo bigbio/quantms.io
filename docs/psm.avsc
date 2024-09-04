@@ -2,6 +2,7 @@
   "name": "psm",
   "type": "record",
   "fields": [
+    {"name": "quantmsio_version", "type": "string", "doc": "The version of the quantms.io specification"},
     {"name": "sequence", "type": "string", "doc": "The peptide’s sequence corresponding to the PSM"},
     {"name": "peptidoform", "type": "string", "doc": "Peptide sequence with modifications: Read the specification for more details"},
 
