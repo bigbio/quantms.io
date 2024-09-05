@@ -429,6 +429,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | FragPipe
 | MaxQuant
 | mzTab
+
 7+^| Peptide fields shared by <<feature>> <<peptide>> <<psm>>
 | `Sequence`
 | The peptide's sequence (with no modifications)
@@ -437,6 +438,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | Peptide
 | x
 | sequence
+
 | `Peptidoform`
 | Peptide sequence with modifications, see more <<peptidoform>>
 | string
@@ -444,6 +446,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | Modified Peptide
 | x
 | -
+
 | `Modifications`
 | List of modifications as a string array, easy for search and filter
 | array[string], null
@@ -451,6 +454,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | -
 | x
 | -
+
 | `ModificationDetails`
 | List of alternative site probabilities for the modification format: read <<modifications>>
 | array[string], null
@@ -458,6 +462,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | [modified residue]:[modification mass]
 | x
 | x
+
 | `PosteriorErrorProbability`
 | Posterior error probability (PEP) for the given peptide match
 | double, null
@@ -465,6 +470,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | x
 | x
 | modifications
+
 | `GlobalQvalue`
 | Global q-value for the peptide or PSM at the level of the experiment
 | double, null
@@ -472,6 +478,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | x
 | x
 | -
+
 7+^| Peptide fields shared by <<feature>> <<psm>>
 | `IsDecoy`
 | Decoy indicator, 1 if the peptide is a decoy, 0 target
@@ -480,6 +487,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | -
 | x
 | -
+
 | `CalculatedMz`
 | Theoretical peptide mass-to-charge ratio based on an identified sequence and modifications
 | double
@@ -487,6 +495,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | Calculated M/Z
 | x
 | calc_mass_to_charge
+
 | `IdScores`
 | List of search engine scores as key-value pairs, read the specification for more details
 | array[string]
@@ -494,6 +503,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | FragPipe Scores
 | x
 | -
+
 7+^| Protein fields shared by <<feature>> <<psm>> <<peptide>>
 | `PGAccessions`
 | Protein group accessions of all the proteins that the peptide maps to
@@ -502,6 +512,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | x
 | x
 | accession
+
 | `PGPositions`
 | Protein start and end positions written as start_post:end_post
 | array[string], null
@@ -516,6 +527,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | Is Unique
 | x
 | unique
+
 | `ProteinGlobalQvalue`
 | Global q-value of the protein group at the experiment level
 | double, null
@@ -523,6 +535,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | x
 | x
 | -
+
 | `GGAccessions`
 | Gene group accessions, as a string array
 | array[string], null
@@ -530,6 +543,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | x
 | x
 | -
+
 | `GGNames`
 | Gene names, as a string array
 | array[string], null
@@ -537,6 +551,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | x
 | x
 | -
+
 7+^| Spectra fields shared by <<feature>> <<psm>>
 | `PrecursorCharge`
 | Precursor charge
@@ -545,6 +560,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | x
 | x
 | charge
+
 | `ObservedMz`
 | Experimental peptide mass-to-charge ratio of identified peptide (in Da)
 | double
@@ -552,6 +568,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | Observed M/Z
 | x
 | exp_mass_to_charge
+
 | `RT`
 | MS2 scan’s precursor retention time (in seconds)
 | double, null
@@ -559,6 +576,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | x
 | x
 | retention_time
+
 | `PredictedRT`
 | Predicted retention time of the peptide (in seconds)
 | double, null
@@ -568,6 +586,10 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | -
 |===
 
+//TODO: We should discuss all the Protein Groups and Gene Groups fields and how they are used in the quantms.io: PGAccessions, PGPositions, Unique, ProteinGlobalQvalue, GGAccessions, GGNames
+
+[[peptide]]
+
 [[psm]]
 === Peptide Spectrum Match (PSM) View
 
@@ -575,11 +597,11 @@ Peptide spectrum matches (PSMs) are the results of the **identification** of pep
 
 ==== PSM Use cases
 
--  The PSM table aims to cover detail on PSM level for AI/ML training and other use-cases.
--  Most of the content is similar to mzTab, a PSM would be a peptide identification in a specific msrun file.
--  Store details on PSM level including spectrum mz/intensity for specific use-cases such as AI/ML training.
--  Fast and easy visualization and scanning on PSM level.
--  Store the spectra information for the psm for those AI/ML use cases were prediction and training will be working in the spectra.
+- The PSM table aims to cover detail on PSM level for AI/ML training and other use-cases.
+- Most of the content is similar to mzTab, a PSM would be a peptide identification in a specific msrun file.
+- Store details on PSM level including spectrum mz/intensity for specific use-cases such as AI/ML training.
+- Fast and easy visualization and scanning on PSM level.
+- Store the spectra information for the psm for those AI/ML use cases were prediction and training will be working in the spectra.
 
 ==== PSM Fields
 
