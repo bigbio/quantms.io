@@ -151,7 +151,7 @@ The current `quantms.io` specification version is:
 
 - **1.0.0**
 
-All views and serialization formats will have a version number in the way: `quantmsio_version: {}`. This will help to identify the version of the specification used to generate the file.
+All views and serialization formats will have a version number in the way: `QuantmsioVersion: {}`. This will help to identify the version of the specification used to generate the file.
 
 [[project]]
 == Project quantms.io
@@ -161,33 +161,33 @@ The project view is the file that stores the metadata of the entire `quantms.io`
 === Project fields
 
 |===
-| **Field**                 | **Description**                              | **Type**
-| `project_accession`       | Project accession identifier                 | string
-| `project_title`           | Title of the project                         | string
-| `project_sample_description` | Description of the project sample         | string
-| `project_data_description` | Description of the project data             | string
-| `project_pubmed_id`       | PubMed ID associated with the project        | integer
-| `organisms`               | List of organisms involved in the project    | list[string], null
-| `organism_parts`          | Parts of organisms studied                   | list[string], null
-| `diseases`                | Diseases associated with the study           | list[string], null
-| `cell_lines`              | Cell lines used in the study                 | list[string], null
-| `instruments`             | Instruments used for data acquisition        | list[string]
-| `enzymes`                 | Enzymes used in the study                    | list[string]
-| `experiment_type`         | Types of experiments conducted               | list[string]
-| `acquisition_properties`  | Properties of the data acquisition methods   | list[key/value]
-| `quantms_files`           | Files related to quantMS analysis            | list[key/value]
-| `quantmsio_version`       | Version of the `quantms.io`                    | String
-| `quantms_version`         | Version of the quantms workflow              | String
-| `comments`                | Additional comments or notes                 | List of Strings
+| **Field**                | **Description**                              | **Type**
+| `ProjectAccession`       | Project accession identifier                 | string
+| `ProjectTitle`           | Title of the project                         | string
+| `ProjectSampleDescription` | Description of the project sample         | string
+| `ProjectDataDescription` | Description of the project data             | string
+| `ProjectPubmedId`       | PubMed ID associated with the project        | integer
+| `Organisms`              | List of Organisms involved in the project    | list[string], null
+| `OrganismParts`          | Parts of Organisms studied                   | list[string], null
+| `Diseases`               | Diseases associated with the study           | list[string], null
+| `CellLines`              | Cell lines used in the study                 | list[string], null
+| `Instruments`            | Instruments used for data acquisition        | list[string]
+| `Enzymes`                | Enzymes used in the study                    | list[string]
+| `ExperimentType`         | Types of experiments conducted               | list[string]
+| `AcquisitionProperties`  | Properties of the data acquisition methods   | list[key/value]
+| `QuantmsFiles`           | Files related to quantMS analysis            | list[key/value]
+| `QuantmsioVersion`       | Version of the `quantms.io`                    | String
+| `QuantmsVersion`         | Version of the quantms workflow              | String
+| `Comments`               | Additional comments or notes                 | List of Strings
 |===
 
 Key/Value pair object: The key/value pairs are used to store the acquisition properties, and the  quantms files.
 
-Example of ``acquisition_properties``:
+Example of ``AcquisitionProperties``:
 
 [source,json]
 ----
-   "acquisition_properties": [
+   "AcquisitionProperties": [
         {"precursor tolerance": "0.05 Da"},
         {"dissociation method": "HCD"}
    ]
@@ -197,11 +197,11 @@ Example of ``acquisition_properties``:
 
 Recommendations for the file name in the quantms project.
 
-Example of ``quantms_files``:
+Example of ``QuantmsFiles``:
 
 [source,json]
 ----
-   "quantms_files": [
+   "QuantmsFiles": [
         {"psm_file":   ["PXD004683-550e8400-e29b-41d4.1.psm.parquet",
                         "PXD004683-550e8400-e29b-41d4.2.psm.parquet"
         ]},
@@ -217,34 +217,34 @@ Example:
 [source,json]
 ----
    {
-    "project_accession": "PXD014414",
-    "project_title": "",
-    "project_sample_description": "",
-    "project_data_description": "",
-    "project_pubmed_id": 32265444,
-    "organisms": [
+    "ProjectAccession": "PXD014414",
+    "ProjectTitle": "",
+    "ProjectSampleDescription": "",
+    "ProjectDataDescription": "",
+    "ProjectPubmedId": 32265444,
+    "Organisms": [
         "Homo sapiens"
     ],
-    "organism_parts": [
+    "OrganismParts": [
         "mammary gland",
         "adjacent normal tissue"
     ],
-    "diseases": [
+    "Diseases": [
         "metaplastic breast carcinomas",
         "Triple-negative breast cancer",
         "Normal",
         "not applicable"
     ],
-    "cell_lines": [
+    "CellLines": [
         "not applicable"
     ],
-    "instruments": [
+    "Instruments": [
         "Orbitrap Fusion"
     ],
-    "enzymes": [
+    "Enzymes": [
         "Trypsin"
     ],
-    "experiment_type": [
+    "ExperimentType": [
         "Triple-negative breast cancer",
         "Wisp3",
         "Tandem mass tag (tmt) labeling",
@@ -253,22 +253,22 @@ Example:
         "Precision therapy",
         "Lc-ms/ms shotgun proteomics"
     ],
-    "acquisition_properties": [
+    "AcquisitionProperties": [
         {"proteomics data acquisition method": "TMT"},
         {"proteomics data acquisition method": "Data-dependent acquisition"},
         {"dissociation method": "HCD"},
         {"precursor mass tolerance": "20 ppm"},
         {"fragment mass tolerance": "0.6 Da"}
     ],
-    "quantms_files": [
+    "QuantmsFiles": [
         {"feature_file": ["PXD014414.feature.parquet"]},
         {"sdrf_file": ["PXD014414.sdrf.tsv"]},
         {"psm_file": ["PXD014414-f4fb88f6.psm.parquet"]},
         {"differential_file": ["PXD014414-3026e5d5.differential.tsv"]}
     ],
-    "quantms_version": "1.1.1",
-    "quantmsio_version": "1.0.0",
-    "comments": []
+    "QuantmsVersion": "1.1.1",
+    "QuantmsioVersion": "1.0.0",
+    "Comments": []
    }
 ----
 
@@ -280,7 +280,7 @@ The Sample and Data Relationship Format (SDRF) is a tab-delimited file format th
 [[absolute]]
 == Absolute Quantification View
 
-Absolute quantification is the process of determining the absolute amount of a target protein in a sample. In proteomics, the main computational method to determine the absolute quantification is the intensity-based absolute quantification (iBAQ) method.
+Absolute quantification is the process of determining the absolute/baseline amount of a target protein in a sample. In proteomics, the main computational method to determine the absolute quantification is the intensity-based absolute quantification (iBAQ) method.
 
 === Absolute Quantification Use cases
 
@@ -293,16 +293,16 @@ Absolute quantification is the process of determining the absolute amount of a t
 
 The absolute expression format is a tab-delimited file format that contains the following fields:
 
--  ``protein`` -> Protein accession or semicolon-separated list of accessions for indistinguishable groups
--  ``sample_accession`` -> Sample accession in the SDRF.
--  ``condition`` -> Condition name
--  ``ibaq`` -> iBAQ value
--  ``ribaq`` -> Relative iBAQ value
+-  ``Protein`` -> Protein accession or semicolon-separated list of accessions for indistinguishable groups
+-  ``SampleAccession`` -> Sample accession in the SDRF.
+-  ``Condition`` -> Condition name
+-  ``Ibaq`` -> iBAQ value
+-  ``IbaqNormalized`` -> Relative iBAQ value, Ibaq value normalized by the sum of the iBAQ values in the sample.
 
 Example:
 
 |===
-| *protein*    | *sample_accession* | *condition* | *ibaq*  | *ribaq*
+| *Protein*    | *SampleAccession* | *Condition* | *Ibaq*  | *IbaqNormalized*
 | LV861_HUMAN  | Sample-1           | heart       | 1234.1  | 12.34
 |===
 
@@ -313,25 +313,25 @@ with ``#``. The quantms output will start with some key value pairs that describ
 
 Example:
 
-``#project_accession=PXD000000``
+``#ProjectAccession=PXD000000``
 
 In addition, for each ``Default`` column of the matrix the following information should be added:
 
-   #INFO=<ID=protein, Number=inf, Type=String, Description="Protein Accession">
-   #INFO=<ID=sample_accession, Number=1, Type=String, Description="Sample Accession in the SDRF">
-   #INFO=<ID=condition, Number=1, Type=String, Description="Value of the factor value">
-   #INFO=<ID=ibaq, Number=1, Type=Float, Description="Intensity based absolute quantification">
-   #INFO=<ID=ribaq, Number=1, Type=Float, Description="relative iBAQ">
-   #INFO=<ID=quantmsio_version, Number=1, Type=String, Description="Version of the quantms.io">
+   #INFO=<ID=Protein, Number=inf, Type=String, Description="Protein Accession">
+   #INFO=<ID=SampleAccession, Number=1, Type=String, Description="Sample Accession in the SDRF">
+   #INFO=<ID=Condition, Number=1, Type=String, Description="Value of the factor value">
+   #INFO=<ID=Ibaq, Number=1, Type=Float, Description="Intensity based absolute quantification">
+   #INFO=<ID=IbaqNormalized, Number=1, Type=Float, Description="normalized iBAQ">
+   #INFO=<ID=QuantmsioVersion, Number=1, Type=String, Description="Version of the quantms.io">
 
 - The ``ID`` is the column name in the matrix, the ``Number`` is the number of values in the column (separated by ``;``), the ``Type`` is the type of the values in the column and the ``Description`` is a description of the column. The number of values in the column can go from 1 to ``inf`` (infinity).
--  Protein groups are written as a list of protein accessions separated by ``;`` (e.g. ``P12345;P12346``)
+-  Protein groups are written as a list of protein accessions separated by ``;`` (e.g.``P12345;P12346``)
 
 We _RECOMMEND_ including the following properties in the header:
 
--  project_accession: The project accession in PRIDE Archive
--  project_title: The project title in PRIDE Archive
--  project_description: The project description in PRIDE Archive
+-  ProjectAccession: The project accession in PRIDE Archive
+-  ProjectTitle: The project title in PRIDE Archive
+-  ProjectDescription: The project description in PRIDE Archive
 -  quantms version: The version of the quantms workflow used to generate the file
 -  factor_value: The factor values used in the analysis (e.g.``tissue``)
 
@@ -373,7 +373,7 @@ Example:
 
 By default, the MSstats format does not have any header of metadata. We suggest adding a header to the output for better understanding of the file. By default, MSstats allows comments in the file if the line starts with ``#``. The quantms output will start with some key value pairs that describe the project, the workflow and also the columns in the file. For example:
 
-``#project_accession=PXD000000``
+``#ProjectAccession=PXD000000``
 
 In addition, for each ``Default`` column of the matrix the following information should be added:
 
@@ -385,15 +385,15 @@ In addition, for each ``Default`` column of the matrix the following information
    #INFO=<ID=pvalue, Number=1, Type=Double, Description="Raw p-values">
    #INFO=<ID=adj.pvalue, Number=1, Type=Double, Description="P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg">
    #INFO=<ID=issue, Number=1, Type=String, Description="Issue column shows if there is any issue for inference in corresponding protein and comparison">
-   #INFO=<ID=quantmsio_version, Number=1, Type=String, Description="Version of the quantms.io">
+   #INFO=<ID=QuantmsioVersion, Number=1, Type=String, Description="Version of the quantms.io">
 
 -  The ``ID`` is the column name in the matrix, the ``Number`` is the number of values in the column (separated by ``;``), the ``Type`` is the type of the values in the column and the ``Description`` is a description of the column. The number of values in the column can go from 1 to ``inf`` (infinity).
 -  Protein groups are written as a list of protein accessions separated by ``;`` (e.g. `P12345;P12346``)
 
 We suggest including the following properties in the header:
 
-- project_accession: The project accession in PRIDE Archive
-- project_title: The project title in PRIDE Archive
+- ProjectAccession: The project accession in PRIDE Archive
+- ProjectTitle: The project title in PRIDE Archive
 - project_description: The project description in PRIDE Archive
 - quanmtsio_version: The version of the quantms workflow used to generate the file.
 - factor_value: The factor values used in the analysis (e.g. ``phenotype``)
@@ -555,7 +555,7 @@ The Protein table is a tsv file that contains the details of the proteins identi
 |===
 | **Field**               | **Description**                                     | **Type**
 
-| `quantmsio_version`       | The version of the quantms.io specification     | string
+| `QuantmsioVersion`       | The version of the quantms.io specification     | string
 | `protein_accessions`      | Protein accessions identified or quantified     | array[string]
 | `abundance`               | Abundance of the given protein in the sample/experiment    | null, float
 | `sample_accession`        | Sample accession in the SDRF, which column is called `source name` | string
