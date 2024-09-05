@@ -21,7 +21,7 @@ endif::[]
 [[introduction]]
 == Introduction
 
-The majority of formats in HUPO-PSI are based on XML format including mzML, mzIdentML making difficult to use them for large-scale, AI model technologies. Also, the previous approach to move away from XML-based approaches, mzTab fails to produce a tab-delimited format that can scale with the size of the data. Here, we aim to formalize and develop a more standardized format that enables better representation of the identification and quantification results but also enables new and novel use cases for proteomics data analysis. The main use cases for the format are:
+The majority of formats in HUPO-PSI are based on XML format including mzML, mzIdentML making difficult to use them for large-scale, AI model technologies. Also, the previous approach to move away from XML-based approaches, mzTab "falls short" to produce a tab-delimited format that can scale with the size of the data. Here, we aim to formalize and develop a more standardized format that enables better representation of the identification and quantification results but also enables new and novel use cases for proteomics data analysis. The main use cases for the format are:
 
 - Fast and easy visualization of the identification and quantification results.
 - Easy integration with other omics data.
@@ -34,13 +34,13 @@ NOTE: We are not trying to replace the mzTab format, but to provide a new format
 [[general-data-model]]
 == General data model and structure
 
-The quantms.io (.qms) could be seen as a **multiple view** representation of a proteomics data analysis results. Each view of the format can be serialized in different formats depending on the use case. The **data model** defines two main things, the **view** and how the view is **serialized**.
+The `quantms.io` (.qms) could be seen as a **multiple view** representation of a proteomics data analysis results. Similar to other tools that produce multiple output files for their analysis, like https://www.maxquant.org/[MaxQuant], https://github.com/vdemichev/DiaNN[DIA-NN], https://fragpipe.nesvilab.org/[FragPipe] or https://biognosys.com/software/spectronaut/[spectronaut]. Each view of the format can be serialized in different formats depending on the use case. The **data model** defines two main things, the **view** and how the view is **serialized**. Both views and serialization can be extended, and new views can be added on each <<version>> of the specification.
 
 image::images/formats-relation.svg[width=80%]
    :width: 80%
    :align: center
 
-- The **data model view** defines the structure, the fields and properties that will be included in a view for each peptide, psms, feature or protein, or ptms.
+- The **data model view** defines the structure, the fields and properties that will be included in a view for each peptide, psms, feature or protein.
 - The **data serialization** defines the format in which the view will be serialized and what features of serialization will be supported, for example, compression, indexing, or slicing.
 
 |===
@@ -53,7 +53,9 @@ image::images/formats-relation.svg[width=80%]
 | project      | -                 | _json_                 | <<project>>
 |===
 
-TIP: Views can be extended and new views can be added to the format.
+NOTE: Some of these data models fit better for some analytical methods than others, for example, the **psm view** <<psm>> is more suitable for data-dependent acquisition (DDA) methods, and may not be present in data-independent acquisition (DIA) methods; while the **feature view** <<feature>> could be generated in both DDA and DIA methods. Different expression view <<differential>> are only present in those experiments while absolute-expression (based on IBAQ values) is only available on datasets where comparisons are not performed between conditions.
+
+[[file-structure]]
 
 The `.qms` folder will contain multiple metadata files that will be used to describe the project, the samples, the data acquisition and the data processing.
 
@@ -74,22 +76,23 @@ A peptidoform is a peptide sequence with modifications. For example, the peptide
 [[modifications]]
 === Modifications
 
-A modification is a chemical change in the peptide sequence. Modifications can be annotated as part of the Proforma notation inside the peptide or as a separate column. When annotating the modification as a separate column, the format should be as close as possible to the https://github.com/HUPO-PSI/mzTab/tree/master/specification_document-releases/1_0-Proteomics-Release[mzTab format notation]. The modifications will encode the following information on each peptide or psm:
+A modification is a chemical change in the peptide sequence. Modifications can be annotated in multiple ways in `quantms.io` format:
 
-  - Modification name or accession: For example, `Oxidation` or `UNIMOD:35`. Modifications SHOULD be reported using UNIMOD. If a modification is not defined in UNIMOD, a CHEMMOD definition must be used like `CHEMMOD:-18.0913`, where the number is the mass shift in Daltons.
-  - Position: The position of the modification in the peptide sequence. Terminal modifications in proteins and peptides MUST be reported with the position set to 0 (N-terminal) or the amino acid length +1 (C-terminal) respectively. For example, `1` or `1,2,3`. 
-  - Localization Probability: The probability of the modification being in the reported position. 
+- As part of the Proforma notation inside the peptide or as a separate by `[Oxidation]` with  modification name or accession: For example, `Oxidation` or `UNIMOD:35`. It Is RECOMMENDED to report modifications using UNIMOD. If a modification is not defined in UNIMOD, a CHEMMOD definition must be used like `CHEMMOD:-18.0913`, where the number is the mass shift in Daltons.
+- As a list of modification names for each peptidoform for easy integration and filtering of the given peptide evidence. For example, `Oxidation;Phosphorylation`.
+- Full modification annotation with the given position, modification name, and quality score. In this case, modifications will be encoded as:
+  ** Accession or name: The modification accession or name. For example, `CHEMMOD:-18.0913`, `UNIMOD:35` or `Oxidation`.
+  ** Position: The position of the modification in the peptide sequence. Terminal modifications in proteins and peptides MUST be reported with the position set to 0 (N-terminal) or the amino acid length +1 (C-terminal) respectively. For example, `1` or `1,2,3`.
+  ** Localization Probability: The probability of the modification being in the reported position.
 
-Those three properties can be combined in one string as: 
+Those three properties can be combined in one string as:
+
+`{position}({Probabilistic Score:0.9})|{position2}|..-{modification accession or name}`
+
+For example:
 
 ```
-{position}({Probabilistic Score:0.9})|{position2}|..-{modification accession or name}
-```
-
-For example: 
-
-```
-1(Probabilistic Score:0.8)|2(Probabilistic Score:0.9)|3-UNIMOD:35`. 
+1(Probabilistic Score:0.8)|2(Probabilistic Score:0.9)|3-UNIMOD:35`
 ```
 
 This concept is used in the following outputs:
@@ -101,7 +104,7 @@ This concept is used in the following outputs:
 [[serialization]]
 == Serialization formats
 
-The quantms.io format has different serialization formats for each view. The serialization format defines how the view will be serialized and what features of serialization will be supported, for example, compression, indexing, or slicing. The following serialization formats are supported:
+The `quantms.io` format has different serialization formats for each view. The serialization format defines how the view will be serialized and what features of serialization will be supported, for example, compression, indexing, or slicing. The following serialization formats are supported:
 
 - **tsv**: Tab-separated values format.
 - **parquet**: Apache Parquet format.
@@ -126,22 +129,25 @@ https://github.com/apache/parquet-format[Parquet] is a columnar storage format t
 | Data stored in Apache Parquet Format | 130 GB              | 6.78 seconds     | 2.51 GB
 |===
 
+==== Parquet slicing
+//TODO: Add information about parquet slicing and how it should be included in the json project file.
+
 [[extensions]]
 == File extensions
 
-File extensions are used to identify the file type. In quantms.io the extensions are constructed as follows: `*.{view}.{format}` where the view is one of the well-defined views in the specification and the format is one of the serialization formats. For example:
+File extensions are used to identify the file type. In `quantms.io` the extensions are constructed as follows: `*.{view}.{format}` where the view is one of the well-defined views in the specification and the format is one of the serialization formats. For example:
 
 - An absolute expression file: PXD000000-943a8f02-0527-4528-b1a3-b96de99ebe75.absolute.tsv
 - A differential expression file: PXD000000-943a8f02-0527-4528-b1a3-b96de99ebe75.differential.tsv
 - A feature file: PXD000000-943a8f02-0527-4528-b1a3-b96de99ebe75.feature.parquet
 - A psm file: PXD000000-943a8f02-0527-4528-b1a3-b96de99ebe75.psm.parquet
 
-NOTE: In quantms.io we use the UUID to identify the project and the files `{PREFIX}-{UUID}.{view}.{format}`, it is optional, but for most of the code examples we will use it. *uuids*: A Universally Unique Identifier (UUID) URN Namespace, as defined in RFC 4122, provides a standardized method for generating globally unique identifiers across various systems and applications. The UUID URN Namespace ensures that each generated UUID is highly unlikely to collide with any other UUID, even when produced by different entities and systems.
+NOTE: In `quantms.io` we use the UUID to identify the project and the files `{PREFIX}-{UUID}.{view}.{format}`, it is optional, but for most of the code examples we will use it. *uuids*: A Universally Unique Identifier (UUID) URN Namespace, as defined in RFC 4122, provides a standardized method for generating globally unique identifiers across various systems and applications. The UUID URN Namespace ensures that each generated UUID is highly unlikely to collide with any other UUID, even when produced by different entities and systems.
 
 [[version]]
 == Versioning
 
-The current quantms.io specification version is:
+The current `quantms.io` specification version is:
 
 - **1.0.0**
 
@@ -150,7 +156,7 @@ All views and serialization formats will have a version number in the way: `quan
 [[project]]
 == Project quantms.io
 
-The project view is the file that stores the metadata of the entire quantms.io project. The project view is a JSON file that contains the following fields:
+The project view is the file that stores the metadata of the entire `quantms.io` project. The project view is a JSON file that contains the following fields:
 
 === Project fields
 
@@ -170,7 +176,7 @@ The project view is the file that stores the metadata of the entire quantms.io p
 | `experiment_type`         | Types of experiments conducted               | list[string]
 | `acquisition_properties`  | Properties of the data acquisition methods   | list[key/value]
 | `quantms_files`           | Files related to quantMS analysis            | list[key/value]
-| `quantmsio_version`       | Version of the quantms.io                    | String
+| `quantmsio_version`       | Version of the `quantms.io`                    | String
 | `quantms_version`         | Version of the quantms workflow              | String
 | `comments`                | Additional comments or notes                 | List of Strings
 |===
@@ -179,12 +185,13 @@ Key/Value pair object: The key/value pairs are used to store the acquisition pro
 
 Example of ``acquisition_properties``:
 
-```json
+[source,json]
+----
    "acquisition_properties": [
         {"precursor tolerance": "0.05 Da"},
         {"dissociation method": "HCD"}
    ]
-```
+----
 
 === Project files
 
@@ -204,8 +211,6 @@ Example of ``quantms_files``:
         {"sdrf_file":         ["PXD004683-e29b-41f4-a716.sdrf.tsv"]}
    ]
 ----
-
-
 
 Example:
 
@@ -397,7 +402,7 @@ We suggest including the following properties in the header:
 [[peptide-views]]
 == Peptide-based Views: PSM, Feature and Peptide
 
-Multiple views are available for the quantms.io format that is based on the peptide level. The views are the following:
+Multiple views are available for the `quantms.io` format that is based on the peptide level. The views are the following:
 
 - <<psm>>: Peptide Spectrum Match (PSM) View—The PSM view aims to cover detail on Peptide spectrum matches (PSM) level for AI/ML training and other use-cases.
 - <<feature>>: Peptide Feature View—The peptide feature views (peptide features) aims to cover detail on quantified peptide information level, including peptide intensity in relation to the sample metadata.
