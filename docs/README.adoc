@@ -95,6 +95,13 @@ For example:
 1(Probabilistic Score:0.8)|2(Probabilistic Score:0.9)|3-UNIMOD:35`
 ```
 
+[[identification-scores]]
+=== Identification Scores
+
+Every workflow within quantms uses different identification scores to determinate the quality of the identification. `IdScores` in quantms try to capture multiple scores from different workflows such as the `Comet:xcorr` or `DIA-NN:Q.Value`. The identification scores are stored as a key/value pair where the key is the name of the score (is RECOMMENDED to use HUPO-PSI MS ontology) and the value is the score value. This concept is used in the following outputs:
+
+- `["'Comet:xcorr':67.8", "'DIA-NN:Q.Value':0.01"]`
+
 This concept is used in the following outputs:
 
 - <<psm>>
@@ -424,7 +431,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | mzTab
 7+^| Peptide fields shared by <<feature>> <<peptide>> <<psm>>
 | `Sequence`
-| The peptide’s sequence (with no modifications)
+| The peptide's sequence (with no modifications)
 | string
 | Stripped.Sequence
 | Peptide
@@ -572,6 +579,7 @@ Peptide spectrum matches (PSMs) are the results of the **identification** of pep
 -  Most of the content is similar to mzTab, a PSM would be a peptide identification in a specific msrun file.
 -  Store details on PSM level including spectrum mz/intensity for specific use-cases such as AI/ML training.
 -  Fast and easy visualization and scanning on PSM level.
+-  Store the spectra information for the psm for those AI/ML use cases were prediction and training will be working in the spectra.
 
 ==== PSM Fields
 
@@ -579,20 +587,81 @@ Some fields are shared between the <<psm>> and <<feature>> views, they can be fo
 
 The fields that are unique to the PSM view are:
 
-[cols="1,2,1", options="header"]
+[cols="1,2,1,1,1,1,1", options="header"]
 |===
-| Field        | Description | Type
-| `reference_file_name` | Spectrum file name with no path information and not including the file extension | string
-| `scan_number`         | Scan number of the spectrum                                    | string
-| `ion_mobility`        | Ion mobility value for the precursor ion                       | double, null
-| `consensus_support`   | Consensus support for the given peptide spectrum match, when multiple search engines are used | float, null
-| `num_peaks`           | Number of peaks in the spectrum used for the peptide spectrum match | integer, null
-| `mz_array`            | Array of m/z values for the spectrum used for the peptide spectrum match | array[double], null
-| `intensity_array`     | Array of intensity values for the spectrum used for the peptide spectrum match | array[float], null
-| `rank`                | Rank of the peptide spectrum match in the search engine output | integer, null
+| Field
+| Description
+| Type
+| DIA-NN
+| FragPipe
+| MaxQuant
+| mzTab
+
+| `ReferenceFileName`
+| Spectrum file name with no path information and not including the file extension
+| string
+| Run
+| Spectrum File
+| x
+| spectra_ref
+
+| `ScanNumber`
+| Scan number of the spectrum identified
+| string
+| <<scan-diann>>
+| Spectrum
+| x
+| spectra_ref
+
+| `IonMobility`
+| Ion mobility value for the precursor ion
+| double, null
+| x
+| x
+|X
+|x
+
+| `ConsensusSupport`  
+| Consensus support for the given peptide spectrum match, when multiple search engines are used 
+| float, null
+| -
+| -
+| -
+| -
+
+| `NumberPeaks`          
+| Number of peaks in the spectrum used for the peptide spectrum match 
+| integer, null
+| - 
+| -
+| -
+| -
+
+| `MzArray`           
+| Array of m/z values for the spectrum used for the peptide spectrum match 
+| array[double], null
+| -
+| -
+| -
+| -
+
+| `IntesityArray`    
+| Array of intensity values for the spectrum used for the peptide spectrum match 
+| array[float], null
+| -
+| -
+| -
+| -
+
+| `Rank`               
+| Rank of the peptide spectrum match in the search engine output | integer, null
+| -
+| -
+| -
+| -
 |===
 
-NOTE: The `mz_array` and `intensity_array` are arrays of the same length, where the `mz_array` contains the m/z values and the `intensity_array` contains the intensity values; and the size of the arrays is the same as the number of peaks in the spectrum. These three columns could help use cases like AI/ML that need the spectrum information for a given PSM.
+NOTE: The `MzArray` and `IntensityArray` are arrays of the same length, where the `MzArray` contains the m/z values and the `IntensityArray` contains the intensity values; and the size of the arrays is the same as the number of peaks in the spectrum. These three columns could help use cases like AI/ML that need the spectrum information for a given PSM.
 
 ==== Format
 
