@@ -329,11 +329,11 @@ In addition, for each ``Default`` column of the matrix the following information
 
 We _RECOMMEND_ including the following properties in the header:
 
--  ProjectAccession: The project accession in PRIDE Archive
--  ProjectTitle: The project title in PRIDE Archive
--  ProjectDescription: The project description in PRIDE Archive
--  quantms version: The version of the quantms workflow used to generate the file
--  factor_value: The factor values used in the analysis (e.g.``tissue``)
+-  `ProjectAccession`: The project accession in PRIDE Archive
+-  `ProjectTitle`: The project title in PRIDE Archive
+-  `ProjectDescription`: The project description in PRIDE Archive
+-  `QuantmsVersion`: The version of the quantms workflow used to generate the file
+-  `FactorValue`: The factor values used in the analysis (e.g.``tissue``)
 
 Please check also the differential expression example for more information: <<differential>>
 
@@ -353,19 +353,19 @@ The differential expression view is a tab-delimited file format that contains th
 
 The differential expression format by quantms is based on the https://msstats.org/wp-content/uploads/2017/01/MSstats_v3.7.3_manual.pdf[MSstats] output:
 
-- ``protein`` -> Protein Accession
-- ``label`` -> Label for the contrast on which the fold changes and p-values are based on
-- ``log2fc`` -> Log2 Fold Change
-- ``se`` -> Standard error of the log2 fold change
-- ``df`` -> Degree of freedom of the t-student test
-- ``pvalue`` -> Raw p-values
-- ``adj.pvalue`` -> P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg
-- ``issue`` -> Issue column shows if there is any issue for inference in corresponding protein and comparison, for example, OneConditionMissing or CompleteMissing.
+- ``Protein`` -> Protein Accession
+- ``Label`` -> Label for the contrast on which the fold changes and p-values are based on
+- ``Log2fc`` -> Log2 Fold Change
+- ``Se`` -> Standard error of the log2 fold change
+- ``Df`` -> Degree of freedom of the t-student test
+- ``Pvalue`` -> Raw p-values
+- ``AdjPvalue`` -> P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg
+- ``Issue`` -> Issue column shows if there is any issue for inference in corresponding protein and comparison, for example, OneConditionMissing or CompleteMissing.
 
 Example:
 
 |===
-| *protein*   | *label*                          | *log 2fc* | *se* | *df* | *pvalue* | *adj.pvalue* | *issue*
+| *Protein*   | *Label*                          | *Log2fc* | *Se* | *Df* | *Pvalue* | *AdjPvalue* | *Issue*
 | ADA2_HUMAN  | normal - squamous cell carcinoma | 0.3057    | 0.26 | 37   | 0.02     | 0.43         |
 |===
 
@@ -377,14 +377,14 @@ By default, the MSstats format does not have any header of metadata. We suggest 
 
 In addition, for each ``Default`` column of the matrix the following information should be added:
 
-   #INFO=<ID=protein, Number=inf, Type=String, Description="Protein Accession">
-   #INFO=<ID=label, Number=1, Type=String, Description="Label for the Conditions combination">
-   #INFO=<ID=log2fc, Number=1, Type=Double, Description="Log2 Fold Change">
-   #INFO=<ID=se, Number=1, Type=Double, Description="Standard error of the log2 fold change">
-   #INFO=<ID=df, Number=1, Type=Integer, Description="Degree of freedom of the Student test">
-   #INFO=<ID=pvalue, Number=1, Type=Double, Description="Raw p-values">
-   #INFO=<ID=adj.pvalue, Number=1, Type=Double, Description="P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg">
-   #INFO=<ID=issue, Number=1, Type=String, Description="Issue column shows if there is any issue for inference in corresponding protein and comparison">
+   #INFO=<ID=Protein, Number=inf, Type=String, Description="Protein Accession">
+   #INFO=<ID=Label, Number=1, Type=String, Description="Label for the Conditions combination">
+   #INFO=<ID=Log2fc, Number=1, Type=Double, Description="Log2 Fold Change">
+   #INFO=<ID=Se, Number=1, Type=Double, Description="Standard error of the log2 fold change">
+   #INFO=<ID=Df, Number=1, Type=Integer, Description="Degree of freedom of the Student test">
+   #INFO=<ID=Pvalue, Number=1, Type=Double, Description="Raw p-values">
+   #INFO=<ID=AdjPvalue, Number=1, Type=Double, Description="P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg">
+   #INFO=<ID=Issue, Number=1, Type=String, Description="Issue column shows if there is any issue for inference in corresponding protein and comparison">
    #INFO=<ID=QuantmsioVersion, Number=1, Type=String, Description="Version of the quantms.io">
 
 -  The ``ID`` is the column name in the matrix, the ``Number`` is the number of values in the column (separated by ``;``), the ``Type`` is the type of the values in the column and the ``Description`` is a description of the column. The number of values in the column can go from 1 to ``inf`` (infinity).
@@ -392,52 +392,173 @@ In addition, for each ``Default`` column of the matrix the following information
 
 We suggest including the following properties in the header:
 
-- ProjectAccession: The project accession in PRIDE Archive
-- ProjectTitle: The project title in PRIDE Archive
-- project_description: The project description in PRIDE Archive
-- quanmtsio_version: The version of the quantms workflow used to generate the file.
-- factor_value: The factor values used in the analysis (e.g. ``phenotype``)
-- adj.pvalue: The FDR threshold used to filter the protein lists (e.g. ``adj.pvalue < 0.05``)
+- `ProjectAccession`: The project accession in PRIDE Archive
+- `ProjectTitle`: The project title in PRIDE Archive
+- `ProjectDescription: The project description in PRIDE Archive
+- `QuanmtsioVersion`: The version of the quantms workflow used to generate the file.
+- `FactorValue`: The factor values used in the analysis (e.g. ``phenotype``)
+- `AdjPvalue: The FDR threshold used to filter the protein lists (e.g. ``adj.pvalue < 0.05``)
 
 [[peptide-views]]
 == Peptide-based Views: PSM, Feature and Peptide
 
-Multiple views are available for the `quantms.io` format that is based on the peptide level. The views are the following:
+Multiple peptide-level views are available for the `quantms.io` format. The views are the following:
 
-- <<psm>>: Peptide Spectrum Match (PSM) View—The PSM view aims to cover detail on Peptide spectrum matches (PSM) level for AI/ML training and other use-cases.
+- <<psm>>: Peptide Spectrum Match (PSM) View—The PSM view aims to cover detail on Peptide spectrum matches (PSM) level for AI/ML training and other use-cases, mainly for DDA analytical methods.
 - <<feature>>: Peptide Feature View—The peptide feature views (peptide features) aims to cover detail on quantified peptide information level, including peptide intensity in relation to the sample metadata.
-- <<peptide>>: Peptide View—The peptide view aims to cover detail on peptides quantified in the experiment.
+- <<peptide>>: Peptide View—The peptide view is a summary of quantified peptides by samples, the aim of this representation is to provide a simple summary of the number of peptides and their given quantity for each protein on each sample. This view is useful for quick visualization and data retrieval.
 
 [[peptide-fields]]
-=== Peptide Fields
+=== Common Peptide Fields
 
 The following fields are shared among Peptide-based views: <<psm>>, <<feature>>, <<peptide>>.
 
-[cols="1,2,1", options="header"]
+[cols="1,2,1,1,1,1,1", options="header"]
 |===
-| Field                        | Description                                      | Type
-3+^| Peptide fields shared by <<feature>> <<peptide>> <<psm>>
-| `sequence`         | The peptide’s sequence (with no modifications)             | string
-| `peptidoform`      | Peptide sequence with modifications, see more <<peptidoform>> | string
-| `modifications`    | List of modifications as a string array, easy for search and filter | array[string], null
-| `modification_details`  | List of alternative site probabilities for the modification format: read <<modifications>> | array[string], null
-| `posterior_error_probability` | Posterior error probability (PEP) for the given peptide match | double, null
-| `global_qvalue`    | Global q-value of the peptide spectrum match                   | double, null
-3+^| Peptide fields shared by <<feature>> <<psm>>
-| `is_decoy`         | Decoy indicator, 1 if the PSM is a decoy, 0 target             | integer
-| `calc_mass_to_charge`   | Theoretical peptide mass-to-charge ratio based on an identified sequence and modifications | double
-| `id_scores`        | List of search engine scores as key-value pairs, read the specification for more details | array[string]
-3+^| Protein fields shared by <<feature>> <<psm>> <<peptide>>
-| `protein_accessions`    | Protein accessions, where all the proteins are found | array[string], null
-| `protein_positions`     | Protein start and end positions written as start_post:end_post | array[string], null
-| `unique`           | Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0 | integer, null
-| `protein_global_qvalue` | Global q-value of the protein group, if the PSM was filtered by protein q-value | double, null
-| `gene_accessions`  | Gene accessions, as a string array                             | array[string], null
-| `gene_names`       | Gene names, as a string array                                  | array[string], null
-3+^| Spectra fields shared by <<feature>> <<psm>>
-| `charge`           | Precursor charge                                               | integer
-| `exp_mass_to_charge`    | Experimental peptide mass-to-charge ratio of identified peptide (in Da) | double
-| `retention_time`        |  MS2 scan’s precursor retention time (in seconds) | double, null
+| Field
+| Description
+| Type
+| DIA-NN
+| FragPipe
+| MaxQuant
+| mzTab
+7+^| Peptide fields shared by <<feature>> <<peptide>> <<psm>>
+| `Sequence`
+| The peptide’s sequence (with no modifications)
+| string
+| Stripped.Sequence
+| Peptide
+| x
+| sequence
+| `Peptidoform`
+| Peptide sequence with modifications, see more <<peptidoform>>
+| string
+| Modified.Sequence
+| Modified Peptide
+| x
+| -
+| `Modifications`
+| List of modifications as a string array, easy for search and filter
+| array[string], null
+| -
+| -
+| x
+| -
+| `ModificationDetails`
+| List of alternative site probabilities for the modification format: read <<modifications>>
+| array[string], null
+| -
+| [modified residue]:[modification mass]
+| x
+| x
+| `PosteriorErrorProbability`
+| Posterior error probability (PEP) for the given peptide match
+| double, null
+| PEP
+| x
+| x
+| modifications
+| `GlobalQvalue`
+| Global q-value for the peptide or PSM at the level of the experiment
+| double, null
+| Global.Q.Value
+| x
+| x
+| -
+7+^| Peptide fields shared by <<feature>> <<psm>>
+| `IsDecoy`
+| Decoy indicator, 1 if the peptide is a decoy, 0 target
+| integer
+| -
+| -
+| x
+| -
+| `CalculatedMz`
+| Theoretical peptide mass-to-charge ratio based on an identified sequence and modifications
+| double
+| -
+| Calculated M/Z
+| x
+| calc_mass_to_charge
+| `IdScores`
+| List of search engine scores as key-value pairs, read the specification for more details
+| array[string]
+| DIA-NN Scores
+| FragPipe Scores
+| x
+| -
+7+^| Protein fields shared by <<feature>> <<psm>> <<peptide>>
+| `PGAccessions`
+| Protein group accessions of all the proteins that the peptide maps to
+| array[string], null
+| x
+| x
+| x
+| accession
+| `PGPositions`
+| Protein start and end positions written as start_post:end_post
+| array[string], null
+| -
+| x
+| x
+| Combination of start and end positions
+| `Unique`
+| Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0
+| integer, null
+| -
+| Is Unique
+| x
+| unique
+| `ProteinGlobalQvalue`
+| Global q-value of the protein group at the experiment level
+| double, null
+| Global.PG.Q.Value
+| x
+| x
+| -
+| `GGAccessions`
+| Gene group accessions, as a string array
+| array[string], null
+| x
+| x
+| x
+| -
+| `GGNames`
+| Gene names, as a string array
+| array[string], null
+| x
+| x
+| x
+| -
+7+^| Spectra fields shared by <<feature>> <<psm>>
+| `PrecursorCharge`
+| Precursor charge
+| integer
+| Precursor.Charge
+| x
+| x
+| charge
+| `ObservedMz`
+| Experimental peptide mass-to-charge ratio of identified peptide (in Da)
+| double
+| x
+| Observed M/Z
+| x
+| exp_mass_to_charge
+| `RT`
+| MS2 scan’s precursor retention time (in seconds)
+| double, null
+| RT
+| x
+| x
+| retention_time
+| `PredictedRT`
+| Predicted retention time of the peptide (in seconds)
+| double, null
+| Predicted.RT
+| x
+| x
+| -
 |===
 
 [[psm]]
