@@ -149,21 +149,22 @@ https://github.com/apache/parquet-format[Parquet] is a columnar storage format t
 
 File extensions are used to identify the file type. In `quantms.io` the extensions are constructed as follows: `*.{view}.{format}` where the view is one of the well-defined views in the specification and the format is one of the serialization formats. For example:
 
-- An absolute expression file: PXD000000-943a8f02-0527-4528-b1a3-b96de99ebe75.absolute.tsv
-- A differential expression file: PXD000000-943a8f02-0527-4528-b1a3-b96de99ebe75.differential.tsv
-- A feature file: PXD000000-943a8f02-0527-4528-b1a3-b96de99ebe75.feature.parquet
-- A psm file: PXD000000-943a8f02-0527-4528-b1a3-b96de99ebe75.psm.parquet
+- An absolute expression file: `PXD000000-943a8f02-0527-4528-b1a3-b96de99ebe75.absolute.tsv`
+- A differential expression file: `PXD000000-943a8f02-0527-4528-b1a3-b96de99ebe75.differential.tsv`
+- A feature file: `PXD000000-943a8f02-0527-4528-b1a3-b96de99ebe75.feature.parquet`
+- A psm file: `PXD000000-943a8f02-0527-4528-b1a3-b96de99ebe75.psm.parquet`
 
 NOTE: In `quantms.io` we use the UUID to identify the project and the files `{PREFIX}-{UUID}.{view}.{format}`, it is optional, but for most of the code examples we will use it. *uuids*: A Universally Unique Identifier (UUID) URN Namespace, as defined in RFC 4122, provides a standardized method for generating globally unique identifiers across various systems and applications. The UUID URN Namespace ensures that each generated UUID is highly unlikely to collide with any other UUID, even when produced by different entities and systems.
 
 [[version]]
 == Versioning
 
-The current `quantms.io` specification version is:
+The structure of the version is as follows `{major release}.{minor update}`: The current `quantms.io` specification version is: **1.0**
 
-- **1.0.0**
+- All views and serialization formats will have a version number in the way: `QuantmsioVersion: {}`. This will help to identify the version of the specification used to generate the file.
+- Major release changes will be backward incompatible, while minor updates will be backward compatible.
 
-All views and serialization formats will have a version number in the way: `QuantmsioVersion: {}`. This will help to identify the version of the specification used to generate the file.
+[[psm]]
 
 [[project]]
 == Project quantms.io
@@ -173,24 +174,24 @@ The project view is the file that stores the metadata of the entire `quantms.io`
 === Project fields
 
 |===
-| **Field**                | **Description**                              | **Type**
-| `ProjectAccession`       | Project accession identifier                 | string
-| `ProjectTitle`           | Title of the project                         | string
+| **Field**                | **Description**                             | **Type**
+| `ProjectAccession`       | Project accession identifier                | string
+| `ProjectTitle`           | Title of the project                        | string
 | `ProjectSampleDescription` | Description of the project sample         | string
 | `ProjectDataDescription` | Description of the project data             | string
 | `ProjectPubmedId`       | PubMed ID associated with the project        | integer
-| `Organisms`              | List of Organisms involved in the project    | list[string], null
-| `OrganismParts`          | Parts of Organisms studied                   | list[string], null
-| `Diseases`               | Diseases associated with the study           | list[string], null
-| `CellLines`              | Cell lines used in the study                 | list[string], null
-| `Instruments`            | Instruments used for data acquisition        | list[string]
-| `Enzymes`                | Enzymes used in the study                    | list[string]
-| `ExperimentType`         | Types of experiments conducted               | list[string]
-| `AcquisitionProperties`  | Properties of the data acquisition methods   | list[key/value]
-| `QuantmsFiles`           | Files related to quantMS analysis            | list[key/value]
-| `QuantmsioVersion`       | Version of the `quantms.io`                  | String
-| `QuantmsVersion`         | Version of the quantms workflow              | String
-| `Comments`               | Additional comments or notes                 | List of Strings
+| `Organisms`              | List of Organisms involved in the project   | list[string], null
+| `OrganismParts`          | Parts of Organisms studied                  | list[string], null
+| `Diseases`               | Diseases associated with the study          | list[string], null
+| `CellLines`              | Cell lines used in the study                | list[string], null
+| `Instruments`            | Instruments used for data acquisition       | list[string]
+| `Enzymes`                | Enzymes used in the study                   | list[string]
+| `ExperimentType`         | Types of experiments conducted              | list[string]
+| `AcquisitionProperties`  | Properties of the data acquisition methods  | list[key/value]
+| `QuantmsFiles`           | Files related to quantMS analysis           | list[key/value]
+| `QuantmsioVersion`       | Version of the `quantms.io`                 | String
+| `QuantmsVersion`         | Version of the quantms workflow             | String
+| `Comments`               | Additional comments or notes                | List of Strings
 |===
 
 Key/Value pair object: The key/value pairs are used to store the acquisition properties, and the  quantms files.
