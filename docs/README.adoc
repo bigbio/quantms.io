@@ -29,7 +29,13 @@ The majority of formats in HUPO-PSI are based on XML format including mzML, mzId
 - AI/ML model development based on identification and quantification results.
 - Easy data retrieval for big datasets and large-scale collections of proteomics data.
 
-NOTE: We are not trying to replace the mzTab format, but to provide a new format that enables AI-related use cases.
+[NOTE]
+====
+We are not trying to do the following:
+
+- Replace the mzTab format, but to provide a new format that enables AI-related use cases.
+- Replace all the software tools file formats and intermediate files, but to provide a new format that enables easy integration of the main output results with other tools.
+====
 
 [[general-data-model]]
 == General data model and structure
@@ -183,7 +189,7 @@ The project view is the file that stores the metadata of the entire `quantms.io`
 | `ExperimentType`         | Types of experiments conducted               | list[string]
 | `AcquisitionProperties`  | Properties of the data acquisition methods   | list[key/value]
 | `QuantmsFiles`           | Files related to quantMS analysis            | list[key/value]
-| `QuantmsioVersion`       | Version of the `quantms.io`                    | String
+| `QuantmsioVersion`       | Version of the `quantms.io`                  | String
 | `QuantmsVersion`         | Version of the quantms workflow              | String
 | `Comments`               | Additional comments or notes                 | List of Strings
 |===
@@ -436,7 +442,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | string
 | Stripped.Sequence
 | Peptide
-| x
+| Sequence
 | sequence
 
 | `Peptidoform`
@@ -444,7 +450,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | string
 | Modified.Sequence
 | Modified Peptide
-| x
+| Modified sequence
 | -
 
 | `Modifications`
@@ -452,7 +458,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | array[string], null
 | -
 | -
-| x
+| Modifications
 | -
 
 | `ModificationDetails`
@@ -460,7 +466,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | array[string], null
 | -
 | [modified residue]:[modification mass]
-| x
+| Score for localization in Site Tables
 | x
 
 | `PosteriorErrorProbability`
@@ -468,7 +474,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | double, null
 | PEP
 | x
-| x
+| PEP
 | modifications
 
 | `GlobalQvalue`
@@ -476,7 +482,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | double, null
 | Global.Q.Value
 | x
-| x
+| -
 | -
 
 7+^| Peptide fields shared by <<feature>> <<psm>>
@@ -485,7 +491,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | integer
 | -
 | -
-| x
+| Reverse
 | -
 
 | `CalculatedMz`
@@ -493,7 +499,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | double
 | -
 | Calculated M/Z
-| x
+| m/z
 | calc_mass_to_charge
 
 | `IdScores`
@@ -501,7 +507,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | array[string]
 | DIA-NN Scores
 | FragPipe Scores
-| x
+| MaxQuant Scores
 | -
 
 7+^| Protein fields shared by <<feature>> <<psm>> <<peptide>>
@@ -525,7 +531,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | integer, null
 | -
 | Is Unique
-| x
+| Unique
 | unique
 
 | `ProteinGlobalQvalue`
@@ -558,7 +564,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | integer
 | Precursor.Charge
 | x
-| x
+| Charge
 | charge
 
 | `ObservedMz`
@@ -640,8 +646,8 @@ The fields that are unique to the PSM view are:
 | double, null
 | x
 | x
-|X
-|x
+| x
+| x
 
 | `ConsensusSupport`  
 | Consensus support for the given peptide spectrum match, when multiple search engines are used 
@@ -683,7 +689,12 @@ The fields that are unique to the PSM view are:
 | -
 |===
 
-NOTE: The `MzArray` and `IntensityArray` are arrays of the same length, where the `MzArray` contains the m/z values and the `IntensityArray` contains the intensity values; and the size of the arrays is the same as the number of peaks in the spectrum. These three columns could help use cases like AI/ML that need the spectrum information for a given PSM.
+[NOTE]
+====
+PSM view is NOT RECOMMENDED to be generated for **DIA** methods because it will be duplicated information with the feature view. The PSM view is more suitable for **DDA** methods where the PSM is the main output of the identification process.
+
+The `MzArray` and `IntensityArray` are arrays of the same length, where the `MzArray` contains the m/z values and the `IntensityArray` contains the intensity values; and the size of the arrays is the same as the number of peaks in the spectrum. These three columns could help use cases like AI/ML that need the spectrum information for a given PSM.
+====
 
 ==== Format
 
@@ -692,7 +703,9 @@ The PSM view can be found in link:psm.avsc[psm.avsc].
 [[feature]]
 === Peptide Feature View
 
-The peptide feature view (peptide features) aims to cover detail on quantified peptide information level, including peptide intensity in relation to the sample metadata. The ``feature parquet file`` is the combination of between the mzTab peptide table, MSstats input file.
+The peptide feature view (peptide features) aims to cover detail on quantified peptide information level, including peptide intensity in relation to the sample metadata. The ``feature parquet file`` is a tabular file that contains the details of the peptides quantified in the experiment and sample.
+
+The feature file is similar to the https://https://github.com/HUPO-PSI/mzTab/tree/master/specification_document-releases/1_0-Proteomics-Release[mztab] peptide table, the peptide evidence in https://cox-labs.github.io/coxdocs/output_tables.html[MaxQuant], the https://github.com/vdemichev/DiaNN/blob/master/README.md#output[diann matrix table].
 
 ==== Feature Use cases
 
@@ -705,22 +718,114 @@ NOTE: quantms also release the peptide table for MSstats. The goal of the featur
 
 Some of the fields are shared between the <<feature>> and <<psm>> views, they can be found in the following table <<peptide-fields>>.
 
+[cols="1,2,1,1,1,1,1", options="header"]
 |===
-| *Field*          | *Description*                                             | *Type*
-3+^| Feature quantify fields <<feature>>
-| `intensity`      | The intensity-based abundance of the peptide in the sample. | double, null
-3+^| Sample properties for <<feature>>
-| `sample_accession`  | The sample accession in the SDRF, which column is called `source name`  | string, null
-| `condition`         | The value for the factor value column in the SDRF, for example, the tissue `factor value[organism part]`  | string, null
-| `fraction`              | The index value in the SDRF for the fraction column                 | string, null
-| `biological_replicate`  | The value of the biological replicate column in the SDRF in relation to the condition   | string, null
-| `run`                   | The column stores IDs of mass spectrometry runs for LFQ experiments (e.g., 1). For TMT/iTRAQ experiments, it is an identifier of mixture combined with technical replicate and fractions `{mixture}_{technical_replicate}_{fraction}` (e.g., 1_2_3) | string
-| `channel`               | The channel used to label the sample, (e.g., TMT115)                                     | string, null
-| `reference_file_name`   | The reference file name that contains the feature                                       | string
-3+^| Spectra information for best PSM, see more info for PSM view <<psm>>
-| `best_psm_reference_file_name`  | The reference file containing the best PSM that identified the feature. **Note**: This file can be different from the file that contains the feature (`reference_file_name`). | string, null
-| `best_psm_scan_number`          | The scan number of the spectrum. The scan number or index of the spectrum in the file. | string, null
+| *Field*
+| *Description*
+| *Type*
+| *DIA-NN*
+| *FragPipe*
+| *MaxQuant*
+| *mzTab*
+
+7+^| Feature quantify fields <<feature>>
+| `Intensity`
+| The intensity-based abundance of the peptide in the sample.
+| double, null
+| Precursor.Quantity
+| Intensity
+| Intensity
+| peptide_abundance_assay[1-n]
+
+7+^| Sample properties for <<feature>>
+| `SampleAccession`
+| The sample accession in the SDRF, which column is called `source name`
+| string, null
+| -
+| -
+| -
+| -
+
+| `Condition`
+| The value for the factor value column in the SDRF, for example, the tissue `factor value[organism part]`
+| string, null
+| -
+| -
+| -
+| -
+
+| `Fraction`
+| The index value in the SDRF for the fraction column
+| string, null
+| -
+| -
+| -
+| -
+
+| `BiologicalReplicate`
+| The value of the biological replicate column in the SDRF in relation to the condition
+| string, null
+| -
+| -
+| -
+| -
+
+| `Run`
+| The column stores IDs of mass spectrometry runs for LFQ experiments (e.g., 1). For TMT/iTRAQ experiments, it is an identifier of mixture combined with technical replicate and fractions `{mixture}_{technical_replicate}_{fraction}` (e.g., 1_2_3)
+| string
+| -
+| -
+| -
+| -
+
+| `Channel`
+| The channel used to label the sample, (e.g., TMT115)
+| string, null
+| -
+| -
+| -
+| -
+
+| `ReferenceFileName`
+| The reference file name that contains the feature
+| string
+| Run
+| -
+| -
+| -
+
+7+^| Spectra information <<psm>>
+| `PsmReferenceFileName`
+| The reference file containing the best PSM that identified the feature. **Note**: This file can be different from the file that contains the feature (`ReferenceFile`).
+| string, null
+| -
+| -
+| -
+| -
+| `PsmScanNumber`
+| The scan number of the spectrum. The scan number or index of the spectrum in the file.
+| string, null
+| -
+| -
+| -
+| -
+| RTStart
+| Start of the retention time window for feature
+| double, null
+| x
+| x
+| x
+| -
+
+|RTStop
+| End of the retention time window for feature
+| double, null
+| x
+| x
+| x
+| -
 |===
+
 
 ==== Format
 
@@ -766,19 +871,18 @@ The Protein table is a tsv file that contains the details of the proteins identi
 [cols="1,2,1", options="header"]
 |===
 | **Field**               | **Description**                                     | **Type**
-
-| `QuantmsioVersion`       | The version of the quantms.io specification     | string
-| `protein_accessions`      | Protein accessions identified or quantified     | array[string]
-| `abundance`               | Abundance of the given protein in the sample/experiment    | null, float
-| `sample_accession`        | Sample accession in the SDRF, which column is called `source name` | string
-| `global_qvalue`           | The global qvalue for a given protein or protein groups  | null, double
-| `is_decoy`                | If the protein is decoy                                  | null, integer
-| `best_id_score`           | The best search engine score for the identification      | string
-| `gene_accessions`         | The gene accessions corresponding to every protein       | null, array[string]
-| `gene_names`              | The gene names corresponding to every protein            | null, array[string]
-| `number_of_peptides`       | The total number of peptides for a give protein        | null, integer
-| `number_of_psms`           | The total number of peptide spectrum matches           | null, integer
-| `number_of_unique_peptides`| The total number of unique peptides                    | null, integer
+| `QuantmsioVersion`      | The version of the quantms.io specification     | string
+| `ProteinAccessions`     | Protein accessions identified or quantified     | array[string]
+| `Abundance`             | Abundance of the given protein in the sample/experiment    | null, float
+| `SampleAccession`       | Sample accession in the SDRF, which column is called `source name` | string
+| `GlobalQvalue`          | The global qvalue for a given protein or protein groups  | null, double
+| `IsDecoy`               | If the protein is decoy                                  | null, integer
+| `BestIdScore`           | The best search engine score for the identification      | string
+| `GeneAccessions`        | The gene accessions corresponding to every protein       | null, array[string]
+| `GeneNames`             | The gene names corresponding to every protein            | null, array[string]
+| `NumberPeptides`        | The total number of peptides for a give protein        | null, integer
+| `NumberPsms`           | The total number of peptide spectrum matches           | null, integer
+| `NumberUniquePeptides` | The total number of unique peptides                    | null, integer
 |===
 
 ==== Format
