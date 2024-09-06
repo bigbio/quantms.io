@@ -47,7 +47,7 @@ image::images/formats-relation.svg[width=80%]
 - The **data model view** defines the structure, the fields and properties that will be included in a view for each peptide, psms, feature or protein.
 - The **data serialization** defines the format in which the view will be serialized and what features of serialization will be supported, for example, compression, indexing, or slicing.
 
-[.center]
+[.center, cols="1,1,1,1", width=75%]
 |===
 | *view*       | *file class*      | *serialization format* | *definition*
 | psm          | psm_file          | _parquet_              | <<psm>>
