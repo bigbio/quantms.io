@@ -50,11 +50,11 @@ image::images/formats-relation.svg[width=80%]
 [.center, cols="1,1,1,1", width=75%]
 |===
 | *view*       | *file class*      | *serialization format* | *definition*
-| psm          | psm_file          | _parquet_              | <<psm>>
-| feature      | feature_file      | _parquet_              | <<feature>>
-| absolute     | absolute_file     | _tsv_                  | <<absolute>>
-| differential | differential_file | _tsv_                  | <<differential>>
-| sdrf         | sdrf_file         | _tsv_                  | <<sdrf>>
+| psm          | PsmFile          | _parquet_              | <<psm>>
+| feature      | FeatureFile      | _parquet_              | <<feature>>
+| absolute     | AbsoluteFile     | _tsv_                  | <<absolute>>
+| differential | DifferentialFile | _tsv_                  | <<differential>>
+| sdrf         | SdrfFile         | _tsv_                  | <<sdrf>>
 | project      | -                 | _json_                 | <<project>>
 |===
 
@@ -179,7 +179,7 @@ The project view is the file that stores the metadata of the entire `quantms.io`
 | `ProjectTitle`           | Title of the project                        | string
 | `ProjectSampleDescription` | Description of the project sample         | string
 | `ProjectDataDescription` | Description of the project data             | string
-| `ProjectPubmedId`       | PubMed ID associated with the project        | integer
+| `ProjectPubmedId`        | PubMed ID associated with the project        | integer
 | `Organisms`              | List of Organisms involved in the project   | list[string], null
 | `OrganismParts`          | Parts of Organisms studied                  | list[string], null
 | `Diseases`               | Diseases associated with the study          | list[string], null
@@ -215,13 +215,13 @@ Example of ``QuantmsFiles``:
 [source,json]
 ----
    "QuantmsFiles": [
-        {"psm_file":   ["PXD004683-550e8400-e29b-41d4.1.psm.parquet",
+        {"PsmFile":   ["PXD004683-550e8400-e29b-41d4.1.psm.parquet",
                         "PXD004683-550e8400-e29b-41d4.2.psm.parquet"
         ]},
-        {"feature_file": ["PXD004683-958e8400-e29b-41f4.feature.parquet"]},
-        {"differential_file": ["PXD004683-a716.differential.tsv"]},
-        {"absolute_file":     ["PXD004683-e29b-41f4-a716.absolute.tsv"]},
-        {"sdrf_file":         ["PXD004683-e29b-41f4-a716.sdrf.tsv"]}
+        {"FeatureFile": ["PXD004683-958e8400-e29b-41f4.feature.parquet"]},
+        {"DifferentialFile": ["PXD004683-a716.differential.tsv"]},
+        {"AbsoluteFile":     ["PXD004683-e29b-41f4-a716.absolute.tsv"]},
+        {"SdrfFile":         ["PXD004683-e29b-41f4-a716.sdrf.tsv"]}
    ]
 ----
 
@@ -274,10 +274,10 @@ Example:
         {"fragment mass tolerance": "0.6 Da"}
     ],
     "QuantmsFiles": [
-        {"feature_file": ["PXD014414.feature.parquet"]},
-        {"sdrf_file": ["PXD014414.sdrf.tsv"]},
-        {"psm_file": ["PXD014414-f4fb88f6.psm.parquet"]},
-        {"differential_file": ["PXD014414-3026e5d5.differential.tsv"]}
+        {"FeatureFile": ["PXD014414.feature.parquet"]},
+        {"SdrfFile": ["PXD014414.sdrf.tsv"]},
+        {"PsmFile": ["PXD014414-f4fb88f6.psm.parquet"]},
+        {"DifferentialFile": ["PXD014414-3026e5d5.differential.tsv"]}
     ],
     "QuantmsVersion": "1.1.1",
     "QuantmsioVersion": "1.0.0",
@@ -413,11 +413,11 @@ We suggest including the following properties in the header:
 - `AdjPvalue: The FDR threshold used to filter the protein lists (e.g. ``adj.pvalue < 0.05``)
 
 [[peptide-views]]
-== Peptide-based Views: PSM, Feature and Peptide
+== Peptide-based Views: Psm, Feature and Peptide
 
 Multiple peptide-level views are available for the `quantms.io` format. The views are the following:
 
-- <<psm>>: Peptide Spectrum Match (PSM) View—The PSM view aims to cover detail on Peptide spectrum matches (PSM) level for AI/ML training and other use-cases, mainly for DDA analytical methods.
+- <<psm>>: Peptide Spectrum Match (psm) View—The psm view aims to cover detail on Peptide spectrum matches (psm) level for AI/ML training and other use-cases, mainly for DDA analytical methods.
 - <<feature>>: Peptide Feature View—The peptide feature views (peptide features) aims to cover detail on quantified peptide information level, including peptide intensity in relation to the sample metadata.
 - <<peptide>>: Peptide View—The peptide view is a summary of quantified peptides by samples, the aim of this representation is to provide a simple summary of the number of peptides and their given quantity for each protein on each sample. This view is useful for quick visualization and data retrieval.
 
@@ -478,7 +478,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | modifications
 
 | `GlobalQvalue`
-| Global q-value for the peptide or PSM at the level of the experiment
+| Global q-value for the peptide or psm at the level of the experiment
 | double, null
 | Global.Q.Value
 | x
@@ -597,23 +597,23 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 [[peptide]]
 
 [[psm]]
-=== Peptide Spectrum Match (PSM) View
+=== Peptide Spectrum Match (psm) View
 
-Peptide spectrum matches (PSMs) are the results of the **identification** of peptides in mass spectrometry data. Most of the cases are the results of peptide identified by database search engines on data-dependent acquisition (DDA) experiments.
+Peptide spectrum matches (psms) are the results of the **identification** of peptides in mass spectrometry data. Most of the cases are the results of peptide identified by database search engines on data-dependent acquisition (DDA) experiments.
 
-==== PSM Use cases
+==== Psm Use cases
 
-- The PSM table aims to cover detail on PSM level for AI/ML training and other use-cases.
-- Most of the content is similar to mzTab, a PSM would be a peptide identification in a specific msrun file.
-- Store details on PSM level including spectrum mz/intensity for specific use-cases such as AI/ML training.
-- Fast and easy visualization and scanning on PSM level.
-- Store the spectra information for the psm for those AI/ML use cases were prediction and training will be working in the spectra.
+- The psm table aims to cover detail on psm level for AI/ML training and other use-cases.
+- Most of the content is similar to mzTab, a psm would be a peptide identification in a specific msrun file.
+- Store details on psm level including spectrum mz/intensity for specific use-cases such as AI/ML training.
+- Fast and easy visualization and scanning on psm level.
+- Store the spectra information for the psm for those AI/ML use cases were prediction, and training will be working in the spectra.
 
-==== PSM Fields
+==== Psm Fields
 
 Some fields are shared between the <<psm>> and <<feature>> views, they can be found in the following table <<peptide-fields>>.
 
-The fields that are unique to the PSM view are:
+The fields that are unique to the psm view are:
 
 [cols="1,2,1,1,1,1,1", options="header"]
 |===
@@ -691,14 +691,14 @@ The fields that are unique to the PSM view are:
 
 [NOTE]
 ====
-PSM view is NOT RECOMMENDED to be generated for **DIA** methods because it will be duplicated information with the feature view. The PSM view is more suitable for **DDA** methods where the PSM is the main output of the identification process.
+Psm view is NOT RECOMMENDED to be generated for **DIA** methods because it will be duplicated information with the feature view. The psm view is more suitable for **DDA** methods where the psm is the main output of the identification process.
 
-The `MzArray` and `IntensityArray` are arrays of the same length, where the `MzArray` contains the m/z values and the `IntensityArray` contains the intensity values; and the size of the arrays is the same as the number of peaks in the spectrum. These three columns could help use cases like AI/ML that need the spectrum information for a given PSM.
+The `MzArray` and `IntensityArray` are arrays of the same length, where the `MzArray` contains the m/z values and the `IntensityArray` contains the intensity values; and the size of the arrays is the same as the number of peaks in the spectrum. These three columns could help use cases like AI/ML that need the spectrum information for a given psm.
 ====
 
 ==== Format
 
-The PSM view can be found in link:psm.avsc[psm.avsc].
+The psm view can be found in link:psm.avsc[psm.avsc].
 
 [[feature]]
 === Peptide Feature View
@@ -796,7 +796,7 @@ Some of the fields are shared between the <<feature>> and <<psm>> views, they ca
 
 7+^| Spectra information <<psm>>
 | `PsmReferenceFileName`
-| The reference file containing the best PSM that identified the feature. **Note**: This file can be different from the file that contains the feature (`ReferenceFile`).
+| The reference file containing the best psm that identified the feature. **Note**: This file can be different from the file that contains the feature (`ReferenceFile`).
 | string, null
 | -
 | -
