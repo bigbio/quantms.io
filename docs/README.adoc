@@ -43,8 +43,6 @@ We are not trying to do the following:
 The `quantms.io` (.qms) could be seen as a **multiple view** representation of a proteomics data analysis results. Similar to other tools that produce multiple output files for their analysis, like https://www.maxquant.org/[MaxQuant], https://github.com/vdemichev/DiaNN[DIA-NN], https://fragpipe.nesvilab.org/[FragPipe] or https://biognosys.com/software/spectronaut/[spectronaut]. Each view of the format can be serialized in different formats depending on the use case. The **data model** defines two main things, the **view** and how the view is **serialized**. Both views and serialization can be extended, and new views can be added on each <<version>> of the specification.
 
 image::images/formats-relation.svg[width=80%]
-   :width: 80%
-   :align: center
 
 - The **data model view** defines the structure, the fields and properties that will be included in a view for each peptide, psms, feature or protein.
 - The **data serialization** defines the format in which the view will be serialized and what features of serialization will be supported, for example, compression, indexing, or slicing.
