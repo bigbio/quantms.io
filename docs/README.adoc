@@ -179,7 +179,7 @@ The project view is the file that stores the metadata of the entire `quantms.io`
 | `ProjectTitle`           | Title of the project                        | string
 | `ProjectSampleDescription` | Description of the project sample         | string
 | `ProjectDataDescription` | Description of the project data             | string
-| `ProjectPubmedId`        | PubMed ID associated with the project        | integer
+| `ProjectPubmedId`        | PubMed ID associated with the project       | int32
 | `Organisms`              | List of Organisms involved in the project   | list[string], null
 | `OrganismParts`          | Parts of Organisms studied                  | list[string], null
 | `Diseases`               | Diseases associated with the study          | list[string], null
@@ -279,8 +279,8 @@ Example:
         {"PsmFile": ["PXD014414-f4fb88f6.psm.parquet"]},
         {"DifferentialFile": ["PXD014414-3026e5d5.differential.tsv"]}
     ],
-    "QuantmsVersion": "1.1.1",
-    "QuantmsioVersion": "1.0.0",
+    "QuantmsVersion": "1.2.0",
+    "QuantmsioVersion": "1.0",
     "Comments": []
    }
 ----
@@ -321,8 +321,7 @@ Example:
 
 ==== AE Header
 
-By default, the MSstats format does not have any header of metadata. We suggest adding a header to the output for better understanding of the file. By default, MSstats allows comments in the file if the line starts
-with ``#``. The quantms output will start with some key value pairs that describe the project, the workflow and also the columns in the file. For
+By default, the MSstats format does not have any header of metadata. We suggest adding a header to the output for better understanding of the file. By default, MSstats allows comments in the file if the line starts with ``#``. The quantms output will start with some key value pairs that describe the project, the workflow and also the columns in the file. For
 
 Example:
 
@@ -428,13 +427,13 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 
 [cols="1,2,1,1,1,1,1", options="header"]
 |===
-| Field
-| Description
-| Type
-| DIA-NN
-| FragPipe
-| MaxQuant
-| mzTab
+| **Field**
+| **Description**
+| **Type**
+| **DIA-NN**
+| **FragPipe**
+| **MaxQuant**
+| **mzTab**
 
 7+^| Peptide fields shared by <<feature>> <<peptide>> <<psm>>
 | `Sequence`
@@ -471,7 +470,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 
 | `PosteriorErrorProbability`
 | Posterior error probability (PEP) for the given peptide match
-| double, null
+| float, null
 | PEP
 | x
 | PEP
@@ -479,7 +478,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 
 | `GlobalQvalue`
 | Global q-value for the peptide or psm at the level of the experiment
-| double, null
+| float, null
 | Global.Q.Value
 | x
 | -
@@ -488,7 +487,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 7+^| Peptide fields shared by <<feature>> <<psm>>
 | `IsDecoy`
 | Decoy indicator, 1 if the peptide is a decoy, 0 target
-| integer
+| int32
 | -
 | -
 | Reverse
@@ -496,7 +495,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 
 | `CalculatedMz`
 | Theoretical peptide mass-to-charge ratio based on an identified sequence and modifications
-| double
+| float
 | -
 | Calculated M/Z
 | m/z
@@ -528,7 +527,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | Combination of start and end positions
 | `Unique`
 | Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0
-| integer, null
+| int32, null
 | -
 | Is Unique
 | Unique
@@ -536,7 +535,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 
 | `ProteinGlobalQvalue`
 | Global q-value of the protein group at the experiment level
-| double, null
+| float, null
 | Global.PG.Q.Value
 | x
 | x
@@ -561,7 +560,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 7+^| Spectra fields shared by <<feature>> <<psm>>
 | `PrecursorCharge`
 | Precursor charge
-| integer
+| int32
 | Precursor.Charge
 | x
 | Charge
@@ -569,7 +568,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 
 | `ObservedMz`
 | Experimental peptide mass-to-charge ratio of identified peptide (in Da)
-| double
+| float
 | x
 | Observed M/Z
 | x
@@ -577,7 +576,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 
 | `RT`
 | MS2 scan’s precursor retention time (in seconds)
-| double, null
+| float, null
 | RT
 | x
 | x
@@ -585,7 +584,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 
 | `PredictedRT`
 | Predicted retention time of the peptide (in seconds)
-| double, null
+| float, null
 | Predicted.RT
 | x
 | x
@@ -617,14 +616,15 @@ The fields that are unique to the psm view are:
 
 [cols="1,2,1,1,1,1,1", options="header"]
 |===
-| Field
-| Description
-| Type
-| DIA-NN
-| FragPipe
-| MaxQuant
-| mzTab
+| **Field**
+| **Description**
+| **Type**
+| **DIA-NN**
+| **FragPipe**
+| **MaxQuant**
+| **mzTab**
 
+7+^| Psm fields <<psm>>, additional fields are in the <<peptide-fields>> table
 | `ReferenceFileName`
 | Spectrum file name with no path information and not including the file extension
 | string
@@ -643,7 +643,7 @@ The fields that are unique to the psm view are:
 
 | `IonMobility`
 | Ion mobility value for the precursor ion
-| double, null
+| float, null
 | x
 | x
 | x
@@ -659,7 +659,7 @@ The fields that are unique to the psm view are:
 
 | `NumberPeaks`          
 | Number of peaks in the spectrum used for the peptide spectrum match 
-| integer, null
+| int32, null
 | - 
 | -
 | -
@@ -667,7 +667,7 @@ The fields that are unique to the psm view are:
 
 | `MzArray`           
 | Array of m/z values for the spectrum used for the peptide spectrum match 
-| array[double], null
+| array[float], null
 | -
 | -
 | -
@@ -683,7 +683,7 @@ The fields that are unique to the psm view are:
 
 | `Rank`               
 | Rank of the peptide spectrum match in the search engine output | integer, null
-| -
+| int32, null
 | -
 | -
 | -
@@ -728,16 +728,16 @@ Some of the fields are shared between the <<feature>> and <<psm>> views, they ca
 | *MaxQuant*
 | *mzTab*
 
-7+^| Feature quantify fields <<feature>>
+7+^| Feature quantify fields <<feature>> additional fields are in the <<peptide-fields>> table
 | `Intensity`
 | The intensity-based abundance of the peptide in the sample.
-| double, null
+| float, null
 | Precursor.Quantity
 | Intensity
 | Intensity
 | peptide_abundance_assay[1-n]
 
-7+^| Sample properties for <<feature>>
+7+^| Sample properties
 | `SampleAccession`
 | The sample accession in the SDRF, which column is called `source name`
 | string, null
@@ -794,7 +794,7 @@ Some of the fields are shared between the <<feature>> and <<psm>> views, they ca
 | -
 | -
 
-7+^| Spectra information <<psm>>
+7+^| Spectra information
 | `PsmReferenceFileName`
 | The reference file containing the best psm that identified the feature. **Note**: This file can be different from the file that contains the feature (`ReferenceFile`).
 | string, null
@@ -805,22 +805,22 @@ Some of the fields are shared between the <<feature>> and <<psm>> views, they ca
 | `PsmScanNumber`
 | The scan number of the spectrum. The scan number or index of the spectrum in the file.
 | string, null
-| -
+| <<diann-scan>>
 | -
 | -
 | -
 | RTStart
 | Start of the retention time window for feature
-| double, null
-| x
+| float, null
+| RT.Start
 | x
 | x
 | -
 
 |RTStop
 | End of the retention time window for feature
-| double, null
-| x
+| float, null
+| RT.Stop
 | x
 | x
 | -
@@ -894,6 +894,5 @@ The protein view can be found in link:protein.avsc[protein.avsc].
 == Get in touch
 
 The following links should be followed to get support and help with the quantms maintainers:
-
 
 image:https://img.shields.io/github/issues/bigbio/quantms["Report Issue", link="https://github.com/bigbio/quantms/issues"] image:https://img.shields.io/badge/Github-Discussions-green["Get help on GitHub Forum", link="https://github.com/bigbio/quantms/discussions"]
