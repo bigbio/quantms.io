@@ -50,11 +50,11 @@ image::images/formats-relation.svg[width=80%]
 [.center, cols="1,1,1,1", width=75%]
 |===
 | *view*       | *file class*      | *serialization format* | *definition*
-| psm          | PsmFile          | _parquet_              | <<psm>>
-| feature      | FeatureFile      | _parquet_              | <<feature>>
-| absolute     | AbsoluteFile     | _tsv_                  | <<absolute>>
-| differential | DifferentialFile | _tsv_                  | <<differential>>
-| sdrf         | SdrfFile         | _tsv_                  | <<sdrf>>
+| psm          | psm_file          | _parquet_              | <<psm>>
+| feature      | feature_file      | _parquet_              | <<feature>>
+| absolute     | absolute_file     | _tsv_                  | <<absolute>>
+| differential | differential_file | _tsv_                  | <<differential>>
+| sdrf         | sdrf_file         | _tsv_                  | <<sdrf>>
 | project      | -                 | _json_                 | <<project>>
 |===
 
@@ -161,7 +161,7 @@ NOTE: In `quantms.io` we use the UUID to identify the project and the files `{PR
 
 The structure of the version is as follows `{major release}.{minor update}`: The current `quantms.io` specification version is: **1.0**
 
-- All views and serialization formats will have a version number in the way: `QuantmsioVersion: {}`. This will help to identify the version of the specification used to generate the file.
+- All views and serialization formats will have a version number in the way: `quantmsio_version: {}`. This will help to identify the version of the specification used to generate the file.
 - Major release changes will be backward incompatible, while minor updates will be backward compatible.
 
 [[psm]]
@@ -175,23 +175,23 @@ The project view is the file that stores the metadata of the entire `quantms.io`
 
 |===
 | **Field**                | **Description**                             | **Type**
-| `ProjectAccession`       | Project accession identifier                | string
-| `ProjectTitle`           | Title of the project                        | string
-| `ProjectSampleDescription` | Description of the project sample         | string
-| `ProjectDataDescription` | Description of the project data             | string
-| `ProjectPubmedId`        | PubMed ID associated with the project       | int32
-| `Organisms`              | List of Organisms involved in the project   | list[string], null
-| `OrganismParts`          | Parts of Organisms studied                  | list[string], null
-| `Diseases`               | Diseases associated with the study          | list[string], null
-| `CellLines`              | Cell lines used in the study                | list[string], null
-| `Instruments`            | Instruments used for data acquisition       | list[string]
-| `Enzymes`                | Enzymes used in the study                   | list[string]
-| `ExperimentType`         | Types of experiments conducted              | list[string]
-| `AcquisitionProperties`  | Properties of the data acquisition methods  | list[key/value]
-| `QuantmsFiles`           | Files related to quantMS analysis           | list[key/value]
-| `QuantmsioVersion`       | Version of the `quantms.io`                 | String
-| `QuantmsVersion`         | Version of the quantms workflow             | String
-| `Comments`               | Additional comments or notes                | List of Strings
+| `project_accession`       | Project accession identifier                | string
+| `project_title`           | Title of the project                        | string
+| `project_sample_description` | Description of the project sample         | string
+| `project_data_description` | Description of the project data             | string
+| `project_pubmed_id`        | PubMed ID associated with the project       | int32
+| `organisms`              | List of Organisms involved in the project   | list[string], null
+| `organism_parts`          | Parts of Organisms studied                  | list[string], null
+| `diseases`               | Diseases associated with the study          | list[string], null
+| `cell_lines`              | Cell lines used in the study                | list[string], null
+| `instruments`            | Instruments used for data acquisition       | list[string]
+| `enzymes`                | Enzymes used in the study                   | list[string]
+| `experiment_type`         | Types of experiments conducted              | list[string]
+| `acquisition_properties`  | Properties of the data acquisition methods  | list[key/value]
+| `quantms_files`           | Files related to quantMS analysis           | list[key/value]
+| `quantmsio_version`       | Version of the `quantms.io`                 | String
+| `quantmsversion`         | Version of the quantms workflow             | String
+| `comments`               | Additional comments or notes                | List of Strings
 |===
 
 Key/Value pair object: The key/value pairs are used to store the acquisition properties, and the  quantms files.
@@ -200,7 +200,7 @@ Example of ``AcquisitionProperties``:
 
 [source,json]
 ----
-   "AcquisitionProperties": [
+   "acquisition_properties": [
         {"precursor tolerance": "0.05 Da"},
         {"dissociation method": "HCD"}
    ]
@@ -210,18 +210,18 @@ Example of ``AcquisitionProperties``:
 
 Recommendations for the file name in the quantms project.
 
-Example of ``QuantmsFiles``:
+Example of ``quantms_files``:
 
 [source,json]
 ----
-   "QuantmsFiles": [
-        {"PsmFile":   ["PXD004683-550e8400-e29b-41d4.1.psm.parquet",
+   "quantms_files": [
+        {"psm_file":   ["PXD004683-550e8400-e29b-41d4.1.psm.parquet",
                         "PXD004683-550e8400-e29b-41d4.2.psm.parquet"
         ]},
-        {"FeatureFile": ["PXD004683-958e8400-e29b-41f4.feature.parquet"]},
-        {"DifferentialFile": ["PXD004683-a716.differential.tsv"]},
-        {"AbsoluteFile":     ["PXD004683-e29b-41f4-a716.absolute.tsv"]},
-        {"SdrfFile":         ["PXD004683-e29b-41f4-a716.sdrf.tsv"]}
+        {"feature_file": ["PXD004683-958e8400-e29b-41f4.feature.parquet"]},
+        {"differential_file": ["PXD004683-a716.differential.tsv"]},
+        {"absolute_file":     ["PXD004683-e29b-41f4-a716.absolute.tsv"]},
+        {"sdrf_file":         ["PXD004683-e29b-41f4-a716.sdrf.tsv"]}
    ]
 ----
 
@@ -230,34 +230,34 @@ Example:
 [source,json]
 ----
    {
-    "ProjectAccession": "PXD014414",
-    "ProjectTitle": "",
-    "ProjectSampleDescription": "",
-    "ProjectDataDescription": "",
-    "ProjectPubmedId": 32265444,
-    "Organisms": [
+    "project_accession": "PXD014414",
+    "project_title": "",
+    "project_sample_description": "",
+    "project_data_description": "",
+    "project_pubmed_id": 32265444,
+    "organisms": [
         "Homo sapiens"
     ],
-    "OrganismParts": [
+    "organism_parts": [
         "mammary gland",
         "adjacent normal tissue"
     ],
-    "Diseases": [
+    "diseases": [
         "metaplastic breast carcinomas",
         "Triple-negative breast cancer",
         "Normal",
         "not applicable"
     ],
-    "CellLines": [
+    "cell_lines": [
         "not applicable"
     ],
-    "Instruments": [
+    "instruments": [
         "Orbitrap Fusion"
     ],
-    "Enzymes": [
+    "enzymes": [
         "Trypsin"
     ],
-    "ExperimentType": [
+    "experiment_type": [
         "Triple-negative breast cancer",
         "Wisp3",
         "Tandem mass tag (tmt) labeling",
@@ -266,22 +266,22 @@ Example:
         "Precision therapy",
         "Lc-ms/ms shotgun proteomics"
     ],
-    "AcquisitionProperties": [
+    "acquisition_properties": [
         {"proteomics data acquisition method": "TMT"},
         {"proteomics data acquisition method": "Data-dependent acquisition"},
         {"dissociation method": "HCD"},
         {"precursor mass tolerance": "20 ppm"},
         {"fragment mass tolerance": "0.6 Da"}
     ],
-    "QuantmsFiles": [
-        {"FeatureFile": ["PXD014414.feature.parquet"]},
-        {"SdrfFile": ["PXD014414.sdrf.tsv"]},
-        {"PsmFile": ["PXD014414-f4fb88f6.psm.parquet"]},
-        {"DifferentialFile": ["PXD014414-3026e5d5.differential.tsv"]}
+    "quantms_files": [
+        {"feature_file": ["PXD014414.feature.parquet"]},
+        {"sdrf_file": ["PXD014414.sdrf.tsv"]},
+        {"psm_file": ["PXD014414-f4fb88f6.psm.parquet"]},
+        {"differential_file": ["PXD014414-3026e5d5.differential.tsv"]}
     ],
-    "QuantmsVersion": "1.2.0",
-    "QuantmsioVersion": "1.0",
-    "Comments": []
+    "quantms_version": "1.2.0",
+    "quantmsio_version": "1.0",
+    "comments": []
    }
 ----
 
@@ -306,16 +306,16 @@ Absolute quantification is the process of determining the absolute/baseline amou
 
 The absolute expression format is a tab-delimited file format that contains the following fields:
 
--  ``Protein`` -> Protein accession or semicolon-separated list of accessions for indistinguishable groups
--  ``SampleAccession`` -> Sample accession in the SDRF.
--  ``Condition`` -> Condition name
--  ``Ibaq`` -> iBAQ value
--  ``IbaqNormalized`` -> Relative iBAQ value, Ibaq value normalized by the sum of the iBAQ values in the sample.
+-  ``protein`` -> Protein accession or semicolon-separated list of accessions for indistinguishable groups
+-  ``sample_accession`` -> Sample accession in the SDRF.
+-  ``condition`` -> Condition name
+-  ``ibaq`` -> iBAQ value
+-  ``ibaq_normalized`` -> Relative iBAQ value, Ibaq value normalized by the sum of the iBAQ values in the sample.
 
 Example:
 
 |===
-| *Protein*    | *SampleAccession* | *Condition* | *Ibaq*  | *IbaqNormalized*
+| *protein*    | *sample_accession* | *Ccondition* | *ibaq*  | *ibaq_normalized*
 | LV861_HUMAN  | Sample-1           | heart       | 1234.1  | 12.34
 |===
 
@@ -325,27 +325,27 @@ By default, the MSstats format does not have any header of metadata. We suggest 
 
 Example:
 
-``#ProjectAccession=PXD000000``
+``#project_accession=PXD000000``
 
 In addition, for each ``Default`` column of the matrix the following information should be added:
 
-   #INFO=<ID=Protein, Number=inf, Type=String, Description="Protein Accession">
-   #INFO=<ID=SampleAccession, Number=1, Type=String, Description="Sample Accession in the SDRF">
-   #INFO=<ID=Condition, Number=1, Type=String, Description="Value of the factor value">
-   #INFO=<ID=Ibaq, Number=1, Type=Float, Description="Intensity based absolute quantification">
-   #INFO=<ID=IbaqNormalized, Number=1, Type=Float, Description="normalized iBAQ">
-   #INFO=<ID=QuantmsioVersion, Number=1, Type=String, Description="Version of the quantms.io">
+   #INFO=<ID=protein, Number=inf, Type=String, Description="Protein Accession">
+   #INFO=<ID=sample_accession, Number=1, Type=String, Description="Sample Accession in the SDRF">
+   #INFO=<ID=condition, Number=1, Type=String, Description="Value of the factor value">
+   #INFO=<ID=ibaq, Number=1, Type=Float, Description="Intensity based absolute quantification">
+   #INFO=<ID=ibaq_normalized, Number=1, Type=Float, Description="normalized iBAQ">
+   #INFO=<ID=quantmsio_version, Number=1, Type=String, Description="Version of the quantms.io">
 
 - The ``ID`` is the column name in the matrix, the ``Number`` is the number of values in the column (separated by ``;``), the ``Type`` is the type of the values in the column and the ``Description`` is a description of the column. The number of values in the column can go from 1 to ``inf`` (infinity).
 -  Protein groups are written as a list of protein accessions separated by ``;`` (e.g.``P12345;P12346``)
 
 We _RECOMMEND_ including the following properties in the header:
 
--  `ProjectAccession`: The project accession in PRIDE Archive
--  `ProjectTitle`: The project title in PRIDE Archive
--  `ProjectDescription`: The project description in PRIDE Archive
--  `QuantmsVersion`: The version of the quantms workflow used to generate the file
--  `FactorValue`: The factor values used in the analysis (e.g.``tissue``)
+-  `project_accession`: The project accession in PRIDE Archive
+-  `project_title`: The project title in PRIDE Archive
+-  `project_description`: The project description in PRIDE Archive
+-  `quantms_version`: The version of the quantms workflow used to generate the file
+-  `factor_value`: The factor values used in the analysis (e.g.``tissue``)
 
 Please check also the differential expression example for more information: <<differential>>
 
@@ -365,19 +365,19 @@ The differential expression view is a tab-delimited file format that contains th
 
 The differential expression format by quantms is based on the https://msstats.org/wp-content/uploads/2017/01/MSstats_v3.7.3_manual.pdf[MSstats] output:
 
-- ``Protein`` -> Protein Accession
-- ``Label`` -> Label for the contrast on which the fold changes and p-values are based on
-- ``Log2fc`` -> Log2 Fold Change
-- ``Se`` -> Standard error of the log2 fold change
-- ``Df`` -> Degree of freedom of the t-student test
-- ``Pvalue`` -> Raw p-values
-- ``AdjPvalue`` -> P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg
-- ``Issue`` -> Issue column shows if there is any issue for inference in corresponding protein and comparison, for example, OneConditionMissing or CompleteMissing.
+- ``protein`` -> Protein Accession
+- ``label`` -> Label for the contrast on which the fold changes and p-values are based on
+- ``log2fc`` -> Log2 Fold Change
+- ``se`` -> Standard error of the log2 fold change
+- ``df`` -> Degree of freedom of the t-student test
+- ``pvalue`` -> Raw p-values
+- ``adj_pvalue`` -> P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg
+- ``issue`` -> Issue column shows if there is any issue for inference in corresponding protein and comparison, for example, OneConditionMissing or CompleteMissing.
 
 Example:
 
 |===
-| *Protein*   | *Label*                          | *Log2fc* | *Se* | *Df* | *Pvalue* | *AdjPvalue* | *Issue*
+| *protein*   | *label*                          | *log2fc* | *se* | *df* | *pvalue* | *adj_pvalue* | *issue*
 | ADA2_HUMAN  | normal - squamous cell carcinoma | 0.3057    | 0.26 | 37   | 0.02     | 0.43         |
 |===
 
@@ -385,31 +385,31 @@ Example:
 
 By default, the MSstats format does not have any header of metadata. We suggest adding a header to the output for better understanding of the file. By default, MSstats allows comments in the file if the line starts with ``#``. The quantms output will start with some key value pairs that describe the project, the workflow and also the columns in the file. For example:
 
-``#ProjectAccession=PXD000000``
+``#project_accession=PXD000000``
 
 In addition, for each ``Default`` column of the matrix the following information should be added:
 
-   #INFO=<ID=Protein, Number=inf, Type=String, Description="Protein Accession">
-   #INFO=<ID=Label, Number=1, Type=String, Description="Label for the Conditions combination">
-   #INFO=<ID=Log2fc, Number=1, Type=Double, Description="Log2 Fold Change">
-   #INFO=<ID=Se, Number=1, Type=Double, Description="Standard error of the log2 fold change">
-   #INFO=<ID=Df, Number=1, Type=Integer, Description="Degree of freedom of the Student test">
-   #INFO=<ID=Pvalue, Number=1, Type=Double, Description="Raw p-values">
-   #INFO=<ID=AdjPvalue, Number=1, Type=Double, Description="P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg">
-   #INFO=<ID=Issue, Number=1, Type=String, Description="Issue column shows if there is any issue for inference in corresponding protein and comparison">
-   #INFO=<ID=QuantmsioVersion, Number=1, Type=String, Description="Version of the quantms.io">
+   #INFO=<ID=protein, Number=inf, Type=String, Description="Protein Accession">
+   #INFO=<ID=label, Number=1, Type=String, Description="Label for the Conditions combination">
+   #INFO=<ID=log2fc, Number=1, Type=Double, Description="Log2 Fold Change">
+   #INFO=<ID=se, Number=1, Type=Double, Description="Standard error of the log2 fold change">
+   #INFO=<ID=df, Number=1, Type=Integer, Description="Degree of freedom of the Student test">
+   #INFO=<ID=pvalue, Number=1, Type=Double, Description="Raw p-values">
+   #INFO=<ID=adj_pvalue, Number=1, Type=Double, Description="P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg">
+   #INFO=<ID=issue, Number=1, Type=String, Description="Issue column shows if there is any issue for inference in corresponding protein and comparison">
+   #INFO=<ID=quantmsio_version, Number=1, Type=String, Description="Version of the quantms.io">
 
 -  The ``ID`` is the column name in the matrix, the ``Number`` is the number of values in the column (separated by ``;``), the ``Type`` is the type of the values in the column and the ``Description`` is a description of the column. The number of values in the column can go from 1 to ``inf`` (infinity).
 -  Protein groups are written as a list of protein accessions separated by ``;`` (e.g. `P12345;P12346``)
 
 We suggest including the following properties in the header:
 
-- `ProjectAccession`: The project accession in PRIDE Archive
-- `ProjectTitle`: The project title in PRIDE Archive
-- `ProjectDescription: The project description in PRIDE Archive
-- `QuanmtsioVersion`: The version of the quantms workflow used to generate the file.
-- `FactorValue`: The factor values used in the analysis (e.g. ``phenotype``)
-- `AdjPvalue: The FDR threshold used to filter the protein lists (e.g. ``adj.pvalue < 0.05``)
+- `project_accession`: The project accession in PRIDE Archive
+- `project_title`: The project title in PRIDE Archive
+- `project_description: The project description in PRIDE Archive
+- `quantmsio_version`: The version of the quantms workflow used to generate the file.
+- `factor_value`: The factor values used in the analysis (e.g. ``phenotype``)
+- `adj_pvalue: The FDR threshold used to filter the protein lists (e.g. ``adj.pvalue < 0.05``)
 
 [[peptide-views]]
 == Peptide-based Views: Psm, Feature and Peptide
@@ -436,7 +436,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | **mzTab**
 
 7+^| Peptide fields shared by <<feature>> <<peptide>> <<psm>>
-| `Sequence`
+| `sequence`
 | The peptide's sequence (with no modifications)
 | string
 | Stripped.Sequence
@@ -444,7 +444,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | Sequence
 | sequence
 
-| `Peptidoform`
+| `peptidoform`
 | Peptide sequence with modifications, see more <<peptidoform>>
 | string
 | Modified.Sequence
@@ -452,7 +452,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | Modified sequence
 | -
 
-| `Modifications`
+| `modifications`
 | List of modifications as a string array, easy for search and filter
 | array[string], null
 | -
@@ -460,7 +460,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | Modifications
 | -
 
-| `ModificationDetails`
+| `modification_details`
 | List of alternative site probabilities for the modification format: read <<modifications>>
 | array[string], null
 | -
@@ -468,7 +468,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | Score for localization in Site Tables
 | x
 
-| `PosteriorErrorProbability`
+| `posterior_error_probability`
 | Posterior error probability (PEP) for the given peptide match
 | float, null
 | PEP
@@ -476,7 +476,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | PEP
 | modifications
 
-| `GlobalQvalue`
+| `global_qvalue`
 | Global q-value for the peptide or psm at the level of the experiment
 | float, null
 | Global.Q.Value
@@ -485,7 +485,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | -
 
 7+^| Peptide fields shared by <<feature>> <<psm>>
-| `IsDecoy`
+| `is_decoy`
 | Decoy indicator, 1 if the peptide is a decoy, 0 target
 | int32
 | -
@@ -493,7 +493,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | Reverse
 | -
 
-| `CalculatedMz`
+| `calculated_mz`
 | Theoretical peptide mass-to-charge ratio based on an identified sequence and modifications
 | float
 | -
@@ -501,7 +501,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | m/z
 | calc_mass_to_charge
 
-| `IdScores`
+| `additional_scores`
 | List of search engine scores as key-value pairs, read the specification for more details
 | array[string]
 | DIA-NN Scores
@@ -510,7 +510,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | -
 
 7+^| Protein fields shared by <<feature>> <<psm>> <<peptide>>
-| `PGAccessions`
+| `pg_accessions`
 | Protein group accessions of all the proteins that the peptide maps to
 | array[string], null
 | x
@@ -518,14 +518,14 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | x
 | accession
 
-| `PGPositions`
+| `pg_positions`
 | Protein start and end positions written as start_post:end_post
 | array[string], null
 | -
 | x
 | x
 | Combination of start and end positions
-| `Unique`
+| `unique`
 | Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0
 | int32, null
 | -
@@ -533,7 +533,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | Unique
 | unique
 
-| `ProteinGlobalQvalue`
+| `protein_global_qvalue`
 | Global q-value of the protein group at the experiment level
 | float, null
 | Global.PG.Q.Value
@@ -541,7 +541,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | x
 | -
 
-| `GGAccessions`
+| `gg_accessions`
 | Gene group accessions, as a string array
 | array[string], null
 | x
@@ -549,7 +549,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | x
 | -
 
-| `GGNames`
+| `gg_names`
 | Gene names, as a string array
 | array[string], null
 | x
@@ -558,7 +558,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | -
 
 7+^| Spectra fields shared by <<feature>> <<psm>>
-| `PrecursorCharge`
+| `precursor_charge`
 | Precursor charge
 | int32
 | Precursor.Charge
@@ -566,7 +566,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | Charge
 | charge
 
-| `ObservedMz`
+| `observed_mz`
 | Experimental peptide mass-to-charge ratio of identified peptide (in Da)
 | float
 | x
@@ -574,7 +574,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | x
 | exp_mass_to_charge
 
-| `RT`
+| `rt`
 | MS2 scan’s precursor retention time (in seconds)
 | float, null
 | RT
@@ -582,7 +582,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | x
 | retention_time
 
-| `PredictedRT`
+| `predicted_rt`
 | Predicted retention time of the peptide (in seconds)
 | float, null
 | Predicted.RT
@@ -625,7 +625,7 @@ The fields that are unique to the psm view are:
 | **mzTab**
 
 7+^| Psm fields <<psm>>, additional fields are in the <<peptide-fields>> table
-| `ReferenceFileName`
+| `reference_file_name`
 | Spectrum file name with no path information and not including the file extension
 | string
 | Run
@@ -633,7 +633,7 @@ The fields that are unique to the psm view are:
 | x
 | spectra_ref
 
-| `ScanNumber`
+| `scan_number`
 | Scan number of the spectrum identified
 | string
 | <<scan-diann>>
@@ -641,7 +641,7 @@ The fields that are unique to the psm view are:
 | x
 | spectra_ref
 
-| `IonMobility`
+| `ion_mobility`
 | Ion mobility value for the precursor ion
 | float, null
 | x
@@ -649,7 +649,7 @@ The fields that are unique to the psm view are:
 | x
 | x
 
-| `ConsensusSupport`  
+| `consensus_support`
 | Consensus support for the given peptide spectrum match, when multiple search engines are used 
 | float, null
 | -
@@ -657,7 +657,7 @@ The fields that are unique to the psm view are:
 | -
 | -
 
-| `NumberPeaks`          
+| `number_peaks`
 | Number of peaks in the spectrum used for the peptide spectrum match 
 | int32, null
 | - 
@@ -665,7 +665,7 @@ The fields that are unique to the psm view are:
 | -
 | -
 
-| `MzArray`           
+| `mz_array`
 | Array of m/z values for the spectrum used for the peptide spectrum match 
 | array[float], null
 | -
@@ -673,7 +673,7 @@ The fields that are unique to the psm view are:
 | -
 | -
 
-| `IntesityArray`    
+| `intesity_array`
 | Array of intensity values for the spectrum used for the peptide spectrum match 
 | array[float], null
 | -
@@ -681,7 +681,7 @@ The fields that are unique to the psm view are:
 | -
 | -
 
-| `Rank`               
+| `rank`
 | Rank of the peptide spectrum match in the search engine output | integer, null
 | int32, null
 | -
@@ -729,7 +729,7 @@ Some of the fields are shared between the <<feature>> and <<psm>> views, they ca
 | *mzTab*
 
 7+^| Feature quantify fields <<feature>> additional fields are in the <<peptide-fields>> table
-| `Intensity`
+| `intensity`
 | The intensity-based abundance of the peptide in the sample.
 | float, null
 | Precursor.Quantity
@@ -738,7 +738,7 @@ Some of the fields are shared between the <<feature>> and <<psm>> views, they ca
 | peptide_abundance_assay[1-n]
 
 7+^| Sample properties
-| `SampleAccession`
+| `sample_accession`
 | The sample accession in the SDRF, which column is called `source name`
 | string, null
 | -
@@ -746,7 +746,7 @@ Some of the fields are shared between the <<feature>> and <<psm>> views, they ca
 | -
 | -
 
-| `Condition`
+| `condition`
 | The value for the factor value column in the SDRF, for example, the tissue `factor value[organism part]`
 | string, null
 | -
@@ -754,7 +754,7 @@ Some of the fields are shared between the <<feature>> and <<psm>> views, they ca
 | -
 | -
 
-| `Fraction`
+| `fraction`
 | The index value in the SDRF for the fraction column
 | string, null
 | -
@@ -762,7 +762,7 @@ Some of the fields are shared between the <<feature>> and <<psm>> views, they ca
 | -
 | -
 
-| `BiologicalReplicate`
+| `biological_replicate`
 | The value of the biological replicate column in the SDRF in relation to the condition
 | string, null
 | -
@@ -770,7 +770,7 @@ Some of the fields are shared between the <<feature>> and <<psm>> views, they ca
 | -
 | -
 
-| `Run`
+| `run`
 | The column stores IDs of mass spectrometry runs for LFQ experiments (e.g., 1). For TMT/iTRAQ experiments, it is an identifier of mixture combined with technical replicate and fractions `{mixture}_{technical_replicate}_{fraction}` (e.g., 1_2_3)
 | string
 | -
@@ -778,7 +778,7 @@ Some of the fields are shared between the <<feature>> and <<psm>> views, they ca
 | -
 | -
 
-| `Channel`
+| `channel`
 | The channel used to label the sample, (e.g., TMT115)
 | string, null
 | -
@@ -786,7 +786,7 @@ Some of the fields are shared between the <<feature>> and <<psm>> views, they ca
 | -
 | -
 
-| `ReferenceFileName`
+| `reference_file_name`
 | The reference file name that contains the feature
 | string
 | Run
@@ -795,21 +795,23 @@ Some of the fields are shared between the <<feature>> and <<psm>> views, they ca
 | -
 
 7+^| Spectra information
-| `PsmReferenceFileName`
+| `psm_reference_file_name`
 | The reference file containing the best psm that identified the feature. **Note**: This file can be different from the file that contains the feature (`ReferenceFile`).
 | string, null
 | -
 | -
 | -
 | -
-| `PsmScanNumber`
+
+| `psm_scan_number`
 | The scan number of the spectrum. The scan number or index of the spectrum in the file.
 | string, null
 | <<diann-scan>>
 | -
 | -
 | -
-| RTStart
+
+| `rt_start`
 | Start of the retention time window for feature
 | float, null
 | RT.Start
@@ -817,7 +819,7 @@ Some of the fields are shared between the <<feature>> and <<psm>> views, they ca
 | x
 | -
 
-|RTStop
+| `rt_stop`
 | End of the retention time window for feature
 | float, null
 | RT.Stop
@@ -825,7 +827,6 @@ Some of the fields are shared between the <<feature>> and <<psm>> views, they ca
 | x
 | -
 |===
-
 
 ==== Format
 
@@ -871,18 +872,18 @@ The Protein table is a tsv file that contains the details of the proteins identi
 [cols="1,2,1", options="header"]
 |===
 | **Field**               | **Description**                                     | **Type**
-| `QuantmsioVersion`      | The version of the quantms.io specification     | string
+| `quantmsio_version`      | The version of the quantms.io specification     | string
 | `ProteinAccessions`     | Protein accessions identified or quantified     | array[string]
-| `Abundance`             | Abundance of the given protein in the sample/experiment    | null, float
-| `SampleAccession`       | Sample accession in the SDRF, which column is called `source name` | string
-| `GlobalQvalue`          | The global qvalue for a given protein or protein groups  | null, double
-| `IsDecoy`               | If the protein is decoy                                  | null, integer
-| `BestIdScore`           | The best search engine score for the identification      | string
-| `GeneAccessions`        | The gene accessions corresponding to every protein       | null, array[string]
-| `GeneNames`             | The gene names corresponding to every protein            | null, array[string]
-| `NumberPeptides`        | The total number of peptides for a give protein        | null, integer
-| `NumberPsms`           | The total number of peptide spectrum matches           | null, integer
-| `NumberUniquePeptides` | The total number of unique peptides                    | null, integer
+| `abundance`             | Abundance of the given protein in the sample/experiment    | null, float
+| `sample_accession`       | Sample accession in the SDRF, which column is called `source name` | string
+| `global_qvalue`          | The global qvalue for a given protein or protein groups  | null, double
+| `is_decoy`               | If the protein is decoy                                  | null, integer
+| `best_id_score`           | The best search engine score for the identification      | string
+| `gene_accessions`        | The gene accessions corresponding to every protein       | null, array[string]
+| `gene_names`             | The gene names corresponding to every protein            | null, array[string]
+| `number_peptides`        | The total number of peptides for a give protein        | null, integer
+| `number_psms`           | The total number of peptide spectrum matches           | null, integer
+| `number_unique_peptides` | The total number of unique peptides                    | null, integer
 |===
 
 ==== Format
