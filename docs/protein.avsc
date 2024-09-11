@@ -3,7 +3,7 @@
 	"type": "record",
 	"fields": [
 		{"name": "quantmsio_version", "type": "string", "doc": "The version of the quantms.io specification"},
-        {"name": "protein_accessions", "type": {"type": "array","items": "string"}},
+		{"name": "protein_accessions", "type": {"type": "array","items": "string"}},
 		{"name": "abundance","type": ["null", "double"]},
 		{"name": "sample_accession", "type":  "string", "doc": "The sample accession in the SDRF, which column is called source name"},
 		{"name": "global_qvalue","type": ["null", "double"] "doc": "The global qvalue for a given protein or protein groups"},
