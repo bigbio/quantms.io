@@ -502,8 +502,8 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | calc_mass_to_charge
 
 | `additional_scores`
-| List of search engine scores as key-value pairs, read the specification for more details
-| array[string]
+| List of structures, each structure contains two fields: name and value.
+| array[struct{name: string, value: float}]
 | DIA-NN Scores
 | FragPipe Scores
 | MaxQuant Scores
