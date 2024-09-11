@@ -6,7 +6,7 @@
     {"name": "peptidoform", "type": "string", "doc": "Peptide sequence with modifications: Read the specification for more details"},
     {"name": "modifications", "type": ["null", {"type": "array", "items": "string"}], "doc": "List of modifications as string array, easy for search and filter"},
     {"name": "modification_details","type": ["null", {"type": "array", "items": "string"}],
-      "doc": "List of alternative site probabilities for the modification format: read the specification for more details"},
+    "doc": "List of alternative site probabilities for the modification format: read the specification for more details"},
     {"name": "posterior_error_probability", "type": ["null", "double"], "doc": "Posterior error probability for the given peptide spectrum match"},
     {"name": "global_qvalue", "type": ["null", "double"], "doc": "Global q-value of the peptide or psm at the level of the experiment"},
 
