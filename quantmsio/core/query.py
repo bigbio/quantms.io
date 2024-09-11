@@ -1,12 +1,14 @@
 import os
 import re
 from collections import defaultdict
+
 import ahocorasick
 import duckdb
 import mygene
 import pandas as pd
 import pyarrow.parquet as pq
 from Bio import SeqIO
+
 from quantmsio.core.openms import OpenMSHandler
 from quantmsio.utils.pride_utils import generate_gene_name_map
 from quantmsio.utils.pride_utils import get_gene_accessions
@@ -65,41 +67,43 @@ class Parquet:
         else:
             raise FileNotFoundError(f"the file {parquet_path} does not exist.")
 
-    def get_report_from_database(self, runs: list):
+    def get_report_from_database(self, runs: list, columns: list = None):
         """
         This function loads the report from the duckdb database for a group of ms_runs.
         :param runs: A list of ms_runs
         :return: The report
         """
+        cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
         database = self.parquet_db.sql(
             """
-            select * from parquet_db
+            select {} from parquet_db
             where reference_file_name IN {}
             """.format(
-                tuple(runs)
+                cols, tuple(runs)
             )
         )
         report = database.df()
         return report
 
-    def get_samples_from_database(self, samples: list):
+    def get_samples_from_database(self, samples: list, columns: list = None):
         """
         This function loads the report from the duckdb database for a group of samples.
         :param runs: A list of samples
         :return: The report
         """
+        cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
         database = self.parquet_db.sql(
             """
-            select * from parquet_db
+            select {} from parquet_db
             where sample_accession IN {}
             """.format(
-                tuple(samples)
+                cols, tuple(samples)
             )
         )
         report = database.df()
         return report
 
-    def iter_samples(self, file_num: int = 20):
+    def iter_samples(self, file_num: int = 20, columns: list = None):
         """
         :params file_num: The number of files being processed at the same time(default 10)
         :yield: _description_
@@ -107,20 +111,20 @@ class Parquet:
         samples = self.get_unique_samples()
         ref_list = [samples[i : i + file_num] for i in range(0, len(samples), file_num)]
         for refs in ref_list:
-            batch_df = self.get_report_from_database(refs)
+            batch_df = self.get_report_from_database(refs, columns)
             yield refs, batch_df
 
-    def iter_chunk(self, batch_size: int = 500000):
+    def iter_chunk(self, batch_size: int = 500000, columns: list = None):
         """_summary_
         :param batch_size: _description_, defaults to 100000
         :yield: _description_
         """
         parquet_file = pq.ParquetFile(self._path)
-        for batch in parquet_file.iter_batches(batch_size=batch_size):
+        for batch in parquet_file.iter_batches(batch_size=batch_size, columns=columns):
             batch_df = batch.to_pandas()
             yield batch_df
 
-    def iter_file(self, file_num: int = 10):
+    def iter_file(self, file_num: int = 10, columns: list = None):
         """
         :params file_num: The number of files being processed at the same time(default 10)
         :yield: _description_
@@ -128,7 +132,7 @@ class Parquet:
         references = self.get_unique_references()
         ref_list = [references[i : i + file_num] for i in range(0, len(references), file_num)]
         for refs in ref_list:
-            batch_df = self.get_report_from_database(refs)
+            batch_df = self.get_report_from_database(refs, columns)
             yield batch_df
 
     def inject_spectrum_msg(self, df: pd.DataFrame, mzml_directory: str):
@@ -281,7 +285,7 @@ class Parquet:
             cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
             return self.parquet_db.sql(f"SELECT {cols} FROM parquet_db WHERE sequence ='{peptide}'").df()
         else:
-            return KeyError("Illegal peptide!")
+            raise KeyError("Illegal peptide!")
 
     def query_peptides(self, peptides: list, columns: list = None):
         """
@@ -290,7 +294,7 @@ class Parquet:
         """
         for p in peptides:
             if not check_string("^[A-Z]+$", p):
-                return KeyError("Illegal peptide!")
+                raise KeyError("Illegal peptide!")
         cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
         database = self.parquet_db.sql(f"select {cols} from parquet_db where sequence IN {tuple(peptides)}")
         return database.df()
@@ -302,7 +306,7 @@ class Parquet:
         """
         for p in proteins:
             if not check_string("^[A-Z]+", p):
-                return KeyError("Illegal protein!")
+                raise KeyError("Illegal protein!")
         proteins_key = [f"protein_accessions LIKE '%{p}%'" for p in proteins]
         query_key = " OR ".join(proteins_key)
         cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
@@ -320,7 +324,7 @@ class Parquet:
                 f"SELECT {cols} FROM parquet_db WHERE protein_accessions LIKE '%{protein}%'"
             ).df()
         else:
-            return KeyError("Illegal protein!")
+            raise KeyError("Illegal protein!")
 
     def get_gene_list(self, map_gene_names: dict):
         """

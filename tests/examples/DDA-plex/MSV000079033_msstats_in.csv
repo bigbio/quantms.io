@@ -1,0 +1,17 @@
+RetentionTime,ProteinName,PeptideSequence,Charge,Channel,Condition,BioReplicate,Run,Mixture,TechRepMixture,Fraction,Intensity,Reference
+1787.80038,sp|P13591|NCAM1_HUMAN,.(Gln->pyro-Glu)QDDGGSPIR,2,1,blood plasma,1,1_1_2,1,1_1,2,7039.12793,G20140909_Plasma_iTRAQTMTstudy_iTRAQ_1x_fr2.mzML_controllerType=0 controllerNumber=1 scan=7074
+1787.80038,sp|P13591|NCAM1_HUMAN,.(Gln->pyro-Glu)QDDGGSPIR,2,2,blood plasma,2,1_1_2,1,1_1,2,4728.193848,G20140909_Plasma_iTRAQTMTstudy_iTRAQ_1x_fr2.mzML_controllerType=0 controllerNumber=1 scan=7074
+1787.80038,sp|P13591|NCAM1_HUMAN,.(Gln->pyro-Glu)QDDGGSPIR,2,3,blood plasma,3,1_1_2,1,1_1,2,9489.773438,G20140909_Plasma_iTRAQTMTstudy_iTRAQ_1x_fr2.mzML_controllerType=0 controllerNumber=1 scan=7074
+1787.80038,sp|P13591|NCAM1_HUMAN,.(Gln->pyro-Glu)QDDGGSPIR,2,4,blood plasma,4,1_1_2,1,1_1,2,5789.072754,G20140909_Plasma_iTRAQTMTstudy_iTRAQ_1x_fr2.mzML_controllerType=0 controllerNumber=1 scan=7074
+1713.19548,sp|CONTAMINANT_P02668|CONTAMINANT_CASK_BOVIN,.(Gln->pyro-Glu)QEQNQEQPIR,2,1,blood plasma,1,1_1_2,1,1_1,2,6038.887695,G20140909_Plasma_iTRAQTMTstudy_iTRAQ_1x_fr2.mzML_controllerType=0 controllerNumber=1 scan=6742
+1713.19548,sp|CONTAMINANT_P02668|CONTAMINANT_CASK_BOVIN,.(Gln->pyro-Glu)QEQNQEQPIR,2,2,blood plasma,2,1_1_2,1,1_1,2,3359.599365,G20140909_Plasma_iTRAQTMTstudy_iTRAQ_1x_fr2.mzML_controllerType=0 controllerNumber=1 scan=6742
+1713.19548,sp|CONTAMINANT_P02668|CONTAMINANT_CASK_BOVIN,.(Gln->pyro-Glu)QEQNQEQPIR,2,3,blood plasma,3,1_1_2,1,1_1,2,3091.564941,G20140909_Plasma_iTRAQTMTstudy_iTRAQ_1x_fr2.mzML_controllerType=0 controllerNumber=1 scan=6742
+1713.19548,sp|CONTAMINANT_P02668|CONTAMINANT_CASK_BOVIN,.(Gln->pyro-Glu)QEQNQEQPIR,2,4,blood plasma,4,1_1_2,1,1_1,2,3767.766846,G20140909_Plasma_iTRAQTMTstudy_iTRAQ_1x_fr2.mzML_controllerType=0 controllerNumber=1 scan=6742
+2326.02966,sp|O15394|NCAM2_HUMAN,.(Gln->pyro-Glu)QGEDAEVVC(Carbamidomethyl)R,2,1,blood plasma,1,1_1_2,1,1_1,2,9874.350586,G20140909_Plasma_iTRAQTMTstudy_iTRAQ_1x_fr2.mzML_controllerType=0 controllerNumber=1 scan=9278
+2326.02966,sp|O15394|NCAM2_HUMAN,.(Gln->pyro-Glu)QGEDAEVVC(Carbamidomethyl)R,2,2,blood plasma,2,1_1_2,1,1_1,2,8804.046875,G20140909_Plasma_iTRAQTMTstudy_iTRAQ_1x_fr2.mzML_controllerType=0 controllerNumber=1 scan=9278
+2326.02966,sp|O15394|NCAM2_HUMAN,.(Gln->pyro-Glu)QGEDAEVVC(Carbamidomethyl)R,2,3,blood plasma,3,1_1_2,1,1_1,2,8155.961914,G20140909_Plasma_iTRAQTMTstudy_iTRAQ_1x_fr2.mzML_controllerType=0 controllerNumber=1 scan=9278
+2326.02966,sp|O15394|NCAM2_HUMAN,.(Gln->pyro-Glu)QGEDAEVVC(Carbamidomethyl)R,2,4,blood plasma,4,1_1_2,1,1_1,2,9445.132813,G20140909_Plasma_iTRAQTMTstudy_iTRAQ_1x_fr2.mzML_controllerType=0 controllerNumber=1 scan=9278
+1046.98416,sp|P18206|VINC_HUMAN,.(Gln->pyro-Glu)QLHDEAR,2,1,blood plasma,1,1_1_2,1,1_1,2,0,G20140909_Plasma_iTRAQTMTstudy_iTRAQ_1x_fr2.mzML_controllerType=0 controllerNumber=1 scan=4154
+1046.98416,sp|P18206|VINC_HUMAN,.(Gln->pyro-Glu)QLHDEAR,2,2,blood plasma,2,1_1_2,1,1_1,2,0,G20140909_Plasma_iTRAQTMTstudy_iTRAQ_1x_fr2.mzML_controllerType=0 controllerNumber=1 scan=4154
+1046.98416,sp|P18206|VINC_HUMAN,.(Gln->pyro-Glu)QLHDEAR,2,3,blood plasma,3,1_1_2,1,1_1,2,4405.892578,G20140909_Plasma_iTRAQTMTstudy_iTRAQ_1x_fr2.mzML_controllerType=0 controllerNumber=1 scan=4154
+1046.98416,sp|P18206|VINC_HUMAN,.(Gln->pyro-Glu)QLHDEAR,2,4,blood plasma,4,1_1_2,1,1_1,2,0,G20140909_Plasma_iTRAQTMTstudy_iTRAQ_1x_fr2.mzML_controllerType=0 controllerNumber=1 scan=4154

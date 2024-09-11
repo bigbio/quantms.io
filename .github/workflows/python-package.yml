@@ -38,5 +38,4 @@ jobs:
     - name: Test with pytest
       run: |
         python setup.py install
-        cd quantmsio
-        python -m unittest
+        pytest -v -s tests/

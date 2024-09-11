@@ -5,10 +5,10 @@ import pyarrow.parquet as pq
 
 from quantmsio.core.feature_in_memory import FeatureInMemory
 from quantmsio.core.feature_in_memory import get_modifications
+from quantmsio.utils.file_utils import extract_protein_list
 from quantmsio.utils.pride_utils import generate_scan_number
 from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
 from quantmsio.utils.pride_utils import get_petidoform_msstats_notation
-from quantmsio.utils.file_utils import extract_protein_list
 
 
 class PsmInMemory:
@@ -32,7 +32,6 @@ class PsmInMemory:
             "end",
             "opt_global_cv_MS:1000889_peptidoform_sequence",
             "opt_global_cv_MS:1002217_decoy_peptide",
-            "opt_global_Posterior_Error_Probability_score",
             "opt_global_consensus_support",
             "search_engine_score[1]",
         ]
@@ -41,7 +40,6 @@ class PsmInMemory:
             "start": "protein_start_positions",
             "end": "protein_end_positions",
             "opt_global_cv_MS:1000889_peptidoform_sequence": "peptidoform",
-            "opt_global_Posterior_Error_Probability_score": "posterior_error_probability",
             "opt_global_cv_MS:1002217_decoy_peptide": "is_decoy",
             "spectra_ref": "reference_file_name",
             "opt_global_consensus_support": "consensus_support",
@@ -61,6 +59,11 @@ class PsmInMemory:
             chunksize=chunksize,
         )
         self._psms_columns = self._feature._psms_columns
+        pep = [p for p in self._psms_columns if "opt_global_Posterior_Error_Probability" in p]
+        pep = pep[0] if pep else None
+        if pep:
+            self._psm_usecols.append(pep)
+            self._psm_map[pep] = "posterior_error_probability"
         self._modifications = get_modifications(mztab_path)
         for psm in psms:
             if protein_str:
@@ -83,6 +86,8 @@ class PsmInMemory:
             psm = psm[self._psm_usecols]
             self._psm_usecols.pop()
             psm.rename(columns=self._psm_map, inplace=True)
+            if not pep:
+                psm.loc[:, "posterior_error_probability"] = None
             psm.loc[:, "global_qvalue"] = psm[["peptidoform", "charge"]].apply(
                 lambda row: (
                     map_dict[(row["peptidoform"], row["charge"])][0]

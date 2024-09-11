@@ -26,9 +26,9 @@ from quantmsio.commands.generate_start_and_end_command import (
 )
 from quantmsio.commands.get_unanimous_command import get_unanimous_for_parquet
 from quantmsio.commands.get_unanimous_command import get_unanimous_for_tsv
-from quantmsio.commands.load_best_scan_number_command import (
-    inject_bset_psm_scan_number,
-)
+from quantmsio.commands.load_best_scan_number_command import inject_bset_psm_scan_number
+from quantmsio.commands.maxquant_command import convert_maxquant
+from quantmsio.commands.maxquant_command import convert_zip_maxquant
 from quantmsio.commands.parquet_to_json import convert_parquet_to_json
 from quantmsio.commands.plot import plot
 from quantmsio.commands.project_command import generate_pride_project_json
@@ -68,6 +68,8 @@ cli.add_command(generate_pride_project_json)
 cli.add_command(json)
 cli.add_command(generate_report_about_project)
 cli.add_command(map_gene_msg_to_parquet)
+cli.add_command(convert_maxquant)
+cli.add_command(convert_zip_maxquant)
 
 
 def quantms_io_main():
