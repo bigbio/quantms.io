@@ -853,7 +853,7 @@ Some of the fields are shared between the <<feature>> and <<psm>> views, they ca
 [[diann-scan]]
 ===== DIANN Scan
 
-The `DIA-NN` scan is a string that contains the scan number of the MS2 used to identify the peptide. We use the `rt_start` field and the mzML information to get that number.
+The `DIA-NN` scan is a string that contains the scan number of the MS2 used to identify the peptide. We use the `rt` field and the mzML information to get that number.
 
 ==== Format
 
