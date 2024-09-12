@@ -26,5 +26,6 @@
 		{"name": "observed_mz", "type": "float32", "doc": "Experimental peptide mass-to-charge ratio of identified peptide (in Da)"},
 		{"name": "rt", "type": ["null", "float32"], "doc": "MS2 scan’s precursor retention time (in seconds)"},
 		{"name": "predicted_rt", "type": ["null", "float32"], "doc": "Predicted retention time of the peptide (in seconds)"},
+		{"name": "quantmsio_version", "type": "string", "doc": "The version of quantms.io"}
 	]
 }

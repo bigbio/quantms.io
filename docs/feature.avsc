@@ -41,5 +41,6 @@
 		{"name": "psm_scan_number", "type": ["null","string"], "doc": "The scan number of the spectrum. The scan number or index of the spectrum in the file"},
 		{"name": "rt_start", "type": ["null", "float32"], "doc": "Start of the retention time window for feature"},
 		{"name": "rt_stop", "type": ["null", "float32"], "doc": "End of the retention time window for feature"},
+		{"name": "quantmsio_version", "type": "string", "doc": "The version of quantms.io"}
 	]
 }

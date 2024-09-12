@@ -14,5 +14,6 @@
 		{"name": "number_peptides","type": ["null", "int"], "doc": "The total number of peptides for a give protein"},
 		{"name": "number_psms","type": ["null", "int"], "doc": "The total number of peptide spectrum matches"},
 		{"name": "number_unique_peptides","type": ["null", "int"], "doc": "The total number of unique peptides"},
+		{"name": "quantmsio_version", "type": "string", "doc": "The version of quantms.io"}
 	]
 }

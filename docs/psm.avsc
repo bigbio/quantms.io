@@ -43,5 +43,6 @@
     {"name": "mz_array", "type": ["null", {"type": "array", "items": "float32"}], "doc": "Array of m/z values for the spectrum used for the peptide spectrum match"},
     {"name": "intensity_array", "type": ["null", {"type": "array", "items": "float32"}], "doc": "Array of intensity values for the spectrum used for the peptide spectrum match"},
     {"name": "rank", "type": ["null", "int"], "doc": "Rank of the peptide spectrum match in the search engine output"}
+    {"name": "quantmsio_version", "type": "string", "doc": "The version of quantms.io"}
   ]
 }
