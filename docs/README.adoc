@@ -178,12 +178,13 @@ The structure of the version is as follows `{major release}.{minor update}`: The
 
 The data within quantms.io is mainly generated from https://github.com/bigbio/quantms[quantms workflow]. However, the format is open and can be used by any software provider that wants to generate the data in this format. The software provider and the version of the software used to generate the data will be stored in the project view <<project>> as:
 
-```json
-software_provider: {
+[source,json]
+----
+"software_provider": {
     "name": "quantms",
     "version": "1.3.0"
   }
-```
+----
 
 [[project]]
 == Project quantms.io
@@ -227,21 +228,67 @@ Example of ``AcquisitionProperties``:
 
 === Project files
 
-Recommendations for the file name in the quantms project.
+The files within a project are in the current version <<version>> optional. Files within a project should be listed in the quantms_files, for every file the following information is necessary:
+
+- file_name: The name of the file or folder.
+- is_folder: A boolean value that indicates if the file is a folder or not.
+- partition_fields: The fields that are used to partition the data in the file. This is used to optimize the data retrieval and filtering of the data. This field is optional.
+
+NOTE: Parquet files can be storage as folders when the data is partitioned by some fields. For example, a parquet file that is partitioned by the `sample_accession` field will be stored as a folder with the name of the field and the value of the field.
 
 Example of ``quantms_files``:
 
 [source,json]
 ----
-   "quantms_files": [
-        {"psm_file":   ["PXD004683-550e8400-e29b-41d4.1.psm.parquet",
-                        "PXD004683-550e8400-e29b-41d4.2.psm.parquet"
-        ]},
-        {"feature_file": ["PXD004683-958e8400-e29b-41f4.feature.parquet"]},
-        {"differential_file": ["PXD004683-a716.differential.tsv"]},
-        {"absolute_file":     ["PXD004683-e29b-41f4-a716.absolute.tsv"]},
-        {"sdrf_file":         ["PXD004683-e29b-41f4-a716.sdrf.tsv"]}
-   ]
+   {
+  "quantms_files": [
+    {
+      "psm_file": [
+        {
+          "file_name": "PXD004683-550e8400-e29b-41d4.1.psm.parquet",
+          "is_folder": false
+        },
+        {
+          "file_name": "PXD004683-550e8400-e29b-41d4.2.psm.parquet",
+          "is_folder": false
+        }
+      ]
+    },
+    {
+      "feature_file": [
+        {
+          "file_name": "PXD004683-958e8400-e29b-41f4.featur.parquet",
+          "is_folder": true,
+          "partition_fields": ["sample_accession"]
+        }
+      ]
+    },
+    {
+      "differential_file": [
+        {
+          "file_name": "PXD004683-a716.differential.tsv",
+          "is_folder": false
+        }
+      ]
+    },
+    {
+      "absolute_file": [
+        {
+          "file_name": "PXD004683-e29b-41f4-a716.absolute.tsv",
+          "is_folder": false
+        }
+      ]
+    },
+    {
+      "sdrf_file": [
+        {
+          "file_name": "PXD004683-e29b-41f4-a716.sdrf.tsv",
+          "is_folder": false
+        }
+      ]
+    }
+  ]
+}
 ----
 
 Example:
@@ -292,12 +339,41 @@ Example:
         {"precursor mass tolerance": "20 ppm"},
         {"fragment mass tolerance": "0.6 Da"}
     ],
-    "quantms_files": [
-        {"feature_file": ["PXD014414.feature.parquet"]},
-        {"sdrf_file": ["PXD014414.sdrf.tsv"]},
-        {"psm_file": ["PXD014414-f4fb88f6.psm.parquet"]},
-        {"differential_file": ["PXD014414-3026e5d5.differential.tsv"]}
-    ],
+  "quantms_files": [
+    {
+      "feature_file": [
+        {
+          "file_name": "PXD014414.feature.parquet",
+          "is_folder": false
+        }
+      ]
+    },
+    {
+      "sdrf_file": [
+        {
+          "file_name": "PXD014414.sdrf.tsv",
+          "is_folder": false
+        }
+      ]
+    },
+    {
+      "psm_file": [
+        {
+          "file_name": "PXD014414-f4fb88f6.psm.parquet",
+          "is_folder": false
+        }
+      ]
+    },
+    {
+      "differential_file": [
+        {
+          "file_name": "PXD014414-3026e5d5.differential.tsv",
+          "is_folder": false
+        }
+      ]
+    }
+  ]
+  },
     "software_provider": {
        "name": "quantms",
        "version": "1.3.0"
