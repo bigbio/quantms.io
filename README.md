@@ -3,7 +3,6 @@
 [![Upload Python Package](https://github.com/bigbio/quantms.io/actions/workflows/python-publish.yml/badge.svg)](https://github.com/bigbio/quantms.io/actions/workflows/python-publish.yml)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/e71a662e8d4f483094576c1d8f8888c3)](https://app.codacy.com/gh/bigbio/quantms.io/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/e71a662e8d4f483094576c1d8f8888c3)](https://app.codacy.com/gh/bigbio/quantms.io/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_Coverage)
-[![Documentation Status](https://readthedocs.org/projects/quantmsio/badge/?version=latest)](https://quantmsio.readthedocs.io/en/latest/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/quantmsio.svg)](https://badge.fury.io/py/quantmsio)
 
 The specification of quantms.io is a community-driven effort to create a standard for the representation of quantitative proteomics data. The specification is designed to be simple to implement and to be able to represent the most common types of quantitative proteomics data. The specification is designed to be extensible, and the full specification can be found in [the specification document](docs/README.adoc).
