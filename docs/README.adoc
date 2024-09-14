@@ -993,7 +993,52 @@ The Protein table is a tsv file that contains the details of the proteins identi
 
 The protein view can be found in link:protein.avsc[protein.avsc].
 
-[[metadata]]
+[[mz]]
+== Mass spectra view
+
+The mass spectra view is a tabular file that contains the details of the mass spectra identified and quantified. This view is based on https://github.com/lazear/mz_parquet[mz_parquet] format developed by Michael Lazear. The mz_parquet format is a parquet-based format that stores the mass spectra information in a columnar format.
+
+=== Mass Spectra Use cases
+
+- Retrieve all the precursor mass, retention time, and intensity in the file.
+- Enable easy visualization and scanning on mass spectra level.
+- AI/ML training and prediction on mass spectra level.
+
+=== Mass Spectra Fields
+
+[cols="1,1,2", options="header"]
+|===
+| Field               | Type                         | Description
+
+| `id`               | string                       | Unique identifier for the scan or spectrum.
+| `ms_level`         | int                          | The MS level (e.g., 1 for MS1, 2 for MS2).
+| `centroid`         | boolean                      | Indicates whether the data is centroided (true) or profile mode (false).
+| `scan_start_time`  | float                        | The start time of the scan in minutes.
+| `inverse_ion_mobility` | ["null", "float"]         | Inverse ion mobility, if available, used for TIMS data.
+| `ion_injection_time` | float                      | The ion injection time in milliseconds.
+| `total_ion_current` | float                       | Total ion current (TIC) for the scan.
+| `precursors`       | ["null", {"type": "array", "items": {"type": "record", "name": "precursor"}}] | List of precursors for this scan, if applicable.
+
+| `selected_ion_mz`  | float                        | The m/z value of the selected precursor ion.
+| `selected_ion_charge` | ["null", "int"]           | Charge state of the selected precursor ion, if available.
+| `selected_ion_intensity` | ["null", "float"]      | Intensity of the selected precursor ion.
+| `isolation_window_target` | ["null", "float"]     | The target m/z for the isolation window.
+| `isolation_window_lower` | ["null", "float"]      | The lower bound of the isolation window.
+| `isolation_window_upper` | ["null", "float"]      | The upper bound of the isolation window.
+| `spectrum_ref`     | ["null", "string"]           | Reference to another spectrum (e.g., for linking to external datasets).
+
+| `mz`               | {"type": "array", "items": "float"} | List of m/z values for the scan.
+| `intensity`        | {"type": "array", "items": "float"} | List of intensity values corresponding to the m/z values.
+| `cv_params`        | ["null", {"type": "array", "items": {"type": "record", "name": "cvparam"}}] | Optional list of CV parameters for additional metadata.
+
+| name             | string                       | Name of the CV term (e.g., from PSI-MS or other ontologies).
+| value            | string                       | Value associated with the CV term.
+|===
+
+==== Format
+
+The mass spectra view can be found in link:mz.avsc[mz.avsc].
+
 
 == Get in touch
 
