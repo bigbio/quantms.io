@@ -1029,7 +1029,7 @@ The mass spectra view is a tabular file that contains the details of the mass sp
 
 | `mz`               | {"type": "array", "items": "float"} | List of m/z values for the scan.
 | `intensity`        | {"type": "array", "items": "float"} | List of intensity values corresponding to the m/z values.
-| `cv_params`        | ["null", {"type": "array", "items": {"type": "record", "name": "cvparam"}}] | Optional list of CV parameters for additional metadata.
+| `cv_params`        | ["null", {"type": "array", "items": {"type": "record", "name": "cv_param"}}] | Optional list of CV parameters for additional metadata.
 
 | name             | string                       | Name of the CV term (e.g., from PSI-MS or other ontologies).
 | value            | string                       | Value associated with the CV term.
