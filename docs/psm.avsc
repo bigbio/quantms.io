@@ -42,7 +42,37 @@
     {"name": "num_peaks", "type": ["null", "int"], "doc": "Number of peaks in the spectrum used for the peptide spectrum match"},
     {"name": "mz_array", "type": ["null", {"type": "array", "items": "float32"}], "doc": "Array of m/z values for the spectrum used for the peptide spectrum match"},
     {"name": "intensity_array", "type": ["null", {"type": "array", "items": "float32"}], "doc": "Array of intensity values for the spectrum used for the peptide spectrum match"},
-    {"name": "rank", "type": ["null", "int"], "doc": "Rank of the peptide spectrum match in the search engine output"}
+    {"name": "rank", "type": ["null", "int"], "doc": "Rank of the peptide spectrum match in the search engine output"},
+    {
+      "name": "cv_params",
+      "type": [
+        "null",
+        {
+          "type": "array",
+          "items": {
+            "type": "record",
+            "name": "cv_param",
+            "doc": "Controlled vocabulary (CV) parameters providing additional metadata for the scan.",
+            "fields": [
+              {
+                "name": "name",
+                "type": "string",
+                "doc": "Name of the CV term (e.g., from PSI-MS or other ontologies)."
+              },
+              {
+                "name": "value",
+                "type": "string",
+                "doc": "Value associated with the CV term."
+              }
+            ]
+          }
+        }
+      ],
+      "default": null,
+      "doc": "Optional list of CV parameters for additional metadata."
+    },
     {"name": "quantmsio_version", "type": "string", "doc": "The version of quantms.io"}
+
+
   ]
 }
