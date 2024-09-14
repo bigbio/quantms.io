@@ -50,6 +50,7 @@ image::images/formats-relation.svg[width=80%]
 [.center, cols="1,1,1,1", width=75%]
 |===
 | *view*       | *file class*      | *serialization format* | *definition*
+| mz           | mz_file           | _parquet_                 | <<mz>>
 | psm          | psm_file          | _parquet_              | <<psm>>
 | feature      | feature_file      | _parquet_              | <<feature>>
 | absolute     | absolute_file     | _tsv_                  | <<absolute>>
