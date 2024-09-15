@@ -28,8 +28,8 @@
     {"name": "pg_positions", "type": ["null",{"type": "array","items": "string"}], "doc": "Protein start and end positions written as start_post:end_post"},
     {"name": "unique", "type": ["null", "int"], "doc": "Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0"},
     {"name": "protein_global_qvalue", "type": ["null", "float32"], "doc": "Global q-value of the protein group at the experiment level"},
-    {"name": "gene_accessions", "type": ["null", {"type": "array", "items": "string"}], "doc": "Gene accessions, as string array"},
-    {"name": "gene_names", "type": ["null", {"type": "array", "items": "string"}], "doc": "Gene names, as string array"},
+    {"name": "gg_accessions", "type": ["null", {"type": "array", "items": "string"}], "doc": "Gene accessions, as string array"},
+    {"name": "gg_names", "type": ["null", {"type": "array", "items": "string"}], "doc": "Gene names, as string array"},
 
     {"name": "precursor_charge", "type": "int", "doc": "Precursor charge"},
     {"name": "observed_mz", "type": "float32", "doc": "Experimental peptide mass-to-charge ratio of identified peptide (in Da)"},
