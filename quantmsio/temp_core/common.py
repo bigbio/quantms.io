@@ -1,6 +1,5 @@
 PSM_MAP = {
     "sequence": "sequence",
-    #"opt_global_cv_MS:1000889_peptidoform_sequence": "peptidoform",
     "modifications": "modifications",
 
     "opt_global_Posterior_Error_Probability_score": "posterior_error_probability",
@@ -18,8 +17,6 @@ PSM_USECOLS = list(PSM_MAP.keys()) + [
     "spectra_ref",
     "start",
     "end",
-    "search_engine",
-    "search_engine_score[1]",
 ]
 
 ADDITIONS = [

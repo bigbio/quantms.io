@@ -42,7 +42,7 @@ PEPTIDE_FIELDS = [
         pa.list_(
             pa.struct([
                 ("name", pa.string()),
-                ("score", pa.float32()) 
+                ("value", pa.float32()) 
             ])
         ),
         metadata={"description": "List of structures, each structure contains two fields: name and value"},

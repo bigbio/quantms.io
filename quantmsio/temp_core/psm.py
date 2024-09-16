@@ -19,6 +19,7 @@ class PsmInMemory(MzTab):
         self._ms_runs = self.extract_ms_runs()
         self._protein_global_qvalue_map = self.get_protein_map()
         self._modifications = self.get_modifications()
+        self._score_names = self.get_score_names()
     
     def generate_report(self,chunksize=1000000,protein_str=None):
         for df in self.skip_and_load_csv('PSH',chunksize=chunksize):
@@ -30,7 +31,6 @@ class PsmInMemory(MzTab):
                     df.loc[:,col] = df['accession'].apply(lambda x: 0 if ';' in x else 1)
                 else:
                     df.loc[:,col] = None
-            df = df[PSM_USECOLS]
             df.rename(columns=PSM_MAP,inplace=True)
             self.transform_psm(df)
             self.add_addition_msg(df)
@@ -45,13 +45,20 @@ class PsmInMemory(MzTab):
         df.loc[:, "scan_number"] = df["spectra_ref"].apply(lambda x: generate_scan_number(x))
         
         df.loc[:, "reference_file_name"] = df["spectra_ref"].apply(lambda x: self._ms_runs[x[:x.index(':')]])
-        df.loc[:, "additional_scores"] = None
+        df.loc[:, "additional_scores"] = df[list(self._score_names.values())].apply(self._genarate_additional_scores,axis=1)
         df.loc[:,'peptidoform'] = df[["modifications", "sequence"]].apply(
             lambda row: get_peptidoform_proforma_version_in_mztab(row["sequence"], row["modifications"], self._modifications),
             axis=1
         )
         df.drop(['start','end',"spectra_ref","search_engine","search_engine_score[1]"], inplace=True, axis=1)
 
+    def _genarate_additional_scores(self,cols):
+        struct_list = []
+        for software,score in self._score_names.items():
+            struct = {'name':software,'value':cols[score]}
+            struct_list.append(struct)
+        return struct_list
+    
     def add_addition_msg(self,df):
         df.loc[:,"protein_global_qvalue"] = df['pg_accessions'].map(self._protein_global_qvalue_map)
         df.loc[:,"modification_details"] = None

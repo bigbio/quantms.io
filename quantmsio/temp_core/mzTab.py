@@ -173,8 +173,23 @@ class MzTab:
         protein_map = prt_score.to_dict()["best_search_engine_score[1]"]
         return protein_map
     
-    def get_software_score(self,name,score) -> dict:
-        return {'name':name,'score':score}
+    def get_score_names(self):
+        if os.stat(self.mztab_path).st_size == 0:
+            raise ValueError("File is empty")
+        f = codecs.open(self.mztab_path, "r", "utf-8")
+        line = f.readline()
+        score_names = {}
+        while line.split("\t")[0] == "MTD":
+            if "psm_search_engine_score" in line:
+                msgs = line.split('\t')
+                score_values = msgs[2].replace("[", "").replace("]", "").split(",")
+                score_name = score_values[2].strip()
+                if ":" in score_name:
+                    score_name = score_name.split(':')[0]
+                score_names[score_name] = msgs[1].replace('psm_','')
+            line = f.readline()
+        f.close()
+        return score_names
 
     def generate_positions(self,start,end) -> list:
         start = start.split(',')
