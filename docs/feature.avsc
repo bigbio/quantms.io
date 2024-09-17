@@ -34,7 +34,7 @@
 		{"name": "fraction", "type": ["null","string"], "doc": "The index value in the SDRF for the fraction column"},
 		{"name": "biological_replicate", "type": ["null","string"], "doc": "The value of the biological replicate column in the SDRF in relation to the condition"},
 		{"name": "run", "type": "string", "doc": "The column stores IDs of mass spectrometry runs for LFQ experiments (e.g., 1). For TMT/iTRAQ experiments, it is an identifier of mixture combined with technical replicate and fractions `{mixture}_{technical_replicate}_{fraction}` (e.g., 1_2_3)"},
-		{"name": "channel", "type": ["null","string"], "doc": "The reference file name that contains the feature"},
+		{"name": "channel", "type": ["null","string"], "doc": "The channel used to label the sample, (e.g., TMT115)"},
 		{"name": "reference_file_name", "type": "string", "doc": "The reference file name that contains the feature"},
 
 		{"name": "psm_reference_file_name", "type": ["null","string"], "doc": "The reference file containing the best psm that identified the feature. Note: This file can be different from the file that contains the feature ().ReferenceFile"},

@@ -1,7 +1,0 @@
-comment[data file]	comment[technical replicate]	source name	factor [beseline]	comment[fraction identifier]	comment[label]	comment[modification parameters]	comment[modification parameters].1	characteristics[biological replicate]
-LFQ_Orbitrap_DDA_Condition_A_Sample_Alpha_01	1	Sample 1	tumor	1	NT=label free sample;AC=MS:1002038	NT=Acetyl;MT=Variable;PP=Protein N-term;AC=UNIMOD:1	NT=Oxidation;MT=Variable;TA=M;AC=UNIMOD:35	1
-LFQ_Orbitrap_DDA_Condition_B_Sample_Alpha_03	3	Sample 2	tumor	1	NT=label free sample;AC=MS:1002038	NT=Acetyl;MT=Variable;PP=Protein N-term;AC=UNIMOD:1	NT=Oxidation;MT=Variable;TA=M;AC=UNIMOD:35	1
-LFQ_Orbitrap_DDA_Condition_A_Sample_Alpha_02	2	Sample 1	tumor	1	NT=label free sample;AC=MS:1002038	NT=Acetyl;MT=Variable;PP=Protein N-term;AC=UNIMOD:1	NT=Oxidation;MT=Variable;TA=M;AC=UNIMOD:35	1
-LFQ_Orbitrap_DDA_Condition_A_Sample_Alpha_03	3	Sample 1	tumor	1	NT=label free sample;AC=MS:1002038	NT=Acetyl;MT=Variable;PP=Protein N-term;AC=UNIMOD:1	NT=Oxidation;MT=Variable;TA=M;AC=UNIMOD:35	1
-LFQ_Orbitrap_DDA_Condition_B_Sample_Alpha_02	2	Sample 2	tumor	1	NT=label free sample;AC=MS:1002038	NT=Acetyl;MT=Variable;PP=Protein N-term;AC=UNIMOD:1	NT=Oxidation;MT=Variable;TA=M;AC=UNIMOD:35	1
-LFQ_Orbitrap_DDA_Condition_B_Sample_Alpha_01	1	Sample 2	tumor	1	NT=label free sample;AC=MS:1002038	NT=Acetyl;MT=Variable;PP=Protein N-term;AC=UNIMOD:1	NT=Oxidation;MT=Variable;TA=M;AC=UNIMOD:35	1
