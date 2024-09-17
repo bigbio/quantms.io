@@ -13,9 +13,9 @@ PSM_SCHEMA = pa.schema(
     metadata={"description": "psm file in quantms.io format"},
 )
 
-class PsmInMemory(MzTab):
+class Psm(MzTab):
     def __init__(self,mzTab_path):
-        super(PsmInMemory,self).__init__(mzTab_path)
+        super(Psm,self).__init__(mzTab_path)
         self._ms_runs = self.extract_ms_runs()
         self._protein_global_qvalue_map = self.get_protein_map()
         self._modifications = self.get_modifications()

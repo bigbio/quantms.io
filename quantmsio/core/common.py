@@ -1,7 +1,6 @@
 PSM_MAP = {
     "sequence": "sequence",
     "modifications": "modifications",
-
     "opt_global_Posterior_Error_Probability_score": "posterior_error_probability",
     "opt_global_q-value": "global_qvalue",
     "opt_global_cv_MS:1002217_decoy_peptide": "is_decoy",
@@ -17,21 +16,13 @@ PSM_USECOLS = list(PSM_MAP.keys()) + [
     "start",
     "end",
 ]
-ADDITIONS = [
-    "peptidoform",
-    "modification_details",
-    "additional_scores",
-    "pg_positions",
-    "protein_global_qvalue",
-    "gg_accessions",
-    "gg_names",
-    "predicted_rt"
-    "reference_file_name"
-    "scan_number"
-    "ion_mobility"
-    "num_peaks"
-    "mz_array"
-    "intensity_array"
-    "rank"
-    "cv_params"
- ]
+
+MSSTATS_MAP = {
+    "ProteinName": "pg_accessions",
+    "Reference": "reference_file_name",
+    "Intensity": "intensity",
+    "Channel": "channel",
+    "RetentionTime": "rt",
+    "PeptideSequence": "peptidoform"
+}
+MSSTATS_USECOLS = set(MSSTATS_MAP.keys())
