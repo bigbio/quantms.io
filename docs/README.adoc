@@ -549,7 +549,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | Modified.Sequence
 | Modified Peptide
 | Modified sequence
-| -
+| opt_global_cv_MS:1000889_peptidoform_sequence
 
 | `modifications`
 | List of modifications as a string array, easy for search and filter
@@ -557,7 +557,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | -
 | -
 | Modifications
-| -
+| modifications
 
 | `modification_details`
 | List of alternative site probabilities for the modification format: read <<modifications>>
@@ -573,7 +573,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | PEP
 | x
 | PEP
-| modifications
+| opt_global_Posterior_Error_Probability_score
 
 | `global_qvalue`
 | Global q-value for the peptide or psm at the level of the experiment
@@ -581,7 +581,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | Global.Q.Value
 | x
 | -
-| -
+| opt_global_q-value
 
 7+^| Peptide fields shared by <<feature>> <<psm>>
 | `is_decoy`
@@ -590,12 +590,12 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | -
 | -
 | Reverse
-| -
+| opt_global_cv_MS:1002217_decoy_peptide
 
 | `calculated_mz`
 | Theoretical peptide mass-to-charge ratio based on an identified sequence and modifications
 | float
-| -
+| Calculate.Precursor.Mz
 | Calculated M/Z
 | m/z
 | calc_mass_to_charge
@@ -606,15 +606,15 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | DIA-NN Scores
 | FragPipe Scores
 | MaxQuant Scores
-| -
+| search_engine_score
 
 7+^| Protein fields shared by <<feature>> <<psm>> <<peptide>>
 | `pg_accessions`
 | Protein group accessions of all the proteins that the peptide maps to
 | array[string], null
+| Protein.Ids
 | x
-| x
-| x
+| Proteins
 | accession
 
 | `pg_positions`
@@ -624,6 +624,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | x
 | x
 | Combination of start and end positions
+
 | `unique`
 | Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0
 | int32, null
@@ -638,7 +639,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | Global.PG.Q.Value
 | x
 | x
-| -
+| best_search_engine_score
 
 | `gg_accessions`
 | Gene group accessions, as a string array
@@ -651,9 +652,9 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | `gg_names`
 | Gene names, as a string array
 | array[string], null
+| -
 | x
-| x
-| x
+| -
 | -
 
 7+^| Spectra fields shared by <<feature>> <<psm>>
@@ -678,7 +679,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | float, null
 | RT
 | x
-| x
+| Retention time
 | retention_time
 
 | `predicted_rt`
@@ -737,7 +738,7 @@ The fields that are unique to the psm view are:
 | string
 | <<scan-diann>>
 | Spectrum
-| x
+| MS/MS scan number
 | spectra_ref
 
 | `ion_mobility`
