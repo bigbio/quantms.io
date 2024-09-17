@@ -1,10 +1,6 @@
 import codecs
 import os
-import re
-import numpy as np
 import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as pq
 from quantmsio.utils.pride_utils import get_quantmsio_modifications
 
 def fetch_modifications_from_mztab_line(line: str, _modifications: dict) -> dict:
