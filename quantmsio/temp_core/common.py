@@ -1,7 +1,6 @@
 PSM_MAP = {
     "sequence": "sequence",
     "modifications": "modifications",
-
     "opt_global_Posterior_Error_Probability_score": "posterior_error_probability",
     "opt_global_q-value": "global_qvalue",
     "opt_global_cv_MS:1002217_decoy_peptide": "is_decoy",
@@ -35,5 +34,5 @@ ADDITIONS = [
     "mz_array"
     "intensity_array"
     "rank"
-    "cv_params"
- ]
+    "cv_params",
+]

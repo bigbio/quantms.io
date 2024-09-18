@@ -1,6 +1,8 @@
 from .common import datafile
 from unittest import TestCase
 from quantmsio.temp_core.psm import PsmInMemory
+
+
 class TestPSMHandler(TestCase):
 
     def test_convert_mztab_to_feature(self):
