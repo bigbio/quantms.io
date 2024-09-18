@@ -4,7 +4,7 @@ from quantmsio.utils.file_utils import extract_protein_list
 from quantmsio.utils.pride_utils import generate_scan_number
 from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
 from quantmsio.temp_core.common import PSM_USECOLS, PSM_MAP
-from quantmsio.temp_core.mzTab import MzTab
+from quantmsio.temp_core.mztab import MzTab
 from quantmsio.temp_core.format import PSM_FIELDS
 import pandas as pd
 
