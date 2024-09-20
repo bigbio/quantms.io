@@ -21,7 +21,7 @@ class Psm(MzTab):
         self._modifications = self.get_modifications()
         self._score_names = self.get_score_names()
     
-    def generate_report(self,chunksize=1000000,protein_str=None):
+    def iter_psm_table(self,chunksize=1000000,protein_str=None):
         for df in self.skip_and_load_csv('PSH',chunksize=chunksize):
             if protein_str:
                 df = df[df["accession"].str.contains(f"{protein_str}", na=False)]
@@ -32,10 +32,14 @@ class Psm(MzTab):
                 else:
                     df.loc[:,col] = None
             df.rename(columns=PSM_MAP,inplace=True)
-            self.transform_psm(df)
-            self.add_addition_msg(df)
-            df = self.convert_to_parquet(df)
             yield df
+
+    def generate_report(self,chunksize=1000000,protein_str=None):
+            for df in self.iter_psm_table(chunksize=chunksize,protein_str=protein_str):
+                self.transform_psm(df)
+                self.add_addition_msg(df)
+                df = self.convert_to_parquet(df)
+                yield df
 
     def transform_psm(self,df):
         df.loc[:, 'pg_positions'] = df[['start','end']].apply(

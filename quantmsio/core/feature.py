@@ -1,9 +1,12 @@
 import pandas as pd
+import os
 from quantmsio.core.mzTab import MzTab
+from quantmsio.core.psm import Psm
 from quantmsio.core.sdrf import SDRFHandler
-from quantmsio.utils.pride_utils import clean_peptidoform_sequence
+from quantmsio.utils.pride_utils import clean_peptidoform_sequence,get_petidoform_msstats_notation,generate_scan_number
 from quantmsio.utils.constants import ITRAQ_CHANNEL,TMT_CHANNELS
 from quantmsio.core.common import MSSTATS_MAP,MSSTATS_USECOLS
+    
 class Feature(MzTab):
     def __init__(self,mzTab_path,sdrf_path,msstats_in_path):
         super(Feature,self).__init__(mzTab_path)
@@ -14,7 +17,128 @@ class Feature(MzTab):
         self._modifications = self.get_modifications()
         self._score_names = self.get_score_names()
         self.experiment_type = SDRFHandler(sdrf_path).get_experiment_type_from_sdrf()
+
+    def _extract_pep_columns(self):
+        if os.stat(self.mztab_path).st_size == 0:
+            raise ValueError("File is empty")
+        f = open(self.mztab_path)
+        line = f.readline()
+        while not line.startswith("PEH"):
+            line = f.readline()
+        self._pep_columns = line.split("\n")[0].split("\t")
         
+    def extract_from_pep(self):
+        self._extract_pep_columns()
+        pep_usecols = [
+            "opt_global_cv_MS:1000889_peptidoform_sequence",
+            "charge",
+            "best_search_engine_score[1]",
+            "spectra_ref",
+        ]
+        live_cols = [col for col in pep_usecols if col in self._pep_columns]
+        not_cols = [col for col in pep_usecols if col not in live_cols]
+        if "opt_global_cv_MS:1000889_peptidoform_sequence" in not_cols:
+            if "sequence" in self._pep_columns and "modifications" in self._pep_columns:
+                live_cols.append("sequence")
+                live_cols.append("modifications")
+            else:
+                raise Exception("The peptide table don't have opt_global_cv_MS:1000889_peptidoform_sequence columns")
+        if "charge" in not_cols or "best_search_engine_score[1]" in not_cols:
+            raise Exception("The peptide table don't have best_search_engine_score[1] or charge columns")
+
+        pep = self.skip_and_load_csv("PEH", usecols=live_cols)
+
+        if "opt_global_cv_MS:1000889_peptidoform_sequence" not in pep.columns:
+            pep.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = pep[
+                ["modifications", "sequence"]
+            ].apply(
+                lambda row: get_petidoform_msstats_notation(row["sequence"], row["modifications"], self._modifications),
+                axis=1,
+            )
+
+        # check spectra_ref
+        if "spectra_ref" not in pep.columns:
+            pep.loc[:, "scan_number"] = None
+            pep.loc[:, "spectra_ref"] = None
+        else:
+            pep.loc[:, "scan_number"] = pep["spectra_ref"].apply(lambda x: generate_scan_number(x))
+            pep["spectra_ref"] = pep["spectra_ref"].apply(lambda x: self._ms_runs[x.split(":")[0]])
+        pep_msg = pep.iloc[
+            pep.groupby(["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"]).apply(
+                lambda row: row["best_search_engine_score[1]"].idxmin(),include_groups=False
+            )
+        ]
+        pep_msg = pep_msg.set_index(["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"])
+
+        pep_msg.loc[:, "pep_msg"] = pep_msg[
+            ["best_search_engine_score[1]", "spectra_ref", "scan_number"]
+        ].apply(
+            lambda row: [
+                row["best_search_engine_score[1]"],
+                row["spectra_ref"],
+                row["scan_number"],
+            ],
+            axis=1,
+        )
+
+        map_dict = pep_msg.to_dict()["pep_msg"]
+        return map_dict
+    
+    def extract_psm_msg(self,chunksize=1000000,protein_str=None):
+        P = Psm(self.mztab_path)
+        pep_dict = self.extract_from_pep()
+        map_dict = {}
+        def merge_pep_msg(row):
+            key = (row["opt_global_cv_MS:1000889_peptidoform_sequence"],row["precursor_charge"])
+            if(key in pep_dict):
+                return pep_dict[key]
+            else:
+                return [None,None,None]
+        for psm in P.iter_psm_table(chunksize=chunksize,protein_str=protein_str):
+            P.transform_psm(psm)
+            if "opt_global_cv_MS:1000889_peptidoform_sequence" not in psm.columns:
+                psm.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = psm[
+                    ["modifications", "sequence"]
+                ].apply(
+                    lambda row: get_petidoform_msstats_notation(
+                        row["sequence"], row["modifications"], self._modifications
+                    ),
+                    axis=1,
+                )
+            psm[["best_qvalue","best_psm_reference_file_name","best_psm_scan_number"]] = psm[["opt_global_cv_MS:1000889_peptidoform_sequence", "precursor_charge"]].apply(
+                lambda row: merge_pep_msg(row),
+                axis=1,
+                result_type="expand",
+            )
+            for key, df in psm.groupby(["opt_global_cv_MS:1000889_peptidoform_sequence", "precursor_charge"]):
+                df = df.reset_index(drop=True)
+                if key not in map_dict:
+                    map_dict[key] = [None for i in range(11)]
+                qvalue = None
+                temp_df = None
+                if(len(df["best_qvalue"].unique()) >1 or not pd.isna(df.loc[0,"best_qvalue"])):
+                    temp_df = df.iloc[df["best_qvalue"].idxmin()]
+                    qvalue = "best_qvalue"
+                elif(len(df["global_qvalue"].unique()) > 1 or not pd.isna(df.loc[0,"best_qvalue"])):
+                    temp_df = df.iloc[df["global_qvalue"].idxmin()]
+                    qvalue = "global_qvalue"
+                #print(temp_df)
+                if(qvalue != None):
+                    best_qvalue = temp_df[qvalue]
+                    if map_dict[key][0] == None or float(map_dict[key][0]) > float(best_qvalue):
+                        map_dict[key][0] = temp_df[qvalue]
+                        map_dict[key][1] = temp_df["best_psm_reference_file_name"]
+                        map_dict[key][2] = temp_df["best_psm_scan_number"]
+                        map_dict[key][4] = temp_df["pg_positions"]
+                        map_dict[key][5] = temp_df["modifications"]
+                        map_dict[key][6] = temp_df["posterior_error_probability"]
+                        map_dict[key][7] = temp_df["is_decoy"]
+                        map_dict[key][8] = temp_df["calculated_mz"]
+                        map_dict[key][9] = temp_df["observed_mz"]
+                        map_dict[key][10] = temp_df["additional_scores"]
+        return map_dict
+        
+  
     def transform_msstats_in(self):
         cols = pd.read_csv(self._msstats_in,nrows=0).columns
         if self.experiment_type == 'LFQ':
@@ -45,3 +169,4 @@ class Feature(MzTab):
                 )
         msstats.rename(columns=MSSTATS_MAP,inplace=True)
         return msstats
+    
