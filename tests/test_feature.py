@@ -58,3 +58,12 @@ class TestFeatureHandler(TestCase):
         map_dict = F.extract_psm_msg()
         for msstats in F.transform_msstats_in():
             F.merge_msstats_and_psm(msstats,map_dict)
+    
+    @data(*test_datas)
+    def test_generate_feature(self, test_data):
+        mztab_file = datafile(test_data[0])
+        msstats_file = datafile(test_data[1])
+        sdrf_file = datafile(test_data[2])
+        F = Feature(mztab_file,sdrf_file,msstats_file)
+        for msstats in F.generate_feature():
+            print('ok')

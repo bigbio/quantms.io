@@ -1,12 +1,19 @@
 import pandas as pd
 import os
+import pyarrow as pa
+import pyarrow.parquet as pq
+from quantmsio.utils.file_utils import extract_protein_list
 from quantmsio.core.mzTab import MzTab
 from quantmsio.core.psm import Psm
 from quantmsio.core.sdrf import SDRFHandler
-from quantmsio.utils.pride_utils import clean_peptidoform_sequence,get_petidoform_msstats_notation,generate_scan_number
+from quantmsio.utils.pride_utils import clean_peptidoform_sequence,get_petidoform_msstats_notation,generate_scan_number,get_peptidoform_proforma_version_in_mztab
 from quantmsio.utils.constants import ITRAQ_CHANNEL,TMT_CHANNELS
 from quantmsio.core.common import MSSTATS_MAP,MSSTATS_USECOLS,SDRF_USECOLS,SDRF_MAP
-    
+from quantmsio.core.format import FEATURE_FIELDS
+FEATURE_SCHEMA = pa.schema(
+    FEATURE_FIELDS,
+    metadata={"description": "feature file in quantms.io format"},
+)
 class Feature(MzTab):
     def __init__(self,mzTab_path,sdrf_path,msstats_in_path):
         super(Feature,self).__init__(mzTab_path)
@@ -253,3 +260,66 @@ class Feature(MzTab):
                 axis=1,
             )
         return msstats
+
+    def generate_feature(self,chunksize=1000000,protein_str=None):
+        map_dict = self.extract_psm_msg(chunksize,protein_str)
+        for msstats in self.transform_msstats_in(chunksize,protein_str):
+            msstats = self.merge_msstats_and_sdrf(msstats)
+            msstats = self.merge_msstats_and_psm(msstats,map_dict)
+            self.transform_feature(msstats)
+            msstats = self.convert_to_parquet(msstats)
+            yield msstats
+            
+    def write_feature_to_file(
+        self,
+        output_path,
+        chunksize=1000000,
+        protein_file=None,
+    ):
+        protein_list = extract_protein_list(protein_file) if protein_file else None
+        protein_str = "|".join(protein_list) if protein_list else None
+        pqwriter = None
+        for feature in self.generate_feature(chunksize,protein_str):
+            if not pqwriter:
+                pqwriter = pq.ParquetWriter(output_path, feature.schema)
+            pqwriter.write_table(feature)
+        if pqwriter:
+            pqwriter.close()
+
+    def transform_feature(self,msstats):
+        msstats.loc[:,"protein_global_qvalue"] = msstats['pg_accessions'].map(self._protein_global_qvalue_map)
+        msstats.loc[:,'peptidoform'] = msstats[["modifications", "sequence"]].apply(
+            lambda row: get_peptidoform_proforma_version_in_mztab(row["sequence"], row["modifications"], self._modifications),
+            axis=1
+        )
+        msstats.loc[:,"modification_details"] = None
+        msstats.loc[:,"predicted_rt"] = None
+        msstats.loc[:,"gg_accessions"] = None
+        msstats.loc[:,"gg_names"] = None
+        msstats.loc[:,"quantmsio_version"] = None
+        msstats.loc[:,"cv_params"] = None
+        msstats.loc[:,"rt_start"] = None
+        msstats.loc[:,"rt_stop"] = None
+
+    
+    def convert_to_parquet(self, res):
+        res["pg_accessions"] = res["pg_accessions"].str.split(";")
+        res["protein_global_qvalue"] = res["protein_global_qvalue"].astype(float)
+        res["unique"] = res["unique"].astype("Int32")
+        res["modifications"] = res["modifications"].apply(lambda x: self._generate_modification_list(x))
+        res["precursor_charge"] = res["precursor_charge"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
+        res["calculated_mz"] = res["calculated_mz"].astype(float)
+        res["observed_mz"] = res["observed_mz"].astype(float)
+        res["posterior_error_probability"] = res["posterior_error_probability"].astype(float)
+        res["global_qvalue"] = res["global_qvalue"].astype(float)
+        res["is_decoy"] = res["is_decoy"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
+        res["condition"] = res["condition"].astype(str)
+        res["fraction"] = res["fraction"].astype(int).astype(str)
+        res["biological_replicate"] = res["biological_replicate"].astype(str)
+        res["psm_scan_number"] = res["psm_scan_number"].astype(str)
+        res["psm_reference_file_name"] = res["psm_reference_file_name"].astype(str)
+        if "rt" in res.columns:
+            res["rt"] = res["rt"].astype(float)
+        else:
+            res.loc[:, "rt"] = None
+        return pa.Table.from_pandas(res, schema=FEATURE_SCHEMA)
