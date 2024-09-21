@@ -1,7 +1,8 @@
 import logging
 import os
-
+import pyarrow.parquet as pq
 import psutil
+import pandas as pd
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -43,6 +44,29 @@ def extract_len(fle, header):
     f.close()
     return fle_len, pos
 
+
+def load_de_or_ae(path):
+    f = open(path, encoding="utf-8")
+    line = f.readline()
+    pos = 0
+    content = ""
+    while line.startswith("#"):
+        pos = f.tell()
+        content += line
+        line = f.readline()
+    f.seek(pos - 1)
+    return pd.read_csv(f, sep="\t"), content
+
+def read_large_parquet(parquet_path: str, batch_size: int = 500000):
+    """_summary_
+    :param parquet_path: _description_
+    :param batch_size: _description_, defaults to 100000
+    :yield: _description_
+    """
+    parquet_file = pq.ParquetFile(parquet_path)
+    for batch in parquet_file.iter_batches(batch_size=batch_size):
+        batch_df = batch.to_pandas()
+        yield batch_df
 
 def calculate_buffer_size(file_path: str) -> int:
     # Get the total available system memory
