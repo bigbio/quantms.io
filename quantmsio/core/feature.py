@@ -105,7 +105,7 @@ class Feature(MzTab):
                     ),
                     axis=1,
                 )
-            psm[["best_qvalue","best_psm_reference_file_name","best_psm_scan_number"]] = psm[["opt_global_cv_MS:1000889_peptidoform_sequence", "precursor_charge"]].apply(
+            psm[["best_qvalue","psm_reference_file_name","psm_scan_number"]] = psm[["opt_global_cv_MS:1000889_peptidoform_sequence", "precursor_charge"]].apply(
                 lambda row: merge_pep_msg(row),
                 axis=1,
                 result_type="expand",
@@ -113,7 +113,7 @@ class Feature(MzTab):
             for key, df in psm.groupby(["opt_global_cv_MS:1000889_peptidoform_sequence", "precursor_charge"]):
                 df = df.reset_index(drop=True)
                 if key not in map_dict:
-                    map_dict[key] = [None for i in range(11)]
+                    map_dict[key] = [None for i in range(10)]
                 qvalue = None
                 temp_df = None
                 if(len(df["best_qvalue"].unique()) >1 or not pd.isna(df.loc[0,"best_qvalue"])):
@@ -127,19 +127,19 @@ class Feature(MzTab):
                     best_qvalue = temp_df[qvalue]
                     if map_dict[key][0] == None or float(map_dict[key][0]) > float(best_qvalue):
                         map_dict[key][0] = temp_df[qvalue]
-                        map_dict[key][1] = temp_df["best_psm_reference_file_name"]
-                        map_dict[key][2] = temp_df["best_psm_scan_number"]
-                        map_dict[key][4] = temp_df["pg_positions"]
-                        map_dict[key][5] = temp_df["modifications"]
-                        map_dict[key][6] = temp_df["posterior_error_probability"]
-                        map_dict[key][7] = temp_df["is_decoy"]
-                        map_dict[key][8] = temp_df["calculated_mz"]
-                        map_dict[key][9] = temp_df["observed_mz"]
-                        map_dict[key][10] = temp_df["additional_scores"]
+                        map_dict[key][1] = temp_df["psm_reference_file_name"]
+                        map_dict[key][2] = temp_df["psm_scan_number"]
+                        map_dict[key][3] = temp_df["pg_positions"]
+                        map_dict[key][4] = temp_df["modifications"]
+                        map_dict[key][5] = temp_df["posterior_error_probability"]
+                        map_dict[key][6] = temp_df["is_decoy"]
+                        map_dict[key][7] = temp_df["calculated_mz"]
+                        map_dict[key][8] = temp_df["observed_mz"]
+                        map_dict[key][9] = temp_df["additional_scores"]
         return map_dict
         
   
-    def transform_msstats_in(self):
+    def transform_msstats_in(self,chunksize=1000000,protein_str=None):
         cols = pd.read_csv(self._msstats_in,nrows=0).columns
         if self.experiment_type == 'LFQ':
             MSSTATS_USECOLS.add('PrecursorCharge')
@@ -148,28 +148,30 @@ class Feature(MzTab):
             MSSTATS_USECOLS.add('Charge')
             MSSTATS_MAP['Charge'] = 'precursor_charge'
         nocols = MSSTATS_USECOLS - set(cols)
-        msstats = pd.read_csv(self._msstats_in,usecols=list(MSSTATS_USECOLS - set(nocols)))
-        for col in nocols:
-            if col == "Channel":
-                msstats.loc[:, col] = "LFQ"
-            else:
-                msstats.loc[:, col] = None
-        msstats["Reference"] = msstats["Reference"].apply(lambda x: x.split(".")[0])
-        msstats.loc[:, "sequence"] = msstats["PeptideSequence"].apply(
-            lambda x: clean_peptidoform_sequence(x)
-        )
-        if self.experiment_type != 'LFQ':
-            if "TMT" in self.experiment_type:
-                msstats["Channel"] = msstats["Channel"].apply(
-                    lambda row: TMT_CHANNELS[self.experiment_type][row - 1]
-                )
-            else:
-                msstats["Channel"] = msstats["Channel"].apply(
-                    lambda row: ITRAQ_CHANNEL[self.experiment_type][row - 1]
-                )
-        msstats.loc[:,"unique"] = msstats['ProteinName'].apply(lambda x: 0 if ';' in x else 1)
-        msstats.rename(columns=MSSTATS_MAP,inplace=True)
-        return msstats
+        for msstats in pd.read_csv(self._msstats_in,chunksize=chunksize,usecols=list(MSSTATS_USECOLS - set(nocols))):
+            if protein_str:
+                msstats_in = msstats_in[msstats_in["ProteinName"].str.contains(f"{protein_str}", na=False)]
+            for col in nocols:
+                if col == "Channel":
+                    msstats.loc[:, col] = "LFQ"
+                else:
+                    msstats.loc[:, col] = None
+            msstats["Reference"] = msstats["Reference"].apply(lambda x: x.split(".")[0])
+            msstats.loc[:, "sequence"] = msstats["PeptideSequence"].apply(
+                lambda x: clean_peptidoform_sequence(x)
+            )
+            if self.experiment_type != 'LFQ':
+                if "TMT" in self.experiment_type:
+                    msstats["Channel"] = msstats["Channel"].apply(
+                        lambda row: TMT_CHANNELS[self.experiment_type][row - 1]
+                    )
+                else:
+                    msstats["Channel"] = msstats["Channel"].apply(
+                        lambda row: ITRAQ_CHANNEL[self.experiment_type][row - 1]
+                    )
+            msstats.loc[:,"unique"] = msstats['ProteinName'].apply(lambda x: 0 if ';' in x else 1)
+            msstats.rename(columns=MSSTATS_MAP,inplace=True)
+            yield msstats
     
     def transform_sdrf(self):
         sdrf = pd.read_csv(self._sdrf_path, sep="\t")
@@ -204,8 +206,7 @@ class Feature(MzTab):
         sdrf.rename(columns={factor: "condition"}, inplace=True)
         return sdrf
 
-    def merge_msstats_and_sdrf(self):
-        msstats = self.transform_msstats_in()
+    def merge_msstats_and_sdrf(self, msstats):
         sdrf = self.transform_sdrf()
         if self.experiment_type != "LFQ":
             msstats = pd.merge(
@@ -231,4 +232,24 @@ class Feature(MzTab):
             axis=1,
             inplace=True,
         )
+        return msstats
+    
+    def merge_msstats_and_psm(self,msstats,map_dict):
+        map_features = [
+            "global_qvalue",
+            "psm_reference_file_name",
+            "psm_scan_number",
+            "pg_positions",
+            "modifications",
+            "posterior_error_probability",
+            "is_decoy",
+            "calculated_mz",
+            "observed_mz",
+            "additional_scores"
+        ]
+        for i, feature in enumerate(map_features):
+            msstats.loc[:, feature] = msstats[["peptidoform", "precursor_charge"]].apply(
+                lambda row: map_dict[(row["peptidoform"], row["precursor_charge"])][i],
+                axis=1,
+            )
         return msstats
