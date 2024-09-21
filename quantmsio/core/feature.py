@@ -5,7 +5,7 @@ from quantmsio.core.psm import Psm
 from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.utils.pride_utils import clean_peptidoform_sequence,get_petidoform_msstats_notation,generate_scan_number
 from quantmsio.utils.constants import ITRAQ_CHANNEL,TMT_CHANNELS
-from quantmsio.core.common import MSSTATS_MAP,MSSTATS_USECOLS
+from quantmsio.core.common import MSSTATS_MAP,MSSTATS_USECOLS,SDRF_USECOLS,SDRF_MAP
     
 class Feature(MzTab):
     def __init__(self,mzTab_path,sdrf_path,msstats_in_path):
@@ -167,6 +167,68 @@ class Feature(MzTab):
                 msstats["Channel"] = msstats["Channel"].apply(
                     lambda row: ITRAQ_CHANNEL[self.experiment_type][row - 1]
                 )
+        msstats.loc[:,"unique"] = msstats['ProteinName'].apply(lambda x: 0 if ';' in x else 1)
         msstats.rename(columns=MSSTATS_MAP,inplace=True)
         return msstats
     
+    def transform_sdrf(self):
+        sdrf = pd.read_csv(self._sdrf_path, sep="\t")
+        factor = "".join(filter(lambda x: x.startswith("factor"), sdrf.columns))
+        SDRF_USECOLS.add(factor)
+        sdrf = sdrf[list(SDRF_USECOLS)]
+        sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(lambda x: x.split(".")[0])
+        samples = sdrf["source name"].unique()
+        mixed_map = dict(zip(samples, range(1, len(samples) + 1)))
+        sdrf.loc[:, "run"] = sdrf[
+            [
+                "source name",
+                "comment[technical replicate]",
+                "comment[fraction identifier]",
+            ]
+        ].apply(
+            lambda row: str(mixed_map[row["source name"]])
+            + "_"
+            + str(row["comment[technical replicate]"])
+            + "_"
+            + str(row["comment[fraction identifier]"]),
+            axis=1,
+        )
+        sdrf.drop(
+            [
+                "comment[technical replicate]",
+            ],
+            axis=1,
+            inplace=True,
+        )
+        sdrf.rename(columns=SDRF_MAP,inplace=True)
+        sdrf.rename(columns={factor: "condition"}, inplace=True)
+        return sdrf
+
+    def merge_msstats_and_sdrf(self):
+        msstats = self.transform_msstats_in()
+        sdrf = self.transform_sdrf()
+        if self.experiment_type != "LFQ":
+            msstats = pd.merge(
+                msstats,
+                sdrf,
+                left_on=["reference_file_name", "channel"],
+                right_on=["reference", "label"],
+                how="left",
+            )
+        else:
+            msstats = pd.merge(
+                msstats,
+                sdrf,
+                left_on=["reference_file_name"],
+                right_on=["reference"],
+                how="left",
+            )
+        msstats.drop(
+            [
+                "reference",
+                "label",
+            ],
+            axis=1,
+            inplace=True,
+        )
+        return msstats

@@ -25,4 +25,17 @@ MSSTATS_MAP = {
     "RetentionTime": "rt",
     "PeptideSequence": "peptidoform"
 }
+
 MSSTATS_USECOLS = set(MSSTATS_MAP.keys())
+
+SDRF_MAP = {
+    "comment[data file]": "reference",
+    "comment[label]": "label",
+    "source name": "sample_accession",
+    "comment[fraction identifier]": "fraction",
+    "characteristics[biological replicate]": "biological_replicate",
+}
+
+SDRF_USECOLS = set( list(SDRF_MAP.keys()) + [
+    "comment[technical replicate]"
+])
