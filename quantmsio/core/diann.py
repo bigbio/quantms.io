@@ -93,8 +93,9 @@ class DiaNNConvert:
         self._sdrf_path = sdrf_path
         self._diann_path = diann_report
         self._modifications = SDRFHandler(sdrf_path).get_mods_dict()
-        self._duckdb = self.create_duckdb_from_diann_report(duckdb_max_memory, duckdb_threads)
         self._duckdb_name = create_uuid_filename("report-duckdb", ".db")
+        self._duckdb = self.create_duckdb_from_diann_report(duckdb_max_memory, duckdb_threads)
+    
 
     def create_duckdb_from_diann_report(self, max_memory, worker_threads):
         """
@@ -187,7 +188,7 @@ class DiaNNConvert:
         qvalue_threshold: float,
         mzml_info_folder: str,
         file_num: int,
-    ) -> pd.DataFrame:
+    ):
         def intergrate_msg(n):
             nonlocal report
             nonlocal mzml_info_folder
