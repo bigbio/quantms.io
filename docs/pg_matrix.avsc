@@ -13,3 +13,14 @@
 		{"name": "quantmsio_version", "type": "string", "doc": "The version of quantms.io"}
 	]
 }
+{
+	"name": "pg_matrix",
+	"type": "record",
+	"fields": [
+		{"name": "pg_accessions", "type": ["null",{"type": "array","items": "string"}], "doc": "Protein group accessions of all the proteins that the peptide maps to"},
+		{"name": "gg_names", "type": ["null", {"type": "array", "items": "string"}], "doc": "Gene names, as string array"},
+		{"name": "first_protein_description", "type": "string", "doc": "About the specific information of the first protein"},
+        {"name": "sample_[1-n]", "type": "float32", "doc": "The total intensity of proteins in the sample"},
+		{"name": "quantmsio_version", "type": "string", "doc": "The version of quantms.io"}
+	]
+}
