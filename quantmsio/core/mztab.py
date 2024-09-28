@@ -3,6 +3,20 @@ import os
 import pandas as pd
 from quantmsio.utils.pride_utils import get_quantmsio_modifications
 
+def generate_modification_list(modification_str: str,modifications):
+
+    if pd.isna(modification_str):
+        return None
+    modifications = get_quantmsio_modifications(modification_str, modifications)
+    modifications_string = ""
+    for key, value in modifications.items():
+        modifications_string += "|".join(map(str, value["position"]))
+        modifications_string = modifications_string + "-" + value["unimod_accession"] + ","
+    modifications_string = modifications_string[:-1]  # Remove last comma
+    modification_list = modifications_string.split(",")
+
+    return modification_list
+
 def fetch_modifications_from_mztab_line(line: str, _modifications: dict) -> dict:
     """
     get the modifications from a mztab line. An mzTab modification could be a fixed or variable modification.
@@ -205,16 +219,3 @@ class MzTab:
         f.close()
         return mod_dict
     
-    def _generate_modification_list(self, modification_str: str):
-
-        if pd.isna(modification_str):
-            return None
-        modifications = get_quantmsio_modifications(modification_str, self._modifications)
-        modifications_string = ""
-        for key, value in modifications.items():
-            modifications_string += "|".join(map(str, value["position"]))
-            modifications_string = modifications_string + "-" + value["unimod_accession"] + ","
-        modifications_string = modifications_string[:-1]  # Remove last comma
-        modification_list = modifications_string.split(",")
-
-        return modification_list

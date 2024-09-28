@@ -4,7 +4,7 @@ from quantmsio.utils.file_utils import extract_protein_list
 from quantmsio.utils.pride_utils import generate_scan_number
 from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
 from quantmsio.core.common import PSM_USECOLS,PSM_MAP
-from quantmsio.core.mzTab import MzTab
+from quantmsio.core.mzTab import MzTab,generate_modification_list
 from quantmsio.core.format import PSM_FIELDS
 import pandas as pd
 
@@ -38,7 +38,7 @@ class Psm(MzTab):
             for df in self.iter_psm_table(chunksize=chunksize,protein_str=protein_str):
                 self.transform_psm(df)
                 self.add_addition_msg(df)
-                df = self.convert_to_parquet(df)
+                df = self.convert_to_parquet(df,self._modifications)
                 yield df
 
     def transform_psm(self,df):
@@ -88,11 +88,12 @@ class Psm(MzTab):
         if pqwriter:
             pqwriter.close()
     
-    def convert_to_parquet(self, res):
+    @staticmethod
+    def convert_to_parquet(res, modifications):
         res["pg_accessions"] = res["pg_accessions"].str.split(";")
         res["protein_global_qvalue"] = res["protein_global_qvalue"].astype(float)
         res["unique"] = res["unique"].astype("Int32")
-        res["modifications"] = res["modifications"].apply(lambda x: self._generate_modification_list(x))
+        res["modifications"] = res["modifications"].apply(lambda x: generate_modification_list(x,modifications))
         res["precursor_charge"] = res["precursor_charge"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
         res["calculated_mz"] = res["calculated_mz"].astype(float)
         res["observed_mz"] = res["observed_mz"].astype(float)

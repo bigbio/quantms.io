@@ -3,7 +3,7 @@ import os
 import pyarrow as pa
 import pyarrow.parquet as pq
 from quantmsio.utils.file_utils import extract_protein_list
-from quantmsio.core.mzTab import MzTab
+from quantmsio.core.mzTab import MzTab,generate_modification_list
 from quantmsio.core.psm import Psm
 from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.utils.pride_utils import clean_peptidoform_sequence,get_petidoform_msstats_notation,generate_scan_number,get_peptidoform_proforma_version_in_mztab
@@ -267,7 +267,7 @@ class Feature(MzTab):
             msstats = self.merge_msstats_and_sdrf(msstats)
             msstats = self.merge_msstats_and_psm(msstats,map_dict)
             self.transform_feature(msstats)
-            msstats = self.convert_to_parquet(msstats)
+            msstats = self.convert_to_parquet(msstats,self._modifications)
             yield msstats
             
     def write_feature_to_file(
@@ -301,12 +301,12 @@ class Feature(MzTab):
         msstats.loc[:,"rt_start"] = None
         msstats.loc[:,"rt_stop"] = None
 
-    
-    def convert_to_parquet(self, res):
+    @staticmethod
+    def convert_to_parquet(res, modifications):
         res["pg_accessions"] = res["pg_accessions"].str.split(";")
         res["protein_global_qvalue"] = res["protein_global_qvalue"].astype(float)
         res["unique"] = res["unique"].astype("Int32")
-        res["modifications"] = res["modifications"].apply(lambda x: self._generate_modification_list(x))
+        res["modifications"] = res["modifications"].apply(lambda x: generate_modification_list(x,modifications))
         res["precursor_charge"] = res["precursor_charge"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
         res["calculated_mz"] = res["calculated_mz"].astype(float)
         res["observed_mz"] = res["observed_mz"].astype(float)

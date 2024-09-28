@@ -39,3 +39,27 @@ SDRF_MAP = {
 SDRF_USECOLS = set( list(SDRF_MAP.keys()) + [
     "comment[technical replicate]"
 ])
+
+DIANN_MAP = {
+    'File.Name': "reference_file_name",
+    "Precursor.Normalised": "intensity",
+    "RT.Start": "rt_start",
+    'RT.Stop': 'rt_stop',
+    "RT": 'rt',
+    'Predicted.RT': "predicted_rt",
+    'Protein.Ids': 'pg_accessions',
+    "PEP": "posterior_error_probability",
+    "Global.Q.Value": "global_qvalue",
+    "Global.PG.Q.Value": "protein_global_qvalue",
+    "Precursor.Charge": "precursor_charge",
+    "Stripped.Sequence": "sequence",
+    "Modified.Sequence": "peptidoform",
+    "Genes":"gg_names",
+    "opt_global_spectrum_reference": "scan_number",
+    "Calculate.Precursor.Mz": "calculated_mz",
+    "exp_mass_to_charge": "observed_mz"
+}
+
+          
+
+
