@@ -72,7 +72,7 @@ class Feature(MzTab):
             pep["spectra_ref"] = pep["spectra_ref"].apply(lambda x: self._ms_runs[x.split(":")[0]])
         pep_msg = pep.iloc[
             pep.groupby(["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"]).apply(
-                lambda row: row["best_search_engine_score[1]"].idxmin(),include_groups=False
+                lambda row: row["best_search_engine_score[1]"].idxmin()
             )
         ]
         pep_msg = pep_msg.set_index(["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"])
