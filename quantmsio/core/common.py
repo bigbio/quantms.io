@@ -1,3 +1,4 @@
+from quantmsio import __version__
 PSM_MAP = {
     "sequence": "sequence",
     "modifications": "modifications",
@@ -60,6 +61,7 @@ DIANN_MAP = {
     "exp_mass_to_charge": "observed_mz"
 }
 
+QUANTMSIO_VERSION = __version__
           
 
 

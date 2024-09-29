@@ -3,7 +3,7 @@ import pyarrow.parquet as pq
 from quantmsio.utils.file_utils import extract_protein_list
 from quantmsio.utils.pride_utils import generate_scan_number
 from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
-from quantmsio.core.common import PSM_USECOLS,PSM_MAP
+from quantmsio.core.common import PSM_USECOLS,PSM_MAP,QUANTMSIO_VERSION
 from quantmsio.core.mzTab import MzTab,generate_modification_list
 from quantmsio.core.format import PSM_FIELDS
 import pandas as pd
@@ -75,7 +75,7 @@ class Psm(MzTab):
         df.loc[:,"intensity_array"] = None
         df.loc[:,"rank"] = None
         df.loc[:,"cv_params"] = None
-        df.loc[:,"quantmsio_version"] = None
+        df.loc[:,"quantmsio_version"] = QUANTMSIO_VERSION
     
     def write_feature_to_file(self,output_path, chunksize=1000000, protein_file=None):
         protein_list = extract_protein_list(protein_file) if protein_file else None

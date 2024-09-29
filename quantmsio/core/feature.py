@@ -8,7 +8,7 @@ from quantmsio.core.psm import Psm
 from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.utils.pride_utils import clean_peptidoform_sequence,get_petidoform_msstats_notation,generate_scan_number,get_peptidoform_proforma_version_in_mztab
 from quantmsio.utils.constants import ITRAQ_CHANNEL,TMT_CHANNELS
-from quantmsio.core.common import MSSTATS_MAP,MSSTATS_USECOLS,SDRF_USECOLS,SDRF_MAP
+from quantmsio.core.common import MSSTATS_MAP,MSSTATS_USECOLS,SDRF_USECOLS,SDRF_MAP, QUANTMSIO_VERSION
 from quantmsio.core.format import FEATURE_FIELDS
 FEATURE_SCHEMA = pa.schema(
     FEATURE_FIELDS,
@@ -296,7 +296,7 @@ class Feature(MzTab):
         msstats.loc[:,"predicted_rt"] = None
         msstats.loc[:,"gg_accessions"] = None
         msstats.loc[:,"gg_names"] = None
-        msstats.loc[:,"quantmsio_version"] = None
+        msstats.loc[:,"quantmsio_version"] = QUANTMSIO_VERSION
         msstats.loc[:,"cv_params"] = None
         msstats.loc[:,"rt_start"] = None
         msstats.loc[:,"rt_stop"] = None

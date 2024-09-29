@@ -15,7 +15,7 @@ from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.core.psm import Psm
 from quantmsio.core.feature import Feature
 from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
-from quantmsio.core.common import DIANN_MAP
+from quantmsio.core.common import DIANN_MAP, QUANTMSIO_VERSION
 
 MODIFICATION_PATTERN = re.compile(r"\((.*?)\)")
 def get_exp_design_dfs(exp_design_file):
@@ -275,7 +275,7 @@ class DiaNNConvert:
         report.loc[:,"additional_scores"] = None
         report.loc[:,"modification_details"] = None
         report.loc[:,"cv_params"] = None
-        report.loc[:,"quantmsio_version"] = None
+        report.loc[:,"quantmsio_version"] = QUANTMSIO_VERSION
         report.loc[:,"gg_accessions"] = None
         return report
 
