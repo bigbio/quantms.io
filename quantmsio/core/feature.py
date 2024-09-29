@@ -3,7 +3,7 @@ import os
 import pyarrow as pa
 import pyarrow.parquet as pq
 from quantmsio.utils.file_utils import extract_protein_list
-from quantmsio.core.mzTab import MzTab,generate_modification_list
+from quantmsio.core.mztab import MzTab,generate_modification_list
 from quantmsio.core.psm import Psm
 from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.utils.pride_utils import clean_peptidoform_sequence,get_petidoform_msstats_notation,generate_scan_number,get_peptidoform_proforma_version_in_mztab
@@ -157,7 +157,7 @@ class Feature(MzTab):
         nocols = MSSTATS_USECOLS - set(cols)
         for msstats in pd.read_csv(self._msstats_in,chunksize=chunksize,usecols=list(MSSTATS_USECOLS - set(nocols))):
             if protein_str:
-                msstats_in = msstats_in[msstats_in["ProteinName"].str.contains(f"{protein_str}", na=False)]
+                msstats = msstats[msstats["ProteinName"].str.contains(f"{protein_str}", na=False)]
             for col in nocols:
                 if col == "Channel":
                     msstats.loc[:, col] = "LFQ"
