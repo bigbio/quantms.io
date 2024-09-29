@@ -180,8 +180,9 @@ class Feature(MzTab):
             msstats.rename(columns=MSSTATS_MAP,inplace=True)
             yield msstats
     
-    def transform_sdrf(self):
-        sdrf = pd.read_csv(self._sdrf_path, sep="\t")
+    @staticmethod
+    def transform_sdrf(sdrf_path):
+        sdrf = pd.read_csv(sdrf_path, sep="\t")
         factor = "".join(filter(lambda x: x.startswith("factor"), sdrf.columns))
         SDRF_USECOLS.add(factor)
         sdrf = sdrf[list(SDRF_USECOLS)]
@@ -214,7 +215,7 @@ class Feature(MzTab):
         return sdrf
 
     def merge_msstats_and_sdrf(self, msstats):
-        sdrf = self.transform_sdrf()
+        sdrf = self.transform_sdrf(self._sdrf_path)
         if self.experiment_type != "LFQ":
             msstats = pd.merge(
                 msstats,

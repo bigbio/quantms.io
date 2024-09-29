@@ -60,6 +60,26 @@ DIANN_MAP = {
     "Calculate.Precursor.Mz": "calculated_mz",
     "exp_mass_to_charge": "observed_mz"
 }
+MAXQUANT_MAP = {
+        "Sequence": "sequence",
+        "Proteins": "pg_accessions",
+        "PEP": "posterior_error_probability",
+        "Modifications": "modifications",
+        "Reverse": "is_decoy",
+        "m/z": "calculated_mz",
+        "MS/MS m/z": "observed_mz",
+        "Gene names": "gg_names",
+        "Calibrated retention time": "rt",
+        "Calibrated retention time start": "rt_start",
+        "Calibrated retention time finish": "rt_stop",
+        "Charge": "precursor_charge",
+        "Modified sequence": "peptidoform",
+        "Raw file": "reference_file_name",
+        "Intensity": "intensity",
+    }
+
+
+MAXQUANT_USECOLS = list(MAXQUANT_MAP.keys())
 
 QUANTMSIO_VERSION = __version__
           
