@@ -115,7 +115,7 @@ class DiaNNConvert:
             database.execute("SET worker_threads='{}'".format(worker_threads))
 
         msg = database.execute("SELECT * FROM duckdb_settings() where name in ('worker_threads', 'max_memory')").df()
-        logging.info("Duckdb uses {} threads.".format(str(msg["value"][0])))
+        logging.info("duckdb uses {} threads.".format(str(msg["value"][0])))
         logging.info("duckdb uses {} of memory.".format(str(msg["value"][1])))
 
         database.execute("CREATE TABLE diann_report AS SELECT * FROM '{}'".format(self._diann_path))
@@ -299,7 +299,7 @@ class DiaNNConvert:
         design_file: str,
         psm_output_path: str,
         feature_output_path: str,
-        file_num: int = 2,
+        file_num: int = 50,
     ):
         psm_pqwriter = None
         feature_pqwriter = None

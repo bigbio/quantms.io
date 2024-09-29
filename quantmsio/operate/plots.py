@@ -1,6 +1,6 @@
 import math
 import random
-
+from venn import venn
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -188,3 +188,41 @@ def plot_intensity_box_of_samples(feature_path: str, save_path: str = None, num_
     if save_path:
         fig.figure.savefig(save_path, dpi=500)
     return fig
+
+# plot venn
+def plot_peptidoform_charge_venn(parquet_path_list, labels):
+    data_map = {}
+    for parquet_path, label in zip(parquet_path_list, labels):
+        df = pd.read_parquet(parquet_path, columns=["peptidoform", "charge"])
+        psm_message = "Total number of PSM for " + label + ": " + str(len(df))
+        print(psm_message)
+        unique_pep_forms = set((df["peptidoform"] + df["charge"].astype(str)).to_list())
+        pep_form_message = "Total number of Peptidoform for " + label + ": " + str(len(unique_pep_forms))
+        print(pep_form_message)
+        data_map[label] = unique_pep_forms
+    plt.figure(figsize=(16, 12), dpi=500)
+    venn(
+        data_map,
+        legend_loc="upper right",
+        figsize=(16, 12),
+        fmt="{size}({percentage:.1f}%)",
+    )
+    plt.savefig("pep_form_compare_venn.png")
+
+
+def plot_sequence_venn(parquet_path_list, labels):
+    data_map = {}
+    for parquet_path, label in zip(parquet_path_list, labels):
+        sequence = pd.read_parquet(parquet_path, columns=["sequence"])
+        unique_seqs = set(sequence["sequence"].to_list())
+        pep_message = "Total number of peptide for " + label + ": " + str(len(unique_seqs))
+        print(pep_message)
+        data_map[label] = unique_seqs
+    plt.figure(figsize=(16, 12), dpi=500)
+    venn(
+        data_map,
+        legend_loc="upper right",
+        figsize=(16, 12),
+        fmt="{size}({percentage:.1f}%)",
+    )
+    plt.savefig("sequence_compare_venn.png")
