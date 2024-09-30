@@ -127,7 +127,7 @@ class MaxQuant:
         df.loc[:,"quantmsio_version"] = QUANTMSIO_VERSION
         df.loc[:,"gg_accessions"] = None
         df.loc[:,"predicted_rt"] = None
-        df.loc[:,"channel"] = None
+        df.loc[:,"channel"] = 'LFQ'
         return df
 
     def transform_feature(self,df: pd.DataFrame):
@@ -157,3 +157,14 @@ class MaxQuant:
             inplace=True,
         )
         return df
+    
+    def convert_to_parquet(self, output_path: str, chunksize: int = None):
+        pqwriter = None
+        for df in self.iter_batch(chunksize=chunksize):
+            df = self.transform_feature(df)
+            feature = Feature.convert_to_parquet(df,self._modifications)
+            if not pqwriter:
+                pqwriter = pq.ParquetWriter(output_path, feature.schema)
+            pqwriter.write_table(feature)
+        if pqwriter:
+            pqwriter.close()
