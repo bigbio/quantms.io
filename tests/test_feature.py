@@ -38,7 +38,7 @@ class TestFeatureHandler(TestCase):
         msstats_file = datafile(test_data[1])
         sdrf_file = datafile(test_data[2])
         F = Feature(mztab_file,sdrf_file,msstats_file)
-        F.transform_sdrf()
+        F.transform_sdrf(F._sdrf_path)
     
     @data(*test_datas)
     def test_merge_msstats_and_sdrf(self, test_data):

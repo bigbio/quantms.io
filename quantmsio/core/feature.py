@@ -186,6 +186,7 @@ class Feature(MzTab):
         factor = "".join(filter(lambda x: x.startswith("factor"), sdrf.columns))
         SDRF_USECOLS.add(factor)
         sdrf = sdrf[list(SDRF_USECOLS)]
+        SDRF_USECOLS.remove(factor)
         sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(lambda x: x.split(".")[0])
         samples = sdrf["source name"].unique()
         mixed_map = dict(zip(samples, range(1, len(samples) + 1)))
