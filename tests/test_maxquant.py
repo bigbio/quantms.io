@@ -9,8 +9,8 @@ class TestFeatureHandler(TestCase):
     global test_datas
     test_datas = [
         (
-            "Maxquant\evidence.txt",
-            "Maxquant\sdrf.tsv",
+            "Maxquant/evidence.txt",
+            "Maxquant/sdrf.tsv",
         ),
     ]
 
