@@ -8,10 +8,10 @@ class TestFeatureHandler(TestCase):
     global test_datas
     test_datas = [
         (
-            "DIANN\diann_report.tsv",
-            "DIANN\PXD019909-DIA.sdrf_openms_design.tsv",
-            "DIANN\PXD019909-DIA.sdrf.tsv",
-            "DIANN\mzml"
+            "DIANN/diann_report.tsv",
+            "DIANN/PXD019909-DIA.sdrf_openms_design.tsv",
+            "DIANN/PXD019909-DIA.sdrf.tsv",
+            "DIANN/mzml"
         ),
     ]
 
