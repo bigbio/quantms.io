@@ -1,10 +1,7 @@
 import click
-
 from quantmsio.core.project import create_uuid_filename
-from quantmsio.core.psm import PSMHandler
-from quantmsio.core.tools import plot_peptidoform_charge_venn
-from quantmsio.core.tools import plot_sequence_venn
-
+from quantmsio.core.psm import Psm
+from quantmsio.operate.plots import plot_peptidoform_charge_venn,plot_sequence_venn
 
 @click.command(
     "convert-psm",
@@ -21,10 +18,9 @@ from quantmsio.core.tools import plot_sequence_venn
     required=True,
 )
 @click.option(
-    "--use_cache",
-    help="Use cache instead of in memory conversion",
-    required=False,
-    is_flag=True,
+    "--chunksize",
+    help="Read batch size",
+    default=1000000,
 )
 @click.option(
     "--protein_file",
@@ -36,22 +32,19 @@ from quantmsio.core.tools import plot_sequence_venn
     help="Prefix of the parquet file needed to generate the file name",
     required=False,
 )
-@click.option("--verbose", help="Output debug information.", default=False, is_flag=True)
 def convert_psm_file(
     mztab_file: str,
     output_folder: str,
-    use_cache: bool,
-    protein_file: str = None,
-    output_prefix_file: str = None,
-    verbose: bool = False,
+    chunksize: int,
+    protein_file: str,
+    output_prefix_file: str,
 ):
     """
     convert mztab psm section to a parquet file. The parquet file will contain the features and the metadata.
     :param mztab_file: the mzTab file, this will be used to extract the protein information
     :param output_folder: Folder where the Json file will be generated
+    :param chunksize: Read batch size
     :param output_prefix_file: Prefix of the Json file needed to generate the file name
-    :param verbose: Output debug information.
-    :return: none
     """
 
     if mztab_file is None or output_folder is None:
@@ -60,14 +53,12 @@ def convert_psm_file(
     if not output_prefix_file:
         output_prefix_file = ""
 
-    psm_manager = PSMHandler()
-    psm_manager.parquet_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
-    psm_manager.convert_mztab_to_psm(
-        mztab_path=mztab_file,
-        parquet_path=psm_manager.parquet_path,
-        verbose=verbose,
-        use_cache=use_cache,
-        protein_file=protein_file,
+    psm_manager = Psm(mzTab_path=mztab_file)
+    output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
+    psm_manager.write_feature_to_file(
+        output_path=output_path,
+        chunksize=chunksize,
+        protein_file=protein_file
     )
 
 

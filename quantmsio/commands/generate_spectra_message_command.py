@@ -1,6 +1,5 @@
 import click
-
-from quantmsio.core.tools import generate_features_of_spectrum
+from quantmsio.operate.tools import generate_features_of_spectrum
 
 
 @click.command(

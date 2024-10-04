@@ -218,14 +218,13 @@ Example:
 
 .. code:: shell
 
-   --use_cache    Whether to use diskcache instead of memory(default True)
    --protein_file   Protein file that meets specific requirements(protein.txt)
    --output_prefix_file   The prefix of the result file(like {prefix}-{uu.id}-{extension})
-   --consensusxml_file   The consensusXML file used to retrieve the mz/rt(default None)
 
 
 Psm converter tool
 ---------------------
+
 The PSM table aims to cover detail on PSM level for AI/ML training and other use-cases.
 It store details on PSM level including spectrum mz/intensity for specific use-cases such as AI/ML training.
 
@@ -243,10 +242,8 @@ Example:
 
 .. code:: shell
 
-   --use_cache    Whether to use diskcache instead of memory(default True)
    --protein_file   Protein file that meets specific requirements(protein.txt)
    --output_prefix_file   The prefix of the result file(like {prefix}-{uu.id}-{extension})
-   --verbose  Output debug information(default True)
 
 DiaNN convert 
 --------------------------
@@ -271,7 +268,7 @@ Example:
 
 .. code:: shell
 
-   --duckdb_max_memory   The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)
+   --duckdb_max_memory   The maximum amount of memory allocated by the DuckDB engine (e.g 16GB)
    --duckdb_threads  The number of threads for the DuckDB engine (e.g 4)
    --file_num The number of files being processed at the same time (default 100)
 

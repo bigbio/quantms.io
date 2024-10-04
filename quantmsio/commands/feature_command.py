@@ -1,8 +1,7 @@
 import click
 
-from quantmsio.core.feature import FeatureHandler
+from quantmsio.core.feature import Feature
 from quantmsio.core.project import create_uuid_filename
-
 
 @click.command("convert-feature", short_help="Convert msstats/mztab to parquet file")
 @click.option(
@@ -21,15 +20,9 @@ from quantmsio.core.project import create_uuid_filename
     required=True,
 )
 @click.option(
-    "--consensusxml_file",
-    help="the consensusXML file used to retrieve the mz/rt",
-    required=False,
-)
-@click.option(
-    "--use_cache",
-    help="Use cache instead of in memory conversion",
-    required=False,
-    is_flag=True,
+    "--chunksize",
+    help="Read batch size",
+    default=1000000,
 )
 @click.option(
     "--protein_file",
@@ -50,8 +43,7 @@ def convert_feature_file(
     sdrf_file: str,
     msstats_file: str,
     mztab_file: str,
-    consensusxml_file: str,
-    use_cache: bool,
+    chunksize: int,
     protein_file: str,
     output_folder: str,
     output_prefix_file: str,
@@ -60,37 +52,23 @@ def convert_feature_file(
     Convert a msstats/mztab file to a parquet file. The parquet file will contain the features and the metadata.
     :param sdrf_file: the SDRF file needed to extract some of the metadata
     :param msstats_file: the MSstats input file, this will be considered the main format to convert
-    :param mztab_file: the mzTab file, this will be used to extract the protein information
-    :param consensusxml_file: the consensusXML file used to retrieve the mz/rt
-    :param use_cache: Use cache instead of in memory conversion
+    :param mztab_file: the mzTab file, this will be used to extract the protein
+    :param chunksize: Read batch size
     :param output_folder: Folder where the Json file will be generated
     :param output_prefix_file: Prefix of the Json file needed to generate the file name
-    :return: none
     """
 
     if sdrf_file is None or msstats_file is None or mztab_file is None or output_folder is None:
         raise click.UsageError("Please provide all the required parameters")
-    if use_cache is None:
-        use_cache = False
 
-    feature_manager = FeatureHandler()
+    feature_manager = Feature(mzTab_path=mztab_file,sdrf_path=sdrf_file,msstats_in_path=msstats_file)
     if not output_prefix_file:
         output_prefix_file = ""
-    feature_manager.parquet_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".feature.parquet")
-    if consensusxml_file is not None:
-        feature_manager.convert_mztab_msstats_to_feature(
-            mztab_file=mztab_file,
-            msstats_file=msstats_file,
-            sdrf_file=sdrf_file,
-            consesusxml_file=consensusxml_file,
-            protein_file=protein_file,
-            use_cache=use_cache,
-        )
-    else:
-        feature_manager.convert_mztab_msstats_to_feature(
-            mztab_file=mztab_file,
-            msstats_file=msstats_file,
-            sdrf_file=sdrf_file,
-            protein_file=protein_file,
-            use_cache=use_cache,
-        )
+    output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".feature.parquet")
+ 
+    feature_manager.write_feature_to_file(
+        output_path=output_path,
+        chunksize=chunksize,
+        protein_file=protein_file
+    )
+

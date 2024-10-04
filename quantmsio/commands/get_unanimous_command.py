@@ -1,7 +1,7 @@
 import click
 
-from quantmsio.core.tools import map_protein_for_parquet
-from quantmsio.core.tools import map_protein_for_tsv
+from quantmsio.operate.tools import map_protein_for_parquet
+from quantmsio.operate.tools import map_protein_for_tsv
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
