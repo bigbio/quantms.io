@@ -13,7 +13,7 @@ from quantmsio.commands.diann_command import diann_convert_to_parquet
 from quantmsio.commands.ae_command import convert_ibaq_absolute
 from quantmsio.commands.de_command import convert_msstats_differential
 from quantmsio.commands.attach_file_command import attach_file_to_json
-from quantmsio.commands.get_unanimous_command import get_unanimous_for_parquet,get_unanimous_for_tsv
+from quantmsio.commands.get_unanimous_command import get_unanimous_for_parquet, get_unanimous_for_tsv
 from quantmsio.commands.generate_spectra_message_command import map_spectrum_message_to_parquet
 from quantmsio.commands.plot_command import plot
 from quantmsio.commands.statistic_command import statistics
@@ -28,6 +28,7 @@ def cli():
     This is the main tool that gives access to all commands to convert SDRF files into pipeline-specific configuration files
     """
     pass
+
 
 cli.add_command(generate_pride_project_json)
 cli.add_command(convert_feature_file)

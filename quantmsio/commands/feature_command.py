@@ -3,6 +3,7 @@ import click
 from quantmsio.core.feature import Feature
 from quantmsio.core.project import create_uuid_filename
 
+
 @click.command("convert-feature", short_help="Convert msstats/mztab to parquet file")
 @click.option(
     "--sdrf_file",
@@ -61,14 +62,9 @@ def convert_feature_file(
     if sdrf_file is None or msstats_file is None or mztab_file is None or output_folder is None:
         raise click.UsageError("Please provide all the required parameters")
 
-    feature_manager = Feature(mzTab_path=mztab_file,sdrf_path=sdrf_file,msstats_in_path=msstats_file)
+    feature_manager = Feature(mzTab_path=mztab_file, sdrf_path=sdrf_file, msstats_in_path=msstats_file)
     if not output_prefix_file:
         output_prefix_file = ""
     output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".feature.parquet")
- 
-    feature_manager.write_feature_to_file(
-        output_path=output_path,
-        chunksize=chunksize,
-        protein_file=protein_file
-    )
 
+    feature_manager.write_feature_to_file(output_path=output_path, chunksize=chunksize, protein_file=protein_file)
