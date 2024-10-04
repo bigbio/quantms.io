@@ -7,15 +7,18 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 from quantmsio.core.sdrf import SDRFHandler
+
 # from quantmsio.core.diann_convert import find_modification
 from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
 from quantmsio.utils.pride_utils import get_quantmsio_modifications
-from quantmsio.core.common import QUANTMSIO_VERSION,MAXQUANT_MAP,MAXQUANT_USECOLS
+from quantmsio.core.common import QUANTMSIO_VERSION, MAXQUANT_MAP, MAXQUANT_USECOLS
 from quantmsio.core.feature import Feature
+
 # format the log entries
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
 MODIFICATION_PATTERN = re.compile(r"\((.*?\))\)")
+
 
 def find_modification(peptide):
     """
@@ -46,6 +49,7 @@ def find_modification(peptide):
 
     return original_mods
 
+
 def get_mod_map(sdrf_path):
     sdrf = pd.read_csv(sdrf_path, sep="\t", nrows=1)
     mod_cols = [col for col in sdrf.columns if col.startswith("comment[modification parameters]")]
@@ -75,8 +79,9 @@ def generate_mods(row, mod_map):
                     mod_p = mod_p.replace(mod[:2].upper(), mod_map[mod])
     return mod_p
 
+
 class MaxQuant:
-    def __init__(self,sdrf_path,evidence_path):
+    def __init__(self, sdrf_path, evidence_path):
         self._modifications = SDRFHandler(sdrf_path).get_mods_dict()
         self._sdrf_path = sdrf_path
         self._evidence_path = evidence_path
@@ -114,40 +119,36 @@ class MaxQuant:
             ),
             axis=1,
         )
-        df.loc[:, "is_decoy"] = df["is_decoy"].map({
-            None: '0',
-            np.nan: "0",
-            "+": "1"
-        })
+        df.loc[:, "is_decoy"] = df["is_decoy"].map({None: "0", np.nan: "0", "+": "1"})
         df["unique"] = df["pg_accessions"].apply(lambda x: "0" if ";" in str(x) else "1")
-        df.loc[:,'gg_names'] = df['gg_names'].str.split(',')
-        df.loc[:,"additional_scores"] = None
-        df.loc[:,"modification_details"] = None
-        df.loc[:,"cv_params"] = None
-        df.loc[:,"quantmsio_version"] = QUANTMSIO_VERSION
-        df.loc[:,"gg_accessions"] = None
-        df.loc[:,"predicted_rt"] = None
-        df.loc[:,"channel"] = 'LFQ'
+        df.loc[:, "gg_names"] = df["gg_names"].str.split(",")
+        df.loc[:, "additional_scores"] = None
+        df.loc[:, "modification_details"] = None
+        df.loc[:, "cv_params"] = None
+        df.loc[:, "quantmsio_version"] = QUANTMSIO_VERSION
+        df.loc[:, "gg_accessions"] = None
+        df.loc[:, "predicted_rt"] = None
+        df.loc[:, "channel"] = "LFQ"
         return df
 
-    def transform_feature(self,df: pd.DataFrame):
+    def transform_feature(self, df: pd.DataFrame):
         df = self.merge_sdrf(df)
-        df.loc[:,"global_qvalue"] = None
-        df.loc[:,"pg_positions"] = None
-        df.loc[:,"protein_global_qvalue"] = None
-        df.loc[:,"psm_reference_file_name"] = None
-        df.loc[:,"psm_scan_number"] = None
+        df.loc[:, "global_qvalue"] = None
+        df.loc[:, "pg_positions"] = None
+        df.loc[:, "protein_global_qvalue"] = None
+        df.loc[:, "psm_reference_file_name"] = None
+        df.loc[:, "psm_scan_number"] = None
         return df
-        
+
     def merge_sdrf(self, df: pd.DataFrame):
         sdrf = Feature.transform_sdrf(self._sdrf_path)
         df = pd.merge(
-                df,
-                sdrf,
-                left_on=["reference_file_name"],
-                right_on=["reference"],
-                how="left",
-            )
+            df,
+            sdrf,
+            left_on=["reference_file_name"],
+            right_on=["reference"],
+            how="left",
+        )
         df.drop(
             [
                 "reference",
@@ -157,12 +158,12 @@ class MaxQuant:
             inplace=True,
         )
         return df
-    
+
     def convert_to_parquet(self, output_path: str, chunksize: int = None):
         pqwriter = None
         for df in self.iter_batch(chunksize=chunksize):
             df = self.transform_feature(df)
-            feature = Feature.convert_to_parquet(df,self._modifications)
+            feature = Feature.convert_to_parquet(df, self._modifications)
             if not pqwriter:
                 pqwriter = pq.ParquetWriter(output_path, feature.schema)
             pqwriter.write_table(feature)

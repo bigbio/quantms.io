@@ -40,13 +40,9 @@ from quantmsio.core.project import create_uuid_filename
     required=False,
 )
 @click.option(
-    "--duckdb_max_memory",
-    help="The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)",
-    required=False
+    "--duckdb_max_memory", help="The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)", required=False
 )
-@click.option("--duckdb_threads", 
-              help="The number of threads for the DuckDB engine (e.g 4)",
-              required=False)
+@click.option("--duckdb_threads", help="The number of threads for the DuckDB engine (e.g 4)", required=False)
 @click.option(
     "--file_num",
     help="The number of files being processed at the same time",
@@ -76,19 +72,30 @@ def diann_convert_to_parquet(
     duckdb_threads: The number of threads for the DuckDB engine (e.g 4)
     file_num: The number of files being processed at the same time
     """
-    if report_path is None or design_file is None or mzml_info_folder is None or output_folder is None or sdrf_path is None:
+    if (
+        report_path is None
+        or design_file is None
+        or mzml_info_folder is None
+        or output_folder is None
+        or sdrf_path is None
+    ):
         raise click.UsageError("Please provide all the required parameters")
-    
+
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
-    
+
     if not output_prefix_file:
         output_prefix_file = ""
 
     feature_output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".feature.parquet")
     psm_output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
 
-    dia_nn = DiaNNConvert(diann_report=report_path,sdrf_path=sdrf_path,duckdb_max_memory=duckdb_max_memory,duckdb_threads=duckdb_threads)
+    dia_nn = DiaNNConvert(
+        diann_report=report_path,
+        sdrf_path=sdrf_path,
+        duckdb_max_memory=duckdb_max_memory,
+        duckdb_threads=duckdb_threads,
+    )
 
     dia_nn.generate_psm_and_feature_file(
         qvalue_threshold=qvalue_threshold,

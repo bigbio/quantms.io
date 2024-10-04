@@ -1,7 +1,8 @@
 import click
 from quantmsio.core.project import create_uuid_filename
 from quantmsio.core.psm import Psm
-from quantmsio.operate.plots import plot_peptidoform_charge_venn,plot_sequence_venn
+from quantmsio.operate.plots import plot_peptidoform_charge_venn, plot_sequence_venn
+
 
 @click.command(
     "convert-psm",
@@ -55,11 +56,7 @@ def convert_psm_file(
 
     psm_manager = Psm(mzTab_path=mztab_file)
     output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
-    psm_manager.write_feature_to_file(
-        output_path=output_path,
-        chunksize=chunksize,
-        protein_file=protein_file
-    )
+    psm_manager.write_feature_to_file(output_path=output_path, chunksize=chunksize, protein_file=protein_file)
 
 
 @click.command("compare-set-psms", short_help="plot venn for a set of Psms parquet")

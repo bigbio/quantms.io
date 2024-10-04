@@ -1,4 +1,5 @@
 import pyarrow as pa
+
 PEPTIDE_FIELDS = [
     pa.field(
         "sequence",
@@ -18,15 +19,20 @@ PEPTIDE_FIELDS = [
     pa.field(
         "modification_details",
         pa.list_(pa.string()),
-        metadata={"description": "List of alternative site probabilities for the modification format: read the specification for more details"},
+        metadata={
+            "description": "List of alternative site probabilities for the modification format: read the specification for more details"
+        },
     ),
     pa.field(
         "posterior_error_probability",
         pa.float32(),
         metadata={"description": "Posterior error probability for the given peptide spectrum match"},
     ),
-    pa.field("global_qvalue", pa.float32(), metadata={"description": "Global q-value of the peptide or psm at the level of the experiment"}),
-    
+    pa.field(
+        "global_qvalue",
+        pa.float32(),
+        metadata={"description": "Global q-value of the peptide or psm at the level of the experiment"},
+    ),
     pa.field(
         "is_decoy",
         pa.int32(),
@@ -35,19 +41,15 @@ PEPTIDE_FIELDS = [
     pa.field(
         "calculated_mz",
         pa.float32(),
-        metadata={"description": "Theoretical peptide mass-to-charge ratio based on identified sequence and modifications"},
+        metadata={
+            "description": "Theoretical peptide mass-to-charge ratio based on identified sequence and modifications"
+        },
     ),
     pa.field(
         "additional_scores",
-        pa.list_(
-            pa.struct([
-                ("name", pa.string()),
-                ("value", pa.float32()) 
-            ])
-        ),
+        pa.list_(pa.struct([("name", pa.string()), ("value", pa.float32())])),
         metadata={"description": "List of structures, each structure contains two fields: name and value"},
     ),
-
     pa.field(
         "pg_accessions",
         pa.list_(pa.string()),
@@ -61,7 +63,9 @@ PEPTIDE_FIELDS = [
     pa.field(
         "unique",
         pa.int32(),
-        metadata={"description": "Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0"},
+        metadata={
+            "description": "Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0"
+        },
     ),
     pa.field(
         "protein_global_qvalue",
@@ -78,7 +82,6 @@ PEPTIDE_FIELDS = [
         pa.list_(pa.string()),
         metadata={"description": "Gene names, as string array"},
     ),
-
     pa.field(
         "precursor_charge",
         pa.int32(),
@@ -103,7 +106,7 @@ PEPTIDE_FIELDS = [
         "quantmsio_version",
         pa.string(),
         metadata={"description": "The version of quantms.io"},
-    )
+    ),
 ]
 
 PSM_UNIQUE_FIELDS = [
@@ -122,7 +125,11 @@ PSM_UNIQUE_FIELDS = [
         pa.float32(),
         metadata={"description": "Ion mobility value for the precursor ion"},
     ),
-    pa.field("num_peaks", pa.int32(), metadata={"description": "Number of peaks in the spectrum used for the peptide spectrum match"}),
+    pa.field(
+        "num_peaks",
+        pa.int32(),
+        metadata={"description": "Number of peaks in the spectrum used for the peptide spectrum match"},
+    ),
     pa.field(
         "mz_array",
         pa.list_(pa.float32()),
@@ -133,16 +140,12 @@ PSM_UNIQUE_FIELDS = [
         pa.list_(pa.float32()),
         metadata={"description": "Array of intensity values for the spectrum used for the peptide spectrum match"},
     ),
-    pa.field("rank", pa.int32(), metadata={"description": "Rank of the peptide spectrum match in the search engine output"}),
-
+    pa.field(
+        "rank", pa.int32(), metadata={"description": "Rank of the peptide spectrum match in the search engine output"}
+    ),
     pa.field(
         "cv_params",
-        pa.list_(
-            pa.struct([
-                ("name", pa.string()),
-                ("value", pa.string()) 
-            ])
-        ),
+        pa.list_(pa.struct([("name", pa.string()), ("value", pa.string())])),
         metadata={"description": "Optional list of CV parameters for additional metadata"},
     ),
 ]
@@ -162,7 +165,9 @@ FEATURE_UNIQUE_FIELDS = [
     pa.field(
         "condition",
         pa.string(),
-        metadata={"description": "The value for the factor value column in the SDRF, for example, the tissue factor value[organism part]"},
+        metadata={
+            "description": "The value for the factor value column in the SDRF, for example, the tissue factor value[organism part]"
+        },
     ),
     pa.field(
         "fraction",
@@ -172,12 +177,16 @@ FEATURE_UNIQUE_FIELDS = [
     pa.field(
         "biological_replicate",
         pa.string(),
-        metadata={"description": "The value of the biological replicate column in the SDRF in relation to the condition"},
+        metadata={
+            "description": "The value of the biological replicate column in the SDRF in relation to the condition"
+        },
     ),
     pa.field(
         "run",
         pa.string(),
-        metadata={"description": "The column stores IDs of mass spectrometry runs for LFQ experiments (e.g., 1). For TMT/iTRAQ experiments, it is an identifier of mixture combined with technical replicate and fractions `{mixture}_{technical_replicate}_{fraction}` (e.g., 1_2_3)"},
+        metadata={
+            "description": "The column stores IDs of mass spectrometry runs for LFQ experiments (e.g., 1). For TMT/iTRAQ experiments, it is an identifier of mixture combined with technical replicate and fractions `{mixture}_{technical_replicate}_{fraction}` (e.g., 1_2_3)"
+        },
     ),
     pa.field(
         "channel",
@@ -192,12 +201,16 @@ FEATURE_UNIQUE_FIELDS = [
     pa.field(
         "psm_reference_file_name",
         pa.string(),
-        metadata={"description": "The reference file containing the best psm that identified the feature. Note: This file can be different from the file that contains the feature ().ReferenceFile"},
+        metadata={
+            "description": "The reference file containing the best psm that identified the feature. Note: This file can be different from the file that contains the feature ().ReferenceFile"
+        },
     ),
     pa.field(
         "psm_scan_number",
         pa.string(),
-        metadata={"description": "The scan number of the spectrum. The scan number or index of the spectrum in the file"},
+        metadata={
+            "description": "The scan number of the spectrum. The scan number or index of the spectrum in the file"
+        },
     ),
     pa.field(
         "rt_start",
@@ -211,26 +224,10 @@ FEATURE_UNIQUE_FIELDS = [
     ),
     pa.field(
         "cv_params",
-        pa.list_(
-            pa.struct([
-                ("name", pa.string()),
-                ("value", pa.string()) 
-            ])
-        ),
+        pa.list_(pa.struct([("name", pa.string()), ("value", pa.string())])),
         metadata={"description": "Optional list of CV parameters for additional metadata"},
     ),
 ]
-
-
-
-
-
-
-
-
-
-
-
 
 
 PSM_FIELDS = PEPTIDE_FIELDS + PSM_UNIQUE_FIELDS

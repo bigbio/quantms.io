@@ -57,6 +57,7 @@ def load_de_or_ae(path):
     f.seek(pos - 1)
     return pd.read_csv(f, sep="\t"), content
 
+
 def read_large_parquet(parquet_path: str, batch_size: int = 500000):
     """_summary_
     :param parquet_path: _description_
@@ -67,6 +68,7 @@ def read_large_parquet(parquet_path: str, batch_size: int = 500000):
     for batch in parquet_file.iter_batches(batch_size=batch_size):
         batch_df = batch.to_pandas()
         yield batch_df
+
 
 def calculate_buffer_size(file_path: str) -> int:
     # Get the total available system memory

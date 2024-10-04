@@ -1,4 +1,5 @@
 from quantmsio import __version__
+
 PSM_MAP = {
     "sequence": "sequence",
     "modifications": "modifications",
@@ -24,7 +25,7 @@ MSSTATS_MAP = {
     "Intensity": "intensity",
     "Channel": "channel",
     "RetentionTime": "rt",
-    "PeptideSequence": "peptidoform"
+    "PeptideSequence": "peptidoform",
 }
 
 MSSTATS_USECOLS = set(MSSTATS_MAP.keys())
@@ -37,51 +38,46 @@ SDRF_MAP = {
     "characteristics[biological replicate]": "biological_replicate",
 }
 
-SDRF_USECOLS = set( list(SDRF_MAP.keys()) + [
-    "comment[technical replicate]"
-])
+SDRF_USECOLS = set(list(SDRF_MAP.keys()) + ["comment[technical replicate]"])
 
 DIANN_MAP = {
-    'File.Name': "reference_file_name",
+    "File.Name": "reference_file_name",
     "Precursor.Normalised": "intensity",
     "RT.Start": "rt_start",
-    'RT.Stop': 'rt_stop',
-    "RT": 'rt',
-    'Predicted.RT': "predicted_rt",
-    'Protein.Ids': 'pg_accessions',
+    "RT.Stop": "rt_stop",
+    "RT": "rt",
+    "Predicted.RT": "predicted_rt",
+    "Protein.Ids": "pg_accessions",
     "PEP": "posterior_error_probability",
     "Global.Q.Value": "global_qvalue",
     "Global.PG.Q.Value": "protein_global_qvalue",
     "Precursor.Charge": "precursor_charge",
     "Stripped.Sequence": "sequence",
     "Modified.Sequence": "peptidoform",
-    "Genes":"gg_names",
+    "Genes": "gg_names",
     "opt_global_spectrum_reference": "scan_number",
     "Calculate.Precursor.Mz": "calculated_mz",
-    "exp_mass_to_charge": "observed_mz"
+    "exp_mass_to_charge": "observed_mz",
 }
 MAXQUANT_MAP = {
-        "Sequence": "sequence",
-        "Proteins": "pg_accessions",
-        "PEP": "posterior_error_probability",
-        "Modifications": "modifications",
-        "Reverse": "is_decoy",
-        "m/z": "calculated_mz",
-        "MS/MS m/z": "observed_mz",
-        "Gene names": "gg_names",
-        "Calibrated retention time": "rt",
-        "Calibrated retention time start": "rt_start",
-        "Calibrated retention time finish": "rt_stop",
-        "Charge": "precursor_charge",
-        "Modified sequence": "peptidoform",
-        "Raw file": "reference_file_name",
-        "Intensity": "intensity",
-    }
+    "Sequence": "sequence",
+    "Proteins": "pg_accessions",
+    "PEP": "posterior_error_probability",
+    "Modifications": "modifications",
+    "Reverse": "is_decoy",
+    "m/z": "calculated_mz",
+    "MS/MS m/z": "observed_mz",
+    "Gene names": "gg_names",
+    "Calibrated retention time": "rt",
+    "Calibrated retention time start": "rt_start",
+    "Calibrated retention time finish": "rt_stop",
+    "Charge": "precursor_charge",
+    "Modified sequence": "peptidoform",
+    "Raw file": "reference_file_name",
+    "Intensity": "intensity",
+}
 
 
 MAXQUANT_USECOLS = list(MAXQUANT_MAP.keys())
 
 QUANTMSIO_VERSION = __version__
-          
-
-

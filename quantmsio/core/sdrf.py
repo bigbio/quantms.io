@@ -320,7 +320,7 @@ class SDRFHandler:
         variable_s = ",".join(variable_m) if len(variable_m) > 0 else "null"
 
         return fix_s, variable_s
-    
+
     def get_mods_dict(self):
         sdrf = self.sdrf_table
         mod_cols = [
@@ -334,7 +334,7 @@ class SDRFHandler:
         for col in mod_cols:
             mod_msg = sdrf[col].values[0].split(";")
             mod_dict = {k.split("=")[0]: k.split("=")[1] for k in mod_msg}
-            if(mod_dict['MT'] == 'Variable'):
+            if mod_dict["MT"] == "Variable":
                 mod = [
                     mod_dict["NT"],
                     str(var_mod),
