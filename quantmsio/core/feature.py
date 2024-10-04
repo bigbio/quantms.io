@@ -1,535 +1,327 @@
-"""
-The feature file handle and manage the feature table in column format. The main serialization format is Apache Parquet.
-The feature file is defined in the docs folder of this repository.
-(https://github.com/bigbio/quantms.io/blob/main/docs/FEATURE.md). Among other information, the feature file contains:
-    - Peptide sequence
-    - Peptide modifications
-    - Peptide charge
-    - Peptide retention time
-    - Peptide intensity
-    - Sample accession
-The feature file is a column format that defines the peptide quantification/identification and its relation with each
-sample in the experiment.
-"""
-
-import logging
-
-import numpy as np
 import pandas as pd
+import os
 import pyarrow as pa
 import pyarrow.parquet as pq
-
-from quantmsio.core.feature_in_memory import FeatureInMemory
-from quantmsio.core.mztab import MztabHandler
-from quantmsio.core.openms import OpenMSHandler
-from quantmsio.core.parquet_handler import ParquetHandler
+from quantmsio.utils.file_utils import extract_protein_list
+from quantmsio.core.mztab import MzTab,generate_modification_list
+from quantmsio.core.psm import Psm
 from quantmsio.core.sdrf import SDRFHandler
-from quantmsio.utils.constants import ITRAQ_CHANNEL
-from quantmsio.utils.constants import TMT_CHANNELS
-from quantmsio.utils.pride_utils import clean_peptidoform_sequence
-from quantmsio.utils.pride_utils import compare_protein_lists
-from quantmsio.utils.pride_utils import get_quantmsio_modifications
-from quantmsio.utils.pride_utils import standardize_protein_list_accession
-from quantmsio.utils.pride_utils import standardize_protein_string_accession
+from quantmsio.utils.pride_utils import clean_peptidoform_sequence,get_petidoform_msstats_notation,generate_scan_number,get_peptidoform_proforma_version_in_mztab
+from quantmsio.utils.constants import ITRAQ_CHANNEL,TMT_CHANNELS
+from quantmsio.core.common import MSSTATS_MAP,MSSTATS_USECOLS,SDRF_USECOLS,SDRF_MAP, QUANTMSIO_VERSION
+from quantmsio.core.format import FEATURE_FIELDS
+FEATURE_SCHEMA = pa.schema(
+    FEATURE_FIELDS,
+    metadata={"description": "feature file in quantms.io format"},
+)
+class Feature(MzTab):
+    def __init__(self,mzTab_path,sdrf_path,msstats_in_path):
+        super(Feature,self).__init__(mzTab_path)
+        self._msstats_in = msstats_in_path
+        self._sdrf_path = sdrf_path
+        self._ms_runs = self.extract_ms_runs()
+        self._protein_global_qvalue_map = self.get_protein_map()
+        self._modifications = self.get_modifications()
+        self._score_names = self.get_score_names()
+        self.experiment_type = SDRFHandler(sdrf_path).get_experiment_type_from_sdrf()
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-
-def get_msstats_in_batches(msstats_file: str, batch_size: int) -> int:
-    """
-    :param msstats_file: MSstats input file
-    :param batch_size: batch size
-    :return: number of batches
-    """
-    total_len = sum(1 for _ in open(msstats_file)) - 1  # neglect header
-    if total_len <= batch_size:
-        return 1
-    elif total_len % batch_size != 0:
-        return total_len // batch_size + 1
-    else:
-        return total_len // batch_size
-
-
-def get_additional_properties_from_sdrf(feature_dict: dict, experiment_type: str, sdrf_samples: dict) -> dict:
-    if "FragmentIon" not in feature_dict:  # FragmentIon is not in the MSstats if the experiment is label free
-        feature_dict["FragmentIon"] = None
-
-    if "IsotopeLabelType" not in feature_dict:
-        feature_dict["IsotopeLabelType"] = "L"
-
-    if "TMT" in experiment_type:  # TMT experiment
-        feature_dict["Channel"] = TMT_CHANNELS[experiment_type][int(feature_dict["Channel"]) - 1]
-    elif "ITRAQ" in experiment_type:  # ITRAQ experiment
-        feature_dict["Channel"] = ITRAQ_CHANNEL[experiment_type][int(feature_dict["Channel"]) - 1]
-    else:  # Label free experiment
-        feature_dict["Channel"] = "LABEL FREE SAMPLE"
-
-    # Get the sample accession from the SDRF file.
-    sample_id = sdrf_samples[feature_dict["Reference"] + ":_:" + feature_dict["Channel"]]
-    feature_dict["SampleName"] = sample_id
-
-    return feature_dict
-
-
-def _fetch_msstats_feature(
-    feature_dict: dict,
-    experiment_type: str,
-    sdrf_samples: dict,
-    mztab_handler: MztabHandler = None,
-    intensity_map: dict = None,
-):
-    """
-    fetch a feature from a MSstats dictionary and convert to a quantms.io format row
-    :param feature_dict: MSstats feature dictionary
-    :param experiment_type: experiment type
-    :param sdrf_samples: SDRF samples
-    :param mztab_handler: mztab handler
-    :param intensity_map: intensity map
-    :return: quantms.io format row
-    """
-
-    # Reference is the Msstats form .e.g. HeLa_1to1_01
-    feature_dict["Reference"] = feature_dict["Reference"].replace('"', "").split(".")[0]
-    feature_dict = get_additional_properties_from_sdrf(feature_dict, experiment_type, sdrf_samples)
-
-    protein_accessions_list = standardize_protein_list_accession(feature_dict["ProteinName"])
-    protein_accessions_string = standardize_protein_string_accession(feature_dict["ProteinName"])
-
-    peptidoform = feature_dict["PeptideSequence"]  # Peptidoform is the Msstats form .e.g. EM(Oxidation)QDLGGGER
-    peptide_sequence = clean_peptidoform_sequence(peptidoform)  # Get sequence .e.g. EMQDLGGGER
-    charge = None
-    if "PrecursorCharge" in feature_dict:
-        charge = feature_dict["PrecursorCharge"]  # Charge is the Msstats form .e.g. 2
-    elif "Charge" in feature_dict:
-        charge = feature_dict["Charge"]  # Charge is the Msstats form .e.g. 2
-
-    peptide_indexed = mztab_handler.get_peptide_index(msstats_peptidoform=peptidoform, charge=charge)
-    peptide_score_name = mztab_handler.get_search_engine_scores()["peptide_score"]
-
-    peptide_mztab_qvalue_accession = standardize_protein_list_accession(peptide_indexed["protein_accession"])
-    peptide_qvalue = peptide_indexed["peptide_qvalue"]  # Peptide q-value index 1
-
-    posterior_error_probability = peptide_indexed["posterior_error_probability"]  # Get posterior error probability
-    if posterior_error_probability is not None:
-        posterior_error_probability = np.float64(posterior_error_probability)
-
-    # Get if decoy or not
-    peptide_mztab_qvalue_decoy = peptide_indexed["is_decoy"]  # Peptide q-value decoy index 2
-
-    # Mods in quantms.io format
-    modifications_string = peptide_indexed["modifications"]  # Mods
-    modifications = get_quantmsio_modifications(
-        modifications_string=modifications_string,
-        modification_definition=mztab_handler.get_modifications_definition(),
-    )
-    modifications_string = ""
-    for key, value in modifications.items():
-        modifications_string += "|".join(map(str, value["position"]))
-        modifications_string = modifications_string + "-" + value["unimod_accession"] + ","
-    modifications_string = None if len(modifications_string) == 0 else modifications_string[:-1]  # Remove last comma
-    modification_list = None if modifications_string is None else modifications_string.split(",")
-
-    start_positions = peptide_indexed["psm_protein_start"].split(",")  # Start positions in the protein
-    start_positions = [int(i) for i in start_positions]
-    end_positions = peptide_indexed["psm_protein_end"].split(",")  # End positions in the protein
-    end_positions = [int(i) for i in end_positions]
-
-    # The spectral count is cero for a given file if a peptide does not appear in the psm section because for example is
-    # match between runs. However, for TMT/ITRAQ experiments, the spectral count can't be provided.
-    spectral_count = None if "LABEL FREE" not in feature_dict["Channel"] else 0  #
-
-    spectral_count_list = peptide_indexed["spectral_count"]  # Spectral count
-    if feature_dict["Reference"] in spectral_count_list:
-        spectral_count = spectral_count_list[feature_dict["Reference"]]
-    else:
-        reference_file = feature_dict["Reference"]
-        logger.debug(f"MBR peptide: {peptidoform}, {charge}, {reference_file}")
-
-    # Find calculated mass and experimental mass in peptide_count. Here we are using the scan number and the
-    # reference file name to find the calculated mass and the experimental mass.
-    peptide_ms_run = peptide_indexed["peptide_ms_run"]
-    peptide_scan_number = peptide_indexed["peptide_scan_number"]
-    calculated_mass = None
-    experimental_mass = None
-    for row in peptide_indexed["list_psms"]:
-        calculated_mass = row[0]
-        if row[3] == peptide_scan_number and row[2] == peptide_ms_run:
-            experimental_mass = row[1]
-            break
-
-    # If the experimental mass is not found, in the psm list this means that the peptide is MBR product.
-    if experimental_mass is None:
-        peptide_ms_run = None
-        peptide_scan_number = None
-
-    try:
-        protein_qvalue_object = mztab_handler.get_protein_qvalue_from_index(protein_accession=protein_accessions_string)
-        protein_qvalue = protein_qvalue_object[0]  # Protein q-value index 0
-    except ValueError:
-        logger.error("Error in line: {}".format(feature_dict))
-        return None
-
-    # TODO: Importantly, the protein accessions in the peptide section of the mzTab files peptide_mztab_qvalue_accession
-    #  are not the same as the protein accessions in the protein section of the mzTab file protein_accessions_list, that is
-    #  why we are using the protein_accessions_list to compare with the protein accessions in the MSstats file.
-    if not compare_protein_lists(protein_accessions_list, peptide_mztab_qvalue_accession):
-        logger.error("Error in line: {}".format(feature_dict))
-        logger.error("Protein accessions: {}-{}".format(protein_accessions_list, peptide_mztab_qvalue_accession))
-        raise Exception("The protein accessions in the MSstats file do not match with the mztab file")
-
-    # Unique is different in PSM section, Peptide, We are using the msstats number of accessions.
-    unique = 1 if len(protein_accessions_list) == 1 else 0
-
-    # TODO: get retention time from mztab file. The retention time in the mzTab peptide level is not clear how is
-    # related to the retention time in the MSstats file. If the consensusxml file is provided, we can get the retention
-    # time from the consensusxml file.
-    rt = None if "RetentionTime" not in feature_dict else np.float64(feature_dict["RetentionTime"])
-    if intensity_map is not None:
-        key = None
-        if "LABEL FREE" in feature_dict["Channel"]:
-            key = peptidoform + ":_:" + str(charge) + ":_:" + feature_dict["Reference"]
-        elif "TMT" in feature_dict["Channel"] or "ITRAQ" in feature_dict["Channel"]:
-            key = (
-                peptidoform + ":_:" + str(charge) + ":_:" + feature_dict["Reference"] + ":_:" + feature_dict["Channel"]
-            )
-        if key is not None and key in intensity_map:
-            consensus_intensity = intensity_map[key]["intensity"]
-            if abs(consensus_intensity - np.float64(feature_dict["Intensity"])) < 0.1:
-                rt = rt if rt is not None else intensity_map[key]["rt"]
-                experimental_mass = intensity_map[key]["mz"]
-
-    return {
-        "sequence": peptide_sequence,
-        "protein_accessions": protein_accessions_list,
-        "protein_start_positions": start_positions,
-        "protein_end_positions": end_positions,
-        "protein_global_qvalue": np.float64(protein_qvalue),
-        "unique": unique,
-        "modifications": modification_list,
-        "retention_time": rt,
-        "charge": int(charge),
-        "calc_mass_to_charge": np.float64(calculated_mass),
-        "peptidoform": peptide_indexed["peptidoform"],  # Peptidoform in proforma notation
-        "posterior_error_probability": posterior_error_probability,
-        "global_qvalue": np.float64(peptide_qvalue),
-        "is_decoy": int(peptide_mztab_qvalue_decoy),
-        "intensity": np.float64(feature_dict["Intensity"]),
-        "spectral_count": spectral_count,
-        "sample_accession": feature_dict["SampleName"],
-        "condition": feature_dict["Condition"],
-        "fraction": feature_dict["Fraction"],
-        "biological_replicate": feature_dict["BioReplicate"],
-        "fragment_ion": feature_dict["FragmentIon"],
-        "isotope_label_type": feature_dict["IsotopeLabelType"],
-        "run": feature_dict["Run"],
-        "channel": feature_dict["Channel"],
-        "id_scores": [
-            f"{peptide_score_name}: {peptide_qvalue}",
-            f"Best PSM PEP: {posterior_error_probability}",
-        ],
-        "reference_file_name": feature_dict["Reference"],
-        "best_psm_reference_file_name": peptide_ms_run,
-        "best_psm_scan_number": peptide_scan_number,
-        "exp_mass_to_charge": np.float64(experimental_mass),
-        "mz_array": None,
-        "intensity_array": None,
-        "num_peaks": None,
-        "gene_accessions": None,
-        "gene_names": None,
-    }
-
-
-class FeatureHandler(ParquetHandler):
-    """
-    this class handle protein tables in column format.
-    the main serialization format is Apache Parquet.
-    """
-
-    FEATURE_FIELDS = [
-        pa.field(
-            "sequence",
-            pa.string(),
-            metadata={"description": "Peptide sequence of the feature"},
-        ),
-        pa.field(
-            "protein_accessions",
-            pa.list_(pa.string()),
-            metadata={"description": "accessions of associated proteins"},
-        ),
-        pa.field(
-            "protein_start_positions",
-            pa.list_(pa.int32()),
-            metadata={"description": "start positions in the associated proteins"},
-        ),
-        pa.field(
-            "protein_end_positions",
-            pa.list_(pa.int32()),
-            metadata={"description": "end positions in the associated proteins"},
-        ),
-        pa.field(
-            "protein_global_qvalue",
-            pa.float64(),
-            metadata={"description": "global q-value of the associated protein or protein group"},
-        ),
-        pa.field(
-            "unique",
-            pa.int32(),
-            metadata={"description": "if the peptide is unique to a particular protein"},
-        ),
-        pa.field(
-            "modifications",
-            pa.list_(pa.string()),
-            metadata={"description": "peptide modifications"},
-        ),
-        pa.field("retention_time", pa.float64(), metadata={"description": "retention time"}),
-        pa.field(
+    def _extract_pep_columns(self):
+        if os.stat(self.mztab_path).st_size == 0:
+            raise ValueError("File is empty")
+        f = open(self.mztab_path)
+        line = f.readline()
+        while not line.startswith("PEH"):
+            line = f.readline()
+        self._pep_columns = line.split("\n")[0].split("\t")
+        
+    def extract_from_pep(self):
+        self._extract_pep_columns()
+        pep_usecols = [
+            "opt_global_cv_MS:1000889_peptidoform_sequence",
             "charge",
-            pa.int32(),
-            metadata={"description": "charge state of the feature"},
-        ),
-        pa.field(
-            "exp_mass_to_charge",
-            pa.float64(),
-            metadata={"description": "experimentally measured mass-to-charge ratio"},
-        ),
-        pa.field(
-            "calc_mass_to_charge",
-            pa.float64(),
-            metadata={"description": "calculated mass-to-charge ratio"},
-        ),
-        pa.field(
-            "peptidoform",
-            pa.string(),
-            metadata={"description": "peptidoform in proforma notation"},
-        ),
-        pa.field(
-            "posterior_error_probability",
-            pa.float64(),
-            metadata={"description": "posterior error probability"},
-        ),
-        pa.field("global_qvalue", pa.float64(), metadata={"description": "global q-value"}),
-        pa.field(
-            "is_decoy",
-            pa.int32(),
-            metadata={"description": "flag indicating if the feature is a decoy (1 is decoy, 0 is not decoy)"},
-        ),
-        # pa.field("best_id_score", pa.string(),
-        #          metadata={"description": "best identification score as key value pair"}),
-        pa.field("intensity", pa.float64(), metadata={"description": "intensity value"}),
-        pa.field(
-            "spectral_count",
-            pa.int32(),
-            metadata={"description": "number of spectral counts"},
-        ),
-        pa.field(
-            "sample_accession",
-            pa.string(),
-            metadata={"description": "accession of the associated sample"},
-        ),
-        pa.field(
-            "condition",
-            pa.string(),
-            metadata={"description": "experimental condition, value of the experimental factor"},
-        ),
-        pa.field("fraction", pa.string(), metadata={"description": "fraction information"}),
-        pa.field(
-            "biological_replicate",
-            pa.string(),
-            metadata={"description": "biological replicate information"},
-        ),
-        pa.field(
-            "fragment_ion",
-            pa.string(),
-            metadata={"description": "fragment ion information"},
-        ),
-        pa.field(
-            "isotope_label_type",
-            pa.string(),
-            metadata={"description": "type of isotope label"},
-        ),
-        pa.field("run", pa.string(), metadata={"description": "experimental run information"}),
-        pa.field(
-            "channel",
-            pa.string(),
-            metadata={"description": "experimental channel information"},
-        ),
-        pa.field(
-            "id_scores",
-            pa.list_(pa.string()),
-            metadata={"description": "identification scores as key value pairs"},
-        ),
-        # pa.field("consensus_support", pa.float64(),
-        #          metadata={"description": "consensus support value"}),
-        pa.field(
-            "reference_file_name",
-            pa.string(),
-            metadata={"description": "file name of the reference file for the feature"},
-        ),
-        pa.field(
-            "best_psm_reference_file_name",
-            pa.string(),
-            metadata={"description": "file name of the reference file for the best PSM"},
-        ),
-        pa.field(
-            "best_psm_scan_number",
-            pa.string(),
-            metadata={"description": "scan number of the best PSM"},
-        ),
-        pa.field(
-            "mz_array",
-            pa.list_(pa.float64()),
-            metadata={"description": "mass-to-charge ratio values"},
-        ),
-        pa.field(
-            "intensity_array",
-            pa.list_(pa.float64()),
-            metadata={"description": "intensity array values"},
-        ),
-        pa.field("num_peaks", pa.int32(), metadata={"description": "number of peaks"}),
-        pa.field(
-            "gene_accessions",
-            pa.list_(pa.string()),
-            metadata={"description": "accessions of associated genes"},
-        ),
-        pa.field(
-            "gene_names",
-            pa.list_(pa.string()),
-            metadata={"description": "names of associated genes"},
-        ),
-    ]
+            "best_search_engine_score[1]",
+            "spectra_ref",
+        ]
+        live_cols = [col for col in pep_usecols if col in self._pep_columns]
+        not_cols = [col for col in pep_usecols if col not in live_cols]
+        if "opt_global_cv_MS:1000889_peptidoform_sequence" in not_cols:
+            if "sequence" in self._pep_columns and "modifications" in self._pep_columns:
+                live_cols.append("sequence")
+                live_cols.append("modifications")
+            else:
+                raise Exception("The peptide table don't have opt_global_cv_MS:1000889_peptidoform_sequence columns")
+        if "charge" in not_cols or "best_search_engine_score[1]" in not_cols:
+            raise Exception("The peptide table don't have best_search_engine_score[1] or charge columns")
 
-    def __init__(self, parquet_path: str = None):
-        super().__init__(parquet_path)
-        self.schema = self._create_schema()
-        self.parquet_path = parquet_path
-        self.dataset = None
+        pep = self.skip_and_load_csv("PEH", usecols=live_cols)
 
-    def _create_schema(self):
-        """
-        Create the schema for the feature file. The schema is defined in the docs folder of this repository.
-        (https://github.com/bigbio/quantms.io/blob/main/docs/FEATURE.md)
-        """
-        return pa.schema(
-            FeatureHandler.FEATURE_FIELDS,
-            metadata={"description": "Feature file in quantms.io format"},
+        if "opt_global_cv_MS:1000889_peptidoform_sequence" not in pep.columns:
+            pep.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = pep[
+                ["modifications", "sequence"]
+            ].apply(
+                lambda row: get_petidoform_msstats_notation(row["sequence"], row["modifications"], self._modifications),
+                axis=1,
+            )
+
+        # check spectra_ref
+        if "spectra_ref" not in pep.columns:
+            pep.loc[:, "scan_number"] = None
+            pep.loc[:, "spectra_ref"] = None
+        else:
+            pep.loc[:, "scan_number"] = pep["spectra_ref"].apply(lambda x: generate_scan_number(x))
+            pep["spectra_ref"] = pep["spectra_ref"].apply(lambda x: self._ms_runs[x.split(":")[0]])
+        pep_msg = pep.iloc[
+            pep.groupby(["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"]).apply(
+                lambda row: row["best_search_engine_score[1]"].idxmin()
+            )
+        ]
+        pep_msg = pep_msg.set_index(["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"])
+
+        pep_msg.loc[:, "pep_msg"] = pep_msg[
+            ["best_search_engine_score[1]", "spectra_ref", "scan_number"]
+        ].apply(
+            lambda row: [
+                row["best_search_engine_score[1]"],
+                row["spectra_ref"],
+                row["scan_number"],
+            ],
+            axis=1,
         )
 
-    def read_feature_table(self) -> pa.Table:
-        table = pq.ParquetDataset(
-            self.parquet_path, use_legacy_dataset=False, schema=self.schema
-        ).read()  # type: pa.Table
-        return table
-
-    def create_feature_table(self, feature_list: list) -> pa.Table:
-        return pa.Table.from_pandas(pd.DataFrame(feature_list), schema=self.schema)
-
-    def convert_mztab_msstats_to_feature(
-        self,
-        msstats_file: str,
-        sdrf_file: str,
-        mztab_file: str,
-        consesusxml_file: str = None,
-        batch_size: int = 1000000,
-        protein_file: str = None,
-        use_cache: bool = False,
-    ):
-        """
-        convert a MSstats input file and mztab into a quantms.io file format.
-        :param msstats_file: MSstats input file
-        :param sdrf_file: SDRF file
-        :param mztab_file: mztab file
-        :param consesusxml_file: consensusxml file
-        :param batch_size: batch size
-        :param use_cache: use cache to store the mztab file
-        :return: none
-        """
-        sdrf_handler = SDRFHandler(sdrf_file)
-        experiment_type = sdrf_handler.get_experiment_type_from_sdrf()
-        # Get the intensity map from the consensusxml file
-        intensity_map = {}
-        if consesusxml_file is not None:
-            consensus_handler = OpenMSHandler()
-            intensity_map = consensus_handler.get_intensity_map(
-                consensusxml_path=consesusxml_file, experiment_type=experiment_type
+        map_dict = pep_msg.to_dict()["pep_msg"]
+        return map_dict
+    
+    def extract_psm_msg(self,chunksize=1000000,protein_str=None):
+        P = Psm(self.mztab_path)
+        pep_dict = self.extract_from_pep()
+        map_dict = {}
+        def merge_pep_msg(row):
+            key = (row["opt_global_cv_MS:1000889_peptidoform_sequence"],row["precursor_charge"])
+            if(key in pep_dict):
+                return pep_dict[key]
+            else:
+                return [None,None,None]
+        for psm in P.iter_psm_table(chunksize=chunksize,protein_str=protein_str):
+            P.transform_psm(psm)
+            if "opt_global_cv_MS:1000889_peptidoform_sequence" not in psm.columns:
+                psm.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = psm[
+                    ["modifications", "sequence"]
+                ].apply(
+                    lambda row: get_petidoform_msstats_notation(
+                        row["sequence"], row["modifications"], self._modifications
+                    ),
+                    axis=1,
+                )
+            psm[["best_qvalue","psm_reference_file_name","psm_scan_number"]] = psm[["opt_global_cv_MS:1000889_peptidoform_sequence", "precursor_charge"]].apply(
+                lambda row: merge_pep_msg(row),
+                axis=1,
+                result_type="expand",
             )
-        if use_cache:
-            sdrf_samples = sdrf_handler.get_sample_map()
-
-            mztab_handler = MztabHandler(mztab_file, use_cache=use_cache)
-            mztab_handler.load_mztab_file(use_cache=use_cache)
-
-            feature_list = []
-
-            # Read the MSstats file line by line and convert it to a quantms.io file feature format
-            batches = get_msstats_in_batches(msstats_file, batch_size)
-            batch_count = 1
-            with open(msstats_file, "r") as msstats_file_handler:
-                line = msstats_file_handler.readline()
-                if "Protein" in line:
-                    # Skip the header
-                    msstats_columns = line.rstrip().split(",")
-                else:
-                    raise Exception("The MSstats file does not have the expected header")
-                line = msstats_file_handler.readline()
-                pqwriter = None
-                while line.rstrip() != "":
-                    line = line.rstrip()
-                    msstats_values = line.split(",")
-                    # Create a dictionary with the values
-                    feature_dict = dict(zip(msstats_columns, msstats_values))
-                    msstats_feature = _fetch_msstats_feature(
-                        feature_dict,
-                        experiment_type,
-                        sdrf_samples,
-                        mztab_handler,
-                        intensity_map,
-                    )
-                    if msstats_feature is not None:
-                        feature_list.append(msstats_feature)
-                    # batches > 1
-                    if len(feature_list) == batch_size and batch_count < batches:
-                        feature_table = self.create_feature_table(feature_list)
-                        feature_list = []
-                        batch_count += 1
-                        if not pqwriter:
-                            pqwriter = pq.ParquetWriter(self.parquet_path, feature_table.schema)
-                        pqwriter.write_table(feature_table)
-                    line = msstats_file_handler.readline()
-                # batches = 1
-                if batch_count == 1:
-                    feature_table = self.create_feature_table(feature_list)
-                    pqwriter = pq.ParquetWriter(self.parquet_path, feature_table.schema)
-                    pqwriter.write_table(feature_table)
-                # final batch
-                else:
-                    feature_table = self.create_feature_table(feature_list)
-                    pqwriter.write_table(feature_table)
-                if pqwriter:
-                    pqwriter.close()
-            mztab_handler.close()
+            for key, df in psm.groupby(["opt_global_cv_MS:1000889_peptidoform_sequence", "precursor_charge"]):
+                df = df.reset_index(drop=True)
+                if key not in map_dict:
+                    map_dict[key] = [None for i in range(10)]
+                qvalue = None
+                temp_df = None
+                if(len(df["best_qvalue"].unique()) >1 or not pd.isna(df.loc[0,"best_qvalue"])):
+                    temp_df = df.iloc[df["best_qvalue"].idxmin()]
+                    qvalue = "best_qvalue"
+                elif(len(df["global_qvalue"].unique()) > 1 or not pd.isna(df.loc[0,"best_qvalue"])):
+                    temp_df = df.iloc[df["global_qvalue"].idxmin()]
+                    qvalue = "global_qvalue"
+                #print(temp_df)
+                if(qvalue != None):
+                    best_qvalue = temp_df[qvalue]
+                    if map_dict[key][0] == None or float(map_dict[key][0]) > float(best_qvalue):
+                        map_dict[key][0] = temp_df[qvalue]
+                        map_dict[key][1] = temp_df["psm_reference_file_name"]
+                        map_dict[key][2] = temp_df["psm_scan_number"]
+                        map_dict[key][3] = temp_df["pg_positions"]
+                        map_dict[key][4] = temp_df["modifications"]
+                        map_dict[key][5] = temp_df["posterior_error_probability"]
+                        map_dict[key][6] = temp_df["is_decoy"]
+                        map_dict[key][7] = temp_df["calculated_mz"]
+                        map_dict[key][8] = temp_df["observed_mz"]
+                        map_dict[key][9] = temp_df["additional_scores"]
+        return map_dict
+        
+  
+    def transform_msstats_in(self,chunksize=1000000,protein_str=None):
+        cols = pd.read_csv(self._msstats_in,nrows=0).columns
+        if self.experiment_type == 'LFQ':
+            MSSTATS_USECOLS.add('PrecursorCharge')
+            MSSTATS_MAP['PrecursorCharge'] = 'precursor_charge'
         else:
-            convert = FeatureInMemory(experiment_type, self.schema)
-            convert.write_feature_to_file(
-                mztab_file,
-                msstats_file,
-                sdrf_file,
-                self.parquet_path,
-                protein_file=protein_file,
-                msstats_chunksize=batch_size,
-                intensity_map=intensity_map,
+            MSSTATS_USECOLS.add('Charge')
+            MSSTATS_MAP['Charge'] = 'precursor_charge'
+        nocols = MSSTATS_USECOLS - set(cols)
+        for msstats in pd.read_csv(self._msstats_in,chunksize=chunksize,usecols=list(MSSTATS_USECOLS - set(nocols))):
+            if protein_str:
+                msstats = msstats[msstats["ProteinName"].str.contains(f"{protein_str}", na=False)]
+            for col in nocols:
+                if col == "Channel":
+                    msstats.loc[:, col] = "LFQ"
+                else:
+                    msstats.loc[:, col] = None
+            msstats["Reference"] = msstats["Reference"].apply(lambda x: x.split(".")[0])
+            msstats.loc[:, "sequence"] = msstats["PeptideSequence"].apply(
+                lambda x: clean_peptidoform_sequence(x)
             )
+            if self.experiment_type != 'LFQ':
+                if "TMT" in self.experiment_type:
+                    msstats["Channel"] = msstats["Channel"].apply(
+                        lambda row: TMT_CHANNELS[self.experiment_type][row - 1]
+                    )
+                else:
+                    msstats["Channel"] = msstats["Channel"].apply(
+                        lambda row: ITRAQ_CHANNEL[self.experiment_type][row - 1]
+                    )
+            msstats.loc[:,"unique"] = msstats['ProteinName'].apply(lambda x: 0 if ';' in x else 1)
+            msstats.rename(columns=MSSTATS_MAP,inplace=True)
+            yield msstats
+    
+    @staticmethod
+    def transform_sdrf(sdrf_path):
+        sdrf = pd.read_csv(sdrf_path, sep="\t")
+        factor = "".join(filter(lambda x: x.startswith("factor"), sdrf.columns))
+        SDRF_USECOLS.add(factor)
+        sdrf = sdrf[list(SDRF_USECOLS)]
+        SDRF_USECOLS.remove(factor)
+        sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(lambda x: x.split(".")[0])
+        samples = sdrf["source name"].unique()
+        mixed_map = dict(zip(samples, range(1, len(samples) + 1)))
+        sdrf.loc[:, "run"] = sdrf[
+            [
+                "source name",
+                "comment[technical replicate]",
+                "comment[fraction identifier]",
+            ]
+        ].apply(
+            lambda row: str(mixed_map[row["source name"]])
+            + "_"
+            + str(row["comment[technical replicate]"])
+            + "_"
+            + str(row["comment[fraction identifier]"]),
+            axis=1,
+        )
+        sdrf.drop(
+            [
+                "comment[technical replicate]",
+            ],
+            axis=1,
+            inplace=True,
+        )
+        sdrf.rename(columns=SDRF_MAP,inplace=True)
+        sdrf.rename(columns={factor: "condition"}, inplace=True)
+        return sdrf
 
-    def describe_schema(self):
-        """
-        describe the schema of the feature file
-        """
-        schema_description = []
-        for field in self.schema:
-            field_description = {
-                "name": field.name,
-                "type": str(field.type),
-                "description": field.metadata.get("description", ""),
-            }
-            schema_description.append(field_description)
-        return schema_description
+    def merge_msstats_and_sdrf(self, msstats):
+        sdrf = self.transform_sdrf(self._sdrf_path)
+        if self.experiment_type != "LFQ":
+            msstats = pd.merge(
+                msstats,
+                sdrf,
+                left_on=["reference_file_name", "channel"],
+                right_on=["reference", "label"],
+                how="left",
+            )
+        else:
+            msstats = pd.merge(
+                msstats,
+                sdrf,
+                left_on=["reference_file_name"],
+                right_on=["reference"],
+                how="left",
+            )
+        msstats.drop(
+            [
+                "reference",
+                "label",
+            ],
+            axis=1,
+            inplace=True,
+        )
+        return msstats
+    
+    def merge_msstats_and_psm(self,msstats,map_dict):
+        map_features = [
+            "global_qvalue",
+            "psm_reference_file_name",
+            "psm_scan_number",
+            "pg_positions",
+            "modifications",
+            "posterior_error_probability",
+            "is_decoy",
+            "calculated_mz",
+            "observed_mz",
+            "additional_scores"
+        ]
+        for i, feature in enumerate(map_features):
+            msstats.loc[:, feature] = msstats[["peptidoform", "precursor_charge"]].apply(
+                lambda row: map_dict[(row["peptidoform"], row["precursor_charge"])][i],
+                axis=1,
+            )
+        return msstats
+
+    def generate_feature(self,chunksize=1000000,protein_str=None):
+        map_dict = self.extract_psm_msg(chunksize,protein_str)
+        for msstats in self.transform_msstats_in(chunksize,protein_str):
+            msstats = self.merge_msstats_and_sdrf(msstats)
+            msstats = self.merge_msstats_and_psm(msstats,map_dict)
+            self.transform_feature(msstats)
+            msstats = self.convert_to_parquet(msstats,self._modifications)
+            yield msstats
+            
+    def write_feature_to_file(
+        self,
+        output_path,
+        chunksize=1000000,
+        protein_file=None,
+    ):
+        protein_list = extract_protein_list(protein_file) if protein_file else None
+        protein_str = "|".join(protein_list) if protein_list else None
+        pqwriter = None
+        for feature in self.generate_feature(chunksize,protein_str):
+            if not pqwriter:
+                pqwriter = pq.ParquetWriter(output_path, feature.schema)
+            pqwriter.write_table(feature)
+        if pqwriter:
+            pqwriter.close()
+
+    def transform_feature(self,msstats):
+        msstats.loc[:,"protein_global_qvalue"] = msstats['pg_accessions'].map(self._protein_global_qvalue_map)
+        msstats.loc[:,'peptidoform'] = msstats[["modifications", "sequence"]].apply(
+            lambda row: get_peptidoform_proforma_version_in_mztab(row["sequence"], row["modifications"], self._modifications),
+            axis=1
+        )
+        msstats.loc[:,"modification_details"] = None
+        msstats.loc[:,"predicted_rt"] = None
+        msstats.loc[:,"gg_accessions"] = None
+        msstats.loc[:,"gg_names"] = None
+        msstats.loc[:,"quantmsio_version"] = QUANTMSIO_VERSION
+        msstats.loc[:,"cv_params"] = None
+        msstats.loc[:,"rt_start"] = None
+        msstats.loc[:,"rt_stop"] = None
+
+    @staticmethod
+    def convert_to_parquet(res, modifications):
+        res["pg_accessions"] = res["pg_accessions"].str.split(";")
+        res["protein_global_qvalue"] = res["protein_global_qvalue"].astype(float)
+        res["unique"] = res["unique"].astype("Int32")
+        res["modifications"] = res["modifications"].apply(lambda x: generate_modification_list(x,modifications))
+        res["precursor_charge"] = res["precursor_charge"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
+        res["calculated_mz"] = res["calculated_mz"].astype(float)
+        res["observed_mz"] = res["observed_mz"].astype(float)
+        res["posterior_error_probability"] = res["posterior_error_probability"].astype(float)
+        res["global_qvalue"] = res["global_qvalue"].astype(float)
+        res["is_decoy"] = res["is_decoy"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
+        res["condition"] = res["condition"].astype(str)
+        res["fraction"] = res["fraction"].astype(int).astype(str)
+        res["biological_replicate"] = res["biological_replicate"].astype(str)
+        res["psm_scan_number"] = res["psm_scan_number"].astype(str)
+        res["psm_reference_file_name"] = res["psm_reference_file_name"].astype(str)
+        if "rt" in res.columns:
+            res["rt"] = res["rt"].astype(float)
+        else:
+            res.loc[:, "rt"] = None
+        return pa.Table.from_pandas(res, schema=FEATURE_SCHEMA)

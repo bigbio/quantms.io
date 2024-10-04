@@ -24,7 +24,7 @@ from quantmsio.core.project import check_directory
 )
 @click.option(
     "--quantms_version",
-    help="Quantms.io version to use as output in the project file",
+    help="Quantms version to use as output in the project file",
     required=False,
 )
 @click.option(

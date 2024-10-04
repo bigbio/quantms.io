@@ -1,6 +1,6 @@
 import click
 
-from quantmsio.core.tools import register_file_to_json
+from quantmsio.operate.tools import register_file_to_json
 
 
 @click.command(
