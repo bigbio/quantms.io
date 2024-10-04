@@ -101,6 +101,37 @@ For example:
 1(Probabilistic Score:0.8)|2(Probabilistic Score:0.9)|3-UNIMOD:35`
 ```
 
+[[scan-number]]
+=== Scan number
+As mentioned above, the goal of the USI is to refer to an original scan event that generated a spectrum, and using the indexType “scan” is preferred. However, for some instrument types (most vendors other than Thermo Scientific), a single scan number cannot uniquely identify a spectrum, and instead a set of integers is required to identify a scan. This issue was solved in mzML (5) via the use of the nativeId mechanism. As an example, one scan event is identified in an mzML file converted from a SCIEX WIFF file with:
+```
+sample=1 period=1 cycle=2740 experiment=10
+```
+In this scenario, where reference to the original scan event is desired but a single scan number is not sufficient, the USI must be formed with a compact form of the nativeId mechanism: the tag “nativeId” MUST be placed in the indexType field, followed by a comma-separated set of integers that correspond to the full-length nativeId as indexNumber. Therefore, a USI employing this mechanism might look like:
+```
+mzspec:PXD001464:CL_1hRP_rep3:nativeId:1,1,2740,10
+```
+The number and order of the values is vendor specific and is defined by the nativeId controlled vocabulary terms in the PSI-MS controlled vocabulary as children of term MS:1000767 (http://purl.obolibrary.org/obo/MS_1000767). A few examples are provided below. See the CV for the full set:
+```
+SCIEX WIFF format (MS:1000767):
+sample=1 period=1 cycle=2740 experiment=10 →nativeId:1,1,2740,10
+
+Waters nativeId format (MS:1000769):
+function=10 process=1 scan=345 →nativeId:10,1,345
+
+Bruker TDF format (MS:1002818):
+frame=120 scan=475 →nativeId:120,475
+
+Thermo nativeId format (MS:1000768) SHOULD NOT be expressed as a nativeId, but rather as a scan:
+
+controllerType=0 controllerNumber=1 scan=43920 → scan:43920
+```
+since the controllerType and controllerNumber are always 0 and 1 for mass spectra. In rare cases, if either controllerType is not 0 or controllerNumber is not 1 (e.g., a PDA spectrum is being referenced), then the nativeId form MUST be used:
+```
+controllerType=5 controllerNumber=1 scan=7 → nativeId:5,1,7
+```
+The use of the scan:43920 form means that controllerType=0 controllerNumber=1.
+
 [[identification-scores]]
 === Identification Scores
 
