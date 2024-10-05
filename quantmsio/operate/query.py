@@ -76,6 +76,7 @@ class Query:
         :return: The report
         """
         cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
+        cols = cols.replace('unique','"unique"')
         database = self.parquet_db.sql(
             """
             select {} from parquet_db
@@ -94,6 +95,7 @@ class Query:
         :return: The report
         """
         cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
+        cols = cols.replace('unique','"unique"')
         database = self.parquet_db.sql(
             """
             select {} from parquet_db
@@ -135,7 +137,7 @@ class Query:
         ref_list = [references[i : i + file_num] for i in range(0, len(references), file_num)]
         for refs in ref_list:
             batch_df = self.get_report_from_database(refs, columns)
-            yield batch_df
+            yield refs, batch_df
 
     def inject_spectrum_msg(self, df: pd.DataFrame, mzml_directory: str):
         """
