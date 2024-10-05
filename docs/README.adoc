@@ -947,7 +947,7 @@ Some of the fields are shared between the <<feature>> and <<psm>> views, they ca
 | float, null
 | RT.Start
 | x
-| x
+| Calibrated retention time start
 | -
 
 | `rt_stop`
@@ -955,7 +955,7 @@ Some of the fields are shared between the <<feature>> and <<psm>> views, they ca
 | float, null
 | RT.Stop
 | x
-| x
+| Calibrated retention time finish
 | -
 |===
 

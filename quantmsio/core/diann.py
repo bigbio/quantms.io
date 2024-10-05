@@ -14,7 +14,7 @@ from quantmsio.core.project import create_uuid_filename
 from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.core.psm import Psm
 from quantmsio.core.feature import Feature
-from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
+from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab,generate_scan_number
 from quantmsio.core.common import DIANN_MAP, QUANTMSIO_VERSION
 
 MODIFICATION_PATTERN = re.compile(r"\((.*?)\)")
@@ -271,6 +271,7 @@ class DiaNNConvert:
             ),
             axis=1,
         )
+        report["scan_number"] = report["scan_number"].apply(generate_scan_number)
         report.loc[:,'gg_names'] = report['gg_names'].str.split(',')
         report.loc[:,"additional_scores"] = None
         report.loc[:,"modification_details"] = None
