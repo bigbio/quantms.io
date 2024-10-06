@@ -3,7 +3,8 @@ import os
 import pandas as pd
 from quantmsio.utils.pride_utils import get_quantmsio_modifications
 
-def generate_modification_list(modification_str: str,modifications):
+
+def generate_modification_list(modification_str: str, modifications):
 
     if pd.isna(modification_str):
         return None
@@ -16,6 +17,7 @@ def generate_modification_list(modification_str: str,modifications):
     modification_list = modifications_string.split(",")
 
     return modification_list
+
 
 def fetch_modifications_from_mztab_line(line: str, _modifications: dict) -> dict:
     """
@@ -65,8 +67,9 @@ def fetch_modifications_from_mztab_line(line: str, _modifications: dict) -> dict
             _modifications[accession][3] = line_parts[2]
     return _modifications
 
+
 class MzTab:
-    def __init__(self,mzTab_path: str) -> None:
+    def __init__(self, mzTab_path: str) -> None:
         self.mztab_path = mzTab_path
         # psm pos
         self._psm_pos = None
@@ -84,7 +87,7 @@ class MzTab:
         self._psms_columns = None
         # load pep columns
         self._pep_columns = None
-    
+
     def __get_pos(self, header):
         if header == "PSH" and self._pep_pos is not None:
             return self._pep_pos + self._pep_len - 1
@@ -92,7 +95,7 @@ class MzTab:
             return self._prt_pos + self._prt_len - 1
         else:
             return 0
-        
+
     def __extract_len(self, header):
         map_tag = {"PSH": "PSM", "PEH": "PEP", "PRH": "PRT"}
         if os.stat(self.mztab_path).st_size == 0:
@@ -107,8 +110,8 @@ class MzTab:
 
         if header == "PSH":
             self._psms_columns = line.split("\n")[0].split("\t")
-        if header == 'PEH':
-            self._pep_columns = line.split('\n')[0].split('\t')
+        if header == "PEH":
+            self._pep_columns = line.split("\n")[0].split("\t")
 
         line = f.readline()
         fle_len = 0
@@ -117,7 +120,7 @@ class MzTab:
             line = f.readline()
         f.close()
         return fle_len, pos
-    
+
     def __load_second(self, header, **kwargs):
         f = open(self.mztab_path)
         if header == "PSH":
@@ -129,7 +132,7 @@ class MzTab:
         else:
             f.seek(self._prt_pos)
             return pd.read_csv(f, nrows=self._prt_len, **kwargs)
-    
+
     def __set_table_config(self, header, length, pos):
         if header == "PSH":
             self._psm_pos = pos
@@ -140,7 +143,7 @@ class MzTab:
         else:
             self._prt_pos = pos
             self._prt_len = length
-    
+
     def skip_and_load_csv(self, header, **kwargs):
         if self._psm_pos is not None and header == "PSH":
             return self.__load_second(header, **kwargs)
@@ -154,8 +157,8 @@ class MzTab:
         f = open(self.mztab_path)
         f.seek(pos)
         self.__set_table_config(header, fle_len, pos)
-        return pd.read_csv(f, nrows=fle_len, sep='\t', **kwargs)
-    
+        return pd.read_csv(f, nrows=fle_len, sep="\t", **kwargs)
+
     def extract_ms_runs(self):
         if os.stat(self.mztab_path).st_size == 0:
             raise ValueError("File is empty")
@@ -168,7 +171,7 @@ class MzTab:
             line = f.readline()
         f.close()
         return ms_runs
-    
+
     def get_protein_map(self, protein_str=None):
         """
         return: a dict about protein score
@@ -182,7 +185,7 @@ class MzTab:
         prt_score = prt.groupby("ambiguity_members").min()
         protein_map = prt_score.to_dict()["best_search_engine_score[1]"]
         return protein_map
-    
+
     def get_score_names(self):
         if os.stat(self.mztab_path).st_size == 0:
             raise ValueError("File is empty")
@@ -191,20 +194,20 @@ class MzTab:
         score_names = {}
         while line.split("\t")[0] == "MTD":
             if "psm_search_engine_score" in line:
-                msgs = line.split('\t')
+                msgs = line.split("\t")
                 score_values = msgs[2].replace("[", "").replace("]", "").split(",")
                 score_name = score_values[2].strip()
                 if ":" in score_name:
-                    score_name = score_name.split(':')[0]
-                score_names[score_name] = msgs[1].replace('psm_','')
+                    score_name = score_name.split(":")[0]
+                score_names[score_name] = msgs[1].replace("psm_", "")
             line = f.readline()
         f.close()
         return score_names
 
-    def generate_positions(self,start,end) -> list:
-        start = start.split(',')
-        end = end.split(',')
-        return [start + ':' + end for start,end in zip(start,end)]
+    def generate_positions(self, start, end) -> list:
+        start = start.split(",")
+        end = end.split(",")
+        return [start + ":" + end for start, end in zip(start, end)]
 
     def get_modifications(self):
         if os.stat(self.mztab_path).st_size == 0:
@@ -218,4 +221,3 @@ class MzTab:
             line = f.readline()
         f.close()
         return mod_dict
-    

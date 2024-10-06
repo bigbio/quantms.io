@@ -3,6 +3,8 @@ from unittest import TestCase
 from quantmsio.core.diann import DiaNNConvert
 from ddt import data
 from ddt import ddt
+
+
 @ddt
 class TestFeatureHandler(TestCase):
     global test_datas
@@ -11,7 +13,7 @@ class TestFeatureHandler(TestCase):
             "DIANN/diann_report.tsv",
             "DIANN/PXD019909-DIA.sdrf_openms_design.tsv",
             "DIANN/PXD019909-DIA.sdrf.tsv",
-            "DIANN/mzml"
+            "DIANN/mzml",
         ),
     ]
 
@@ -21,6 +23,6 @@ class TestFeatureHandler(TestCase):
         design_file = datafile(test_data[1])
         sdrf_file = datafile(test_data[2])
         mzml = datafile(test_data[3])
-        D = DiaNNConvert(report_file,sdrf_file)
-        for msstats in D.main_report_df(0.05,mzml,2):
-            print('ok')
+        D = DiaNNConvert(report_file, sdrf_file)
+        for msstats in D.main_report_df(0.05, mzml, 2):
+            print("ok")

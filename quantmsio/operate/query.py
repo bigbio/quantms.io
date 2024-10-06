@@ -48,7 +48,7 @@ def fill_start_and_end(row, protein_dict):
         automaton = ahocorasick.Automaton()
         automaton.add_word(row["sequence"], row["sequence"])
         automaton.make_automaton()
-        if(protein not in protein_dict): 
+        if protein not in protein_dict:
             return None
         for item in automaton.iter(protein_dict[protein]):
             end = item[0]
@@ -148,9 +148,7 @@ class Query:
         refs = df["reference_file_name"].unique()
         mzml = {ref: OpenMSHandler() for ref in refs}
         if "psm_reference_file_name" in df.columns:
-            df[["mz_array", "intensity_array", "num_peaks"]] = df[
-                ["psm_reference_file_name", "psm_scan_number"]
-            ].apply(
+            df[["mz_array", "intensity_array", "num_peaks"]] = df[["psm_reference_file_name", "psm_scan_number"]].apply(
                 lambda x: map_spectrum_mz(
                     x["psm_reference_file_name"],
                     x["psm_scan_number"],
@@ -181,9 +179,8 @@ class Query:
         :retrun df
         """
         df["pg_positions"] = df[["sequence", "pg_accessions"]].apply(
-            lambda row: fill_start_and_end(row, protein_dict),
-            axis=1
-            )
+            lambda row: fill_start_and_end(row, protein_dict), axis=1
+        )
         return df
 
     # def inject_gene_msg(
@@ -323,9 +320,7 @@ class Query:
         """
         cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
         if check_string("^[A-Z]+", protein):
-            return self.parquet_db.sql(
-                f"SELECT {cols} FROM parquet_db WHERE pg_accessions LIKE '%{protein}%'"
-            ).df()
+            return self.parquet_db.sql(f"SELECT {cols} FROM parquet_db WHERE pg_accessions LIKE '%{protein}%'").df()
         else:
             raise KeyError("Illegal protein!")
 
