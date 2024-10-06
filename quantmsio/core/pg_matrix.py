@@ -1,5 +1,4 @@
 from quantmsio.operate.query import Query
-import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 import copy
@@ -80,12 +79,12 @@ class PgMatrix:
                 res.append(struct)
             return res
         
-        for refs, df in self.db.iter_file(columns=['pg_accessions','gg_names','unique','quantmsio_version','reference_file_name','intensity']):
+        for _, df in self.db.iter_file(columns=['pg_accessions','gg_names','unique','quantmsio_version','reference_file_name','intensity']):
             df.loc[:,'pg'] = df['pg_accessions'].str.join(';')
             unique_dict,all_dict = self.get_pep_count(df)
             df.drop_duplicates(subset=['pg'],inplace=True)
-            df.loc[:,'peptides'] = df[['pg_accessions','reference_file_name']].apply(lambda row:map_count(row),axis=1)
-            df.loc[:,'intensities'] = df[['pg_accessions','reference_file_name']].apply(lambda row: map_intensity(row),axis=1)
+            df.loc[:,'peptides'] = df[['pg_accessions','reference_file_name']].apply(map_count,axis=1)
+            df.loc[:,'intensities'] = df[['pg_accessions','reference_file_name']].apply(map_intensity,axis=1)
             df.loc[:,'first_protein_description'] = None
             yield pa.Table.from_pandas(df, schema=PG_MATRIX_SCHEMA)
 
