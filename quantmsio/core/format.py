@@ -230,6 +230,54 @@ FEATURE_UNIQUE_FIELDS = [
 ]
 
 
+PG_MATRIX = [
+    pa.field(
+        "pg_accessions",
+        pa.list_(pa.string()),
+        metadata={"description": "Protein group accessions of all the proteins that the peptide maps to"},
+    ),
+    pa.field(
+        "gg_names",
+        pa.list_(pa.string()),
+        metadata={"description": "Gene names, as string array"},
+    ),
+    pa.field(
+        "quantmsio_version",
+        pa.string(),
+        metadata={"description": "The version of quantms.io"},
+    ),
+    pa.field(
+        "first_protein_description",
+        pa.string(),
+        metadata={"description": "About the specific information of the first protein"},
+    ),
+    pa.field(
+        "reference_file_name",
+        pa.string(),
+        metadata={"description": "The reference file name that contains the feature"},
+    ),
+    pa.field(
+        "peptides",
+        pa.list_(
+            pa.struct([
+                ("name", pa.string()),
+                ("value", pa.string()) 
+            ])
+        ),
+        metadata={"description": "The count of peptides in each reference"},
+    ),
+    pa.field(
+        "intensities",
+        pa.list_(
+            pa.struct([
+                ("name", pa.string()),
+                ("value", pa.float32()) 
+            ])
+        ),
+        metadata={"description": "The total intensity of proteins in the reference"},
+    ),
+]
+
 PSM_FIELDS = PEPTIDE_FIELDS + PSM_UNIQUE_FIELDS
 
 FEATURE_FIELDS = PEPTIDE_FIELDS + FEATURE_UNIQUE_FIELDS
