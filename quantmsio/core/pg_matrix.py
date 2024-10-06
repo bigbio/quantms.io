@@ -12,7 +12,7 @@ PG_MATRIX_SCHEMA = pa.schema(
 class PgMatrix:
     def __init__(self, feature_path):
         self.db = Query(feature_path)
-        
+
     def get_pep_count(self,df):
         def update_dict(row):
             for p in row['pg_accessions']:
@@ -33,7 +33,7 @@ class PgMatrix:
         repeat_df.apply(update_dict,axis=1)
         
         return unique_dict,all_dict
-    
+
     def generate_pg_matrix(self):
         def map_count(row):
             res = []
