@@ -11,6 +11,7 @@ from quantmsio.operate.query import Query
 from quantmsio.utils.pride_utils import get_unanimous_name
 from quantmsio.utils.file_utils import read_large_parquet
 
+
 def generate_features_of_spectrum(
     parquet_path: str,
     mzml_directory: str,
@@ -62,6 +63,7 @@ def generate_features_of_spectrum(
         for pqwriter in pqwriters.values():
             pqwriter.close()
 
+
 # gei unqnimous name
 def map_protein_for_parquet(parquet_path, fasta, output_path, map_parameter, label):
     """
@@ -106,6 +108,7 @@ def change_and_save_parquet(parquet_path, map_dict, output_path, label):
     if pqwriter:
         pqwriter.close()
 
+
 def map_protein_for_tsv(path: str, fasta: str, output_path: str, map_parameter: str):
     """
     according fasta database to map the proteins accessions to uniprot names.
@@ -149,10 +152,9 @@ def load_de_or_ae(path):
     f.seek(pos - 1)
     return pd.read_csv(f, sep="\t"), content
 
+
 # register_file
 def register_file_to_json(project_file, attach_file, category, replace_existing):
     register = ProjectHandler(project_json_file=project_file)
     register.add_quantms_file(attach_file, category, replace_existing)
     register.save_updated_project_info(output_file_name=project_file)
-
-
