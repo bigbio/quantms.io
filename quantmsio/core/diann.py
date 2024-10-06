@@ -18,6 +18,8 @@ from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mzta
 from quantmsio.core.common import DIANN_MAP, QUANTMSIO_VERSION
 
 MODIFICATION_PATTERN = re.compile(r"\((.*?)\)")
+
+
 def get_exp_design_dfs(exp_design_file):
     with open(exp_design_file, "r") as f:
         data = f.readlines()
@@ -32,6 +34,7 @@ def get_exp_design_dfs(exp_design_file):
         s_data_frame = pd.DataFrame(s_table, columns=s_header)
 
     return s_data_frame, f_table
+
 
 def _true_stem(x):
     """
@@ -89,13 +92,12 @@ def find_modification(peptide):
 
 class DiaNNConvert:
 
-    def __init__(self,diann_report,sdrf_path,duckdb_max_memory='16GB',duckdb_threads=4):
+    def __init__(self, diann_report, sdrf_path, duckdb_max_memory="16GB", duckdb_threads=4):
         self._sdrf_path = sdrf_path
         self._diann_path = diann_report
         self._modifications = SDRFHandler(sdrf_path).get_mods_dict()
         self._duckdb_name = create_uuid_filename("report-duckdb", ".db")
         self._duckdb = self.create_duckdb_from_diann_report(duckdb_max_memory, duckdb_threads)
-    
 
     def create_duckdb_from_diann_report(self, max_memory, worker_threads):
         """
@@ -125,7 +127,7 @@ class DiaNNConvert:
         et = time.time() - s
         logging.info("Time to create duckdb database {} seconds".format(et))
         return database
-        
+
     def get_report_from_database(self, runs: list) -> pd.DataFrame:
         """
         This function loads the report from the duckdb database for a group of ms_runs.
@@ -176,13 +178,12 @@ class DiaNNConvert:
         )
         peptide_df = database.df()
         peptide_df.set_index("Precursor.Id", inplace=True)
-        #peptide_map = peptide_df.to_dict()["Q.Value"]
+        # peptide_map = peptide_df.to_dict()["Q.Value"]
         best_ref_map = peptide_df.to_dict()["Run"]
         et = time.time() - s
         logging.info("Time to load peptide map {} seconds".format(et))
         return best_ref_map
 
-    
     def main_report_df(
         self,
         qvalue_threshold: float,
@@ -247,7 +248,7 @@ class DiaNNConvert:
             # pep
             report["psm_reference_file_name"] = report["Precursor.Id"].map(best_ref_map)
             report["psm_scan_number"] = None
-            report.rename(columns=DIANN_MAP,inplace=True)
+            report.rename(columns=DIANN_MAP, inplace=True)
             # add extra msg
             report = self.add_additional_msg(report)
             yield report
@@ -263,7 +264,7 @@ class DiaNNConvert:
         report.loc[:, "is_decoy"] = "0"
         report.loc[:, "unique"] = report["pg_accessions"].apply(lambda x: "0" if ";" in str(x) else "1")
 
-        report.loc[:, 'pg_positions'] = None
+        report.loc[:, "pg_positions"] = None
 
         report["peptidoform"] = report[["sequence", "modifications"]].apply(
             lambda row: get_peptidoform_proforma_version_in_mztab(
@@ -292,7 +293,7 @@ class DiaNNConvert:
             psm_pqwriter = pq.ParquetWriter(psm_output_path, parquet_table.schema)
         psm_pqwriter.write_table(parquet_table)
         return psm_pqwriter
-        
+
     def generate_psm_and_feature_file(
         self,
         qvalue_threshold: float,
@@ -336,70 +337,69 @@ class DiaNNConvert:
             self._duckdb = None
 
     def generate_feature_file(
-            self,
-            report,
-            s_data_frame,
-            f_table,
-            feature_pqwriter,
-            feature_output_path,
-        ):
-            sdrf = pd.read_csv(
-                self._sdrf_path,
-                sep="\t",
-                usecols=[
-                    "source name",
-                    "comment[data file]",
-                    "comment[technical replicate]",
-                ],
-            )
-            samples = sdrf["source name"].unique()
-            mixed_map = dict(zip(samples, range(1, len(samples) + 1)))
-            sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(lambda x: x.split(".")[0])
-            sdrf = sdrf.set_index(["comment[data file]"])
-            sdrf_map = sdrf.to_dict()["source name"]
-            tec_map = sdrf.to_dict()["comment[technical replicate]"]
-            report = report[report["intensity"] != 0]
-            report = report.merge(
-                (
-                    s_data_frame[["Sample", "MSstats_Condition", "MSstats_BioReplicate"]]
-                    .merge(f_table[["Fraction", "Sample", "Run"]], on="Sample")
-                    .rename(
-                        columns={
-                            "MSstats_BioReplicate": "BioReplicate",
-                            "MSstats_Condition": "Condition",
-                        }
-                    )
-                    .drop(columns=["Sample"])
-                ),
-                on="Run",
-                validate="many_to_one",
-            )
-            report.rename(
-                columns={
-                    "Condition": "condition",
-                    "Fraction": "fraction",
-                    "BioReplicate": "biological_replicate",
-                    "Run": "run",
-                },
-                inplace=True,
-            )
-            report.loc[:, "channel"] = "LFQ"
-            report.loc[:, "sample_accession"] = report["reference_file_name"].map(sdrf_map)
-            report.loc[:, "comment[technical replicate]"] = report["reference_file_name"].map(tec_map)
-            report.loc[:, "run"] = report[["sample_accession", "comment[technical replicate]", "fraction"]].apply(
-                lambda row: str(mixed_map[row["sample_accession"]])
-                + "_"
-                + str(row["comment[technical replicate]"])
-                + "_"
-                + str(row["fraction"]),
-                axis=1,
-            )
-            report.drop(["comment[technical replicate]"], axis=1, inplace=True)
-            parquet_table = Feature.convert_to_parquet(report,self._modifications)
-    
-            if not feature_pqwriter:
-                feature_pqwriter = pq.ParquetWriter(feature_output_path, parquet_table.schema)
-            feature_pqwriter.write_table(parquet_table)
-    
-            return feature_pqwriter
-    
+        self,
+        report,
+        s_data_frame,
+        f_table,
+        feature_pqwriter,
+        feature_output_path,
+    ):
+        sdrf = pd.read_csv(
+            self._sdrf_path,
+            sep="\t",
+            usecols=[
+                "source name",
+                "comment[data file]",
+                "comment[technical replicate]",
+            ],
+        )
+        samples = sdrf["source name"].unique()
+        mixed_map = dict(zip(samples, range(1, len(samples) + 1)))
+        sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(lambda x: x.split(".")[0])
+        sdrf = sdrf.set_index(["comment[data file]"])
+        sdrf_map = sdrf.to_dict()["source name"]
+        tec_map = sdrf.to_dict()["comment[technical replicate]"]
+        report = report[report["intensity"] != 0]
+        report = report.merge(
+            (
+                s_data_frame[["Sample", "MSstats_Condition", "MSstats_BioReplicate"]]
+                .merge(f_table[["Fraction", "Sample", "Run"]], on="Sample")
+                .rename(
+                    columns={
+                        "MSstats_BioReplicate": "BioReplicate",
+                        "MSstats_Condition": "Condition",
+                    }
+                )
+                .drop(columns=["Sample"])
+            ),
+            on="Run",
+            validate="many_to_one",
+        )
+        report.rename(
+            columns={
+                "Condition": "condition",
+                "Fraction": "fraction",
+                "BioReplicate": "biological_replicate",
+                "Run": "run",
+            },
+            inplace=True,
+        )
+        report.loc[:, "channel"] = "LFQ"
+        report.loc[:, "sample_accession"] = report["reference_file_name"].map(sdrf_map)
+        report.loc[:, "comment[technical replicate]"] = report["reference_file_name"].map(tec_map)
+        report.loc[:, "run"] = report[["sample_accession", "comment[technical replicate]", "fraction"]].apply(
+            lambda row: str(mixed_map[row["sample_accession"]])
+            + "_"
+            + str(row["comment[technical replicate]"])
+            + "_"
+            + str(row["fraction"]),
+            axis=1,
+        )
+        report.drop(["comment[technical replicate]"], axis=1, inplace=True)
+        parquet_table = Feature.convert_to_parquet(report, self._modifications)
+
+        if not feature_pqwriter:
+            feature_pqwriter = pq.ParquetWriter(feature_output_path, parquet_table.schema)
+        feature_pqwriter.write_table(parquet_table)
+
+        return feature_pqwriter
