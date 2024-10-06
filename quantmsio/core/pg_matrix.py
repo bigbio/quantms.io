@@ -31,7 +31,6 @@ class PgMatrix:
         all_dict = copy.deepcopy(unique_dict)
         repeat_df = df[df['unique']==0][['pg_accessions','reference_file_name','intensity']].copy()
         repeat_df.apply(update_dict,axis=1)
-        
         return unique_dict,all_dict
 
     def generate_pg_matrix(self):
@@ -46,7 +45,7 @@ class PgMatrix:
                     struct['value'] = gen_count(row,all_dict)
                 res.append(struct)
             return res
-            
+
         def gen_count(row,map_dict):
             value = []
             ref = row['reference_file_name']
@@ -78,7 +77,7 @@ class PgMatrix:
                         struct['value'] = 0
                 res.append(struct)
             return res
-        
+
         for _, df in self.db.iter_file(columns=['pg_accessions','gg_names','unique','quantmsio_version','reference_file_name','intensity']):
             df.loc[:,'pg'] = df['pg_accessions'].str.join(';')
             unique_dict,all_dict = self.get_pep_count(df)
