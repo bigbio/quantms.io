@@ -279,6 +279,7 @@ class DiaNNConvert:
         report.loc[:, "cv_params"] = None
         report.loc[:, "quantmsio_version"] = QUANTMSIO_VERSION
         report.loc[:, "gg_accessions"] = None
+
         return report
 
     def generate_psm_file(self, report, psm_pqwriter, psm_output_path):
