@@ -27,7 +27,7 @@ def generate_features_of_spectrum(
     pqwriters = {}
     pqwriter_no_part = None
     p = Query(parquet_path)
-    for _,table in p.iter_file(file_num=file_num):
+    for _, table in p.iter_file(file_num=file_num):
         table = p.inject_spectrum_msg(table, mzml_directory)
         if label == "feature":
             schema = FEATURE_SCHEMA

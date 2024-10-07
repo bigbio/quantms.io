@@ -258,26 +258,15 @@ PG_MATRIX = [
     ),
     pa.field(
         "peptides",
-        pa.list_(
-            pa.struct([
-                ("name", pa.string()),
-                ("value", pa.string()) 
-            ])
-        ),
+        pa.list_(pa.struct([("name", pa.string()), ("value", pa.string())])),
         metadata={"description": "The count of peptides in each reference"},
     ),
     pa.field(
         "intensities",
-        pa.list_(
-            pa.struct([
-                ("name", pa.string()),
-                ("value", pa.float32()) 
-            ])
-        ),
+        pa.list_(pa.struct([("name", pa.string()), ("value", pa.float32())])),
         metadata={"description": "The total intensity of proteins in the reference"},
     ),
 ]
-
 
 
 PG_MATRIX = [
@@ -308,27 +297,15 @@ PG_MATRIX = [
     ),
     pa.field(
         "peptides",
-        pa.list_(
-            pa.struct([
-                ("name", pa.string()),
-                ("value", pa.string()) 
-            ])
-        ),
+        pa.list_(pa.struct([("name", pa.string()), ("value", pa.string())])),
         metadata={"description": "The count of peptides in each reference"},
     ),
     pa.field(
         "intensities",
-        pa.list_(
-            pa.struct([
-                ("name", pa.string()),
-                ("value", pa.float32()) 
-            ])
-        ),
+        pa.list_(pa.struct([("name", pa.string()), ("value", pa.float32())])),
         metadata={"description": "The total intensity of proteins in the reference"},
     ),
 ]
-
-
 
 
 PSM_FIELDS = PEPTIDE_FIELDS + PSM_UNIQUE_FIELDS

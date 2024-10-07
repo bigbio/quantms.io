@@ -2,6 +2,7 @@ import click
 from quantmsio.core.project import create_uuid_filename
 from quantmsio.core.pg_matrix import PgMatrix
 
+
 @click.command(
     "convert-pg-matrix",
     short_help="Convert psm from mzTab to parquet file in quantms io",
@@ -40,6 +41,4 @@ def convert_pg_matrix(
 
     pg_manager = PgMatrix(feature_path=feature_file)
     output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".pg.parquet")
-    pg_manager.write_to_file(
-        output_path=output_path
-    )
+    pg_manager.write_to_file(output_path=output_path)

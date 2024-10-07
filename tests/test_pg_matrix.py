@@ -3,6 +3,7 @@ from ddt import ddt
 from unittest import TestCase
 from quantmsio.core.pg_matrix import PgMatrix
 
+
 @ddt
 class TestHandler(TestCase):
     feature_path = datafile("parquet/feature.parquet")

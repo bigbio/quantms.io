@@ -76,7 +76,7 @@ class Query:
         :return: The report
         """
         cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
-        cols = cols.replace('unique','"unique"')
+        cols = cols.replace("unique", '"unique"')
         database = self.parquet_db.sql(
             """
             select {} from parquet_db
@@ -95,7 +95,7 @@ class Query:
         :return: The report
         """
         cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
-        cols = cols.replace('unique','"unique"')
+        cols = cols.replace("unique", '"unique"')
         database = self.parquet_db.sql(
             """
             select {} from parquet_db
