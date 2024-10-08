@@ -23,7 +23,7 @@ class TestFeatureHandler(TestCase):
         msstats_file = datafile(test_data[1])
         sdrf_file = datafile(test_data[2])
         F = Feature(mztab_file, sdrf_file, msstats_file)
-        for msstats in F.transform_msstats_in():
+        for _ in F.transform_msstats_in():
             print("ok")
 
     @data(*test_datas)

@@ -46,7 +46,7 @@ class Psm(MzTab):
         df.loc[:, "pg_positions"] = df[["start", "end"]].apply(
             lambda row: self.generate_positions(row["start"], row["end"]), axis=1
         )
-        df.loc[:, "scan_number"] = df["spectra_ref"].apply(lambda x: generate_scan_number(x))
+        df.loc[:, "scan_number"] = df["spectra_ref"].apply(generate_scan_number)
 
         df.loc[:, "reference_file_name"] = df["spectra_ref"].apply(lambda x: self._ms_runs[x[: x.index(":")]])
         df.loc[:, "additional_scores"] = df[list(self._score_names.values())].apply(

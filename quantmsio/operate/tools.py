@@ -75,7 +75,6 @@ def map_protein_for_parquet(parquet_path, fasta, output_path, map_parameter, lab
     :param label: feature or psm
     retrun: None
     """
-    from Bio import SeqIO
 
     map_protein_names = defaultdict(set)
     if map_parameter == "map_protein_name":
@@ -134,7 +133,7 @@ def map_protein_for_tsv(path: str, fasta: str, output_path: str, map_parameter: 
     df, content = load_de_or_ae(path)
     df["protein"] = df["protein"].apply(lambda x: get_unanimous_name(x, map_protein_names))
     content += df.columns.str.cat(sep="\t") + "\n"
-    for index, row in df.iterrows():
+    for _, row in df.iterrows():
         content += "\t".join(map(str, row)).strip() + "\n"
     with open(output_path, "w", encoding="utf8") as f:
         f.write(content)

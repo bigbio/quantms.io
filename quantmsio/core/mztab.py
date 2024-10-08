@@ -10,7 +10,7 @@ def generate_modification_list(modification_str: str, modifications):
         return None
     modifications = get_quantmsio_modifications(modification_str, modifications)
     modifications_string = ""
-    for key, value in modifications.items():
+    for _, value in modifications.items():
         modifications_string += "|".join(map(str, value["position"]))
         modifications_string = modifications_string + "-" + value["unimod_accession"] + ","
     modifications_string = modifications_string[:-1]  # Remove last comma
