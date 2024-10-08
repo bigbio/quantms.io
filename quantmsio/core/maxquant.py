@@ -1,16 +1,11 @@
 import logging
 import re
 import zipfile
-from pathlib import Path
 import numpy as np
 import pandas as pd
-import pyarrow as pa
 import pyarrow.parquet as pq
 from quantmsio.core.sdrf import SDRFHandler
-
-# from quantmsio.core.diann_convert import find_modification
 from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
-from quantmsio.utils.pride_utils import get_quantmsio_modifications
 from quantmsio.core.common import QUANTMSIO_VERSION, MAXQUANT_MAP, MAXQUANT_USECOLS
 from quantmsio.core.feature import Feature
 
@@ -66,7 +61,7 @@ def get_mod_map(sdrf_path):
 def generate_mods(row, mod_map):
     mod_seq = row["Modified sequence"].replace("_", "")
     mod_p = find_modification(mod_seq)
-    if mod_p == "null" or mod_p == None:
+    if mod_p == "null" or mod_p is None:
         return None
     for mod in row["Modifications"].split(","):
         mod = re.search(r"[A-Za-z]+.*\)$", mod)

@@ -289,7 +289,7 @@ class SDRFHandler:
         sample_map = {}
         sdrf_pd = self.sdrf_table.copy()  # type: DataFrame
         sdrf_pd["comment[data file]"] = sdrf_pd["comment[data file]"].apply(lambda x: x.split(".")[0])
-        for index, row in sdrf_pd.iterrows():
+        for _, row in sdrf_pd.iterrows():
             channel = "LABEL FREE SAMPLE" if "LABEL FREE" in row["comment[label]"].upper() else row["comment[label]"]
             if row["comment[data file]"] + ":_:" + channel in sample_map:
                 if sample_map[row["comment[data file]"] + ":_:" + channel] != row["source name"]:

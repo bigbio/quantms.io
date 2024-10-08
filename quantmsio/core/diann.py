@@ -243,7 +243,7 @@ class DiaNNConvert:
             report["Calculate.Precursor.Mz"] = (
                 mass_vector + (PROTON_MASS_U * report["Precursor.Charge"].values)
             ) / report["Precursor.Charge"].values
-            report["modifications"] = report["Modified.Sequence"].apply(lambda x: find_modification(x))
+            report["modifications"] = report["Modified.Sequence"].apply(find_modification)
             report["Modified.Sequence"] = report["Modified.Sequence"].map(modifications_map)
             # pep
             report["psm_reference_file_name"] = report["Precursor.Id"].map(best_ref_map)

@@ -74,7 +74,7 @@ class Feature(MzTab):
             pep.loc[:, "scan_number"] = None
             pep.loc[:, "spectra_ref"] = None
         else:
-            pep.loc[:, "scan_number"] = pep["spectra_ref"].apply(lambda x: generate_scan_number(x))
+            pep.loc[:, "scan_number"] = pep["spectra_ref"].apply(generate_scan_number)
             pep["spectra_ref"] = pep["spectra_ref"].apply(lambda x: self._ms_runs[x.split(":")[0]])
         pep_msg = pep.iloc[
             pep.groupby(["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"]).apply(
@@ -119,7 +119,7 @@ class Feature(MzTab):
             psm[["best_qvalue", "psm_reference_file_name", "psm_scan_number"]] = psm[
                 ["opt_global_cv_MS:1000889_peptidoform_sequence", "precursor_charge"]
             ].apply(
-                lambda row: merge_pep_msg(row),
+                merge_pep_msg,
                 axis=1,
                 result_type="expand",
             )
@@ -136,9 +136,9 @@ class Feature(MzTab):
                     temp_df = df.iloc[df["global_qvalue"].idxmin()]
                     qvalue = "global_qvalue"
                 # print(temp_df)
-                if qvalue != None:
+                if qvalue is not None:
                     best_qvalue = temp_df[qvalue]
-                    if map_dict[key][0] == None or float(map_dict[key][0]) > float(best_qvalue):
+                    if map_dict[key][0] is None or float(map_dict[key][0]) > float(best_qvalue):
                         map_dict[key][0] = temp_df[qvalue]
                         map_dict[key][1] = temp_df["psm_reference_file_name"]
                         map_dict[key][2] = temp_df["psm_scan_number"]
@@ -169,7 +169,7 @@ class Feature(MzTab):
                 else:
                     msstats.loc[:, col] = None
             msstats["Reference"] = msstats["Reference"].apply(lambda x: x.split(".")[0])
-            msstats.loc[:, "sequence"] = msstats["PeptideSequence"].apply(lambda x: clean_peptidoform_sequence(x))
+            msstats.loc[:, "sequence"] = msstats["PeptideSequence"].apply(clean_peptidoform_sequence)
             if self.experiment_type != "LFQ":
                 if "TMT" in self.experiment_type:
                     msstats["Channel"] = msstats["Channel"].apply(

@@ -1,18 +1,18 @@
 import os
 import re
-from collections import defaultdict
+#from collections import defaultdict
 
 import ahocorasick
 import duckdb
-import mygene
+#import mygene
 import pandas as pd
 import pyarrow.parquet as pq
 from Bio import SeqIO
 
 from quantmsio.core.openms import OpenMSHandler
-from quantmsio.utils.pride_utils import generate_gene_name_map
-from quantmsio.utils.pride_utils import get_gene_accessions
-from quantmsio.utils.pride_utils import get_unanimous_name
+#from quantmsio.utils.pride_utils import generate_gene_name_map
+#from quantmsio.utils.pride_utils import get_gene_accessions
+#from quantmsio.utils.pride_utils import get_unanimous_name
 
 
 def check_string(re_exp, strings):
