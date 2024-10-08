@@ -53,6 +53,9 @@ image::images/formats-relation.svg[width=80%]
 | mz           | mz_file           | _parquet_                 | <<mz>>
 | psm          | psm_file          | _parquet_              | <<psm>>
 | feature      | feature_file      | _parquet_              | <<feature>>
+| pg           | pg_file           | _parquet_              | <<pg>>
+| peptide      | peptide_file      | _parquet_              | <<peptide>>
+| protein      | protein_file      | _parquet_              | <<protein>>
 | absolute     | absolute_file     | _tsv_                  | <<absolute>>
 | differential | differential_file | _tsv_                  | <<differential>>
 | sdrf         | sdrf_file         | _tsv_                  | <<sdrf>>
@@ -983,7 +986,9 @@ The peptide view aims to cover detail on peptides quantified in the experiment a
 Some of the fields are shared between the <<psm>> and <<feature>> views, they can be found in the following table <<peptide-fields>>.
 
 |===
-| *Field*          | *Description*                                             | *Type*
+| *Field*
+| *Description*
+| *Type*
 |best_id_score     | The best search engine score from all the features/psms identified | double, null
 |sample_accession  | The sample accession in the SDRF, which column is called `source name`  | string, null
 |abundance         | The peptide abundance in the given sample accession                     | float, null
@@ -994,26 +999,143 @@ Some of the fields are shared between the <<psm>> and <<feature>> views, they ca
 The peptide view can be found in link:peptide.avsc[peptide.avsc].
 
 [[protein]]
-== Protein-based view format
+== Protein Views : Protein Groups and Protein Summary
 
-The Protein table is a tsv file that contains the details of the proteins identified and quantified.
+We have two main reports for protein information. The <<pg>> report from <<proteinsummary>>. In summary, the protein group report is the output of the quantitative tool including quantms, MaxQuant or DIA-NN; while the protein summary is a summary of the protein quantified by samples.
 
-=== Protein Use cases
+[[pg]]
+=== Protein Group View
 
--  Store proteins identified and quantified from mzTab file, with the corresponding abundance and search engine scores.
--  Enable easy visualization and scanning on protein level.
+The protein group view is a tabular file that contains the details of the protein groups identified and quantified. The protein group is similar to the outputs of multiple tools such as MaxQuant, DIA-NN, and others.
 
-=== Protein Fields
+The file defines the relation between a protein groups and the raw file that contains the protein group. The protein group view is a key file in the proteomics data analysis workflow as it describes the protein groups identified and quantified in the experiment.
 
-[cols="1,2,1", options="header"]
+==== Protein Group Use cases
+
+- Retrieve all the protein groups identified or quantified in the file.
+- Compute the protein group abundance by file and condition.
+- Store information about FDR and q-values for the protein groups identified/quantified.
+
+==== Protein Group Fields
+
+[cols="1,2,1,1,1,1", options="header"]
 |===
-| **Field**               | **Description**                                     | **Type**
-| `quantmsio_version`      | The version of the quantms.io specification     | string
-| `ProteinAccessions`     | Protein accessions identified or quantified     | array[string]
-| `abundance`             | Abundance of the given protein in the sample/experiment    | null, float
+| **Field**
+| **Description**
+| **Type**
+| *DIA-NN*
+| *FragPipe*
+| *MaxQuant*
+
+| `quantmsio_version`
+| The version of the quantms.io specification
+| string
+| -
+| -
+| -
+
+| `pg_accessions`
+| Protein group accessions of all the proteins within this group
+| array[string]
+| Protein.Group
+| Group + Indistinguishable Proteins
+| Protein IDs
+
+| `pg_names`
+| Protein group names
+| array[string]
+| Protein.Names
+| -
+| Protein names
+
+| `gg_accessions`
+| Gene group accessions, as a string array
+| array[string]
+| Genes
+| -
+| Gene names
+
+|`reference_file_name`
+|The raw file containing the identified/quantified protein
+|string
+|Run
+|-
+|-
+
+
+| global_qvalue
+| Global q-value of the protein group at the experiment level
+| float
+| Global.PG.Q.Value
+|-
+|Q-value
+
+|`intensities`
+| Array of intensities for the protein group in the run, the intensities are key-value pairs where the key is the type of intensity raw, normalized, etc the value is the intensity
+| array[struct{name: string, value: float}]
+|Intensity, Normalized Intensity
+|-
+|iBAQ, Intensity, LFQ intensity
+
+| `is_decoy`
+| If the protein is decoy
+| null, integer
+| -
+| -
+| Reverse
+
+| `contaminant`
+| If the protein is a contaminant
+| null, integer
+| -
+| -
+| Potential contaminant
+
+
+| `peptides`
+| Number of peptides per protein in the protein group
+| null, struct{sequence: string, count: int}
+| -
+| -
+| -
+
+|`anchor_protein`
+| The anchor protein of the protein group, leading protein or representative
+| null, string
+|-
+|Protein ID
+|Protein IDs
+
+|`unique`
+| Unique protein group indicator, if the protein group maps to a single protein, the value is 1, otherwise 0
+| int32, null
+| -
+| -
+| -
+
+|`protein_identification_scores`
+| List of structures, each structure contains two fields: name and value.
+| array[struct{name: string, value: float}]
+| -
+| -
+| -
+|===
+
+[[proteinsummary]]
+== Protein View
+
+The protein view is a report of the proteins identified/quantified in the experiment. It doesn't contain major information about the inference of the protein group, but it contains the protein abundance and the protein identification scores.
+
+=== Use cases
+
+- Fast reports of the proteins quantified/identified in an experiment with for Web interfaces and search engines.
+- Connection to AE/DE formats that enable to talk about the coverage of the protein identification.
+
+|===
+| **Field** | **Description** | **Type**
+
+| `abundance`              | Abundance of the given protein in the sample/experiment    | null, float
 | `sample_accession`       | Sample accession in the SDRF, which column is called `source name` | string
-| `global_qvalue`          | The global qvalue for a given protein or protein groups  | null, double
-| `is_decoy`               | If the protein is decoy                                  | null, integer
 | `best_id_score`           | The best search engine score for the identification      | string
 | `gene_accessions`        | The gene accessions corresponding to every protein       | null, array[string]
 | `gene_names`             | The gene names corresponding to every protein            | null, array[string]

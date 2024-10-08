@@ -1,10 +1,10 @@
 {
-	"name": "pg_matrix",
+	"name": "pg",
 	"type": "record",
 	"fields": [
 		{"name": "pg_accessions", "type": ["null",{"type": "array","items": "string"}], "doc": "Protein group accessions of all the proteins that the peptide maps to"},
-		{"name": "peptides", "type": {"type": "array","items": { "type": "struct", "field": { "name": "string", "value": "string"}}}, "doc": "The count of peptides in each reference"},
 		{"name": "gg_names", "type": ["null", {"type": "array", "items": "string"}], "doc": "Gene names, as string array"},
+		{"name": "peptides", "type": {"type": "array","items": { "type": "struct", "field": { "name": "string", "value": "string"}}}, "doc": "The count of peptides in each reference"},
 		{"name": "reference_file_name", "type": "string", "doc": "The reference file name that contains the feature"},
 		{"name": "first_protein_description", "type": "string", "doc": "About the specific information of the first protein"},
         {"name": "intensities", "type": {"type": "array","items": { "type": "struct", "field": { "name": "string", "value": "float32"}}}, "doc": "The total intensity of proteins in the reference"},
