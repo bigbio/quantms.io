@@ -1,4 +1,5 @@
 {
+# wee need real life examples for each of them
 	"name": "feature",
 	"type": "record",
 	"fields": [
@@ -8,7 +9,10 @@
 		{"name": "modification_details","type": ["null", {"type": "array", "items": "string"}],
 		"doc": "List of alternative site probabilities for the modification format: read the specification for more details"},
 		{"name": "posterior_error_probability", "type": ["null", "float32"], "doc": "Posterior error probability for the given peptide spectrum match"},
-		{"name": "global_qvalue", "type": ["null", "float32"], "doc": "Global q-value of the peptide or psm at the level of the experiment"},
+
+# in OpenMS this is the PSM q-value which is by default global at the level of the experiment and the run
+# if we at one point calculate peptide q-value then it we would need to clearly document if this is at the experiment or run level
+		{"name": "qvalue", "type": ["null", "float32"], "doc": "q-value of the peptide or psm at the level of the experiment"}, 
 
 		{"name": "is_decoy", "type": "int", "doc": "Decoy indicator, 1 if the PSM is a decoy, 0 target"},
 		{"name": "calculated_mz", "type": "float32", "doc": "Theoretical peptide mass-to-charge ratio based on identified sequence and modifications"},
@@ -25,22 +29,26 @@
 		{"name": "precursor_charge", "type": "int", "doc": "Precursor charge"},
 		{"name": "observed_mz", "type": "float32", "doc": "Experimental peptide mass-to-charge ratio of identified peptide (in Da)"},
 		{"name": "rt", "type": ["null", "float32"], "doc": "MS2 scan’s precursor retention time (in seconds)"},
+		{"name": "rt_start", "type": ["null", "float32"], "doc": "Start of the retention time window for feature"},
+		{"name": "rt_stop", "type": ["null", "float32"], "doc": "End of the retention time window for feature"},
+
 		{"name": "predicted_rt", "type": ["null", "float32"], "doc": "Predicted retention time of the peptide (in seconds)"},
 
 		{"name": "intensity", "type":  ["null","float32"], "doc": "The intensity-based abundance of the peptide in the sample"},
 
+		{"name": "run", "type": "string", "doc": "The column stores IDs of mass spectrometry runs for LFQ experiments (e.g., 1). For TMT/iTRAQ experiments, it is an identifier of mixture combined with technical replicate and fractions `{mixture}_{technical_replicate}_{fraction}` (e.g., 1_2_3)"},
+		{"name": "reference_file_name", "type": "string", "doc": "The reference file name that contains the feature"},
 		{"name": "sample_accession", "type":  ["null","string"], "doc": "The sample accession in the SDRF, which column is called source name"},
 		{"name": "condition", "type":  ["null","string"], "doc": "The value for the factor value column in the SDRF, for example, the tissue factor value[organism part]"},
 		{"name": "fraction", "type": ["null","string"], "doc": "The index value in the SDRF for the fraction column"},
 		{"name": "biological_replicate", "type": ["null","string"], "doc": "The value of the biological replicate column in the SDRF in relation to the condition"},
-		{"name": "run", "type": "string", "doc": "The column stores IDs of mass spectrometry runs for LFQ experiments (e.g., 1). For TMT/iTRAQ experiments, it is an identifier of mixture combined with technical replicate and fractions `{mixture}_{technical_replicate}_{fraction}` (e.g., 1_2_3)"},
 		{"name": "channel", "type": ["null","string"], "doc": "The channel used to label the sample, (e.g., TMT115)"},
-		{"name": "reference_file_name", "type": "string", "doc": "The reference file name that contains the feature"},
 
 		{"name": "psm_reference_file_name", "type": ["null","string"], "doc": "The reference file containing the best psm that identified the feature. Note: This file can be different from the file that contains the feature ().ReferenceFile"},
+# future? FAIMS, ion mobility
+
+# what does it mean for non-TMT data?
 		{"name": "psm_scan_number", "type": ["null","string"], "doc": "The scan number of the spectrum. The scan number or index of the spectrum in the file"},
-		{"name": "rt_start", "type": ["null", "float32"], "doc": "Start of the retention time window for feature"},
-		{"name": "rt_stop", "type": ["null", "float32"], "doc": "End of the retention time window for feature"},
 		{
       "name": "cv_params",
       "type": [
