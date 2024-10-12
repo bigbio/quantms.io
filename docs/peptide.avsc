@@ -9,7 +9,28 @@
 		"doc": "List of alternative site probabilities for the modification format: read the specification for more details"},
 		{"name": "posterior_error_probability", "type": ["null", "float32"], "doc": "Posterior error probability for the given peptide spectrum match"},
 		{"name": "global_qvalue", "type": ["null", "float32"], "doc": "Global q-value of the peptide or psm at the level of the experiment"},
-
+		{"name": "best_id_score", "type": ["null", {
+		"type": "record",
+		"name": "score",
+		"fields": [
+			{ "name": "name", "type": "string" },
+			{ "name": "value", "type": "float32" }
+		],
+		"doc": "A named score type and value representing an identification's measure of confidence or input feature"
+		}]},
+		{"name": "additional_scores", "type": ["null", {"type": "array",
+		"items": {
+			"type": "record",
+			"name": "score",
+			"fields": [
+				{"name": "name", "type": "string"},
+				{"name": "value", "type": "float32"}
+			],
+			"doc": "A named score type and value representing an identification's measure of confidence or input feature"
+		}
+		}],
+		"doc": "List of identification scores subsidiary to the best score"
+		},
 		{"name": "is_decoy", "type": "int", "doc": "Decoy indicator, 1 if the PSM is a decoy, 0 target"},
 		{"name": "calculated_mz", "type": "float32", "doc": "Theoretical peptide mass-to-charge ratio based on identified sequence and modifications"},
 		{"name": "additional_scores", "type": {"type": "array","items": { "type": "struct", "field": { "name": "string", "value": "float32"}}} ,

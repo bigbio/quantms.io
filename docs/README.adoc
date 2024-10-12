@@ -71,7 +71,7 @@ The `.qms` folder will contain multiple metadata files that will be used to desc
 [[common-data-structures]]
 == Common data structures and formats
 
-We have some concepts that are common for some outputs and would be good to define and explain them here: 
+We have some concepts that are common for some outputs and would be good to define and explain them here:
 
 [[peptidoform]]
 === Peptidoform
@@ -784,7 +784,7 @@ The fields that are unique to the psm view are:
 | x
 
 | `consensus_support`
-| Consensus support for the given peptide spectrum match, when multiple search engines are used 
+| Consensus support for the given peptide spectrum match, when multiple search engines are used
 | float, null
 | -
 | -
@@ -792,15 +792,15 @@ The fields that are unique to the psm view are:
 | -
 
 | `number_peaks`
-| Number of peaks in the spectrum used for the peptide spectrum match 
+| Number of peaks in the spectrum used for the peptide spectrum match
 | int32, null
-| - 
+| -
 | -
 | -
 | -
 
 | `mz_array`
-| Array of m/z values for the spectrum used for the peptide spectrum match 
+| Array of m/z values for the spectrum used for the peptide spectrum match
 | array[float], null
 | -
 | -
@@ -808,7 +808,7 @@ The fields that are unique to the psm view are:
 | -
 
 | `intesity_array`
-| Array of intensity values for the spectrum used for the peptide spectrum match 
+| Array of intensity values for the spectrum used for the peptide spectrum match
 | array[float], null
 | -
 | -
@@ -989,7 +989,7 @@ Some of the fields are shared between the <<psm>> and <<feature>> views, they ca
 | *Field*
 | *Description*
 | *Type*
-|best_id_score     | The best search engine score from all the features/psms identified | double, null
+|best_id_score     | The best search engine score from all the features/psms identified | `[{"type": "record", "name": "score", "fields": [{ "name": "name", "type": "string" },{ "name": "value", "type": "float32" }]}, "null"]`
 |sample_accession  | The sample accession in the SDRF, which column is called `source name`  | string, null
 |abundance         | The peptide abundance in the given sample accession                     | float, null
 |===
@@ -1136,7 +1136,7 @@ The protein view is a report of the proteins identified/quantified in the experi
 
 | `abundance`              | Abundance of the given protein in the sample/experiment    | null, float
 | `sample_accession`       | Sample accession in the SDRF, which column is called `source name` | string
-| `best_id_score`           | The best search engine score for the identification      | string
+| `best_id_score`           | The best search engine score for the identification      | `[{"type": "record", "name": "score", "fields": [{ "name": "name", "type": "string" },{ "name": "value", "type": "float32" }]}, "null"]`
 | `gene_accessions`        | The gene accessions corresponding to every protein       | null, array[string]
 | `gene_names`             | The gene names corresponding to every protein            | null, array[string]
 | `number_peptides`        | The total number of peptides for a give protein        | null, integer
