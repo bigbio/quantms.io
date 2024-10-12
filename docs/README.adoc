@@ -101,8 +101,8 @@ Those three properties can be combined, for example, in a string like one string
 `1(Probabilistic Score:0.8)|2(Probabilistic Score:0.9)|3-UNIMOD:35`
 
 [[scan-number]]
-=== Scan number
-Scan number aims to point to the MS/MS in a Raw, mzML, or peak list file (e.g., MGF). https://github.com/HUPO-PSI/mzIdentML[mzIdentML], https://github.com/HUPO-PSI/mzTab[mzTab], https://github.com/HUPO-PSI/usi[USI], and other HUPO-PSI standarization have different ways to use and define scan `number`. Here we will use the latest definition from USI. A single `scan number` point to an MS/MS in the spectra file. The scan number is a unique identifier, and it could be a number or a string depending on the instrument.
+=== Scan number (Scan)
+Scan number (`scan`) aims to point to the MS/MS in a Raw, mzML, or peak list file (e.g., MGF). https://github.com/HUPO-PSI/mzIdentML[mzIdentML], https://github.com/HUPO-PSI/mzTab[mzTab], https://github.com/HUPO-PSI/usi[USI], and other HUPO-PSI standarization have different ways to use and define scan `number`. Here we will use the latest definition from USI. A single `scan` point to an MS/MS in the spectra file. The `scan` is a unique identifier, and it could be a number or a string depending on the instrument.
 
 - AB Sciex:  `sample=1 period=1 cycle=2740 experiment=10` ->  `1,1,2740,10`. In this scenario, where reference to the original scan event is desired but a single scan number is not sufficient, then we use `nativeId` mechanism.
 
@@ -112,9 +112,9 @@ Scan number aims to point to the MS/MS in a Raw, mzML, or peak list file (e.g., 
 
 - Thermo scan : `controllerType=0 controllerNumber=1 scan=43920` -> `43920`
 
-Note: since the controllerType and controllerNumber are always 0 and 1 for mass spectra. In rare cases, if either controllerType is not 0 or controllerNumber is not 1 (e.g., a PDA spectrum is being referenced), then the nativeId form MUST be used: `controllerType=5 controllerNumber=1 scan=7` -> `nativeId:5,1,7`
+Note: since the controllerType and controllerNumber are always 0 and 1 for mass spectra. In rare cases, if either controllerType is not 0 or controllerNumber is not 1 (e.g., a PDA spectrum is being referenced), then the nativeId form MUST be used: `controllerType=5 controllerNumber=1 scan=7` -> `5,1,7`
 
-scan numbers are use in the following section: <<psm>>, <<feature>>, <<mz>>.
+The `scan` is use in the following section: <<psm>>, <<feature>>, <<mz>>.
 
 [[retention-time]]
 
