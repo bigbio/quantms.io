@@ -114,6 +114,10 @@ Scan number aims to point to the MS/MS in a Raw, mzML, or peak list file (e.g., 
 
 Note: since the controllerType and controllerNumber are always 0 and 1 for mass spectra. In rare cases, if either controllerType is not 0 or controllerNumber is not 1 (e.g., a PDA spectrum is being referenced), then the nativeId form MUST be used: `controllerType=5 controllerNumber=1 scan=7` -> `nativeId:5,1,7`
 
+scan numbers are use in the following section: <<psm>>, <<feature>>, <<mz>>.
+
+[[retention-time]]
+
 [[identification-scores]]
 === Identification Scores
 
