@@ -12,9 +12,28 @@
 
 		{"name": "is_decoy", "type": "int", "doc": "Decoy indicator, 1 if the PSM is a decoy, 0 target"},
 		{"name": "calculated_mz", "type": "float32", "doc": "Theoretical peptide mass-to-charge ratio based on identified sequence and modifications"},
-		{"name": "additional_scores", "type": {"type": "array","items": { "type": "struct", "field": { "name": "string", "value": "float32"}}} ,
-		"doc": "List of structures, each structure contains two fields: name and value."},
-
+		{"name": "best_id_score", "type": ["null", {
+			"type": "record",
+			"name": "score",
+			"fields": [
+				{ "name": "name", "type": "string" },
+				{ "name": "value", "type": "float32" }
+			],
+			"doc": "A named score type and value representing an identification's measure of confidence or input feature"
+		}]},
+		{"name": "additional_scores", "type": ["null", {"type": "array",
+		"items": {
+			"type": "record",
+			"name": "score",
+			"fields": [
+				{"name": "name", "type": "string"},
+				{"name": "value", "type": "float32"}
+			],
+			"doc": "A named score type and value representing an identification's measure of confidence or input feature"
+		}
+		}],
+		"doc": "List of identification scores subsidiary to the best score"
+		},
 		{"name": "pg_accessions", "type": ["null", {"type": "array","items": "string"}], "doc": "Protein group accessions of all the proteins that the peptide maps to"},
 		{"name": "pg_positions", "type": ["null", {"type": "array","items": "string"}], "doc": "Protein start and end positions written as start_post:end_post"},
 		{"name": "unique", "type": ["null", "int"], "doc": "Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0"},
