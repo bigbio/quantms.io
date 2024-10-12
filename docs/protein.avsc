@@ -20,6 +20,19 @@
 				"doc": "A named score type and value representing an identification's measure of confidence or input feature"
 			}
 		]},
+		{"name": "additional_scores", "type": ["null", {"type": "array",
+		"items": {
+			"type": "record",
+			"name": "score",
+			"fields": [
+				{"name": "name", "type": "string"},
+				{"name": "value", "type": "float32"}
+			],
+			"doc": "A named score type and value representing an identification's measure of confidence or input feature"
+		}
+		}],
+		"doc": "List of identification scores subsidiary to the best score"
+		},
 		{"name": "gg_accessions", "type": ["null", {"type": "array","items": "string"}], "doc": "The gene accessions corresponding to every protein"},
 		{"name": "gg_names", "type": ["null", {"type": "array","items": "string"}], "doc": "The gene names corresponding to every protein"},
 		{"name": "number_peptides","type": ["null", "int"], "doc": "The total number of peptides for a give protein"},
