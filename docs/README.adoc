@@ -116,14 +116,12 @@ Note: since the controllerType and controllerNumber are always 0 and 1 for mass 
 
 The `scan` is use in the following section: <<psm>>, <<feature>>, <<mz>>.
 
-[[retention-time]]
-
 [[identification-scores]]
 === Identification Scores
 
-Every workflow within quantms uses different identification scores to determinate the quality of the identification. `additional_scores` in quantms try to capture multiple scores from different workflows such as the `Comet:xcorr` or `DIA-NN:Q.Value`. The identification scores are stored as a key/value pair where the key is the name of the score (is RECOMMENDED to use HUPO-PSI MS ontology) and the value is the score value. This concept is used in the following outputs:
+Every workflow within quantms uses different identification/quantification scores to determinate the quality of the identification or the quantification. `additional_scores` in quantms try to capture multiple scores from different workflows such as the `Comet:xcorr` or `DIA-NN:Q.Value`. Additional scores are stored as a key/value pair where the key is the name of the score (is RECOMMENDED to use HUPO-PSI MS ontology) and the value is the score value. This concept is used in the following outputs:
 
-- `["'Comet:xcorr':67.8", "'DIA-NN:Q.Value':0.01"]`
+- `[Comet:xcorr:67.8", DIA-NN:Q.Value:0.01]`
 
 This concept is used in the following outputs:
 
