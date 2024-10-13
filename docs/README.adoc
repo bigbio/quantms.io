@@ -186,7 +186,7 @@ NOTE: In `quantms.io` we use the UUID to identify the project and the files `{PR
 
 The structure of the version is as follows `{major release}.{minor update}`: The current `quantms.io` specification version is: **1.0**
 
-- All views and serialization formats will have a version number in the way: `quantmsio_version: {}`. This will help to identify the version of the specification used to generate the file.
+- All views (<<psm>>, <<feature>>, <<pg>>) and serialization formats will have a version number in the way: `quantmsio_version: {}`. This will help to identify the version of the specification used to generate the file.
 - Major release changes will be backward incompatible, while minor updates will be backward compatible.
 
 [[software]]
@@ -210,27 +210,27 @@ The project view is the file that stores the metadata of the entire `quantms.io`
 === Project fields
 
 |===
-| **Field**                | **Description**                             | **Type**
-| `project_accession`       | Project accession identifier                | string
-| `project_title`           | Title of the project                        | string
-| `project_sample_description` | Description of the project sample         | string
-| `project_data_description` | Description of the project data             | string
-| `project_pubmed_id`        | PubMed ID associated with the project       | int32
-| `organisms`              | List of Organisms involved in the project   | list[string], null
-| `organism_parts`          | Parts of Organisms studied                  | list[string], null
-| `diseases`               | Diseases associated with the study          | list[string], null
-| `cell_lines`              | Cell lines used in the study                | list[string], null
-| `instruments`            | Instruments used for data acquisition       | list[string]
-| `enzymes`                | Enzymes used in the study                   | list[string]
-| `experiment_type`         | Types of experiments conducted              | list[string]
-| `acquisition_properties`  | Properties of the data acquisition methods  | list[key/value]
-| `quantms_files`           | Files related to quantMS analysis           | list[key/value]
-| `quantmsio_version`       | Version of the `quantms.io`                 | String
-| `software_provider`       | The software used to generate the data <<software>> | Key/Value
-| `comments`                | Additional comments or notes                | List of Strings
+| **Field**                       | **Description**                             | **Type**
+| **project_accession**           | Project accession identifier                | string
+| **project_title**               | Title of the project                        | string
+| **project_sample_description**  | Description of the project sample           | string
+| **project_data_description**    | Description of the project data             | string
+| **project_pubmed_id**           | PubMed ID associated with the project       | int32
+| **organisms**                   | List of Organisms involved in the project   | list[string], null
+| **organism_parts**              | Parts of Organisms studied                  | list[string], null
+| **diseases**                    | Diseases associated with the study          | list[string], null
+| **cell_lines**                  | Cell lines used in the study                | list[string], null
+| **instruments**                 | Instruments used for data acquisition       | list[string]
+| **enzymes**                     | Enzymes used in the study                   | list[string]
+| **experiment_type**             | Types of experiments conducted              | list[string]
+| **acquisition_properties**      | Properties of the data acquisition methods  | list[key/value]
+| **quantms_files**               | Files related to quantMS analysis           | list[key/value]
+| **quantmsio_version**           | Version of the `quantms.io`                 | string
+| **software_provider**           | The <<software>> used to generate the data  | key/value
+| **comments**                    | Additional comments or notes                | list[string]
 |===
 
-Key/Value pair object: The key/value pairs are used to store the acquisition properties, and the  quantms files.
+- key/value pair object: The key/value pairs are used to store the acquisition properties, and the  quantms files.
 
 Example of ``AcquisitionProperties``:
 
@@ -273,7 +273,7 @@ Example of ``quantms_files``:
     {
       "feature_file": [
         {
-          "file_name": "PXD004683-958e8400-e29b-41f4.featur.parquet",
+          "file_name": "PXD004683-958e8400-e29b-41f4.feature.parquet",
           "is_folder": true,
           "partition_fields": ["sample_accession"]
         }
