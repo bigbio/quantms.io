@@ -132,7 +132,7 @@ This concept is used in the following outputs:
 [[cv-terms]]
 === Controlled Vocabulary Terms
 
-The following views <<psm>> <<feature>> use controlled vocabularies to describe the data. The controlled vocabulary terms are used to standardize the data and make it easier to integrate with other datasets. The controlled vocabulary terms are stored as a key/value pair where the key is the name of the controlled vocabulary term and the value is the term value. This concept is used in the following outputs:
+The following views <<psm>>, <<feature>>, <<mz>> use controlled vocabularies to describe the data. The controlled vocabulary terms are used to standardize the data and make it easier to integrate with other datasets. The controlled vocabulary terms are stored as a key/value pair where the key is the name of the controlled vocabulary term and the value is the term value. This concept is used in the following outputs:
 
 - `["ms level": "2", "deconvoluted data": null]`
 
@@ -150,23 +150,23 @@ The `quantms.io` format has different serialization formats for each view. The s
 [[parquet-format]]
 === Parquet format
 
-https://github.com/apache/parquet-format[Parquet] is a columnar storage format that supports nested data. For these large-scale analyses, Parquet has helped its users reduce storage requirements by at least one-third on large datasets, in addition, it greatly improved scan and deserialization time (web use-cases), hence the overall costs. The following table compares the savings as well as the speedup obtained by converting data into Parquet from CSV.
+https://github.com/apache/parquet-format[Parquet] is a columnar storage format that supports nested data. Apache Parquet is an open-source format designed for efficient data storage and retrieval. It offers high-performance compression and encoding schemes, making it well-suited for handling large volumes of complex data. Parquet is widely supported across various programming languages and analytics tools.
+
+Apache Parquet includes two types of metadata: file metadata and column metadata. File metadata contains pointers to the starting locations of all the column metadata, while column metadata holds location information for the individual column chunks. Readers first access the file metadata to find the column chunks they need, then use the column metadata to efficiently skip over irrelevant pages.
+
+A Parquet table can be distributed across multiple compute nodes, and its key advantage is that applications can quickly jump to the relevant fields in a record using metadata. For large-scale analyses, Parquet has helped users reduce storage requirements by at least one-third on large datasets. Additionally, it significantly improves scan and deserialization times (important for web-based use cases), thus reducing overall costs.
 
 [[parquet-features]]
 ==== Parquet Features
 
 - **Columnar Storage**: Parquet's columnar design improves compression and query performance by storing data by columns rather than rows, which reduces I/O for analytical queries that typically access only a few columns.
-- **Efficient Compression**: The format achieves better compression ratios with algorithms like Snappy, Gzip, and LZO, and uses techniques like RLE, bitpacking, and dictionary encoding for further optimization.
+- **Efficient Compression**: The format achieves better compression ratios with algorithms like Snappy, Gzip, and LZO, and uses techniques like RLE, and dictionary encoding for further optimization.
 - **Schema Evolution**: Parquet supports adding, deleting, or modifying columns without affecting existing data, making it adaptable to schema changes.
 - **Complex Data Types**: Supports nested structures and data types like arrays, maps, and structs, allowing efficient storage of complex data.
 
-|===
-| *Dataset*                            | *Size on Amazon S3* | *Query Run Time* | *Data Scanned*
-| Data stored as CSV files             | 1 TB                | 236 seconds      | 1.15 TB
-| Data stored in Apache Parquet Format | 130 GB              | 6.78 seconds     | 2.51 GB
-|===
-
+[[parquet-slicing]]
 ==== Parquet slicing
+
 //TODO: Add information about parquet slicing and how it should be included in the json project file.
 
 [[extensions]]
