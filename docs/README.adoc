@@ -50,7 +50,7 @@ image::images/formats-relation.svg[width=80%]
 [.center, cols="1,1,1,1", width=75%]
 |===
 | *view*       | *file class*      | *serialization format* | *definition*
-| mz           | mz_file           | _parquet_                 | <<mz>>
+| mz           | mz_file           | _parquet_              | <<mz>>
 | psm          | psm_file          | _parquet_              | <<psm>>
 | feature      | feature_file      | _parquet_              | <<feature>>
 | pg           | pg_file           | _parquet_              | <<pg>>
@@ -211,23 +211,23 @@ The project view is the file that stores the metadata of the entire `quantms.io`
 
 |===
 | **Field**                       | **Description**                             | **Type**
-| **project_accession**           | Project accession identifier                | string
-| **project_title**               | Title of the project                        | string
-| **project_sample_description**  | Description of the project sample           | string
-| **project_data_description**    | Description of the project data             | string
-| **project_pubmed_id**           | PubMed ID associated with the project       | int32
-| **organisms**                   | List of Organisms involved in the project   | list[string], null
-| **organism_parts**              | Parts of Organisms studied                  | list[string], null
-| **diseases**                    | Diseases associated with the study          | list[string], null
-| **cell_lines**                  | Cell lines used in the study                | list[string], null
-| **instruments**                 | Instruments used for data acquisition       | list[string]
-| **enzymes**                     | Enzymes used in the study                   | list[string]
-| **experiment_type**             | Types of experiments conducted              | list[string]
-| **acquisition_properties**      | Properties of the data acquisition methods  | list[key/value]
-| **quantms_files**               | Files related to quantMS analysis           | list[key/value]
-| **quantmsio_version**           | Version of the `quantms.io`                 | string
-| **software_provider**           | The <<software>> used to generate the data  | key/value
-| **comments**                    | Additional comments or notes                | list[string]
+| ``project_accession``          | Project accession identifier                | string
+| ``project_title``               | Title of the project                        | string
+| ``project_sample_description``  | Description of the project sample           | string
+| ``project_data_description``    | Description of the project data             | string
+| ``project_pubmed_id**           | PubMed ID associated with the project       | int32
+| ``organisms``                   | List of Organisms involved in the project   | list[string], null
+| ``organism_parts``              | Parts of Organisms studied                  | list[string], null
+| ``diseases``                    | Diseases associated with the study          | list[string], null
+| ``cell_lines``                  | Cell lines used in the study                | list[string], null
+| ``instruments``                 | Instruments used for data acquisition       | list[string]
+| ``enzymes``                     | Enzymes used in the study                   | list[string]
+| ``experiment_type``             | Types of experiments conducted              | list[string]
+| ``acquisition_properties``      | Properties of the data acquisition methods  | list[key/value]
+| ``quantms_files``               | Files related to quantMS analysis           | list[key/value]
+| ``quantmsio_version``           | Version of the `quantms.io`                 | string
+| ``software_provider``           | The <<software>> used to generate the data  | key/value
+| ``comments``                    | Additional comments or notes                | list[string]
 |===
 
 - key/value pair object: The key/value pairs are used to store the acquisition properties, and the  quantms files.
@@ -402,19 +402,18 @@ Example:
 [[sdrf]]
 == Sample and Data Relationship Format (SDRF) View
 
-The Sample and Data Relationship Format (SDRF) is a tab-delimited file format that describes the relationship between samples, data files, and the experimental factors. The SDRF is a key file in the proteomics data analysis workflow as it describes the relationship between the samples and the data files. The specification of the SDRF can be found in the https://github.com/bigbio/proteomics-sample-metadata[SDRF GitHub repository].
+The Proteomics Sample and Data Relationship Format (https://github.com/bigbio/proteomics-sample-metadata[SDRF]) is a tab-delimited file format that describes the relationship between samples, data files, and the experimental factors. The SDRF is a key file in the proteomics data analysis workflow as it describes the relationship between the samples and the data files. The specification of the SDRF can be found in the https://github.com/bigbio/proteomics-sample-metadata[SDRF GitHub repository].
 
 [[absolute]]
 == Absolute Quantification View
 
-Absolute quantification is the process of determining the absolute/baseline amount of a target protein in a sample. In proteomics, the main computational method to determine the absolute quantification is the intensity-based absolute quantification (iBAQ) method.
+Absolute quantification is the process of determining the absolute/baseline amount of a target protein in a sample. In proteomics, the main computational method to determine the absolute quantification is the intensity-based https://www.nature.com/articles/nature11848[absolute quantification (iBAQ) method].
 
 === Absolute Quantification Use cases
 
 - Fast and easy visualization absolute expression (AE) results using iBAQ values.
 - Store the AE results of each protein on each sample.
-- Provide information about the condition (factor value) of each sample for easy integration.
-- Store metadata information about the project, the workflow and the columns in the file.
+- It could be used as a proxy to understand the expression profile of a protein in different conditions, tissues and organisms.
 
 === Format
 
@@ -429,13 +428,13 @@ The absolute expression format is a tab-delimited file format that contains the 
 Example:
 
 |===
-| *protein*    | *sample_accession* | *Ccondition* | *ibaq*  | *ibaq_normalized*
-| LV861_HUMAN  | Sample-1           | heart       | 1234.1  | 12.34
+| *protein*    | *sample_accession* | *condition* | *ibaq*  | *ibaq_normalized*
+| LV861_HUMAN  | Sample-1           | heart        | 1234.1  | 12.34
 |===
 
 ==== AE Header
 
-By default, the MSstats format does not have any header of metadata. We suggest adding a header to the output for better understanding of the file. By default, MSstats allows comments in the file if the line starts with ``#``. The quantms output will start with some key value pairs that describe the project, the workflow and also the columns in the file. For
+We based the AE format (<<absolute>>) and DE (<<differential>>) based on MSstats and other genomics formats such as VCF. By default, the MSstats format does not have any header of metadata. We suggest adding a header to the output for better understanding of the file. By default, MSstats allows comments in the file if the line starts with ``#``. The quantms output will start with some key value pairs that describe the project, the workflow and also the columns in the file. For
 
 Example:
 
@@ -477,7 +476,7 @@ The differential expression view is a tab-delimited file format that contains th
 
 === Format
 
-The differential expression format by quantms is based on the https://msstats.org/wp-content/uploads/2017/01/MSstats_v3.7.3_manual.pdf[MSstats] output:
+The differential expression format by quantms.io is based on the https://msstats.org/wp-content/uploads/2017/01/MSstats_v3.7.3_manual.pdf[MSstats] output:
 
 - ``protein`` -> Protein Accession
 - ``label`` -> Label for the contrast on which the fold changes and p-values are based on
@@ -533,6 +532,8 @@ Multiple peptide-level views are available for the `quantms.io` format. The view
 - <<psm>>: Peptide Spectrum Match (psm) View—The psm view aims to cover detail on Peptide spectrum matches (psm) level for AI/ML training and other use-cases, mainly for DDA analytical methods.
 - <<feature>>: Peptide Feature View—The peptide feature views (peptide features) aims to cover detail on quantified peptide information level, including peptide intensity in relation to the sample metadata.
 - <<peptide>>: Peptide View—The peptide view is a summary of quantified peptides by samples, the aim of this representation is to provide a simple summary of the number of peptides and their given quantity for each protein on each sample. This view is useful for quick visualization and data retrieval.
+
+
 
 [[peptide-fields]]
 === Common Peptide Fields
