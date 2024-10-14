@@ -148,7 +148,7 @@ When represented in parquet files <<psm>>, <<feature>>, modification details wil
 ```
 
 [[scan]]
-=== Scan (Scan number)
+=== Scan (scan number)
 Scan number (`scan`) aims to point to the MS/MS in a Raw, mzML, or peak list file (e.g., MGF). https://github.com/HUPO-PSI/mzIdentML[mzIdentML], https://github.com/HUPO-PSI/mzTab[mzTab], https://github.com/HUPO-PSI/usi[USI], and another HUPO-PSI standardization have different ways to use and define scan `number`. Here we will use the latest definition from USI. A single `scan` point to an MS/MS in the spectra file. The `scan` is a unique identifier, and it could be a number or a string depending on the instrument.
 
 - AB Sciex:  `sample=1 period=1 cycle=2740 experiment=10` ->  `1,1,2740,10`. In this scenario, where reference to the original scan event is desired but a single scan number is not sufficient, then we use `nativeId` mechanism.
@@ -164,7 +164,7 @@ Note: since the controllerType and controllerNumber are always 0 and 1 for mass 
 The `scan` is use in the following section: <<psm>>, <<feature>>, <<mz>>.
 
 [[identification-scores]]
-=== Identification Scores
+=== Identification scores
 
 Every workflow within quantms uses different identification/quantification scores to determinate the quality of the identification or the quantification. `additional_scores` in quantms try to capture multiple scores from different workflows such as the `Comet:xcorr` or `DIA-NN:Q.Value`. Additional scores are stored as a key/value pair where the key is the name of the score (is RECOMMENDED to use HUPO-PSI MS ontology) and the value is the score value. This concept is used in the following outputs:
 
@@ -177,7 +177,7 @@ This concept is used in the following outputs:
 - <<peptide>>
 
 [[cv-terms]]
-=== Controlled Vocabulary Terms
+=== Controlled vocabulary terms
 
 The following views <<psm>>, <<feature>>, <<mz>> use controlled vocabularies to describe the data. The controlled vocabulary terms are used to standardize the data and make it easier to integrate with other datasets. The controlled vocabulary terms are stored as a key/value pair where the key is the name of the controlled vocabulary term and the value is the term value. This concept is used in the following outputs:
 
@@ -204,7 +204,7 @@ Apache Parquet includes two types of metadata: file metadata and column metadata
 A Parquet table can be distributed across multiple compute nodes, and its key advantage is that applications can quickly jump to the relevant fields in a record using metadata. For large-scale analyses, Parquet has helped users reduce storage requirements by at least one-third on large datasets. Additionally, it significantly improves scan and deserialization times (important for web-based use cases), thus reducing overall costs.
 
 [[parquet-features]]
-==== Parquet Features
+==== Parquet features
 
 - **Columnar Storage**: Parquet's columnar design improves compression and query performance by storing data by columns rather than rows, which reduces I/O for analytical queries that typically access only a few columns.
 - **Efficient Compression**: The format achieves better compression ratios with algorithms like Snappy, Gzip, and LZO, and uses techniques like RLE, and dictionary encoding for further optimization.
@@ -448,16 +448,16 @@ Example:
 ----
 
 [[sdrf]]
-== Sample and Data Relationship Format (SDRF) View
+== Sample and Data Relationship Format (SDRF) view
 
 The Proteomics Sample and Data Relationship Format (https://github.com/bigbio/proteomics-sample-metadata[SDRF]) is a tab-delimited file format that describes the relationship between samples, data files, and the experimental factors. The SDRF is a key file in the proteomics data analysis workflow as it describes the relationship between the samples and the data files. The specification of the SDRF can be found in the https://github.com/bigbio/proteomics-sample-metadata[SDRF GitHub repository].
 
 [[absolute]]
-== Absolute Quantification View
+== Absolute quantification view
 
 Absolute quantification is the process of determining the absolute/baseline amount of a target protein in a sample. In proteomics, the main computational method to determine the absolute quantification is the intensity-based https://www.nature.com/articles/nature11848[absolute quantification (iBAQ) method].
 
-=== Absolute Quantification Use cases
+=== Absolute quantification use cases
 
 - Fast and easy visualization absolute expression (AE) results using iBAQ values.
 - Store the AE results of each protein on each sample.
@@ -480,7 +480,7 @@ Example:
 | LV861_HUMAN  | Sample-1           | heart        | 1234.1  | 12.34
 |===
 
-==== AE Header
+==== AE header
 
 We based the AE format (<<absolute>>) and DE (<<differential>>) based on MSstats and other genomics formats such as VCF. By default, the MSstats format does not have any header of metadata. We suggest adding a header to the output for better understanding of the file. By default, MSstats allows comments in the file if the line starts with ``#``. The quantms output will start with some key value pairs that describe the project, the workflow and also the columns in the file. For
 
@@ -511,11 +511,11 @@ We _RECOMMEND_ including the following properties in the header:
 Please check also the differential expression example for more information: <<differential>>
 
 [[differential]]
-== Differential Expression View
+== Differential expression view
 
 The differential expression view is a tab-delimited file format that contains the differential expression results between two contrasts, with the corresponding fold changes and p-values. The differential expression view is a key file in the proteomics data analysis workflow as it describes the differential expression between two conditions.
 
-=== Differential Expression Use cases
+=== Differential expression use cases
 
 -  Store the differential express proteins between two contrasts, with the corresponding fold changes and p-values.
 -  Enable easy visualization using tools like `Volcano Plot <https://en.wikipedia.org/wiki/Volcano_plot_(statistics)>`__.
@@ -542,7 +542,7 @@ Example:
 | ADA2_HUMAN  | normal - squamous cell carcinoma | 0.3057    | 0.26 | 37   | 0.02     | 0.43         |
 |===
 
-==== DE Header
+==== DE header
 
 By default, the MSstats format does not have any header of metadata. We suggest adding a header to the output for better understanding of the file. By default, MSstats allows comments in the file if the line starts with ``#``. The quantms output will start with some key value pairs that describe the project, the workflow and also the columns in the file. For example:
 
@@ -573,7 +573,7 @@ We suggest including the following properties in the header:
 - `adj_pvalue: The FDR threshold used to filter the protein lists (e.g. ``adj.pvalue < 0.05``)
 
 [[peptide-views]]
-== Peptide-based Views: Psm, Feature and Peptide
+== Peptide-based Views: psm, feature and peptide
 
 Multiple peptide-level views are available for the `quantms.io` format. The views are the following:
 
@@ -584,11 +584,11 @@ Multiple peptide-level views are available for the `quantms.io` format. The view
 - <<peptide>>: Peptide View—The peptide view is a summary of quantified peptides by samples, the aim of this representation is to provide a simple summary of the number of peptides and their given quantity for each protein on each sample. This view is useful for quick visualization and data retrieval.
 
 [[psm]]
-=== Peptide Spectrum Match (psm) View
+=== Peptide spectrum match (psm) view
 
 Peptide spectrum matches (psms) are the results of the **identification** of peptides in mass spectrometry data. PSMs are mainly the results of peptide identification by database search engines on data-dependent acquisition (DDA) experiments.
 
-==== Psm Use cases
+==== Psm use cases
 
 - The psm table aims to cover detail on psm level for AI/ML use-cases.
 - Most of the content is similar to mzTab, a psm would a peptide identification in a msrun file.
@@ -596,7 +596,7 @@ Peptide spectrum matches (psms) are the results of the **identification** of pep
 - Fast and easy visualization of PSM information.
 
 [[psm-fields]]
-==== Psm Fields
+==== Psm fields
 
 The following table presents all the fields and attributes for each PSM entry in the psm_file. Some fields are shared between the <<psm>>, <<feature>> and <<peptide>> views.
 
@@ -839,7 +839,7 @@ The `mz_array` and `intensity_array` are arrays of the same length, where the `m
 ====
 
 [[psm-file-metadata]]
-==== Psm File metadata
+==== Psm file metadata
 
 For parquet psm files, the metadata of the file including quantms.io version and other metadata should be stored in the file. The metadata should be stored in the file as a key/value pair. The metadata should include the following fields:
 
@@ -885,7 +885,7 @@ pq.write_table(table, 'psm_data.parquet', metadata=file_metadata)
 ----
 
 [[psm-global-qvalue]]
-==== Psm Global Q-value
+==== Psm global q-value
 
 //TODO: We have to explain the comments from OpenMS, and DIA-NN. Comment from @timo: In OpenMS this is the PSM q-value which is by default global at the level of the experiment and the run. if we at one point calculate peptide q-value then it we would need to cleared need to cleanly document if this is at the experiment or run level
 
@@ -894,7 +894,7 @@ pq.write_table(table, 'psm_data.parquet', metadata=file_metadata)
 The psm view can be found in link:psm.avsc[psm.avsc].
 
 [[peptide-fields]]
-=== Common Peptide Fields
+=== Common peptide fields
 
 The following fields are shared among Peptide-based views: <<psm>>, <<feature>>, <<peptide>>.
 
@@ -1069,20 +1069,20 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 
 
 [[feature]]
-=== Peptide Feature View
+=== Peptide feature view
 
 The peptide feature view (peptide features) aims to cover detail on quantified peptide information level, including peptide intensity in relation to the sample metadata. The ``feature parquet file`` is a tabular file that contains the details of the peptides quantified in the experiment and sample.
 
 The feature file is similar to the https://https://github.com/HUPO-PSI/mzTab/tree/master/specification_document-releases/1_0-Proteomics-Release[mztab] peptide table, the peptide evidence in https://cox-labs.github.io/coxdocs/output_tables.html[MaxQuant], the https://github.com/vdemichev/DiaNN/blob/master/README.md#output[diann matrix table].
 
-==== Feature Use cases
+==== Feature use cases
 
 -  Store peptide intensities in relation to the sample metadata to perform down-stream analysis and integration.
 -  Enable peptide level statistics and algorithms to move from peptide level to protein level.
 
 NOTE: quantms also release the peptide table for MSstats. The goal of the feature table is to provide a more general peptide table and improve the annotations of the peptides with more columns.
 
-==== Feature Fields
+==== Feature fields
 
 Some of the fields are shared between the <<feature>> and <<psm>> views, they can be found in the following table <<peptide-fields>>.
 
@@ -1197,7 +1197,7 @@ Some of the fields are shared between the <<feature>> and <<psm>> views, they ca
 |===
 
 [[diann-scan]]
-===== DIANN Scan
+===== DIANN scan
 
 The `DIA-NN` scan is a string that contains the scan number of the MS2 used to identify the peptide. We use the `rt` field and the mzML information to get that number.
 
@@ -1206,16 +1206,16 @@ The `DIA-NN` scan is a string that contains the scan number of the MS2 used to i
 The feature view can be found in link:feature.avsc[feature.avsc].
 
 [[peptide]]
-=== Peptide View
+=== Peptide view
 
 The peptide view aims to cover detail on peptides quantified in the experiment and sample. A peptide could be a modified peptide (sequence with modifications) or non-modified peptide (sequence with no modifications) depending on the use case and the granularity of the data. The peptide view is a tab-delimited file format that claims to represent the peptides quantified in the experiment.
 
-==== Peptide Use cases
+==== Peptide use cases
 
 - It serves as a report file with all peptides quantified in the experiment for each protein.
 - It can be used to generate peptide reports for integration with tools and services.
 
-==== Peptide Fields
+==== Peptide fields
 
 Some of the fields are shared between the <<psm>> and <<feature>> views, they can be found in the following table <<peptide-fields>>.
 
@@ -1233,24 +1233,24 @@ Some of the fields are shared between the <<psm>> and <<feature>> views, they ca
 The peptide view can be found in link:peptide.avsc[peptide.avsc].
 
 [[protein]]
-== Protein Views : Protein Groups and Protein Summary
+== Protein views : Protein groups and Protein summary
 
 We have two main reports for protein information. The <<pg>> report from <<proteinsummary>>. In summary, the protein group report is the output of the quantitative tool including quantms, MaxQuant or DIA-NN; while the protein summary is a summary of the protein quantified by samples.
 
 [[pg]]
-=== Protein Group View
+=== Protein group view
 
 The protein group view is a tabular file that contains the details of the protein groups identified and quantified. The protein group is similar to the outputs of multiple tools such as MaxQuant, DIA-NN, and others.
 
 The file defines the relation between a protein groups and the raw file that contains the protein group. The protein group view is a key file in the proteomics data analysis workflow as it describes the protein groups identified and quantified in the experiment.
 
-==== Protein Group Use cases
+==== Protein group use cases
 
 - Retrieve all the protein groups identified or quantified in the file.
 - Compute the protein group abundance by file and condition.
 - Store information about FDR and q-values for the protein groups identified/quantified.
 
-==== Protein Group Fields
+==== Protein group fields
 
 [cols="1,2,1,1,1,1", options="header"]
 |===
@@ -1356,7 +1356,7 @@ The file defines the relation between a protein groups and the raw file that con
 |===
 
 [[proteinsummary]]
-== Protein View
+== Protein view
 
 The protein view is a report of the proteins identified/quantified in the experiment. It doesn't contain major information about the inference of the protein group, but it contains the protein abundance and the protein identification scores.
 
@@ -1387,13 +1387,13 @@ The protein view can be found in link:protein.avsc[protein.avsc].
 
 The mass spectra view is a tabular file that contains the details of the mass spectra identified and quantified. This view is based on https://github.com/lazear/mz_parquet[mz_parquet] format developed by Michael Lazear. The mz_parquet format is a parquet-based format that stores the mass spectra information in a columnar format.
 
-=== Mass Spectra Use cases
+=== Mass spectra use cases
 
 - Retrieve all the precursor mass, retention time, and intensity in the file.
 - Enable easy visualization and scanning on mass spectra level.
 - AI/ML training and prediction on mass spectra level.
 
-=== Mass Spectra Fields
+=== Mass spectra fields
 
 [cols="1,1,2", options="header"]
 |===
