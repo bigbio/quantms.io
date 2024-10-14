@@ -86,6 +86,7 @@ class ProjectHandler:
         else:
             self.load_project_info(project_json_file)
             self.project_accession = self.project.project_info["project_accession"]
+        self.extensions = ["sdrf_file","psm_file","feature_file","differential_file","absolute_file"]
 
     def load_project_info(self, project_json_file: str = None):
         """
@@ -144,57 +145,43 @@ class ProjectHandler:
         self.project.project_info["software_provider"]["name"] = sortware_name
         self.project.project_info["software_provider"]["version"] = sortware_version
 
-    def add_quantms_file(self, file_name: str, file_category: str, replace_existing: bool = True):
+    def add_quantms_path(self, path_name: str, file_category: str, is_folder=False, partition_fields=None, replace_existing=None):
         """
         Add a quantms file to the project information. The file name will be generated automatically. Read more about the
         quantms file naming convention in the docs folder of this repository
         (https://github.com/bigbio/quantms.io/blob/main/docs/PROJECT.md)
-        :param file_name: quantms file name
+        :param path_name: The name of the file or folder
         :param file_category: quantms file category(e.g."protein_file","peptide_file","psm_file","differential_file",etc.)
-        :param replace_existing: Replace existing file name.
+        :param is_folder: A boolean value that indicates if the file is a folder or not.
+        :partition_fields: The fields that are used to partition the data in the file. This is used to optimize the data retrieval and filtering of the data. This field is optional.
+        :param replace_existing: Whether to delete old files
         """
         if "quantms_files" not in self.project.project_info:
             self.project.project_info["quantms_files"] = []
-            self.project.project_info["quantms_files"].append({file_category: file_name})
-        elif replace_existing:
-            obj_index = None
-            for index, obj in enumerate(self.project.project_info["quantms_files"]):
-                if file_category in obj:
-                    obj_index = index
-            if obj_index is not None:
-                self.project.project_info["quantms_files"][obj_index][file_category] = file_name
-            else:
-                self.project.project_info["quantms_files"].append({file_category: file_name})
-        else:
-            obj_index = None
-            for index, obj in enumerate(self.project.project_info["quantms_files"]):
-                if file_category in obj:
-                    obj_index = index
-            if obj_index is not None:
-                if isinstance(
-                    self.project.project_info["quantms_files"][obj_index][file_category],
-                    list,
-                ):
-                    self.project.project_info["quantms_files"][obj_index][file_category].append(file_name)
-                else:
-                    self.project.project_info["quantms_files"][obj_index][file_category] = self.project.project_info[
-                        "quantms_files"
-                    ][obj_index][file_category].split()
-                    self.project.project_info["quantms_files"][obj_index][file_category].append(file_name)
-            else:
-                self.project.project_info["quantms_files"].append({file_category: [file_name]})
-
-    def register_file(self, output_path, extension):
-        extension_map = {
-            ".sdrf.tsv": "sdrf_file",
-            ".protein.parquet": "protein_file",
-            ".peptide.parquet": "peptide_file",
-            ".psm.parquet": "psm_file",
-            ".featrue.parquet": "feature_file",
-            ".differential.tsv": "differential_file",
-            ".absolute.tsv": "absolute_file",
+        
+        obj_index = None
+        for index, obj in enumerate(self.project.project_info["quantms_files"]):
+            if file_category in obj:
+                obj_index = index
+        if(obj_index is not None and replace_existing):
+            self.project.project_info["quantms_files"][obj_index][file_category] = []
+        path_name = path_name.replace('\\','/')
+        record = {
+            'path_name': path_name,
+            'is_folder': is_folder,
         }
-        self.add_quantms_file(output_path, extension_map[extension])
+        if partition_fields is not None and isinstance(partition_fields, list):
+            record['partition_fields'] = partition_fields
+            
+        if obj_index is not None:
+            self.project.project_info["quantms_files"][obj_index][file_category].append(record)
+        else:
+            self.project.project_info["quantms_files"].append({file_category: [record]})
+
+    def register_file(self, path_name, file_category, is_folder=False, partition_fields=None, replace_existing=None):
+        if file_category not in self.extensions:
+            raise Exception(f"The {file_category} not in {self.extensions}")
+        self.add_quantms_path(path_name, file_category, is_folder=is_folder, partition_fields=partition_fields, replace_existing=replace_existing)
 
     def save_project_info(
         self,
@@ -272,7 +259,7 @@ class ProjectHandler:
 
         shutil.copyfile(sdrf_file_path, output_filename_path)
         # self.project.project_info["sdrf_file"] = output_filename
-        self.register_file(output_filename, ".sdrf.tsv")
+        self.register_file(output_filename, "sdrf_file")
         logger.info(f"SDRF file copied to {output_filename} and added to the project information")
 
 
