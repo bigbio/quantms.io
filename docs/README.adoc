@@ -163,6 +163,11 @@ Note: since the controllerType and controllerNumber are always 0 and 1 for mass 
 
 The `scan` is use in the following section: <<psm>>, <<feature>>, <<mz>>.
 
+[NOTE]
+=====
+Normally the scan value is only captured in the column, while the format of the scan: `nativeId`, `scan` or `index` should be captured in the metadata of the file. However, in some types of analyses we may have more than one type of scan in the same file, (e.g., when merging multiple experiments.), in this case, each scan MUST be prefixed by the type of scan. For example, `nativeId:1,1,2740,10`, `scan:43920`.
+=====
+
 [[identification-scores]]
 === Identification scores
 
