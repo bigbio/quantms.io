@@ -849,6 +849,10 @@ For parquet psm files, the metadata of the file including quantms.io version and
 - `project_title`: The project title in PRIDE Archive if available.
 - `project_description`: The project description in PRIDE Archive if available.
 - `scan_format`: The format of the scan, with possible values: `scan`, `index`, `nativeId`.
+- `creator`: Name of the tool or person who created the file.
+- `file_type` Type of the file (psm_file)
+- `creation_date`: Date when the file was created
+- `uuid`: Unique identifier for the file.
 
 Example parquet in Python:
 
@@ -877,7 +881,11 @@ file_metadata = {
     'project_accession': 'PXD012345',
     'project_title': 'Proteomics of Disease X',
     'project_description': 'Project description',
-    'scan_format': 'scan'
+    'scan_format': 'scan',
+    'creator': 'John Doe',
+    'file_type': 'psm_file',
+    'creation_date': '2021-01-01',
+    'uuid': '943a8f02-0527-4528-b1a3-b96de99ebe75'
 }
 
 # Write the Parquet file with metadata
