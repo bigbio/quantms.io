@@ -299,7 +299,7 @@ Example of ``AcquisitionProperties``:
 
 The files within a project are in the current version <<version>> optional. Files within a project should be listed in the quantms_files, for every file the following information is necessary:
 
-- file_name: The name of the file or folder.
+- path_name: The name of the file or folder.
 - is_folder: A boolean value that indicates if the file is a folder or not.
 - partition_fields: The fields that are used to partition the data in the file. This is used to optimize the data retrieval and filtering of the data. This field is optional.
 
@@ -314,11 +314,11 @@ Example of ``quantms_files``:
     {
       "psm_file": [
         {
-          "file_name": "PXD004683-550e8400-e29b-41d4.1.psm.parquet",
+          "path_name": "PXD004683-550e8400-e29b-41d4.1.psm.parquet",
           "is_folder": false
         },
         {
-          "file_name": "PXD004683-550e8400-e29b-41d4.2.psm.parquet",
+          "path_name": "PXD004683-550e8400-e29b-41d4.2.psm.parquet",
           "is_folder": false
         }
       ]
@@ -326,7 +326,7 @@ Example of ``quantms_files``:
     {
       "feature_file": [
         {
-          "file_name": "PXD004683-958e8400-e29b-41f4.feature.parquet",
+          "path_name": "PXD004683",
           "is_folder": true,
           "partition_fields": ["sample_accession"]
         }
@@ -335,7 +335,7 @@ Example of ``quantms_files``:
     {
       "differential_file": [
         {
-          "file_name": "PXD004683-a716.differential.tsv",
+          "path_name": "PXD004683-a716.differential.tsv",
           "is_folder": false
         }
       ]
@@ -343,7 +343,7 @@ Example of ``quantms_files``:
     {
       "absolute_file": [
         {
-          "file_name": "PXD004683-e29b-41f4-a716.absolute.tsv",
+          "path_name": "PXD004683-e29b-41f4-a716.absolute.tsv",
           "is_folder": false
         }
       ]
@@ -351,7 +351,7 @@ Example of ``quantms_files``:
     {
       "sdrf_file": [
         {
-          "file_name": "PXD004683-e29b-41f4-a716.sdrf.tsv",
+          "path_name": "PXD004683-e29b-41f4-a716.sdrf.tsv",
           "is_folder": false
         }
       ]

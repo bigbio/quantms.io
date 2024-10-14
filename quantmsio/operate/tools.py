@@ -151,9 +151,3 @@ def load_de_or_ae(path):
     f.seek(pos - 1)
     return pd.read_csv(f, sep="\t"), content
 
-
-# register_file
-def register_file_to_json(project_file, attach_file, category, replace_existing):
-    register = ProjectHandler(project_json_file=project_file)
-    register.add_quantms_file(attach_file, category, replace_existing)
-    register.save_updated_project_info(output_file_name=project_file)
