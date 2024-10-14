@@ -147,7 +147,7 @@ When represented in parquet files <<psm>>, <<feature>>, modification details wil
 
 ```
 
-[[scan-number]]
+[[scan]]
 === Scan (Scan number)
 Scan number (`scan`) aims to point to the MS/MS in a Raw, mzML, or peak list file (e.g., MGF). https://github.com/HUPO-PSI/mzIdentML[mzIdentML], https://github.com/HUPO-PSI/mzTab[mzTab], https://github.com/HUPO-PSI/usi[USI], and another HUPO-PSI standardization have different ways to use and define scan `number`. Here we will use the latest definition from USI. A single `scan` point to an MS/MS in the spectra file. The `scan` is a unique identifier, and it could be a number or a string depending on the instrument.
 
@@ -594,9 +594,10 @@ Peptide spectrum matches (psms) are the results of the **identification** of pep
 - We included in the psm view the spectrum information as optional for those use cases that want to have fast access to peptide information + spectrum data, for example, clustering or intensity prediction
 - Fast and easy visualization and scanning on psm level.
 
+[[psm-fields]]
 ==== Psm Fields
 
-Some fields are shared between the <<psm>>, <<feature>> and <<peptide>> views.
+The following table presents all the fields and attributes for each PSM entry in the psm_file. Some fields are shared between the <<psm>>, <<feature>> and <<peptide>> views.
 
 [cols="1,2,1,1,1,1,1", options="header"]
 |===
@@ -707,7 +708,7 @@ Some fields are shared between the <<psm>>, <<feature>> and <<peptide>> views.
 | accession
 
 | `pg_positions`
-| Protein start and end positions written as start_post:end_post
+| Protein start and end positions written as start_post: end_post
 | array[string], null
 | -
 | x
@@ -788,7 +789,7 @@ Some fields are shared between the <<psm>>, <<feature>> and <<peptide>> views.
 | spectra_ref
 
 | `scan`
-| Scan index (number of nativeId) of the spectrum identified: read <<scan-number>>
+| Scan index (number of nativeId) of the spectrum identified: read <<scan>>
 | string
 | <<scan-diann>>
 | Spectrum
@@ -833,8 +834,54 @@ Some fields are shared between the <<psm>>, <<feature>> and <<peptide>> views.
 ====
 Psm view is NOT RECOMMENDED to be generated for **DIA** methods because it will be duplicated information with the feature view. The psm view is more suitable for **DDA** methods where the psm is the main output of the identification process.
 
-The `MzArray` and `IntensityArray` are arrays of the same length, where the `MzArray` contains the m/z values and the `IntensityArray` contains the intensity values; and the size of the arrays is the same as the number of peaks in the spectrum. These three columns could help use cases like AI/ML that need the spectrum information for a given psm.
+The `mz_array` and `intensity_array` are arrays of the same length, where the `mz_array` contains the m/z values and the `intensity_array` contains the intensity values; and the size of the arrays is the same as the number of peaks in the spectrum. These three columns could help use cases like AI/ML that need the spectrum information for a given psm. We RECOMMEND using for spectra data the mz view (<<mz>>), where the spectra are stored in a more efficient way.
 ====
+
+[[psm-file-metadata]]
+==== Psm File metadata
+
+For parquet psm files, the metadata of the file including quantms.io version and other metadata should be stored in the file. The metadata should be stored in the file as a key/value pair. The metadata should include the following fields:
+
+- `quantmsio_version`: The version of the quantms.io format used to generate the file.
+- `software_provider`: The software provider and the version of the software used to generate the data.
+- `project_accession`: The project accession in PRIDE Archive if available.
+- `project_title`: The project title in PRIDE Archive if available.
+- `project_description`: The project description in PRIDE Archive if available.
+- `scan_format`: The format of the scan, with possible values: `scan`, `index`, `nativeId`.
+
+Example parquet in Python:
+
+[source,python]
+----
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+# Define a sample schema for the Parquet file
+schema = pa.schema([
+    ....
+])
+
+# Create sample data to write to the Parquet file
+data = {
+    ....
+}
+
+# Convert the data to a PyArrow Table
+table = pa.table(data, schema=schema)
+
+# Define the custom metadata as key-value pairs
+file_metadata = {
+    'quantmsio_version': '1.0',
+    'software_provider': 'QuantMS 1.3.0',
+    'project_accession': 'PXD012345',
+    'project_title': 'Proteomics of Disease X',
+    'project_description': 'Project description',
+    'scan_format': 'scan'
+}
+
+# Write the Parquet file with metadata
+pq.write_table(table, 'psm_data.parquet', metadata=file_metadata)
+----
 
 ==== Format
 

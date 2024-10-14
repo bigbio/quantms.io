@@ -1,5 +1,4 @@
 {
-# wee need real life examples for each of them
 	"name": "feature",
 	"type": "record",
 	"fields": [
