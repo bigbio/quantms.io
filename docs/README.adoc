@@ -686,7 +686,7 @@ The following table presents all the fields and attributes for each PSM entry in
 
 | `consensus_support`
 | Consensus support for the given peptide spectrum match, when multiple search engines are used
-| float, null
+| float32, null
 | -
 | -
 | -
