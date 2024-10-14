@@ -833,9 +833,11 @@ The following table presents all the fields and attributes for each PSM entry in
 
 [NOTE]
 ====
-Psm view is NOT RECOMMENDED to be generated for **DIA** methods because it will be duplicated information with the feature view. The psm view is more suitable for **DDA** methods where the psm is the main output of the identification process.
+ - Psm view is NOT RECOMMENDED to be generated for **DIA** methods because it will be duplicated information with the feature view. The psm view is more suitable for **DDA** methods where the psm is the main output of the identification process.
 
-The `mz_array` and `intensity_array` are arrays of the same length, where the `mz_array` contains the m/z values and the `intensity_array` contains the intensity values; and the size of the arrays is the same as the number of peaks in the spectrum. These three columns could help use cases like AI/ML that need the spectrum information for a given psm. We RECOMMEND using for spectra data the mz view (<<mz>>), where the spectra are stored in a more efficient way.
+ - Protein inference SHOULD NOT be included in the psm view, as it is not the main purpose of the psm view. Then, is RECOMMENDED that all proteins mapping to the peptide in the psm view are included in the `pg_accessions`, `pg_positions`, `gg_accessions` and `gg_names` fields. For protein inference please look into the feature view (<<feature>>) and protein group (<<pg>>).
+
+ - The `mz_array` and `intensity_array` are arrays of the same length, where the `mz_array` contains the m/z values and the `intensity_array` contains the intensity values; and the size of the arrays is the same as the number of peaks in the spectrum. These three columns could help use cases like AI/ML that need the spectrum information for a given psm. We RECOMMEND using for spectra data the mz view (<<mz>>), where the spectra are stored in a more efficient way.
 ====
 
 [[psm-file-metadata]]
