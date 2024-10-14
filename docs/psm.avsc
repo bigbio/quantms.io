@@ -73,11 +73,13 @@
             {"name": "precursor_charge", "type": "int", "doc": "Precursor charge"},
             {"name": "observed_mz", "type": "float32", "doc": "Experimental peptide mass-to-charge ratio of identified peptide (in Da)"},
             {"name": "rt", "type": ["null", "float32"], "doc": "MS2 scan’s precursor retention time (in seconds)"},
+# It is probably fine to also put prediction values in there. But wouldn't it be better to have it at the feature level? consider that the apex of the eluting peptide is predicted and not the PSM rt
             {"name": "predicted_rt", "type": ["null", "float32"], "doc": "Predicted retention time of the peptide (in seconds)"},
+
+# Putting reference_file_name here means that we have merged files? e.g., PSMs from many raw files stored in one result file? Just double checking...
             {"name": "reference_file_name", "type": "string", "doc": "Spectrum file name with no path information and not including the file extension"},
             {"name": "scan_number", "type": "string", "doc": "Scan number of the spectrum"},
             {"name": "ion_mobility", "type": ["null", "float32"], "doc": "Ion mobility value for the precursor ion"},
-
             {"name": "num_peaks", "type": ["null", "int"], "doc": "Number of peaks in the spectrum used for the peptide spectrum match"},
             {"name": "mz_array", "type": ["null", {"type": "array", "items": "float32"}], "doc": "Array of m/z values for the spectrum used for the peptide spectrum match"},
             {"name": "intensity_array", "type": ["null", {"type": "array", "items": "float32"}], "doc": "Array of intensity values for the spectrum used for the peptide spectrum match"},
