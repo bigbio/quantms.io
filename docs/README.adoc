@@ -317,7 +317,7 @@ The project view is the file that stores the metadata of the entire `quantms.io`
 
 - key/value pair object: The key/value pairs are used to store the acquisition properties, and the  quantms files.
 
-Example of ``AcquisitionProperties``:
+Example of ``acquisition_properties``:
 
 [source,json]
 ----
