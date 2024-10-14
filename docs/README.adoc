@@ -884,14 +884,14 @@ file_metadata = {
 pq.write_table(table, 'psm_data.parquet', metadata=file_metadata)
 ----
 
-==== Format
-
-The psm view can be found in link:psm.avsc[psm.avsc].
-
 [[psm-global-qvalue]]
 ==== Psm Global Q-value
 
-//TODO: We have to explain the comments from OpenMS, and DIA-NN. Comment from @timo:  In OpenMS this is the PSM q-value which is by default global at the level of the experiment and the run. if we at one point calculate peptide q-value then it we would need to cleard need to clely document if this is at the experiment or run level
+//TODO: We have to explain the comments from OpenMS, and DIA-NN. Comment from @timo: In OpenMS this is the PSM q-value which is by default global at the level of the experiment and the run. if we at one point calculate peptide q-value then it we would need to cleared need to cleanly document if this is at the experiment or run level
+
+==== Format
+
+The psm view can be found in link:psm.avsc[psm.avsc].
 
 [[peptide-fields]]
 === Common Peptide Fields
