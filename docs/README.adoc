@@ -586,7 +586,7 @@ Multiple peptide-level views are available for the `quantms.io` format. The view
 [[psm]]
 === Peptide Spectrum Match (psm) View
 
-Peptide spectrum matches (psms) are the results of the **identification** of peptides in mass spectrometry data. Most of the cases are the results of peptide identified by database search engines on data-dependent acquisition (DDA) experiments.
+Peptide spectrum matches (psms) are the results of the **identification** of peptides in mass spectrometry data. PSMs are mainly the results of peptide identified by database search engines on data-dependent acquisition (DDA) experiments.
 
 ==== Psm Use cases
 
