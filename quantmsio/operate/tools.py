@@ -150,4 +150,3 @@ def load_de_or_ae(path):
         line = f.readline()
     f.seek(pos - 1)
     return pd.read_csv(f, sep="\t"), content
-

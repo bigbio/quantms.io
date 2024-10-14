@@ -12,14 +12,20 @@ from quantmsio.core.project import ProjectHandler
 @click.option(
     "--category",
     type=click.Choice(
-        ["sdrf_file","feature_file", "psm_file", "differential_file", "absolute_file"],
+        ["sdrf_file", "feature_file", "psm_file", "differential_file", "absolute_file"],
         case_sensitive=False,
     ),
     help="The type of file that will be registered",
     required=True,
 )
 @click.option("--is_folder", help="A boolean value that indicates if the file is a folder or not", is_flag=True)
-@click.option("--partition_fields", multiple=True, type=str, help="The fields that are used to partition the data in the file. This is used to optimize the data retrieval and filtering of the data. This field is optional", required=False)
+@click.option(
+    "--partition_fields",
+    multiple=True,
+    type=str,
+    help="The fields that are used to partition the data in the file. This is used to optimize the data retrieval and filtering of the data. This field is optional",
+    required=False,
+)
 @click.option("--replace_existing", help="Whether to delete old files", is_flag=True)
 def attach_file_to_json(project_file, attach_file, category, is_folder, partition_fields, replace_existing):
     """
@@ -31,6 +37,11 @@ def attach_file_to_json(project_file, attach_file, category, is_folder, partitio
     :param replace_existing: Whether to delete old files
     """
     register = ProjectHandler(project_json_file=project_file)
-    register.register_file(attach_file, category, is_folder=is_folder, partition_fields=list(partition_fields), replace_existing=replace_existing)
+    register.register_file(
+        attach_file,
+        category,
+        is_folder=is_folder,
+        partition_fields=list(partition_fields),
+        replace_existing=replace_existing,
+    )
     register.save_updated_project_info(output_file_name=project_file)
-

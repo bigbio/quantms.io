@@ -86,7 +86,7 @@ class ProjectHandler:
         else:
             self.load_project_info(project_json_file)
             self.project_accession = self.project.project_info["project_accession"]
-        self.extensions = ["sdrf_file","psm_file","feature_file","differential_file","absolute_file"]
+        self.extensions = ["sdrf_file", "psm_file", "feature_file", "differential_file", "absolute_file"]
 
     def load_project_info(self, project_json_file: str = None):
         """
@@ -145,7 +145,9 @@ class ProjectHandler:
         self.project.project_info["software_provider"]["name"] = sortware_name
         self.project.project_info["software_provider"]["version"] = sortware_version
 
-    def add_quantms_path(self, path_name: str, file_category: str, is_folder=False, partition_fields=None, replace_existing=None):
+    def add_quantms_path(
+        self, path_name: str, file_category: str, is_folder=False, partition_fields=None, replace_existing=None
+    ):
         """
         Add a quantms file to the project information. The file name will be generated automatically. Read more about the
         quantms file naming convention in the docs folder of this repository
@@ -158,21 +160,21 @@ class ProjectHandler:
         """
         if "quantms_files" not in self.project.project_info:
             self.project.project_info["quantms_files"] = []
-        
+
         obj_index = None
         for index, obj in enumerate(self.project.project_info["quantms_files"]):
             if file_category in obj:
                 obj_index = index
-        if(obj_index is not None and replace_existing):
+        if obj_index is not None and replace_existing:
             self.project.project_info["quantms_files"][obj_index][file_category] = []
-        path_name = path_name.replace('\\','/')
+        path_name = path_name.replace("\\", "/")
         record = {
-            'path_name': path_name,
-            'is_folder': is_folder,
+            "path_name": path_name,
+            "is_folder": is_folder,
         }
         if partition_fields is not None and isinstance(partition_fields, list):
-            record['partition_fields'] = partition_fields
-            
+            record["partition_fields"] = partition_fields
+
         if obj_index is not None:
             self.project.project_info["quantms_files"][obj_index][file_category].append(record)
         else:
@@ -181,7 +183,13 @@ class ProjectHandler:
     def register_file(self, path_name, file_category, is_folder=False, partition_fields=None, replace_existing=None):
         if file_category not in self.extensions:
             raise Exception(f"The {file_category} not in {self.extensions}")
-        self.add_quantms_path(path_name, file_category, is_folder=is_folder, partition_fields=partition_fields, replace_existing=replace_existing)
+        self.add_quantms_path(
+            path_name,
+            file_category,
+            is_folder=is_folder,
+            partition_fields=partition_fields,
+            replace_existing=replace_existing,
+        )
 
     def save_project_info(
         self,
