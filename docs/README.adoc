@@ -448,7 +448,7 @@ Example:
 ----
 
 [[sdrf]]
-== Sample and Data Relationship Format (SDRF) view
+== SDRF view
 
 The Proteomics Sample and Data Relationship Format (https://github.com/bigbio/proteomics-sample-metadata[SDRF]) is a tab-delimited file format that describes the relationship between samples, data files, and the experimental factors. The SDRF is a key file in the proteomics data analysis workflow as it describes the relationship between the samples and the data files. The specification of the SDRF can be found in the https://github.com/bigbio/proteomics-sample-metadata[SDRF GitHub repository].
 
