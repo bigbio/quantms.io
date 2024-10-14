@@ -610,7 +610,7 @@ The following table presents all the fields and attributes for each PSM entry in
 | **MaxQuant**
 | **mzTab**
 
-7+^| These fields are shared with <<feature>>
+7+^| These fields are shared with features (<<feature>>) and peptides (<<peptide>>)
 | `sequence`
 | The peptide's sequence (with no modifications)
 | string
@@ -659,7 +659,7 @@ The following table presents all the fields and attributes for each PSM entry in
 | -
 | opt_global_q-value
 
-7+^| Peptide fields shared by <<feature>> <<psm>>
+7+^| Peptide fields shared with feature (<<feature>>)
 | `is_decoy`
 | Decoy indicator, 1 if the peptide is a decoy, 0 target
 | int32
