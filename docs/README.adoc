@@ -148,8 +148,8 @@ When represented in parquet files <<psm>>, <<feature>>, modification details wil
 ```
 
 [[scan-number]]
-=== Scan number (Scan)
-Scan number (`scan`) aims to point to the MS/MS in a Raw, mzML, or peak list file (e.g., MGF). https://github.com/HUPO-PSI/mzIdentML[mzIdentML], https://github.com/HUPO-PSI/mzTab[mzTab], https://github.com/HUPO-PSI/usi[USI], and other HUPO-PSI standarization have different ways to use and define scan `number`. Here we will use the latest definition from USI. A single `scan` point to an MS/MS in the spectra file. The `scan` is a unique identifier, and it could be a number or a string depending on the instrument.
+=== Scan (Scan number)
+Scan number (`scan`) aims to point to the MS/MS in a Raw, mzML, or peak list file (e.g., MGF). https://github.com/HUPO-PSI/mzIdentML[mzIdentML], https://github.com/HUPO-PSI/mzTab[mzTab], https://github.com/HUPO-PSI/usi[USI], and another HUPO-PSI standardization have different ways to use and define scan `number`. Here we will use the latest definition from USI. A single `scan` point to an MS/MS in the spectra file. The `scan` is a unique identifier, and it could be a number or a string depending on the instrument.
 
 - AB Sciex:  `sample=1 period=1 cycle=2740 experiment=10` ->  `1,1,2740,10`. In this scenario, where reference to the original scan event is desired but a single scan number is not sufficient, then we use `nativeId` mechanism.
 
