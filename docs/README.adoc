@@ -940,6 +940,144 @@ pq.write_table(table, 'psm_data.parquet', metadata=file_metadata)
 
 The psm view can be found in link:psm.avsc[psm.avsc].
 
+[[feature]]
+=== Peptide feature view
+
+The peptide feature view (peptide features) aims to cover detail on quantified peptide information level at the **msrun level**, including peptide intensity in relation to the msrun and sample metadata. The ``feature parquet file`` is a parquet file that contains the details of the peptides quantified in the experiment and sample.
+
+The feature file is similar to the https://https://github.com/HUPO-PSI/mzTab/tree/master/specification_document-releases/1_0-Proteomics-Release[mztab] peptide table, the peptide evidence in https://cox-labs.github.io/coxdocs/output_tables.html[MaxQuant], the https://github.com/vdemichev/DiaNN/blob/master/README.md#output[diann matrix table].
+
+==== Feature use cases
+
+-  Store peptide intensities in relation to the sample metadata to perform down-stream analysis and integration.
+-  Enable peptide level statistics and algorithms to move from peptide level to protein level.
+
+NOTE: quantms also release the peptide table for MSstats. The goal of the feature table is to provide a more general peptide table and improve the annotations of the peptides with more columns.
+
+==== Feature fields
+
+The following table presents the fields needed to describe each feature in quantms.io. Some of the fields are shared with the psm view (<<psm>>).
+
+[cols="1,2,1,1,1,1,1", options="header"]
+|===
+| *Field*
+| *Description*
+| *Type*
+| *DIA-NN*
+| *FragPipe*
+| *MaxQuant*
+| *mzTab*
+
+7+^| Feature quantify fields <<feature>> additional fields are in the <<peptide-fields>> table
+| `intensity`
+| The intensity-based abundance of the peptide in the sample.
+| float, null
+| Precursor.Quantity
+| Intensity
+| Intensity
+| peptide_abundance_assay[1-n]
+
+7+^| Sample properties
+| `sample_accession`
+| The sample accession in the SDRF, which column is called `source name`
+| string, null
+| -
+| -
+| -
+| -
+
+| `condition`
+| The value for the factor value column in the SDRF, for example, the tissue `factor value[organism part]`
+| string, null
+| -
+| -
+| -
+| -
+
+| `fraction`
+| The index value in the SDRF for the fraction column
+| string, null
+| -
+| -
+| -
+| -
+
+| `biological_replicate`
+| The value of the biological replicate column in the SDRF in relation to the condition
+| string, null
+| -
+| -
+| -
+| -
+
+| `run`
+| The column stores IDs of mass spectrometry runs for LFQ experiments (e.g., 1). For TMT/iTRAQ experiments, it is an identifier of mixture combined with technical replicate and fractions `{mixture}_{technical_replicate}_{fraction}` (e.g., 1_2_3)
+| string
+| -
+| -
+| -
+| -
+
+| `channel`
+| The channel used to label the sample, (e.g., TMT115)
+| string, null
+| -
+| -
+| -
+| -
+
+| `reference_file_name`
+| The reference file name that contains the feature
+| string
+| Run
+| -
+| -
+| -
+
+7+^| Spectra information
+| `psm_reference_file_name`
+| The reference file containing the best psm that identified the feature. **Note**: This file can be different from the file that contains the feature (`ReferenceFile`).
+| string, null
+| -
+| -
+| -
+| -
+
+| `psm_scan_number`
+| The scan number of the spectrum. The scan number or index of the spectrum in the file.
+| string, null
+| <<diann-scan>>
+| -
+| -
+| -
+
+| `rt_start`
+| Start of the retention time window for feature
+| float, null
+| RT.Start
+| x
+| Calibrated retention time start
+| -
+
+| `rt_stop`
+| End of the retention time window for feature
+| float, null
+| RT.Stop
+| x
+| Calibrated retention time finish
+| -
+|===
+
+[[diann-scan]]
+==== DIANN scan
+
+The `DIA-NN` scan is a string that contains the scan number of the MS2 used to identify the peptide. We use the `rt` field and the mzML information to get that number.
+
+==== Format
+
+The feature view can be found in link:feature.avsc[feature.avsc].
+
+
 [[peptide-fields]]
 === Common peptide fields
 
@@ -1115,142 +1253,6 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 //TODO: We should discuss all the Protein Groups and Gene Groups fields and how they are used in the quantms.io: PGAccessions, PGPositions, Unique, ProteinGlobalQvalue, GGAccessions, GGNames
 
 
-[[feature]]
-=== Peptide feature view
-
-The peptide feature view (peptide features) aims to cover detail on quantified peptide information level, including peptide intensity in relation to the sample metadata. The ``feature parquet file`` is a tabular file that contains the details of the peptides quantified in the experiment and sample.
-
-The feature file is similar to the https://https://github.com/HUPO-PSI/mzTab/tree/master/specification_document-releases/1_0-Proteomics-Release[mztab] peptide table, the peptide evidence in https://cox-labs.github.io/coxdocs/output_tables.html[MaxQuant], the https://github.com/vdemichev/DiaNN/blob/master/README.md#output[diann matrix table].
-
-==== Feature use cases
-
--  Store peptide intensities in relation to the sample metadata to perform down-stream analysis and integration.
--  Enable peptide level statistics and algorithms to move from peptide level to protein level.
-
-NOTE: quantms also release the peptide table for MSstats. The goal of the feature table is to provide a more general peptide table and improve the annotations of the peptides with more columns.
-
-==== Feature fields
-
-Some of the fields are shared between the <<feature>> and <<psm>> views, they can be found in the following table <<peptide-fields>>.
-
-[cols="1,2,1,1,1,1,1", options="header"]
-|===
-| *Field*
-| *Description*
-| *Type*
-| *DIA-NN*
-| *FragPipe*
-| *MaxQuant*
-| *mzTab*
-
-7+^| Feature quantify fields <<feature>> additional fields are in the <<peptide-fields>> table
-| `intensity`
-| The intensity-based abundance of the peptide in the sample.
-| float, null
-| Precursor.Quantity
-| Intensity
-| Intensity
-| peptide_abundance_assay[1-n]
-
-7+^| Sample properties
-| `sample_accession`
-| The sample accession in the SDRF, which column is called `source name`
-| string, null
-| -
-| -
-| -
-| -
-
-| `condition`
-| The value for the factor value column in the SDRF, for example, the tissue `factor value[organism part]`
-| string, null
-| -
-| -
-| -
-| -
-
-| `fraction`
-| The index value in the SDRF for the fraction column
-| string, null
-| -
-| -
-| -
-| -
-
-| `biological_replicate`
-| The value of the biological replicate column in the SDRF in relation to the condition
-| string, null
-| -
-| -
-| -
-| -
-
-| `run`
-| The column stores IDs of mass spectrometry runs for LFQ experiments (e.g., 1). For TMT/iTRAQ experiments, it is an identifier of mixture combined with technical replicate and fractions `{mixture}_{technical_replicate}_{fraction}` (e.g., 1_2_3)
-| string
-| -
-| -
-| -
-| -
-
-| `channel`
-| The channel used to label the sample, (e.g., TMT115)
-| string, null
-| -
-| -
-| -
-| -
-
-| `reference_file_name`
-| The reference file name that contains the feature
-| string
-| Run
-| -
-| -
-| -
-
-7+^| Spectra information
-| `psm_reference_file_name`
-| The reference file containing the best psm that identified the feature. **Note**: This file can be different from the file that contains the feature (`ReferenceFile`).
-| string, null
-| -
-| -
-| -
-| -
-
-| `psm_scan_number`
-| The scan number of the spectrum. The scan number or index of the spectrum in the file.
-| string, null
-| <<diann-scan>>
-| -
-| -
-| -
-
-| `rt_start`
-| Start of the retention time window for feature
-| float, null
-| RT.Start
-| x
-| Calibrated retention time start
-| -
-
-| `rt_stop`
-| End of the retention time window for feature
-| float, null
-| RT.Stop
-| x
-| Calibrated retention time finish
-| -
-|===
-
-[[diann-scan]]
-===== DIANN scan
-
-The `DIA-NN` scan is a string that contains the scan number of the MS2 used to identify the peptide. We use the `rt` field and the mzML information to get that number.
-
-==== Format
-
-The feature view can be found in link:feature.avsc[feature.avsc].
 
 [[peptide]]
 === Peptide view
