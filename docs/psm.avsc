@@ -14,7 +14,9 @@
           {"name": "creator", "type": "string", "doc": "Name of the tool or person who created the file"},
           {"name": "file_type", "type": "string", "doc": "Type of the file (e.g., psm, protein, etc.)"},
           {"name": "creation_date", "type": "string", "doc": "Date when the file was created"},
-          {"name": "uuid", "type": "string", "doc": "Unique identifier for the file"}
+          {"name": "uuid", "type": "string", "doc": "Unique identifier for the file"},
+          {"name": "scan_format", type: "string", "doc":  "The format of the scan, with possible values: scan, index, nativeId."},
+          {"name": "software_provider", "type": "string", "doc": "Name of the software provider that generated the file"}
         ]
       },
       "doc": "File-level metadata information"
