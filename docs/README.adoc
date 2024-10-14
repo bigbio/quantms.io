@@ -220,6 +220,38 @@ A Parquet table can be distributed across multiple compute nodes, and its key ad
 ==== Parquet slicing
 
 //TODO: Add information about parquet slicing and how it should be included in the json project file.
+`quantms.io` supports slicing parquet files using any field when generating them.Upon storage, the files are organized into distinct folders according to the chosen slicing fields.
+----
+PXD004683/
+│
+├── sample_accession_1/
+│   ├── file1.parquet
+│   └── file2.parquet
+│
+├── sample_accession_2/
+│   ├── file3.parquet
+│   └── file4.parquet
+│
+└── sample_accession_3/
+    ├── file5.parquet
+    └── file6.parquet
+...
+----
+
+When registering parquet files to project.json, it will be in such a format.
+----
+  "quantms_files": [
+    {
+      "feature_file": [
+        {
+          "path_name": "PXD004683",
+          "is_folder": true,
+          "partition_fields": ["sample_accession"]
+        }
+      ]
+    },
+  ]
+----
 
 [[extensions]]
 == File extensions
