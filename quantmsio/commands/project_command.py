@@ -1,7 +1,7 @@
 import click
 
 from quantmsio.core.project import check_directory
-
+from quantmsio.core.common import QUANTMSIO_VERSION
 
 @click.command(
     "generate-pride-project-json",
@@ -23,8 +23,13 @@ from quantmsio.core.project import check_directory
     required=True,
 )
 @click.option(
-    "--quantms_version",
-    help="Quantms version to use as output in the project file",
+    "--software_name",
+    help="software name used to generate the data",
+    required=False,
+)
+@click.option(
+    "--software_version",
+    help="software version used to generate the data",
     required=False,
 )
 @click.option(
@@ -35,7 +40,8 @@ from quantmsio.core.project import check_directory
 def generate_pride_project_json(
     project_accession: str,
     sdrf_file: str,
-    quantms_version: str,
+    software_name: str,
+    software_version: str,
     output_folder: str,
     delete_existing: bool,
 ):
@@ -47,7 +53,8 @@ def generate_pride_project_json(
 
     :param project_accession: Project accession to generate the json file
     :param sdrf_file: the SDRF file needed to extract some of the metadata
-    :param quantms_version: Quantms.io version to use as output in the project file
+    :param software_name: software name used to generate the data
+    :param software_version: software version used to generate the data
     :param output_folder: Folder where the Json file will be generated
     :param delete_existing: Delete existing files in the output folder
     :return: none
@@ -60,7 +67,8 @@ def generate_pride_project_json(
     # Populate the project handler with the metadata from Pride Archive and the SDRF file
     project_handler.populate_from_pride_archive()
     project_handler.populate_from_sdrf(sdrf_file)
-    project_handler.add_quantms_version(quantms_version=quantms_version)
+    project_handler.add_quantms_version(quantmsio_version=QUANTMSIO_VERSION)
+    project_handler.add_software_provider(sortware_name=software_name,sortware_version=software_version)
     project_path = output_folder + "/" + "project.json"
     project_handler.add_sdrf_file(
         sdrf_file_path=sdrf_file,

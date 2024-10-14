@@ -260,6 +260,7 @@ The project view is the file that stores the metadata of the entire `quantms.io`
 | **Field**                       | **Description**                             | **Type**
 | ``project_accession``          | Project accession identifier                | string
 | ``project_title``               | Title of the project                        | string
+| ``project_description``         | Description of the project                  | string
 | ``project_sample_description``  | Description of the project sample           | string
 | ``project_data_description``    | Description of the project data             | string
 | ``project_pubmed_id**           | PubMed ID associated with the project       | int32
