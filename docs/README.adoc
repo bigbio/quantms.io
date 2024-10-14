@@ -100,6 +100,53 @@ Those three properties can be combined, for example, in a string like one string
 
 `1(Probabilistic Score:0.8)|2(Probabilistic Score:0.9)|3-UNIMOD:35`
 
+When represented in parquet files <<psm>>, <<feature>>, modification details will be a list of struct:
+
+```json
+   {
+      "name": "modifications",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "modification_details",
+          "fields": [
+            {
+              "name": "accession",
+              "type": "string",
+              "doc": "Accession number of the modification (e.g., UNIMOD:35)"
+            },
+            {
+              "name": "positions",
+              "type": {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "PositionDetails",
+                  "fields": [
+                    {
+                      "name": "position",
+                      "type": "int",
+                      "doc": "Position of the modification on the peptide"
+                    },
+                    {
+                      "name": "localization_probability",
+                      "type": "float",
+                      "doc": "Probability that the modification is localized at this position"
+                    }
+                  ]
+                }
+              },
+              "doc": "Positions and corresponding localization probabilitie"
+            }
+          ]
+        }
+      },
+      "doc": "List of modifications and their details"
+    }
+
+```
+
 [[scan-number]]
 === Scan number (Scan)
 Scan number (`scan`) aims to point to the MS/MS in a Raw, mzML, or peak list file (e.g., MGF). https://github.com/HUPO-PSI/mzIdentML[mzIdentML], https://github.com/HUPO-PSI/mzTab[mzTab], https://github.com/HUPO-PSI/usi[USI], and other HUPO-PSI standarization have different ways to use and define scan `number`. Here we will use the latest definition from USI. A single `scan` point to an MS/MS in the spectra file. The `scan` is a unique identifier, and it could be a number or a string depending on the instrument.
@@ -530,10 +577,273 @@ We suggest including the following properties in the header:
 Multiple peptide-level views are available for the `quantms.io` format. The views are the following:
 
 - <<psm>>: Peptide Spectrum Match (psm) View—The psm view aims to cover detail on Peptide spectrum matches (psm) level for AI/ML training and other use-cases, mainly for DDA analytical methods.
+
 - <<feature>>: Peptide Feature View—The peptide feature views (peptide features) aims to cover detail on quantified peptide information level, including peptide intensity in relation to the sample metadata.
+
 - <<peptide>>: Peptide View—The peptide view is a summary of quantified peptides by samples, the aim of this representation is to provide a simple summary of the number of peptides and their given quantity for each protein on each sample. This view is useful for quick visualization and data retrieval.
 
+[[psm]]
+=== Peptide Spectrum Match (psm) View
 
+Peptide spectrum matches (psms) are the results of the **identification** of peptides in mass spectrometry data. Most of the cases are the results of peptide identified by database search engines on data-dependent acquisition (DDA) experiments.
+
+==== Psm Use cases
+
+- The psm table aims to cover detail on psm level for AI/ML training and other use-cases.
+- Most of the content is similar to mzTab, a psm would be a peptide identification in a specific msrun file.
+- We included in the psm view the spectrum information as optional for those use cases that want to have fast access to peptide information + spectrum data, for example, clustering or intensity prediction
+- Fast and easy visualization and scanning on psm level.
+
+==== Psm Fields
+
+Some fields are shared between the <<psm>>, <<feature>> and <<peptide>> views.
+
+[cols="1,2,1,1,1,1,1", options="header"]
+|===
+| **Field**
+| **Description**
+| **Type**
+| **DIA-NN**
+| **FragPipe**
+| **MaxQuant**
+| **mzTab**
+
+7+^| These fields are shared with <<feature>>
+| `sequence`
+| The peptide's sequence (with no modifications)
+| string
+| Stripped.Sequence
+| Peptide
+| Sequence
+| sequence
+
+| `peptidoform`
+| Peptide sequence with modifications, see more <<peptidoform>>
+| string
+| Modified.Sequence
+| Modified Peptide
+| Modified sequence
+| opt_global_cv_MS:1000889_peptidoform_sequence
+
+| `modifications`
+| List of modifications as a string array, easy for search and filter
+| array[string], null
+| -
+| -
+| Modifications
+| modifications
+
+| `modification_details`
+| Modifications details: modification name, positions and localization probabilities: read <<modifications>>
+| array[struct], null
+| -
+| [modified residue]:[modification mass]
+| Score for localization in Site Tables
+| x
+
+| `posterior_error_probability`
+| Posterior error probability (PEP) for the given peptide or psm match.
+| float32, null
+| PEP
+| x
+| PEP
+| opt_global_Posterior_Error_Probability_score
+
+| `global_qvalue`
+| Global q-value for the peptide or psm at the level of the experiment, <<psm-global-qvalue>>
+| float32, null
+| Global.Q.Value
+| x
+| -
+| opt_global_q-value
+
+7+^| Peptide fields shared by <<feature>> <<psm>>
+| `is_decoy`
+| Decoy indicator, 1 if the peptide is a decoy, 0 target
+| int32
+| -
+| -
+| Reverse
+| opt_global_cv_MS:1002217_decoy_peptide
+
+| `calculated_mz`
+| Theoretical peptide mass-to-charge ratio based on an identified sequence and modifications
+| float32
+| Calculate.Precursor.Mz
+| Calculated M/Z
+| m/z
+| calc_mass_to_charge
+
+| `additional_scores`
+| List of structures, each structure contains two fields: name and value.
+| array[struct{name: string, value: float32}]
+| DIA-NN Scores
+| FragPipe Scores
+| MaxQuant Scores
+| search_engine_score
+
+| `consensus_support`
+| Consensus support for the given peptide spectrum match, when multiple search engines are used
+| float, null
+| -
+| -
+| -
+| -
+
+| `rank`
+| Rank of the peptide spectrum match in the search engine output | integer, null
+| int32, null
+| -
+| -
+| -
+
+7+^| Protein fields shared by <<feature>> <<psm>>
+| `pg_accessions`
+| Protein group accessions of all the proteins that the peptide maps to
+| array[string], null
+| Protein.Ids
+| x
+| Proteins
+| accession
+
+| `pg_positions`
+| Protein start and end positions written as start_post:end_post
+| array[string], null
+| -
+| x
+| x
+| Combination of start and end positions
+
+| `unique`
+| Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0
+| int32, null
+| -
+| Is Unique
+| Unique
+| unique
+
+| `protein_global_qvalue`
+| Global q-value of the protein group at the experiment level
+| float32, null
+| Global.PG.Q.Value
+| x
+| x
+| best_search_engine_score
+
+| `gg_accessions`
+| Gene group accessions, as a string array
+| array[string], null
+| x
+| x
+| x
+| -
+
+| `gg_names`
+| Gene names, as a string array
+| array[string], null
+| -
+| x
+| -
+| -
+
+7+^| Spectra fields shared by <<feature>> <<psm>>
+| `precursor_charge`
+| Precursor charge
+| int32
+| Precursor.Charge
+| x
+| Charge
+| charge
+
+| `observed_mz`
+| Experimental peptide mass-to-charge ratio of identified peptide (in Da)
+| float32
+| x
+| Observed M/Z
+| x
+| exp_mass_to_charge
+
+| `rt`
+| MS2 scan’s precursor retention time (in seconds)
+| float32, null
+| RT
+| x
+| Retention time
+| retention_time
+
+| `predicted_rt`
+| Predicted retention time of the peptide (in seconds)
+| float32, null
+| Predicted.RT
+| x
+| x
+| -
+
+| `reference_file_name`
+| Spectrum file name with no path information and not including the file extension
+| string
+| Run
+| Spectrum File
+| x
+| spectra_ref
+
+| `scan`
+| Scan index (number of nativeId) of the spectrum identified: read <<scan-number>>
+| string
+| <<scan-diann>>
+| Spectrum
+| MS/MS scan number
+| spectra_ref
+
+7+^|These fields are optional and part of the MS/MS information <<mz>>
+| `ion_mobility`
+| Ion mobility value for the precursor ion
+| float, null
+| x
+| x
+| x
+| x
+
+| `number_peaks`
+| Number of peaks in the spectrum used for the peptide spectrum match
+| int32, null
+| -
+| -
+| -
+| -
+
+| `mz_array`
+| Array of m/z values for the spectrum used for the peptide spectrum match
+| array[float], null
+| -
+| -
+| -
+| -
+
+| `intesity_array`
+| Array of intensity values for the spectrum used for the peptide spectrum match
+| array[float], null
+| -
+| -
+| -
+| -
+|===
+
+[NOTE]
+====
+Psm view is NOT RECOMMENDED to be generated for **DIA** methods because it will be duplicated information with the feature view. The psm view is more suitable for **DDA** methods where the psm is the main output of the identification process.
+
+The `MzArray` and `IntensityArray` are arrays of the same length, where the `MzArray` contains the m/z values and the `IntensityArray` contains the intensity values; and the size of the arrays is the same as the number of peaks in the spectrum. These three columns could help use cases like AI/ML that need the spectrum information for a given psm.
+====
+
+==== Format
+
+The psm view can be found in link:psm.avsc[psm.avsc].
+
+[[psm-global-qvalue]]
+==== Psm Global Q-value
+
+//TODO: We have to explain the comments from OpenMS, and DIA-NN. Comment from @timo:  In OpenMS this is the PSM q-value which is by default global at the level of the experiment and the run. if we at one point calculate peptide q-value then it we would need to cleard need to clely document if this is at the experiment or run level
 
 [[peptide-fields]]
 === Common Peptide Fields
@@ -709,112 +1019,6 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 
 //TODO: We should discuss all the Protein Groups and Gene Groups fields and how they are used in the quantms.io: PGAccessions, PGPositions, Unique, ProteinGlobalQvalue, GGAccessions, GGNames
 
-[[peptide]]
-
-[[psm]]
-=== Peptide Spectrum Match (psm) View
-
-Peptide spectrum matches (psms) are the results of the **identification** of peptides in mass spectrometry data. Most of the cases are the results of peptide identified by database search engines on data-dependent acquisition (DDA) experiments.
-
-==== Psm Use cases
-
-- The psm table aims to cover detail on psm level for AI/ML training and other use-cases.
-- Most of the content is similar to mzTab, a psm would be a peptide identification in a specific msrun file.
-- Store details on psm level including spectrum mz/intensity for specific use-cases such as AI/ML training.
-- Fast and easy visualization and scanning on psm level.
-- Store the spectra information for the psm for those AI/ML use cases were prediction, and training will be working in the spectra.
-
-==== Psm Fields
-
-Some fields are shared between the <<psm>> and <<feature>> views, they can be found in the following table <<peptide-fields>>.
-
-The fields that are unique to the psm view are:
-
-[cols="1,2,1,1,1,1,1", options="header"]
-|===
-| **Field**
-| **Description**
-| **Type**
-| **DIA-NN**
-| **FragPipe**
-| **MaxQuant**
-| **mzTab**
-
-7+^| Psm fields <<psm>>, additional fields are in the <<peptide-fields>> table
-| `reference_file_name`
-| Spectrum file name with no path information and not including the file extension
-| string
-| Run
-| Spectrum File
-| x
-| spectra_ref
-
-| `scan_number`
-| Scan number of the spectrum identified
-| string
-| <<scan-diann>>
-| Spectrum
-| MS/MS scan number
-| spectra_ref
-
-| `ion_mobility`
-| Ion mobility value for the precursor ion
-| float, null
-| x
-| x
-| x
-| x
-
-| `consensus_support`
-| Consensus support for the given peptide spectrum match, when multiple search engines are used
-| float, null
-| -
-| -
-| -
-| -
-
-| `number_peaks`
-| Number of peaks in the spectrum used for the peptide spectrum match
-| int32, null
-| -
-| -
-| -
-| -
-
-| `mz_array`
-| Array of m/z values for the spectrum used for the peptide spectrum match
-| array[float], null
-| -
-| -
-| -
-| -
-
-| `intesity_array`
-| Array of intensity values for the spectrum used for the peptide spectrum match
-| array[float], null
-| -
-| -
-| -
-| -
-
-| `rank`
-| Rank of the peptide spectrum match in the search engine output | integer, null
-| int32, null
-| -
-| -
-| -
-|===
-
-[NOTE]
-====
-Psm view is NOT RECOMMENDED to be generated for **DIA** methods because it will be duplicated information with the feature view. The psm view is more suitable for **DDA** methods where the psm is the main output of the identification process.
-
-The `MzArray` and `IntensityArray` are arrays of the same length, where the `MzArray` contains the m/z values and the `IntensityArray` contains the intensity values; and the size of the arrays is the same as the number of peaks in the spectrum. These three columns could help use cases like AI/ML that need the spectrum information for a given psm.
-====
-
-==== Format
-
-The psm view can be found in link:psm.avsc[psm.avsc].
 
 [[feature]]
 === Peptide Feature View

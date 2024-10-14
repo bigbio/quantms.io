@@ -10,8 +10,6 @@
 		"doc": "List of alternative site probabilities for the modification format: read the specification for more details"},
 		{"name": "posterior_error_probability", "type": ["null", "float32"], "doc": "Posterior error probability for the given peptide spectrum match"},
 
-# in OpenMS this is the PSM q-value which is by default global at the level of the experiment and the run
-# if we at one point calculate peptide q-value then it we would need to clearly document if this is at the experiment or run level
 		{"name": "qvalue", "type": ["null", "float32"], "doc": "q-value of the peptide or psm at the level of the experiment"}, 
 
 		{"name": "is_decoy", "type": "int", "doc": "Decoy indicator, 1 if the PSM is a decoy, 0 target"},
