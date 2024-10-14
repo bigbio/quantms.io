@@ -3,6 +3,7 @@ import click
 from quantmsio.core.project import check_directory
 from quantmsio.core.common import QUANTMSIO_VERSION
 
+
 @click.command(
     "generate-pride-project-json",
     short_help="Generate a json project file from original pride accession",
@@ -68,7 +69,7 @@ def generate_pride_project_json(
     project_handler.populate_from_pride_archive()
     project_handler.populate_from_sdrf(sdrf_file)
     project_handler.add_quantms_version(quantmsio_version=QUANTMSIO_VERSION)
-    project_handler.add_software_provider(sortware_name=software_name,sortware_version=software_version)
+    project_handler.add_software_provider(sortware_name=software_name, sortware_version=software_version)
     project_path = output_folder + "/" + "project.json"
     project_handler.add_sdrf_file(
         sdrf_file_path=sdrf_file,

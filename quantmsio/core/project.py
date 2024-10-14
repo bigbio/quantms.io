@@ -137,11 +137,11 @@ class ProjectHandler:
         self.project.project_info["enzymes"] = sdrf.get_enzymes()
         self.project.project_info["acquisition_properties"] = sdrf.get_acquisition_properties()
 
-    def add_software_provider(self,sortware_name="",sortware_version=""):
+    def add_software_provider(self, sortware_name="", sortware_version=""):
         """
         Add the sortware info to the project information
         """
-        self.project.project_info["software_provider"]["name"] = sortware_name 
+        self.project.project_info["software_provider"]["name"] = sortware_name
         self.project.project_info["software_provider"]["version"] = sortware_version
 
     def add_quantms_file(self, file_name: str, file_category: str, replace_existing: bool = True):
