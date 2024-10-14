@@ -117,12 +117,12 @@ class ProjectHandler:
         else:
             logger.info("A non-pride project is being created.")
 
-    def add_quantms_version(self, quantms_version: str):
+    def add_quantms_version(self, quantmsio_version: str):
         """
         Add the quantms version to the project information
         :param quantms_version: QuantMS version
         """
-        self.project.project_info["quantms_version"] = quantms_version
+        self.project.project_info["quantmsio_version"] = quantmsio_version
 
     def add_sdrf_project_properties(self, sdrf: SDRFHandler):
         """
@@ -136,6 +136,13 @@ class ProjectHandler:
         self.project.project_info["instruments"] = sdrf.get_instruments()
         self.project.project_info["enzymes"] = sdrf.get_enzymes()
         self.project.project_info["acquisition_properties"] = sdrf.get_acquisition_properties()
+
+    def add_software_provider(self,sortware_name="",sortware_version=""):
+        """
+        Add the sortware info to the project information
+        """
+        self.project.project_info["software_provider"]["name"] = sortware_name 
+        self.project.project_info["software_provider"]["version"] = sortware_version
 
     def add_quantms_file(self, file_name: str, file_category: str, replace_existing: bool = True):
         """
@@ -293,7 +300,8 @@ class ProjectDefinition:
             "experiment_type": [],
             "acquisition_properties": [],
             "quantms_files": [],
-            "quantms_version": "",
+            "quantmsio_version": "",
+            "software_provider": {},
             "comments": [],
         }
         if project_accession:
