@@ -53,7 +53,8 @@ class DifferentialExpressionHandler:
                 #INFO=<ID=adj.pvalue, Number=1, Type=Double, Description="P-values adjusted among
                 all the proteins in the specific comparison using the approach by Benjamini and Hochberg">
                 #INFO=<ID=issue, Number=1, Type=String, Description="Issue column shows if there
-                is any issue for inference in corresponding protein and comparison">\n"""
+                is any issue for inference in corresponding protein and comparison">
+                #INFO=<ID=quantmsio_version, Number=1, Type=String, Description="Version of the quantms.io">\n"""
 
     DIFFERENTIAL_EXPRESSION_EXTENSION = ".differential.tsv"
 

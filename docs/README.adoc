@@ -219,8 +219,7 @@ A Parquet table can be distributed across multiple compute nodes, and its key ad
 [[parquet-slicing]]
 ==== Parquet slicing
 
-`quantms.io` supports slicing parquet files using any field when generating them. Upon storage, the files are organized into distinct folders according to the chosen slicing fields.
-
+`quantms.io` supports slicing parquet files using any field when generating them.Upon storage, the files are organized into distinct folders according to the chosen slicing fields.
 ----
 PXD004683/
 │
@@ -929,8 +928,7 @@ pq.write_table(table, 'psm_data.parquet', metadata=file_metadata)
 
 [[psm-global-qvalue]]
 ==== Psm global q-value
-
-//TODO: We have to explain the comments from OpenMS, and DIA-NN. Comment from @timo: In OpenMS this is the PSM q-value which is by default global at the level of the experiment and the run. if we at one point calculate peptide q-value then it we would need to cleared need to cleanly document if this is at the experiment or run level
+The global q-value represents the q-value at the level of the experiment. In OpenMS this is the PSM q-value which is by default global at the level of the experiment and the run. In DIA-NN, it represents `Global.Q.Value`. At the run level, the `Q.Value` will be collected by `additional_scores`.
 
 ==== Format
 

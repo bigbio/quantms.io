@@ -25,13 +25,14 @@ class AbsoluteExpressionHander:
         "SampleID": "sample_accession",
         "Condition": "condition",
         "Ibaq": "ibaq",
-        "IbaqLog": "ribaq",
+        "IbaqLog": "ibaq_normalized",
     }
     AE_HEADER = """#INFO=<ID=protein, Number=inf, Type=String, Description="Protein Accession">
 #INFO=<ID=sample_accession, Number=1, Type=String, Description="Sample Accession in the SDRF">
 #INFO=<ID=condition, Number=1, Type=String, Description="Value of the factor value">
 #INFO=<ID=ibaq, Number=1, Type=Float, Description="Intensity based absolute quantification">
-#INFO=<ID=ribaq, Number=1, Type=Float, Description="relative iBAQ">\n"""
+#INFO=<ID=ibaq_normalized, Number=1, Type=Float, Description="relative iBAQ">
+#INFO=<ID=quantmsio_version, Number=1, Type=String, Description="Version of the quantms.io">\n"""
 
     ABSOLUTE_EXPRESSION_EXTENSION = ".absolute.tsv"
 
