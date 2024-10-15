@@ -132,9 +132,9 @@ class DifferentialExpressionHandler:
                 DifferentialExpressionHandler.ISSUE_COLUMN["msstats_column"],
             ]
         ].copy()
-        quantms_df.rename(columns={
-            DifferentialExpressionHandler.ADJUST_PVALUE_COLUMN["msstats_column"]: "adj_pvalue"
-        },inplace=True)
+        quantms_df.rename(
+            columns={DifferentialExpressionHandler.ADJUST_PVALUE_COLUMN["msstats_column"]: "adj_pvalue"}, inplace=True
+        )
         # Add project information
         output_lines = ""
         if self.project_manager:
@@ -145,7 +145,9 @@ class DifferentialExpressionHandler:
             output_lines += (
                 "#project_description: " + self.project_manager.project.project_info["project_description"] + "\n"
             )
-            output_lines += "#quantmsio_version: " + self.project_manager.project.project_info["quantmsio_version"] + "\n"
+            output_lines += (
+                "#quantmsio_version: " + self.project_manager.project.project_info["quantmsio_version"] + "\n"
+            )
         else:
             output_lines += "#quantmsio_version: " + QUANTMSIO_VERSION + "\n"
         factor_value = self.get_factor_value()

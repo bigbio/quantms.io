@@ -9,6 +9,7 @@ from quantmsio.core.project import ProjectHandler
 from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.utils.file_utils import delete_files_extension
 from quantmsio.core.common import QUANTMSIO_VERSION
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -95,7 +96,9 @@ class AbsoluteExpressionHander:
             output_lines += (
                 "#project_description: " + self.project_manager.project.project_info["project_description"] + "\n"
             )
-            output_lines += "#quantmsio_version: " + self.project_manager.project.project_info["quantmsio_version"] + "\n"
+            output_lines += (
+                "#quantmsio_version: " + self.project_manager.project.project_info["quantmsio_version"] + "\n"
+            )
         else:
             output_lines += "#quantmsio_version: " + QUANTMSIO_VERSION + "\n"
         factor_value = self.get_factor_value()
