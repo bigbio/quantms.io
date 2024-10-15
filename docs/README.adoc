@@ -736,7 +736,7 @@ The following table presents all the fields and attributes for each PSM entry in
 | -
 | -
 
-7+^| Protein fields shared by <<feature>> <<psm>>
+7+^| Protein group fields shared by <<feature>> <<psm>>
 | `pg_accessions`
 | Protein group accessions of all the proteins that the peptide maps to
 | array[string], null
@@ -744,14 +744,6 @@ The following table presents all the fields and attributes for each PSM entry in
 | x
 | Proteins
 | accession
-
-| `pg_positions`
-| Protein start and end positions written as start_post: end_post
-| array[string], null
-| -
-| x
-| x
-| Combination of start and end positions
 
 | `unique`
 | Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0
