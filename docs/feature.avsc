@@ -65,34 +65,5 @@
 
 # what does it mean for non-TMT data?
 		{"name": "psm_scan_number", "type": ["null","string"], "doc": "The scan number of the spectrum. The scan number or index of the spectrum in the file"},
-		{
-      "name": "cv_params",
-      "type": [
-        "null",
-        {
-          "type": "array",
-          "items": {
-            "type": "record",
-            "name": "cv_param",
-            "doc": "Controlled vocabulary (CV) parameters providing additional metadata for the scan.",
-            "fields": [
-              {
-                "name": "name",
-                "type": "string",
-                "doc": "Name of the CV term (e.g., from PSI-MS or other ontologies)."
-              },
-              {
-                "name": "value",
-                "type": "string",
-                "doc": "Value associated with the CV term."
-              }
-            ]
-          }
-        }
-      ],
-      "default": null,
-      "doc": "Optional list of CV parameters for additional metadata."
-    },
-		{"name": "quantmsio_version", "type": "string", "doc": "The version of quantms.io"}
 	]
 }
