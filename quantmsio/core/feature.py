@@ -272,8 +272,8 @@ class Feature(MzTab):
             msstats = self.merge_msstats_and_sdrf(msstats)
             msstats = self.merge_msstats_and_psm(msstats, map_dict)
             self.transform_feature(msstats)
-            msstats = self.convert_to_parquet(msstats, self._modifications)
-            yield msstats
+            feature = self.convert_to_parquet(msstats, self._modifications)
+            yield feature
 
     def write_feature_to_file(
         self,
