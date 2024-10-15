@@ -736,15 +736,15 @@ The following table presents all the fields and attributes for each PSM entry in
 | -
 | -
 
-7+^| Protein group fields shared by <<feature>> <<psm>>
-| `pg_accessions`
-| Protein group accessions of all the proteins that the peptide maps to
-| array[string], null
-| Protein.Ids
-| x
-| Proteins
-| accession
+| `cv_params`
+| Optional list of CV parameters for additional metadata <<psm-cv-params>>
+| array[struct{name:string, value:string}], null
+| -
+| -
+| -
+| -
 
+7+^| Protein fields shared by <<feature>> <<psm>>
 | `unique`
 | Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0
 | int32, null
@@ -753,7 +753,7 @@ The following table presents all the fields and attributes for each PSM entry in
 | Unique
 | unique
 
-| `protein_global_qvalue`
+| `pg_global_qvalue`
 | Global q-value of the protein group at the experiment level
 | float32, null
 | Global.PG.Q.Value
@@ -761,21 +761,13 @@ The following table presents all the fields and attributes for each PSM entry in
 | x
 | best_search_engine_score
 
-| `gg_accessions`
-| Gene group accessions, as a string array
+| `mp_accessions`
+| Protein accessions of all the proteins that the peptide maps to
 | array[string], null
+| Protein.Ids
 | x
-| x
-| x
-| -
-
-| `gg_names`
-| Gene names, as a string array
-| array[string], null
-| -
-| x
-| -
-| -
+| Proteins
+| accession
 
 7+^| Spectra fields shared by <<feature>> <<psm>>
 | `precursor_charge`
@@ -864,10 +856,22 @@ The following table presents all the fields and attributes for each PSM entry in
 ====
  - Psm view is NOT RECOMMENDED to be generated for **DIA** methods because it will be duplicated information with the feature view. The psm view is more suitable for **DDA** methods where the psm is the main output of the identification process.
 
- - Protein inference SHOULD NOT be included in the psm view, as it is not the main purpose of the psm view. Then, is RECOMMENDED that all proteins mapping to the peptide in the psm view are included in the `pg_accessions`, `pg_positions`, `gg_accessions` and `gg_names` fields. For protein inference please look into the feature view (<<feature>>) and protein group (<<pg>>).
+ - Protein inference SHOULD NOT be included in the psm view, as it is not the main purpose of the psm view. However, for some use cases like peptide filtering, search, etc., maybe interesting to have access to all the psms for a given protein accession, you can include that in the `mp_accessions`: mapped protein accessions. For protein inference please look into the feature view (<<feature>>) and protein group (<<pg>>).
 
  - The `mz_array` and `intensity_array` are arrays of the same length, where the `mz_array` contains the m/z values and the `intensity_array` contains the intensity values; and the size of the arrays is the same as the number of peaks in the spectrum. These three columns could help use cases like AI/ML that need the spectrum information for a given psm. We RECOMMEND using for spectra data the mz view (<<mz>>), where the spectra are stored in a more efficient way.
 ====
+
+[[psm-cv-params]]
+==== Psm CV parameters
+
+Cv params are a key-value pairs list that allows to store additional information for a given psm. For example, it could be used to store the following, mzIdentML information:
+
+- 'prot:FDR threshold': 0.01
+- number of unmatched peaks: 3
+
+The cv_params are stored as a list of key-value pairs, where the key is the name of the parameter, and the value is the value of the parameter. This is similar to the CVParams in the mzIdentML format. Please, be aware that search engine scores should be stored for psms in the column `additional_scores`.
+
+[[peptidoform]]
 
 [[psm-file-metadata]]
 ==== Psm file metadata
