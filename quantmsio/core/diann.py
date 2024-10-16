@@ -397,8 +397,8 @@ class DiaNNConvert:
             axis=1,
         )
         report.drop(["comment[technical replicate]"], axis=1, inplace=True)
-        parquet_table = Feature.convert_to_parquet(report, self._modifications)
-
+        Feature.convert_to_parquet_format(report, self._modifications)
+        parquet_table = Feature.transform_feature(report)
         if not feature_pqwriter:
             feature_pqwriter = pq.ParquetWriter(feature_output_path, parquet_table.schema)
         feature_pqwriter.write_table(parquet_table)

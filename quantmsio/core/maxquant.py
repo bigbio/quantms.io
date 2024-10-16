@@ -158,7 +158,8 @@ class MaxQuant:
         pqwriter = None
         for df in self.iter_batch(chunksize=chunksize):
             df = self.transform_feature(df)
-            feature = Feature.convert_to_parquet(df, self._modifications)
+            Feature.convert_to_parquet_format(df, self._modifications)
+            feature = Feature.transform_feature(df)
             if not pqwriter:
                 pqwriter = pq.ParquetWriter(output_path, feature.schema)
             pqwriter.write_table(feature)
