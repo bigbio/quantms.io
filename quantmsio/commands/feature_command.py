@@ -36,6 +36,11 @@ from quantmsio.core.project import create_uuid_filename
     required=True,
 )
 @click.option(
+    "--partitions",
+    help="The field used for splitting files, multiple fields are separated by ,",
+    required=False,
+)
+@click.option(
     "--output_prefix_file",
     help="Prefix of the Json file needed to generate the file name",
     required=False,
@@ -47,6 +52,7 @@ def convert_feature_file(
     chunksize: int,
     protein_file: str,
     output_folder: str,
+    partitions: str,
     output_prefix_file: str,
 ):
     """
@@ -56,15 +62,19 @@ def convert_feature_file(
     :param mztab_file: the mzTab file, this will be used to extract the protein
     :param chunksize: Read batch size
     :param output_folder: Folder where the Json file will be generated
+    :param partitions: The field used for splitting files, multiple fields are separated by ,
     :param output_prefix_file: Prefix of the Json file needed to generate the file name
     """
 
     if sdrf_file is None or msstats_file is None or mztab_file is None or output_folder is None:
         raise click.UsageError("Please provide all the required parameters")
-
     feature_manager = Feature(mzTab_path=mztab_file, sdrf_path=sdrf_file, msstats_in_path=msstats_file)
     if not output_prefix_file:
         output_prefix_file = ""
-    output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".feature.parquet")
-
-    feature_manager.write_feature_to_file(output_path=output_path, chunksize=chunksize, protein_file=protein_file)
+    filename = create_uuid_filename(output_prefix_file, ".feature.parquet")
+    output_path = output_folder + "/" + filename
+    if not partitions:
+        feature_manager.write_feature_to_file(output_path=output_path, chunksize=chunksize, protein_file=protein_file)
+    else:
+        partitions = partitions.split(',')
+        feature_manager.write_features_to_file(output_folder=output_folder, filename=filename, partitions=partitions, chunksize=chunksize, protein_file=protein_file)
