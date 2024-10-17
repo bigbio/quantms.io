@@ -931,6 +931,11 @@ file_metadata = {
 pq.write_table(table, 'psm_data.parquet', metadata=file_metadata)
 ----
 
+[[NOTE]]
+=====
+TODO:// would be good to have a few notes here about the maximun size the file metadata in parquet.
+=====
+
 [[psm-global-qvalue]]
 ==== Psm global q-value
 The global q-value represents the q-value at the level of the experiment. In OpenMS this is the PSM q-value which is by default global at the level of the experiment and the run. In DIA-NN, it represents `Global.Q.Value`. At the run level, the `Q.Value` will be collected by `additional_scores`.
@@ -948,8 +953,9 @@ The feature file is similar to the https://https://github.com/HUPO-PSI/mzTab/tre
 
 ==== Feature use cases
 
--  Store peptide intensities in relation to the sample metadata to perform down-stream analysis and integration.
--  Enable peptide level statistics and algorithms to move from peptide level to protein level.
+- Store peptide intensities in relation to the sample metadata to perform down-stream analysis and integration.
+- Enable peptide level statistics and algorithms to move from peptide level to protein level.
+- Different to the psm section <<psm>> contains all the protein inference information depending on if protein inference was applied or not.
 
 NOTE: quantms also release the peptide table for MSstats. The goal of the feature table is to provide a more general peptide table and improve the annotations of the peptides with more columns.
 
@@ -967,7 +973,81 @@ The following table presents the fields needed to describe each feature in quant
 | *MaxQuant*
 | *mzTab*
 
-7+^| Feature quantify fields <<feature>> additional fields are in the <<peptide-fields>> table
+7+^| These fields are shared with features (<<psm>>) and peptides (<<peptide>>)
+| `sequence`
+| The peptide's sequence (with no modifications)
+| string
+| Stripped.Sequence
+| Peptide
+| Sequence
+| sequence
+
+| `peptidoform`
+| Peptide sequence with modifications, see more <<peptidoform>>
+| string
+| Modified.Sequence
+| Modified Peptide
+| Modified sequence
+| opt_global_cv_MS:1000889_peptidoform_sequence
+
+| `modifications`
+| List of modifications as a string array, easy for search and filter
+| array[string], null
+| -
+| -
+| Modifications
+| modifications
+
+| `modification_details`
+| Modifications details: modification name, positions and localization probabilities: read <<modifications>>
+| array[struct], null
+| -
+| [modified residue]:[modification mass]
+| Score for localization in Site Tables
+| x
+
+| `posterior_error_probability`
+| Posterior error probability (PEP) for the given peptide or psm match.
+| float32, null
+| PEP
+| x
+| PEP
+| opt_global_Posterior_Error_Probability_score
+
+| `global_qvalue`
+| Global q-value for the peptide or psm at the level of the experiment
+| float32, null
+| Global.Q.Value
+| x
+| -
+| opt_global_q-value
+
+7+^| Peptide fields shared with psm (<<psm>>)
+| `is_decoy`
+| Decoy indicator, 1 if the peptide is a decoy, 0 target
+| int32
+| -
+| -
+| Reverse
+| opt_global_cv_MS:1002217_decoy_peptide
+
+| `calculated_mz`
+| Theoretical peptide mass-to-charge ratio based on an identified sequence and modifications
+| float32
+| Calculate.Precursor.Mz
+| Calculated M/Z
+| m/z
+| calc_mass_to_charge
+
+| `additional_scores`
+| List of structures, each structure contains two fields: name and value.
+| array[struct{name: string, value: float32}]
+| DIA-NN Scores
+| FragPipe Scores
+| MaxQuant Scores
+| search_engine_score
+
+7+^| Feature quantification fields and relation with sample properties
 | `intensity`
 | The intensity-based abundance of the peptide in the sample.
 | float, null
@@ -976,7 +1056,6 @@ The following table presents the fields needed to describe each feature in quant
 | Intensity
 | peptide_abundance_assay[1-n]
 
-7+^| Sample properties
 | `sample_accession`
 | The sample accession in the SDRF, which column is called `source name`
 | string, null
@@ -985,9 +1064,9 @@ The following table presents the fields needed to describe each feature in quant
 | -
 | -
 
-| `condition`
-| The value for the factor value column in the SDRF, for example, the tissue `factor value[organism part]`
-| string, null
+| `conditions`
+| The list of factor values in the SDRF, for example, the tissue `factor value[organism part]` <<conditions>>
+| array[string], null
 | -
 | -
 | -
@@ -1033,23 +1112,6 @@ The following table presents the fields needed to describe each feature in quant
 | -
 | -
 
-7+^| Spectra information
-| `psm_reference_file_name`
-| The reference file containing the best psm that identified the feature. **Note**: This file can be different from the file that contains the feature (`ReferenceFile`).
-| string, null
-| -
-| -
-| -
-| -
-
-| `psm_scan_number`
-| The scan number of the spectrum. The scan number or index of the spectrum in the file.
-| string, null
-| <<diann-scan>>
-| -
-| -
-| -
-
 | `rt_start`
 | Start of the retention time window for feature
 | float, null
@@ -1065,7 +1127,97 @@ The following table presents the fields needed to describe each feature in quant
 | x
 | Calibrated retention time finish
 | -
+
+| `additional_intensities`
+| Apart from the raw intensity, multiple intensity values can be provided as key-values pairs, for example, normalized intensity.
+| array[struct[name:string, value:float32]]
+|
+|
+|
+|
+
+7+^| Protein and protein groups information related to <<pg>>, <<peptide>>
+| `pg_accessions`
+| Protein group accession. Could be one single protein or multiple protein accessions, depending on the tool.
+| array[string], null
+| Protein.Ids
+| x
+| Proteins
+| accession
+
+| `unique`
+| Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0
+| int32, null
+| -
+| Is Unique
+| Unique
+| unique
+
+| `pg_global_qvalue`
+| Global q-value of the protein group at the experiment level
+| float, null
+| Global.PG.Q.Value
+| x
+| x
+| best_search_engine_score
+
+| `gg_accessions`
+| Gene group accessions.
+| array[string], null
+| x
+| x
+| x
+| -
+
+| `gg_names`
+| Gene names, as a string array
+| array[string], null
+| -
+| x
+| -
+| -
+
+| `mp_accessions`
+| Protein accessions of all the proteins that the peptide maps to
+| array[string], null
+| Protein.Ids
+| x
+| Proteins
+| accession
+
+7+^| Spectra information
+| `scan_reference_file_name`
+| The reference file containing the best psm that identified the feature. **Note**: This file can be different from the file that contains the feature (`ReferenceFile`).
+| string, null
+| -
+| -
+| -
+| -
+
+| `scan`
+| The scan number of the spectrum. The scan number or index of the spectrum in the file.
+| string, null
+| <<diann-scan>>
+| -
+| -
+| -
+
+| `cv_params`
+| Optional list of CV parameters for additional metadata <<psm-cv-params>>
+| array[struct{name:string, value:string}], null
+| -
+| -
+| -
+| -
 |===
+
+[NOTE]
+=====
+- The spectra information aims to provide for a given feature the scan used to identify it. In DDA protocols LFQ-DDA and DDAplex, we recommended os use the best psm for a given feature.
+- Protein groups `gg_accessions` should contain all the proteins that discreve the protein group — for example, in MQ and FragPipe the anchor protein is the one selected to represent the group; while DIA-NN put all the proteins within a group. Similar to the psm section <<psm>> the entire list of proteins for a given group could be written in the `mp_accessions` field.
+- conditions: Conditions for every feature, are the values of the `factor values`.
+//TODO: We have to decide if we want to have one condition as anchor that can be used to understand better the experiment.
+=====
 
 [[diann-scan]]
 ==== DIANN scan
@@ -1075,7 +1227,6 @@ The `DIA-NN` scan is a string that contains the scan number of the MS2 used to i
 ==== Format
 
 The feature view can be found in link:feature.avsc[feature.avsc].
-
 
 [[peptide-fields]]
 === Common peptide fields
