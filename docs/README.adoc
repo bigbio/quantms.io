@@ -932,13 +932,13 @@ pq.write_table(table, 'psm_data.parquet', metadata=file_metadata)
 ----
 
 [[NOTE]]
-=====
-TODO:// would be good to have a few notes here about the maximun size the file metadata in parquet.
-=====
+====
+Parquet files don't have a specific limit for metadata size, but practical constraints exist based on your system's memory, processing capabilities, and file management practices. The Parquet metadata, which is stored in the file's footer, includes information like schema, column statistics, and data offsets. The metadata is loaded into memory when the file is read, so large metadata can impact performance. For large metadata, consider storing the metadata in a separate file or database and linking to it from the Parquet file.
+====
 
 [[psm-global-qvalue]]
 ==== Psm global q-value
-The global q-value represents the q-value at the level of the experiment. In OpenMS this is the PSM q-value which is by default global at the level of the experiment and the run. In DIA-NN, it represents `Global.Q.Value`. At the run level, the `Q.Value` will be collected by `additional_scores`.
+The global q-value represents the q-value at the level of the experiment. In OpenMS this is the PSM q-value that is by default global at the level of the experiment and the run. In DIA-NN, it represents `Global.Q.Value`. At the run level, the `Q.Value` will be collected by `additional_scores`.
 
 ==== Format
 
@@ -1302,7 +1302,10 @@ The peptide view can be found in link:peptide.avsc[peptide.avsc].
 [[protein]]
 == Protein views: Protein groups and Protein summary
 
-We have two main reports for protein information. The <<pg>> report from <<proteinsummary>>. In summary, the protein group report is the output of the quantitative tool including quantms, MaxQuant or DIA-NN; while the protein summary is a summary of the protein quantified by samples.
+We have two main reports for protein information.
+
+- The <<pg>> report is the output of the quantitative tool including quantms, MaxQuant or DIA-NN.
+- The <<proteinsummary>> is a protein summary is a summary of the protein quantified by samples.
 
 [[pg]]
 === Protein group view
