@@ -18,7 +18,7 @@ PEPTIDE_FIELDS = [
     ),
     pa.field(
         "modification_details",
-        pa.list_(pa.string()),
+        pa.list_(pa.struct([("name", pa.string()), ("fields", pa.list_(pa.struct([("position", pa.int32()), ("localization_probability", pa.float32())])))])),
         metadata={
             "description": "List of alternative site probabilities for the modification format: read the specification for more details"
         },
@@ -46,20 +46,30 @@ PEPTIDE_FIELDS = [
         },
     ),
     pa.field(
+        "best_id_score",
+        pa.list_(pa.struct([("name", pa.string()), ("value", pa.float32())])),
+        metadata={"description": "A named score type and value representing an identification's measure of confidence or input feature"},
+    ),
+    pa.field(
         "additional_scores",
         pa.list_(pa.struct([("name", pa.string()), ("value", pa.float32())])),
         metadata={"description": "List of structures, each structure contains two fields: name and value"},
     ),
     pa.field(
-        "pg_accessions",
-        pa.list_(pa.string()),
-        metadata={"description": "Protein group accessions of all the proteins that the peptide maps to"},
+        "consensus_support",
+        pa.float32(),
+        metadata={"description": "Consensus support for the given peptide spectrum match, when multiple search engines are used"},
     ),
-    pa.field(
-        "pg_positions",
-        pa.list_(pa.string()),
-        metadata={"description": "Protein start and end positions written as start_post:end_post"},
-    ),
+    # pa.field(
+    #     "pg_accessions",
+    #     pa.list_(pa.string()),
+    #     metadata={"description": "Protein group accessions of all the proteins that the peptide maps to"},
+    # ),
+    # pa.field(
+    #     "pg_positions",
+    #     pa.list_(pa.string()),
+    #     metadata={"description": "Protein start and end positions written as start_post:end_post"},
+    # ),
     pa.field(
         "unique",
         pa.int32(),
@@ -68,20 +78,25 @@ PEPTIDE_FIELDS = [
         },
     ),
     pa.field(
-        "protein_global_qvalue",
+        "pg_global_qvalue",
         pa.float32(),
         metadata={"description": "Global q-value of the protein group at the experiment level"},
     ),
     pa.field(
-        "gg_accessions",
+        "mp_accessions",
         pa.list_(pa.string()),
-        metadata={"description": "Gene accessions, as string array"},
+        metadata={"description": "Protein accessions of all the proteins that the peptide maps to"},
     ),
-    pa.field(
-        "gg_names",
-        pa.list_(pa.string()),
-        metadata={"description": "Gene names, as string array"},
-    ),
+    # pa.field(
+    #     "gg_accessions",
+    #     pa.list_(pa.string()),
+    #     metadata={"description": "Gene accessions, as string array"},
+    # ),
+    # pa.field(
+    #     "gg_names",
+    #     pa.list_(pa.string()),
+    #     metadata={"description": "Gene names, as string array"},
+    # ),
     pa.field(
         "precursor_charge",
         pa.int32(),
@@ -102,11 +117,6 @@ PEPTIDE_FIELDS = [
         pa.float32(),
         metadata={"description": "Predicted retention time of the peptide (in seconds)"},
     ),
-    pa.field(
-        "quantmsio_version",
-        pa.string(),
-        metadata={"description": "The version of quantms.io"},
-    ),
 ]
 
 PSM_UNIQUE_FIELDS = [
@@ -116,9 +126,17 @@ PSM_UNIQUE_FIELDS = [
         metadata={"description": "Spectrum file name with no path information and not including the file extension"},
     ),
     pa.field(
-        "scan_number",
+        "scan",
         pa.string(),
-        metadata={"description": "Scan number of the spectrum"},
+        metadata={"description": "Scan index (number of nativeId) of the spectrum identified"},
+    ),
+    pa.field(
+        "rank", pa.int32(), metadata={"description": "Rank of the peptide spectrum match in the search engine output"}
+    ),
+    pa.field(
+        "cv_params",
+        pa.list_(pa.struct([("name", pa.string()), ("value", pa.string())])),
+        metadata={"description": "Optional list of CV parameters for additional metadata"},
     ),
     pa.field(
         "ion_mobility",
@@ -126,7 +144,7 @@ PSM_UNIQUE_FIELDS = [
         metadata={"description": "Ion mobility value for the precursor ion"},
     ),
     pa.field(
-        "num_peaks",
+        "number_peaks",
         pa.int32(),
         metadata={"description": "Number of peaks in the spectrum used for the peptide spectrum match"},
     ),
@@ -139,14 +157,6 @@ PSM_UNIQUE_FIELDS = [
         "intensity_array",
         pa.list_(pa.float32()),
         metadata={"description": "Array of intensity values for the spectrum used for the peptide spectrum match"},
-    ),
-    pa.field(
-        "rank", pa.int32(), metadata={"description": "Rank of the peptide spectrum match in the search engine output"}
-    ),
-    pa.field(
-        "cv_params",
-        pa.list_(pa.struct([("name", pa.string()), ("value", pa.string())])),
-        metadata={"description": "Optional list of CV parameters for additional metadata"},
     ),
 ]
 

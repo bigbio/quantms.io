@@ -103,48 +103,33 @@ Those three properties can be combined, for example, in a string like one string
 When represented in parquet files <<psm>>, <<feature>>, modification details will be a list of struct:
 
 ```json
-   {
-      "name": "modifications",
-      "type": {
-        "type": "array",
-        "items": {
-          "type": "record",
-          "name": "modification_details",
-          "fields": [
-            {
-              "name": "accession",
-              "type": "string",
-              "doc": "Accession number of the modification (e.g., UNIMOD:35)"
-            },
-            {
-              "name": "positions",
-              "type": {
-                "type": "array",
-                "items": {
-                  "type": "record",
-                  "name": "PositionDetails",
-                  "fields": [
-                    {
-                      "name": "position",
-                      "type": "int",
-                      "doc": "Position of the modification on the peptide"
-                    },
-                    {
-                      "name": "localization_probability",
-                      "type": "float",
-                      "doc": "Probability that the modification is localized at this position"
-                    }
-                  ]
-                }
-              },
-              "doc": "Positions and corresponding localization probabilitie"
-            }
-          ]
+  [{
+      "name": "UNIMOD:35",
+      "fields": [
+        {
+          "position": 2,
+          "localization_probability": 0.94
+        },
+        {
+          "position": 12,
+          "localization_probability": 0.06
         }
-      },
-      "doc": "List of modifications and their details"
+      ]
+    },
+    {
+      "name": "UNIMOD:0",
+      "fields": [
+        {
+          "position": 0,
+          "localization_probability": 0.92
+        },
+        {
+          "position": 16,
+          "localization_probability": 0.08
+        }
+      ]
     }
-
+    ]
 ```
 
 [[scan]]

@@ -34,12 +34,26 @@ class Psm(MzTab):
                     df.loc[:, col] = None
             df.rename(columns=PSM_MAP, inplace=True)
             yield df
+    
+    @staticmethod
+    def slice(df, partitions):
+        cols = df.columns
+        if not isinstance(partitions, list):
+            raise Exception(f"{partitions} is not a list")
+        if len(partitions) == 0:
+            raise Exception(f"{partitions} is empty")
+        for partion in partitions:
+            if partion not in cols:
+                raise Exception(f"{partion} does not exist")
+        for key, df in df.groupby(partitions):
+            yield key, df
 
     def generate_report(self, chunksize=1000000, protein_str=None):
         for df in self.iter_psm_table(chunksize=chunksize, protein_str=protein_str):
             self.transform_psm(df)
             self.add_addition_msg(df)
-            df = self.convert_to_parquet(df, self._modifications)
+            self.convert_to_parquet_format(df, self._modifications)
+            df = self.transform_parquet(df)
             yield df
 
     def transform_psm(self, df):
@@ -59,7 +73,11 @@ class Psm(MzTab):
             axis=1,
         )
         df.drop(["start", "end", "spectra_ref", "search_engine", "search_engine_score[1]"], inplace=True, axis=1)
-
+    
+    @staticmethod
+    def transform_parquet(df):
+        return pa.Table.from_pandas(df, schema=PSM_SCHEMA)
+    
     def _genarate_additional_scores(self, cols):
         struct_list = []
         for software, score in self._score_names.items():
@@ -93,22 +111,22 @@ class Psm(MzTab):
             pqwriter.close()
 
     @staticmethod
-    def convert_to_parquet(res, modifications):
-        res["pg_accessions"] = res["pg_accessions"].str.split(";")
-        res["protein_global_qvalue"] = res["protein_global_qvalue"].astype(float)
+    def convert_to_parquet_format(res, modifications):
+        res["mp_accessions"] = res["mp_accessions"].str.split(";")
+        res["pg_global_qvalue"] = res["pg_global_qvalue"].astype(float)
         res["unique"] = res["unique"].astype("Int32")
         res["modifications"] = res["modifications"].apply(lambda x: generate_modification_list(x, modifications))
         res["precursor_charge"] = res["precursor_charge"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
-        res["calculated_mz"] = res["calculated_mz"].astype(float)
+        #res["calculated_mz"] = res["calculated_mz"].astype(float)
         res["observed_mz"] = res["observed_mz"].astype(float)
         res["posterior_error_probability"] = res["posterior_error_probability"].astype(float)
         res["global_qvalue"] = res["global_qvalue"].astype(float)
         res["is_decoy"] = res["is_decoy"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
 
-        res["scan_number"] = res["scan_number"].astype(str)
+        res["scan"] = res["scan"].astype(str)
 
         if "rt" in res.columns:
             res["rt"] = res["rt"].astype(float)
         else:
             res.loc[:, "rt"] = None
-        return pa.Table.from_pandas(res, schema=PSM_SCHEMA)
+        #return pa.Table.from_pandas(res, schema=PSM_SCHEMA)

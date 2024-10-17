@@ -61,20 +61,17 @@ DIANN_MAP = {
 }
 MAXQUANT_MAP = {
     "Sequence": "sequence",
-    "Proteins": "pg_accessions",
+    "Proteins": "mp_accessions",
     "PEP": "posterior_error_probability",
     "Modifications": "modifications",
     "Reverse": "is_decoy",
     "m/z": "calculated_mz",
-    "MS/MS m/z": "observed_mz",
-    "Gene names": "gg_names",
-    "Calibrated retention time": "rt",
-    "Calibrated retention time start": "rt_start",
-    "Calibrated retention time finish": "rt_stop",
+    "Scan number": "scan",
+    "Retention time": "rt",
     "Charge": "precursor_charge",
     "Modified sequence": "peptidoform",
     "Raw file": "reference_file_name",
-    "Intensity": "intensity",
+    "Score": "additional_scores"
 }
 
 
