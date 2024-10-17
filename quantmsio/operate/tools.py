@@ -71,9 +71,6 @@ def slice_parquet_file(df, partitions, output_folder, label):
         schema = FEATURE_SCHEMA
     else:
         schema = PSM_SCHEMA
-    for partion in partitions:
-        if partion not in cols:
-            raise Exception(f"{partion} does not exist")
     for key, df in df.groupby(partitions):
         parquet_table = pa.Table.from_pandas(df, schema=schema)
         folder = [output_folder] + [str(col) for col in key]

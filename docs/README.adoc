@@ -103,48 +103,33 @@ Those three properties can be combined, for example, in a string like one string
 When represented in parquet files <<psm>>, <<feature>>, modification details will be a list of struct:
 
 ```json
-   {
-      "name": "modifications",
-      "type": {
-        "type": "array",
-        "items": {
-          "type": "record",
-          "name": "modification_details",
-          "fields": [
-            {
-              "name": "accession",
-              "type": "string",
-              "doc": "Accession number of the modification (e.g., UNIMOD:35)"
-            },
-            {
-              "name": "positions",
-              "type": {
-                "type": "array",
-                "items": {
-                  "type": "record",
-                  "name": "PositionDetails",
-                  "fields": [
-                    {
-                      "name": "position",
-                      "type": "int",
-                      "doc": "Position of the modification on the peptide"
-                    },
-                    {
-                      "name": "localization_probability",
-                      "type": "float",
-                      "doc": "Probability that the modification is localized at this position"
-                    }
-                  ]
-                }
-              },
-              "doc": "Positions and corresponding localization probabilitie"
-            }
-          ]
+  [{
+      "name": "UNIMOD:35",
+      "fields": [
+        {
+          "position": 2,
+          "localization_probability": 0.94
+        },
+        {
+          "position": 12,
+          "localization_probability": 0.06
         }
-      },
-      "doc": "List of modifications and their details"
+      ]
+    },
+    {
+      "name": "UNIMOD:0",
+      "fields": [
+        {
+          "position": 0,
+          "localization_probability": 0.92
+        },
+        {
+          "position": 16,
+          "localization_probability": 0.08
+        }
+      ]
     }
-
+    ]
 ```
 
 [[scan]]
@@ -299,7 +284,7 @@ The project view is the file that stores the metadata of the entire `quantms.io`
 | ``project_description``         | Description of the project                  | string
 | ``project_sample_description``  | Description of the project sample           | string
 | ``project_data_description``    | Description of the project data             | string
-| ``project_pubmed_id**           | PubMed ID associated with the project       | int32
+| ``project_pubmed_id``           | PubMed ID associated with the project       | int32
 | ``organisms``                   | List of Organisms involved in the project   | list[string], null
 | ``organism_parts``              | Parts of Organisms studied                  | list[string], null
 | ``diseases``                    | Diseases associated with the study          | list[string], null
@@ -439,41 +424,40 @@ Example:
         {"precursor mass tolerance": "20 ppm"},
         {"fragment mass tolerance": "0.6 Da"}
     ],
-  "quantms_files": [
-    {
-      "feature_file": [
-        {
-          "file_name": "PXD014414.feature.parquet",
-          "is_folder": false
-        }
-      ]
-    },
-    {
-      "sdrf_file": [
-        {
-          "file_name": "PXD014414.sdrf.tsv",
-          "is_folder": false
-        }
-      ]
-    },
-    {
-      "psm_file": [
-        {
-          "file_name": "PXD014414-f4fb88f6.psm.parquet",
-          "is_folder": false
-        }
-      ]
-    },
-    {
-      "differential_file": [
-        {
-          "file_name": "PXD014414-3026e5d5.differential.tsv",
-          "is_folder": false
-        }
-      ]
-    }
-  ]
-  },
+    "quantms_files": [
+      {
+        "feature_file": [
+          {
+            "path_name": "PXD014414.feature.parquet",
+            "is_folder": false
+          }
+        ]
+      },
+      {
+        "sdrf_file": [
+          {
+            "path_name": "PXD014414.sdrf.tsv",
+            "is_folder": false
+          }
+        ]
+      },
+      {
+        "psm_file": [
+          {
+            "path_name": "PXD014414-f4fb88f6.psm.parquet",
+            "is_folder": false
+          }
+        ]
+      },
+      {
+        "differential_file": [
+          {
+            "path_name": "PXD014414-3026e5d5.differential.tsv",
+            "is_folder": false
+          }
+        ]
+      }
+    ],
     "software_provider": {
        "name": "quantms",
        "version": "1.3.0"
@@ -540,7 +524,7 @@ We _RECOMMEND_ including the following properties in the header:
 -  `project_accession`: The project accession in PRIDE Archive
 -  `project_title`: The project title in PRIDE Archive
 -  `project_description`: The project description in PRIDE Archive
--  `quantmsio_version`: The version of the quantms workflow used to generate the file
+-  `quantmsio_version`: The version of the quantmsio used to generate the file
 -  `factor_value`: The factor values used in the analysis (e.g.``tissue``)
 
 Please check also the differential expression example for more information: <<differential>>
@@ -602,9 +586,9 @@ We suggest including the following properties in the header:
 - `project_accession`: The project accession in PRIDE Archive
 - `project_title`: The project title in PRIDE Archive
 - `project_description: The project description in PRIDE Archive
-- `quantmsio_version`: The version of the quantms workflow used to generate the file.
+- `quantmsio_version`: The version of the quantmsio used to generate the file.
 - `factor_value`: The factor values used in the analysis (e.g. ``phenotype``)
-- `adj_pvalue: The FDR threshold used to filter the protein lists (e.g. ``adj.pvalue < 0.05``)
+- `adj_pvalue`: The FDR threshold used to filter the protein lists (e.g. ``adj_pvalue < 0.05``)
 
 [[peptide-views]]
 == Peptide-based Views: psm, feature and peptide

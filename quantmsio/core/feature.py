@@ -271,9 +271,38 @@ class Feature(MzTab):
         for msstats in self.transform_msstats_in(chunksize, protein_str):
             msstats = self.merge_msstats_and_sdrf(msstats)
             msstats = self.merge_msstats_and_psm(msstats, map_dict)
-            self.transform_feature(msstats)
-            feature = self.convert_to_parquet(msstats, self._modifications)
+            self.add_additional_msg(msstats)
+            self.convert_to_parquet_format(msstats, self._modifications)
+            feature = self.transform_feature(msstats) 
             yield feature
+    
+    @staticmethod
+    def slice(df, partitions):
+        cols = df.columns
+        if not isinstance(partitions, list):
+            raise Exception(f"{partitions} is not a list")
+        if len(partitions) == 0:
+            raise Exception(f"{partitions} is empty")
+        for partion in partitions:
+            if partion not in cols:
+                raise Exception(f"{partion} does not exist")
+        for key, df in df.groupby(partitions):
+            yield key, df
+
+    def generate_slice_feature(self, partitions, chunksize=1000000, protein_str=None):
+        map_dict = self.extract_psm_msg(chunksize, protein_str)
+        for msstats in self.transform_msstats_in(chunksize, protein_str):
+            msstats = self.merge_msstats_and_sdrf(msstats)
+            msstats = self.merge_msstats_and_psm(msstats, map_dict)
+            self.add_additional_msg(msstats)
+            self.convert_to_parquet_format(msstats, self._modifications)
+            for key, df in self.slice(msstats, partitions):
+                feature = self.transform_feature(df)
+                yield key, feature
+
+    @staticmethod
+    def transform_feature(df):
+        return pa.Table.from_pandas(df, schema=FEATURE_SCHEMA)
 
     def write_feature_to_file(
         self,
@@ -291,7 +320,28 @@ class Feature(MzTab):
         if pqwriter:
             pqwriter.close()
 
-    def transform_feature(self, msstats):
+    def write_features_to_file(
+        self, output_folder, filename, partitions, chunksize=1000000, protein_file=None
+    ):
+        pqwriters = {}
+        protein_list = extract_protein_list(protein_file) if protein_file else None
+        protein_str = "|".join(protein_list) if protein_list else None
+        for key, feature in self.generate_slice_feature(partitions, chunksize, protein_str):
+            folder = [output_folder] + [str(col) for col in key]
+            folder = os.path.join(*folder)
+            if not os.path.exists(folder):
+                os.makedirs(folder, exist_ok=True)
+            save_path = os.path.join(*[folder, filename])
+            if not os.path.exists(save_path):
+                pqwriter = pq.ParquetWriter(save_path, feature.schema)
+                pqwriters[key] = pqwriter
+            pqwriters[key].write_table(feature)
+
+        for pqwriter in pqwriters.values():
+            pqwriter.close()
+
+
+    def add_additional_msg(self, msstats):
         msstats.loc[:, "protein_global_qvalue"] = msstats["pg_accessions"].map(self._protein_global_qvalue_map)
         msstats.loc[:, "peptidoform"] = msstats[["modifications", "sequence"]].apply(
             lambda row: get_peptidoform_proforma_version_in_mztab(
@@ -309,7 +359,7 @@ class Feature(MzTab):
         msstats.loc[:, "rt_stop"] = None
 
     @staticmethod
-    def convert_to_parquet(res, modifications):
+    def convert_to_parquet_format(res, modifications):
         res["pg_accessions"] = res["pg_accessions"].str.split(";")
         res["protein_global_qvalue"] = res["protein_global_qvalue"].astype(float)
         res["unique"] = res["unique"].astype("Int32")
@@ -329,4 +379,4 @@ class Feature(MzTab):
             res["rt"] = res["rt"].astype(float)
         else:
             res.loc[:, "rt"] = None
-        return pa.Table.from_pandas(res, schema=FEATURE_SCHEMA)
+        #return pa.Table.from_pandas(res, schema=FEATURE_SCHEMA)
