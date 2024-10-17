@@ -71,7 +71,7 @@ MAXQUANT_MAP = {
     "Charge": "precursor_charge",
     "Modified sequence": "peptidoform",
     "Raw file": "reference_file_name",
-    "Score": "additional_scores"
+    "Score": "additional_scores",
 }
 
 

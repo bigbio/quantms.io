@@ -9,6 +9,7 @@ from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mzta
 from quantmsio.core.common import QUANTMSIO_VERSION, MAXQUANT_MAP, MAXQUANT_USECOLS
 from quantmsio.core.feature import Feature
 from quantmsio.core.psm import Psm
+
 # format the log entries
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
@@ -108,39 +109,38 @@ class MaxQuant:
 
     def generate_modification_details(self, df):
         keys = {}
-        pattern = r'\((\d+\.?\d*)\)'
+        pattern = r"\((\d+\.?\d*)\)"
         for key in self.mods_map.keys():
             col = f"{key} Probabilities"
             if col in df.columns:
                 keys[key] = col
+
         def get_details(rows):
             modification_details = []
             for key, col in keys.items():
-                modification_map = {
-                    'name': self.mods_map[key]
-                }
+                modification_map = {"name": self.mods_map[key]}
                 details = []
                 seq = rows[col]
-                if(not isinstance(seq, str)):
+                if not isinstance(seq, str):
                     continue
                 match_obj = re.search(pattern, seq)
-                while(match_obj):
-                    details.append({
-                        "position": match_obj.start(0),
-                        "localization_probability": float(match_obj.group(1))
-                    })
-                    seq = seq.replace(match_obj.group(0),'',1)
+                while match_obj:
+                    details.append(
+                        {"position": match_obj.start(0), "localization_probability": float(match_obj.group(1))}
+                    )
+                    seq = seq.replace(match_obj.group(0), "", 1)
                     match_obj = re.search(pattern, seq)
-                modification_map['fields'] = details
+                modification_map["fields"] = details
                 modification_details.append(modification_map)
             if len(modification_details) == 0:
                 return None
             else:
                 return modification_details
+
         if len(keys.values()) != 0:
-            df.loc[:, 'modification_details'] = df[keys.values()].apply(get_details,axis=1)
+            df.loc[:, "modification_details"] = df[keys.values()].apply(get_details, axis=1)
         else:
-            df.loc[:, 'modification_details'] = None
+            df.loc[:, "modification_details"] = None
 
     def main_operate(self, df: pd.DataFrame):
         df.loc[:, "Modifications"] = df[["Modified sequence", "Modifications"]].apply(
@@ -156,8 +156,10 @@ class MaxQuant:
         )
         df["is_decoy"] = df["is_decoy"].map({None: "0", np.nan: "0", "+": "1"})
         self.generate_modification_details(df)
-        df.loc[:, 'unique'] = df["mp_accessions"].apply(lambda x: "0" if ";" in str(x) else "1")
-        df["additional_scores"] = df["additional_scores"].apply(lambda x: [{"name": "maxquant", "value": np.float32(x)}])
+        df.loc[:, "unique"] = df["mp_accessions"].apply(lambda x: "0" if ";" in str(x) else "1")
+        df["additional_scores"] = df["additional_scores"].apply(
+            lambda x: [{"name": "maxquant", "value": np.float32(x)}]
+        )
         df.loc[:, "best_id_score"] = None
         df.loc[:, "cv_params"] = None
         df.loc[:, "consensus_support"] = None
@@ -207,7 +209,7 @@ class MaxQuant:
         pqwriter = None
         for df in self.iter_batch(chunksize=chunksize):
             self.transform_psm(df)
-            Psm.convert_to_parquet_format(df,self._modifications)
+            Psm.convert_to_parquet_format(df, self._modifications)
             parquet = Psm.transform_parquet(df)
             if not pqwriter:
                 pqwriter = pq.ParquetWriter(output_path, parquet.schema)
@@ -215,7 +217,6 @@ class MaxQuant:
             if pqwriter:
                 pqwriter.close()
 
-    
     # def convert_to_parquet(self, output_path: str, chunksize: int = None):
     #     pqwriter = None
     #     for df in self.iter_batch(chunksize=chunksize):
@@ -227,4 +228,3 @@ class MaxQuant:
     #         pqwriter.write_table(feature)
     #     if pqwriter:
     #         pqwriter.close()
-    

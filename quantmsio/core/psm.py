@@ -34,7 +34,7 @@ class Psm(MzTab):
                     df.loc[:, col] = None
             df.rename(columns=PSM_MAP, inplace=True)
             yield df
-    
+
     @staticmethod
     def slice(df, partitions):
         cols = df.columns
@@ -73,11 +73,11 @@ class Psm(MzTab):
             axis=1,
         )
         df.drop(["start", "end", "spectra_ref", "search_engine", "search_engine_score[1]"], inplace=True, axis=1)
-    
+
     @staticmethod
     def transform_parquet(df):
         return pa.Table.from_pandas(df, schema=PSM_SCHEMA)
-    
+
     def _genarate_additional_scores(self, cols):
         struct_list = []
         for software, score in self._score_names.items():
@@ -117,7 +117,7 @@ class Psm(MzTab):
         res["unique"] = res["unique"].astype("Int32")
         res["modifications"] = res["modifications"].apply(lambda x: generate_modification_list(x, modifications))
         res["precursor_charge"] = res["precursor_charge"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
-        #res["calculated_mz"] = res["calculated_mz"].astype(float)
+        # res["calculated_mz"] = res["calculated_mz"].astype(float)
         res["observed_mz"] = res["observed_mz"].astype(float)
         res["posterior_error_probability"] = res["posterior_error_probability"].astype(float)
         res["global_qvalue"] = res["global_qvalue"].astype(float)
@@ -129,4 +129,4 @@ class Psm(MzTab):
             res["rt"] = res["rt"].astype(float)
         else:
             res.loc[:, "rt"] = None
-        #return pa.Table.from_pandas(res, schema=PSM_SCHEMA)
+        # return pa.Table.from_pandas(res, schema=PSM_SCHEMA)

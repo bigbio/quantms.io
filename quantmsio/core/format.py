@@ -18,7 +18,17 @@ PEPTIDE_FIELDS = [
     ),
     pa.field(
         "modification_details",
-        pa.list_(pa.struct([("name", pa.string()), ("fields", pa.list_(pa.struct([("position", pa.int32()), ("localization_probability", pa.float32())])))])),
+        pa.list_(
+            pa.struct(
+                [
+                    ("name", pa.string()),
+                    (
+                        "fields",
+                        pa.list_(pa.struct([("position", pa.int32()), ("localization_probability", pa.float32())])),
+                    ),
+                ]
+            )
+        ),
         metadata={
             "description": "List of alternative site probabilities for the modification format: read the specification for more details"
         },
@@ -48,7 +58,9 @@ PEPTIDE_FIELDS = [
     pa.field(
         "best_id_score",
         pa.list_(pa.struct([("name", pa.string()), ("value", pa.float32())])),
-        metadata={"description": "A named score type and value representing an identification's measure of confidence or input feature"},
+        metadata={
+            "description": "A named score type and value representing an identification's measure of confidence or input feature"
+        },
     ),
     pa.field(
         "additional_scores",
@@ -58,7 +70,9 @@ PEPTIDE_FIELDS = [
     pa.field(
         "consensus_support",
         pa.float32(),
-        metadata={"description": "Consensus support for the given peptide spectrum match, when multiple search engines are used"},
+        metadata={
+            "description": "Consensus support for the given peptide spectrum match, when multiple search engines are used"
+        },
     ),
     # pa.field(
     #     "pg_accessions",
