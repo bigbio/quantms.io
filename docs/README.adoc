@@ -915,9 +915,14 @@ file_metadata = {
 pq.write_table(table, 'psm_data.parquet', metadata=file_metadata)
 ----
 
+[[NOTE]]
+====
+Parquet files don't have a specific limit for metadata size, but practical constraints exist based on your system's memory, processing capabilities, and file management practices. The Parquet metadata, which is stored in the file's footer, includes information like schema, column statistics, and data offsets. The metadata is loaded into memory when the file is read, so large metadata can impact performance. For large metadata, consider storing the metadata in a separate file or database and linking to it from the Parquet file.
+====
+
 [[psm-global-qvalue]]
 ==== Psm global q-value
-The global q-value represents the q-value at the level of the experiment. In OpenMS this is the PSM q-value which is by default global at the level of the experiment and the run. In DIA-NN, it represents `Global.Q.Value`. At the run level, the `Q.Value` will be collected by `additional_scores`.
+The global q-value represents the q-value at the level of the experiment. In OpenMS this is the PSM q-value that is by default global at the level of the experiment and the run. In DIA-NN, it represents `Global.Q.Value`. At the run level, the `Q.Value` will be collected by `additional_scores`.
 
 ==== Format
 
@@ -932,8 +937,9 @@ The feature file is similar to the https://https://github.com/HUPO-PSI/mzTab/tre
 
 ==== Feature use cases
 
--  Store peptide intensities in relation to the sample metadata to perform down-stream analysis and integration.
--  Enable peptide level statistics and algorithms to move from peptide level to protein level.
+- Store peptide intensities in relation to the sample metadata to perform down-stream analysis and integration.
+- Enable peptide level statistics and algorithms to move from peptide level to protein level.
+- Different to the psm section <<psm>> contains all the protein inference information depending on if protein inference was applied or not.
 
 NOTE: quantms also release the peptide table for MSstats. The goal of the feature table is to provide a more general peptide table and improve the annotations of the peptides with more columns.
 
@@ -951,7 +957,81 @@ The following table presents the fields needed to describe each feature in quant
 | *MaxQuant*
 | *mzTab*
 
-7+^| Feature quantify fields <<feature>> additional fields are in the <<peptide-fields>> table
+7+^| These fields are shared with features (<<psm>>) and peptides (<<peptide>>)
+| `sequence`
+| The peptide's sequence (with no modifications)
+| string
+| Stripped.Sequence
+| Peptide
+| Sequence
+| sequence
+
+| `peptidoform`
+| Peptide sequence with modifications, see more <<peptidoform>>
+| string
+| Modified.Sequence
+| Modified Peptide
+| Modified sequence
+| opt_global_cv_MS:1000889_peptidoform_sequence
+
+| `modifications`
+| List of modifications as a string array, easy for search and filter
+| array[string], null
+| -
+| -
+| Modifications
+| modifications
+
+| `modification_details`
+| Modifications details: modification name, positions and localization probabilities: read <<modifications>>
+| array[struct], null
+| -
+| [modified residue]:[modification mass]
+| Score for localization in Site Tables
+| x
+
+| `posterior_error_probability`
+| Posterior error probability (PEP) for the given peptide or psm match.
+| float32, null
+| PEP
+| x
+| PEP
+| opt_global_Posterior_Error_Probability_score
+
+| `global_qvalue`
+| Global q-value for the peptide or psm at the level of the experiment
+| float32, null
+| Global.Q.Value
+| x
+| -
+| opt_global_q-value
+
+7+^| Peptide fields shared with psm (<<psm>>)
+| `is_decoy`
+| Decoy indicator, 1 if the peptide is a decoy, 0 target
+| int32
+| -
+| -
+| Reverse
+| opt_global_cv_MS:1002217_decoy_peptide
+
+| `calculated_mz`
+| Theoretical peptide mass-to-charge ratio based on an identified sequence and modifications
+| float32
+| Calculate.Precursor.Mz
+| Calculated M/Z
+| m/z
+| calc_mass_to_charge
+
+| `additional_scores`
+| List of structures, each structure contains two fields: name and value.
+| array[struct{name: string, value: float32}]
+| DIA-NN Scores
+| FragPipe Scores
+| MaxQuant Scores
+| search_engine_score
+
+7+^| Feature quantification fields and relation with sample properties
 | `intensity`
 | The intensity-based abundance of the peptide in the sample.
 | float, null
@@ -960,7 +1040,6 @@ The following table presents the fields needed to describe each feature in quant
 | Intensity
 | peptide_abundance_assay[1-n]
 
-7+^| Sample properties
 | `sample_accession`
 | The sample accession in the SDRF, which column is called `source name`
 | string, null
@@ -969,9 +1048,9 @@ The following table presents the fields needed to describe each feature in quant
 | -
 | -
 
-| `condition`
-| The value for the factor value column in the SDRF, for example, the tissue `factor value[organism part]`
-| string, null
+| `conditions`
+| The list of factor values in the SDRF, for example, the tissue `factor value[organism part]` <<conditions>>
+| array[string], null
 | -
 | -
 | -
@@ -1017,23 +1096,6 @@ The following table presents the fields needed to describe each feature in quant
 | -
 | -
 
-7+^| Spectra information
-| `psm_reference_file_name`
-| The reference file containing the best psm that identified the feature. **Note**: This file can be different from the file that contains the feature (`ReferenceFile`).
-| string, null
-| -
-| -
-| -
-| -
-
-| `psm_scan_number`
-| The scan number of the spectrum. The scan number or index of the spectrum in the file.
-| string, null
-| <<diann-scan>>
-| -
-| -
-| -
-
 | `rt_start`
 | Start of the retention time window for feature
 | float, null
@@ -1049,123 +1111,31 @@ The following table presents the fields needed to describe each feature in quant
 | x
 | Calibrated retention time finish
 | -
-|===
 
-[[diann-scan]]
-==== DIANN scan
-
-The `DIA-NN` scan is a string that contains the scan number of the MS2 used to identify the peptide. We use the `rt` field and the mzML information to get that number.
-
-==== Format
-
-The feature view can be found in link:feature.avsc[feature.avsc].
-
-
-[[peptide-fields]]
-=== Common peptide fields
-
-The following fields are shared among Peptide-based views: <<psm>>, <<feature>>, <<peptide>>.
-
-[cols="1,2,1,1,1,1,1", options="header"]
-|===
-| **Field**
-| **Description**
-| **Type**
-| **DIA-NN**
-| **FragPipe**
-| **MaxQuant**
-| **mzTab**
-
-7+^| Peptide fields shared by <<feature>> <<peptide>> <<psm>>
-| `sequence`
-| The peptide's sequence (with no modifications)
-| string
-| Stripped.Sequence
-| Peptide
-| Sequence
-| sequence
-
-| `peptidoform`
-| Peptide sequence with modifications, see more <<peptidoform>>
-| string
-| Modified.Sequence
-| Modified Peptide
-| Modified sequence
-| opt_global_cv_MS:1000889_peptidoform_sequence
-
-| `modifications`
-| List of modifications as a string array, easy for search and filter
-| array[string], null
-| -
-| -
-| Modifications
-| modifications
-
-| `modification_details`
-| List of alternative site probabilities for the modification format: read <<modifications>>
-| array[string], null
-| -
-| [modified residue]:[modification mass]
-| Score for localization in Site Tables
-| x
-
-| `posterior_error_probability`
-| Posterior error probability (PEP) for the given peptide match
+| `predicted_rt`
+| Predicted retention time of the peptide (in seconds)
 | float, null
-| PEP
+| Predicted.RT
 | x
-| PEP
-| opt_global_Posterior_Error_Probability_score
-
-| `global_qvalue`
-| Global q-value for the peptide or psm at the level of the experiment
-| float, null
-| Global.Q.Value
 | x
 | -
-| opt_global_q-value
 
-7+^| Peptide fields shared by <<feature>> <<psm>>
-| `is_decoy`
-| Decoy indicator, 1 if the peptide is a decoy, 0 target
-| int32
-| -
-| -
-| Reverse
-| opt_global_cv_MS:1002217_decoy_peptide
+| `additional_intensities`
+| Apart from the raw intensity, multiple intensity values can be provided as key-values pairs, for example, normalized intensity.
+| array[struct[name:string, value:float32]]
+|
+|
+|
+|
 
-| `calculated_mz`
-| Theoretical peptide mass-to-charge ratio based on an identified sequence and modifications
-| float
-| Calculate.Precursor.Mz
-| Calculated M/Z
-| m/z
-| calc_mass_to_charge
-
-| `additional_scores`
-| List of structures, each structure contains two fields: name and value.
-| array[struct{name: string, value: float}]
-| DIA-NN Scores
-| FragPipe Scores
-| MaxQuant Scores
-| search_engine_score
-
-7+^| Protein fields shared by <<feature>> <<psm>> <<peptide>>
+7+^| Protein and protein groups information related to <<pg>>, <<peptide>>
 | `pg_accessions`
-| Protein group accessions of all the proteins that the peptide maps to
+| Protein group accession. Could be one single protein or multiple protein accessions, depending on the tool.
 | array[string], null
 | Protein.Ids
 | x
 | Proteins
 | accession
-
-| `pg_positions`
-| Protein start and end positions written as start_post:end_post
-| array[string], null
-| -
-| x
-| x
-| Combination of start and end positions
 
 | `unique`
 | Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0
@@ -1175,7 +1145,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | Unique
 | unique
 
-| `protein_global_qvalue`
+| `pg_global_qvalue`
 | Global q-value of the protein group at the experiment level
 | float, null
 | Global.PG.Q.Value
@@ -1184,7 +1154,7 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | best_search_engine_score
 
 | `gg_accessions`
-| Gene group accessions, as a string array
+| Gene group accessions.
 | array[string], null
 | x
 | x
@@ -1199,43 +1169,56 @@ The following fields are shared among Peptide-based views: <<psm>>, <<feature>>,
 | -
 | -
 
-7+^| Spectra fields shared by <<feature>> <<psm>>
-| `precursor_charge`
-| Precursor charge
-| int32
-| Precursor.Charge
+| `mp_accessions`
+| Protein accessions of all the proteins that the peptide maps to
+| array[string], null
+| Protein.Ids
 | x
-| Charge
-| charge
+| Proteins
+| accession
 
-| `observed_mz`
-| Experimental peptide mass-to-charge ratio of identified peptide (in Da)
-| float
-| x
-| Observed M/Z
-| x
-| exp_mass_to_charge
+7+^| Spectra information
+| `scan_reference_file_name`
+| The reference file containing the best psm that identified the feature. **Note**: This file can be different from the file that contains the feature (`ReferenceFile`).
+| string, null
+| -
+| -
+| -
+| -
 
-| `rt`
-| MS2 scan’s precursor retention time (in seconds)
-| float, null
-| RT
-| x
-| Retention time
-| retention_time
+| `scan`
+| The scan number of the spectrum. The scan number or index of the spectrum in the file.
+| string, null
+| <<diann-scan>>
+| -
+| -
+| -
 
-| `predicted_rt`
-| Predicted retention time of the peptide (in seconds)
-| float, null
-| Predicted.RT
-| x
-| x
+| `cv_params`
+| Optional list of CV parameters for additional metadata <<psm-cv-params>>
+| array[struct{name:string, value:string}], null
+| -
+| -
+| -
 | -
 |===
 
-//TODO: We should discuss all the Protein Groups and Gene Groups fields and how they are used in the quantms.io: PGAccessions, PGPositions, Unique, ProteinGlobalQvalue, GGAccessions, GGNames
+[NOTE]
+=====
+- The spectra information aims to provide for a given feature the scan used to identify it. In DDA protocols LFQ-DDA and DDAplex, we recommended os use the best psm for a given feature.
+- Protein groups `gg_accessions` should contain all the proteins that discreve the protein group — for example, in MQ and FragPipe the anchor protein is the one selected to represent the group; while DIA-NN put all the proteins within a group. Similar to the psm section <<psm>> the entire list of proteins for a given group could be written in the `mp_accessions` field.
+- conditions: Conditions for every feature, are the values of the `factor values`.
+//TODO: We have to decide if we want to have one condition as anchor that can be used to understand better the experiment.
+=====
 
+[[diann-scan]]
+==== DIANN scan
 
+The `DIA-NN` scan is a string that contains the scan number of the MS2 used to identify the peptide. We use the `rt` field and the mzML information to get that number.
+
+==== Format
+
+The feature view can be found in link:feature.avsc[feature.avsc].
 
 [[peptide]]
 === Peptide view
@@ -1251,13 +1234,49 @@ The peptide view aims to cover detail on peptides quantified in the experiment a
 
 Some of the fields are shared between the <<psm>> and <<feature>> views, they can be found in the following table <<peptide-fields>>.
 
+
+[cols="1,1,1", options="header"]
 |===
 | *Field*
 | *Description*
 | *Type*
-|best_id_score     | The best search engine score from all the features/psms identified | `[{"type": "record", "name": "score", "fields": [{ "name": "name", "type": "string" },{ "name": "value", "type": "float32" }]}, "null"]`
-|sample_accession  | The sample accession in the SDRF, which column is called `source name`  | string, null
-|abundance         | The peptide abundance in the given sample accession                     | float, null
+
+3+^| These fields are shared with features (<<feature>>) and peptides (<<psm>>)
+| `sequence`
+| The peptide's sequence (with no modifications)
+| string
+
+| `peptidoform`
+| Peptide sequence with modifications, see more <<peptidoform>>
+| string
+
+| `modifications`
+| List of modifications as a string array, easy for search and filter
+| array[string], null
+
+| `modification_details`
+| Modifications details: modification name, positions and localization probabilities: read <<modifications>>
+| array[struct], null
+
+| `gg_accessions`
+| Gene group accessions.
+| array[string], null
+
+| `gg_names`
+| Gene names, as a string array
+| array[string], null
+
+| `best_id_score`
+| The best search engine score from all the features/psms identified
+| array[struct[name: string, value:float32]], null
+
+|`sample_accession`
+| The sample accession in the SDRF, which column is called `source name`
+| string, null
+
+| `abundance`
+| The peptide abundance in the given sample accession
+| float32, null
 |===
 
 ==== Format
@@ -1265,9 +1284,12 @@ Some of the fields are shared between the <<psm>> and <<feature>> views, they ca
 The peptide view can be found in link:peptide.avsc[peptide.avsc].
 
 [[protein]]
-== Protein views : Protein groups and Protein summary
+== Protein views: Protein groups and Protein summary
 
-We have two main reports for protein information. The <<pg>> report from <<proteinsummary>>. In summary, the protein group report is the output of the quantitative tool including quantms, MaxQuant or DIA-NN; while the protein summary is a summary of the protein quantified by samples.
+We have two main reports for protein information.
+
+- The <<pg>> report is the output of the quantitative tool including quantms, MaxQuant or DIA-NN.
+- The <<proteinsummary>> is a protein summary is a summary of the protein quantified by samples.
 
 [[pg]]
 === Protein group view
@@ -1402,7 +1424,7 @@ The protein view is a report of the proteins identified/quantified in the experi
 
 | `abundance`              | Abundance of the given protein in the sample/experiment    | null, float
 | `sample_accession`       | Sample accession in the SDRF, which column is called `source name` | string
-| `best_id_score`           | The best search engine score for the identification      | `[{"type": "record", "name": "score", "fields": [{ "name": "name", "type": "string" },{ "name": "value", "type": "float32" }]}, "null"]`
+| `best_id_score`           | The best search engine score for the identification      | `[{"type": "record", "name": "score", "fields": [{ "name": "name", "type": "string" },{ "name": "value", "type": "float32" }]}, null]`
 | `gene_accessions`        | The gene accessions corresponding to every protein       | null, array[string]
 | `gene_names`             | The gene names corresponding to every protein            | null, array[string]
 | `number_peptides`        | The total number of peptides for a give protein        | null, integer
@@ -1435,22 +1457,22 @@ The mass spectra view is a tabular file that contains the details of the mass sp
 | `ms_level`         | int                          | The MS level (e.g., 1 for MS1, 2 for MS2).
 | `centroid`         | boolean                      | Indicates whether the data is centroided (true) or profile mode (false).
 | `scan_start_time`  | float                        | The start time of the scan in minutes.
-| `inverse_ion_mobility` | ["null", "float"]         | Inverse ion mobility, if available, used for TIMS data.
+| `inverse_ion_mobility` | [null, "float"]         | Inverse ion mobility, if available, used for TIMS data.
 | `ion_injection_time` | float                      | The ion injection time in milliseconds.
 | `total_ion_current` | float                       | Total ion current (TIC) for the scan.
-| `precursors`       | ["null", {"type": "array", "items": {"type": "record", "name": "precursor"}}] | List of precursors for this scan, if applicable.
+| `precursors`       | [null, {"type": "array", "items": {"type": "record", "name": "precursor"}}] | List of precursors for this scan, if applicable.
 
 | `selected_ion_mz`  | float                        | The m/z value of the selected precursor ion.
-| `selected_ion_charge` | ["null", "int"]           | Charge state of the selected precursor ion, if available.
-| `selected_ion_intensity` | ["null", "float"]      | Intensity of the selected precursor ion.
-| `isolation_window_target` | ["null", "float"]     | The target m/z for the isolation window.
-| `isolation_window_lower` | ["null", "float"]      | The lower bound of the isolation window.
-| `isolation_window_upper` | ["null", "float"]      | The upper bound of the isolation window.
-| `spectrum_ref`     | ["null", "string"]           | Reference to another spectrum (e.g., for linking to external datasets).
+| `selected_ion_charge` | [null, "int"]           | Charge state of the selected precursor ion, if available.
+| `selected_ion_intensity` | [null, "float"]      | Intensity of the selected precursor ion.
+| `isolation_window_target` | [null, "float"]     | The target m/z for the isolation window.
+| `isolation_window_lower` | [null, "float"]      | The lower bound of the isolation window.
+| `isolation_window_upper` | [null, "float"]      | The upper bound of the isolation window.
+| `spectrum_ref`     | [null, "string"]           | Reference to another spectrum (e.g., for linking to external datasets).
 
 | `mz`               | {"type": "array", "items": "float"} | List of m/z values for the scan.
 | `intensity`        | {"type": "array", "items": "float"} | List of intensity values corresponding to the m/z values.
-| `cv_params`        | ["null", {"type": "array", "items": {"type": "record", "name": "cv_param"}}] | Optional list of CV parameters for additional metadata.
+| `cv_params`        | [null, {"type": "array", "items": {"type": "record", "name": "cv_param"}}] | Optional list of CV parameters for additional metadata.
 
 | name             | string                       | Name of the CV term (e.g., from PSI-MS or other ontologies).
 | value            | string                       | Value associated with the CV term.

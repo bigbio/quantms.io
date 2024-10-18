@@ -34,7 +34,7 @@ class Psm(MzTab):
                     df.loc[:, col] = None
             df.rename(columns=PSM_MAP, inplace=True)
             yield df
-    
+
     @staticmethod
     def slice(df, partitions):
         cols = df.columns
@@ -74,7 +74,7 @@ class Psm(MzTab):
     @staticmethod
     def transform_parquet(df):
         return pa.Table.from_pandas(df, schema=PSM_SCHEMA)
-    
+
     def _genarate_additional_scores(self, cols):
         struct_list = []
         for software, score in self._score_names.items():
@@ -125,4 +125,4 @@ class Psm(MzTab):
             res["rt"] = res["rt"].astype(float)
         else:
             res.loc[:, "rt"] = None
-        #return pa.Table.from_pandas(res, schema=PSM_SCHEMA)
+        # return pa.Table.from_pandas(res, schema=PSM_SCHEMA)

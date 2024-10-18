@@ -273,9 +273,9 @@ class Feature(MzTab):
             msstats = self.merge_msstats_and_psm(msstats, map_dict)
             self.add_additional_msg(msstats)
             self.convert_to_parquet_format(msstats, self._modifications)
-            feature = self.transform_feature(msstats) 
+            feature = self.transform_feature(msstats)
             yield feature
-    
+
     @staticmethod
     def slice(df, partitions):
         cols = df.columns
@@ -320,9 +320,7 @@ class Feature(MzTab):
         if pqwriter:
             pqwriter.close()
 
-    def write_features_to_file(
-        self, output_folder, filename, partitions, chunksize=1000000, protein_file=None
-    ):
+    def write_features_to_file(self, output_folder, filename, partitions, chunksize=1000000, protein_file=None):
         pqwriters = {}
         protein_list = extract_protein_list(protein_file) if protein_file else None
         protein_str = "|".join(protein_list) if protein_list else None
@@ -339,7 +337,6 @@ class Feature(MzTab):
 
         for pqwriter in pqwriters.values():
             pqwriter.close()
-
 
     def add_additional_msg(self, msstats):
         msstats.loc[:, "protein_global_qvalue"] = msstats["pg_accessions"].map(self._protein_global_qvalue_map)
@@ -379,4 +376,4 @@ class Feature(MzTab):
             res["rt"] = res["rt"].astype(float)
         else:
             res.loc[:, "rt"] = None
-        #return pa.Table.from_pandas(res, schema=FEATURE_SCHEMA)
+        # return pa.Table.from_pandas(res, schema=FEATURE_SCHEMA)

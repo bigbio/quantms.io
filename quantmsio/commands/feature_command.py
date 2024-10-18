@@ -76,5 +76,11 @@ def convert_feature_file(
     if not partitions:
         feature_manager.write_feature_to_file(output_path=output_path, chunksize=chunksize, protein_file=protein_file)
     else:
-        partitions = partitions.split(',')
-        feature_manager.write_features_to_file(output_folder=output_folder, filename=filename, partitions=partitions, chunksize=chunksize, protein_file=protein_file)
+        partitions = partitions.split(",")
+        feature_manager.write_features_to_file(
+            output_folder=output_folder,
+            filename=filename,
+            partitions=partitions,
+            chunksize=chunksize,
+            protein_file=protein_file,
+        )
