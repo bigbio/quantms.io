@@ -57,10 +57,7 @@ class Psm(MzTab):
             yield df
 
     def transform_psm(self, df):
-        df.loc[:, "pg_positions"] = df[["start", "end"]].apply(
-            lambda row: self.generate_positions(row["start"], row["end"]), axis=1
-        )
-        df.loc[:, "scan_number"] = df["spectra_ref"].apply(generate_scan_number)
+        df.loc[:, "scan"] = df["spectra_ref"].apply(generate_scan_number)
 
         df.loc[:, "reference_file_name"] = df["spectra_ref"].apply(lambda x: self._ms_runs[x[: x.index(":")]])
         df.loc[:, "additional_scores"] = df[list(self._score_names.values())].apply(
@@ -72,7 +69,7 @@ class Psm(MzTab):
             ),
             axis=1,
         )
-        df.drop(["start", "end", "spectra_ref", "search_engine", "search_engine_score[1]"], inplace=True, axis=1)
+        df.drop(["spectra_ref", "search_engine", "search_engine_score[1]"], inplace=True, axis=1)
     
     @staticmethod
     def transform_parquet(df):
@@ -86,18 +83,17 @@ class Psm(MzTab):
         return struct_list
 
     def add_addition_msg(self, df):
-        df.loc[:, "protein_global_qvalue"] = df["pg_accessions"].map(self._protein_global_qvalue_map)
+        df.loc[:, "pg_global_qvalue"] = df["mp_accessions"].map(self._protein_global_qvalue_map)
+        df.loc[:, "best_id_score"] = None
+        df.loc[:, "consensus_support"] = None
         df.loc[:, "modification_details"] = None
         df.loc[:, "predicted_rt"] = None
-        df.loc[:, "gg_accessions"] = None
-        df.loc[:, "gg_names"] = None
         df.loc[:, "ion_mobility"] = None
-        df.loc[:, "num_peaks"] = None
+        df.loc[:, "number_peaks"] = None
         df.loc[:, "mz_array"] = None
         df.loc[:, "intensity_array"] = None
         df.loc[:, "rank"] = None
         df.loc[:, "cv_params"] = None
-        df.loc[:, "quantmsio_version"] = QUANTMSIO_VERSION
 
     def write_feature_to_file(self, output_path, chunksize=1000000, protein_file=None):
         protein_list = extract_protein_list(protein_file) if protein_file else None
@@ -117,7 +113,7 @@ class Psm(MzTab):
         res["unique"] = res["unique"].astype("Int32")
         res["modifications"] = res["modifications"].apply(lambda x: generate_modification_list(x, modifications))
         res["precursor_charge"] = res["precursor_charge"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
-        #res["calculated_mz"] = res["calculated_mz"].astype(float)
+        res["calculated_mz"] = res["calculated_mz"].astype(float)
         res["observed_mz"] = res["observed_mz"].astype(float)
         res["posterior_error_probability"] = res["posterior_error_probability"].astype(float)
         res["global_qvalue"] = res["global_qvalue"].astype(float)
