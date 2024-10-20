@@ -34,6 +34,11 @@ PEPTIDE_FIELDS = [
         },
     ),
     pa.field(
+        "precursor_charge",
+        pa.int32(),
+        metadata={"description": "charge state of the feature"},
+    ),
+    pa.field(
         "posterior_error_probability",
         pa.float32(),
         metadata={"description": "Posterior error probability for the given peptide spectrum match"},
@@ -54,6 +59,11 @@ PEPTIDE_FIELDS = [
         metadata={
             "description": "Theoretical peptide mass-to-charge ratio based on identified sequence and modifications"
         },
+    ),
+    pa.field(
+        "observed_mz",
+        pa.float32(),
+        metadata={"description": "Experimental peptide mass-to-charge ratio of identified peptide (in Da)"},
     ),
     pa.field(
         "best_id_score",
@@ -113,11 +123,6 @@ PSM_UNIQUE_FIELDS = [
         metadata={
             "description": "Consensus support for the given peptide spectrum match, when multiple search engines are used"
         },
-    ),
-    pa.field(
-        "observed_mz",
-        pa.float32(),
-        metadata={"description": "Experimental peptide mass-to-charge ratio of identified peptide (in Da)"},
     ),
     pa.field(
         "precursor_charge",

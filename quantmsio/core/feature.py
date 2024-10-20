@@ -116,7 +116,7 @@ class Feature(MzTab):
                     ),
                     axis=1,
                 )
-            psm[["best_qvalue", "psm_reference_file_name", "psm_scan_number"]] = psm[
+            psm[["best_qvalue", "scan_reference_file_name", "scan"]] = psm[
                 ["opt_global_cv_MS:1000889_peptidoform_sequence", "precursor_charge"]
             ].apply(
                 merge_pep_msg,
@@ -135,14 +135,13 @@ class Feature(MzTab):
                 elif len(df["global_qvalue"].unique()) > 1 or not pd.isna(df.loc[0, "best_qvalue"]):
                     temp_df = df.iloc[df["global_qvalue"].idxmin()]
                     qvalue = "global_qvalue"
-                # print(temp_df)
                 if qvalue is not None:
                     best_qvalue = temp_df[qvalue]
                     if map_dict[key][0] is None or float(map_dict[key][0]) > float(best_qvalue):
                         map_dict[key][0] = temp_df[qvalue]
-                        map_dict[key][1] = temp_df["psm_reference_file_name"]
-                        map_dict[key][2] = temp_df["psm_scan_number"]
-                        #map_dict[key][3] = temp_df["pg_positions"]
+                        map_dict[key][1] = temp_df["scan_reference_file_name"]
+                        map_dict[key][2] = temp_df["scan"]
+                        map_dict[key][3] = temp_df["mp_accessions"]
                         map_dict[key][4] = temp_df["modifications"]
                         map_dict[key][5] = temp_df["posterior_error_probability"]
                         map_dict[key][6] = temp_df["is_decoy"]
@@ -186,13 +185,13 @@ class Feature(MzTab):
     @staticmethod
     def transform_sdrf(sdrf_path):
         sdrf = pd.read_csv(sdrf_path, sep="\t")
-        factor = "".join(filter(lambda x: x.startswith("factor"), sdrf.columns))
-        SDRF_USECOLS.add(factor)
-        sdrf = sdrf[list(SDRF_USECOLS)]
-        SDRF_USECOLS.remove(factor)
+        factor = list(filter(lambda x: x.startswith("factor"), sdrf.columns))
+        usecols = list(SDRF_USECOLS) + factor
+        sdrf = sdrf[usecols]
         sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(lambda x: x.split(".")[0])
         samples = sdrf["source name"].unique()
         mixed_map = dict(zip(samples, range(1, len(samples) + 1)))
+        sdrf.loc[:, 'conditions'] = sdrf[factor].apply(lambda row:[str(row[col]) for col in factor],axis=1)
         sdrf.loc[:, "run"] = sdrf[
             [
                 "source name",
@@ -210,12 +209,11 @@ class Feature(MzTab):
         sdrf.drop(
             [
                 "comment[technical replicate]",
-            ],
+            ] + factor,
             axis=1,
             inplace=True,
         )
         sdrf.rename(columns=SDRF_MAP, inplace=True)
-        sdrf.rename(columns={factor: "condition"}, inplace=True)
         return sdrf
 
     def merge_msstats_and_sdrf(self, msstats):
@@ -249,9 +247,9 @@ class Feature(MzTab):
     def merge_msstats_and_psm(self, msstats, map_dict):
         map_features = [
             "global_qvalue",
-            "psm_reference_file_name",
-            "psm_scan_number",
-            "pg_positions",
+            "scan_reference_file_name",
+            "scan",
+            "mp_accessions",
             "modifications",
             "posterior_error_probability",
             "is_decoy",
@@ -339,13 +337,15 @@ class Feature(MzTab):
             pqwriter.close()
 
     def add_additional_msg(self, msstats):
-        msstats.loc[:, "protein_global_qvalue"] = msstats["pg_accessions"].map(self._protein_global_qvalue_map)
+        msstats.loc[:, "pg_global_qvalue"] = msstats["pg_accessions"].map(self._protein_global_qvalue_map)
         msstats.loc[:, "peptidoform"] = msstats[["modifications", "sequence"]].apply(
             lambda row: get_peptidoform_proforma_version_in_mztab(
                 row["sequence"], row["modifications"], self._modifications
             ),
             axis=1,
         )
+        msstats.loc[:, "additional_intensities"] = None
+        msstats.loc[:, "best_id_score"] = None
         msstats.loc[:, "modification_details"] = None
         msstats.loc[:, "predicted_rt"] = None
         msstats.loc[:, "gg_accessions"] = None
@@ -357,7 +357,8 @@ class Feature(MzTab):
     @staticmethod
     def convert_to_parquet_format(res, modifications):
         res["pg_accessions"] = res["pg_accessions"].str.split(";")
-        res["protein_global_qvalue"] = res["protein_global_qvalue"].astype(float)
+        res["mp_accessions"] = res["mp_accessions"].str.split(";")
+        res["pg_global_qvalue"] = res["pg_global_qvalue"].astype(float)
         res["unique"] = res["unique"].astype("Int32")
         res["modifications"] = res["modifications"].apply(lambda x: generate_modification_list(x, modifications))
         res["precursor_charge"] = res["precursor_charge"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
@@ -366,11 +367,10 @@ class Feature(MzTab):
         res["posterior_error_probability"] = res["posterior_error_probability"].astype(float)
         res["global_qvalue"] = res["global_qvalue"].astype(float)
         res["is_decoy"] = res["is_decoy"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
-        res["condition"] = res["condition"].astype(str)
         res["fraction"] = res["fraction"].astype(int).astype(str)
         res["biological_replicate"] = res["biological_replicate"].astype(str)
-        res["psm_scan_number"] = res["psm_scan_number"].astype(str)
-        res["psm_reference_file_name"] = res["psm_reference_file_name"].astype(str)
+        res["scan"] = res["scan"].astype(str)
+        res["scan_reference_file_name"] = res["scan_reference_file_name"].astype(str)
         if "rt" in res.columns:
             res["rt"] = res["rt"].astype(float)
         else:

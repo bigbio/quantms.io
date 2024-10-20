@@ -668,6 +668,14 @@ We added to the following table the corresponding fields in different tools and 
 | Score for localization in Site Tables
 | x
 
+| `precursor_charge`
+| Precursor charge
+| int32
+| -
+| -
+| -
+| charge
+
 | `posterior_error_probability`
 | Posterior error probability (PEP) for the given peptide or psm match.
 | float32, null
@@ -990,6 +998,14 @@ The following table presents the fields needed to describe each feature in quant
 | Score for localization in Site Tables
 | x
 
+| `precursor_charge`
+| Precursor charge
+| int32
+| -
+| -
+| -
+| charge
+
 | `posterior_error_probability`
 | Posterior error probability (PEP) for the given peptide or psm match.
 | float32, null
@@ -1022,6 +1038,14 @@ The following table presents the fields needed to describe each feature in quant
 | Calculated M/Z
 | m/z
 | calc_mass_to_charge
+
+| `observed_mz`
+| Experimental peptide mass-to-charge ratio of identified peptide (in Da)
+| float32
+| 
+| 
+| 
+| exp_mass_to_charge
 
 | `additional_scores`
 | List of structures, each structure contains two fields: name and value.
