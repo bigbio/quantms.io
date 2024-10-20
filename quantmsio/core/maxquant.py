@@ -13,7 +13,7 @@ from quantmsio.core.psm import Psm
 # format the log entries
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
-MODIFICATION_PATTERN = re.compile(r"\((.*?\))\)")
+MODIFICATION_PATTERN = re.compile(r"\((.*?\)?)\)")
 
 
 def find_modification(peptide):
@@ -53,7 +53,12 @@ def get_mod_map(sdrf_path):
     for col in mod_cols:
         mod_msg = sdrf[col].values[0].split(";")
         mod_dict = {k.split("=")[0]: k.split("=")[1] for k in mod_msg}
-        mod = f"{mod_dict['NT']} ({mod_dict['TA']})" if "TA" in mod_dict else f"{mod_dict['NT']} ({mod_dict['PP']})"
+        if "TA" in mod_dict:
+            mod = f"{mod_dict['NT']} ({mod_dict['TA']})"
+        elif "PP" in mod_dict:
+            mod = f"{mod_dict['NT']} ({mod_dict['PP']})"
+        else:
+            mod = mod_dict['NT']
         mod_map[mod] = mod_dict["AC"]
 
     return mod_map
@@ -65,14 +70,15 @@ def generate_mods(row, mod_map):
     if mod_p == "null" or mod_p is None:
         return None
     for mod in row["Modifications"].split(","):
-        mod = re.search(r"[A-Za-z]+.*\)$", mod)
+        mod = re.search(r"[A-Za-z]+.*", mod)
         if mod:
             mod = mod.group()
             if mod in mod_map.keys():
-                if "(" in mod_p:
-                    mod_p = mod_p.replace(mod.upper(), mod_map[mod])
-                else:
-                    mod_p = mod_p.replace(mod[:2].upper(), mod_map[mod])
+                mod_p = mod_p.replace(mod.upper(), mod_map[mod])
+                # if "(" in mod_p:
+                #     mod_p = mod_p.replace(mod.upper(), mod_map[mod])
+                # else:
+                #     mod_p = mod_p.replace(mod[:2].upper(), mod_map[mod])
     return mod_p
 
 
@@ -214,8 +220,8 @@ class MaxQuant:
             if not pqwriter:
                 pqwriter = pq.ParquetWriter(output_path, parquet.schema)
             pqwriter.write_table(parquet)
-            if pqwriter:
-                pqwriter.close()
+        if pqwriter:
+            pqwriter.close()
 
     # def convert_to_parquet(self, output_path: str, chunksize: int = None):
     #     pqwriter = None

@@ -142,7 +142,7 @@ class Feature(MzTab):
                         map_dict[key][0] = temp_df[qvalue]
                         map_dict[key][1] = temp_df["psm_reference_file_name"]
                         map_dict[key][2] = temp_df["psm_scan_number"]
-                        map_dict[key][3] = temp_df["pg_positions"]
+                        #map_dict[key][3] = temp_df["pg_positions"]
                         map_dict[key][4] = temp_df["modifications"]
                         map_dict[key][5] = temp_df["posterior_error_probability"]
                         map_dict[key][6] = temp_df["is_decoy"]
@@ -350,7 +350,6 @@ class Feature(MzTab):
         msstats.loc[:, "predicted_rt"] = None
         msstats.loc[:, "gg_accessions"] = None
         msstats.loc[:, "gg_names"] = None
-        msstats.loc[:, "quantmsio_version"] = QUANTMSIO_VERSION
         msstats.loc[:, "cv_params"] = None
         msstats.loc[:, "rt_start"] = None
         msstats.loc[:, "rt_stop"] = None
