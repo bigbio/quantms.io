@@ -1,7 +1,7 @@
 from quantmsio.core.maxquant import MaxQuant
 from .common import datafile
 from unittest import TestCase
-from quantmsio.core.feature import Feature
+from quantmsio.core.psm import Psm
 from ddt import data
 from ddt import ddt
 
@@ -11,7 +11,7 @@ class TestFeatureHandler(TestCase):
     global test_datas
     test_datas = [
         (
-            "Maxquant/evidence.txt",
+            "Maxquant/msms.txt",
             "Maxquant/sdrf.tsv",
         ),
     ]
@@ -22,5 +22,6 @@ class TestFeatureHandler(TestCase):
         sdrf_file = datafile(test_data[1])
         M = MaxQuant(sdrf_file, evidence_file)
         for df in M.iter_batch(chunksize=500000):
-            df = M.transform_feature(df)
-            Feature.convert_to_parquet(df, M._modifications)
+            M.transform_psm(df)
+            Psm.convert_to_parquet_format(df, M._modifications)
+            Psm.transform_parquet(df)

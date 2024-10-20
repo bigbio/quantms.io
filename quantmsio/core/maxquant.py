@@ -6,7 +6,7 @@ import pandas as pd
 import pyarrow.parquet as pq
 from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
-from quantmsio.core.common import QUANTMSIO_VERSION, MAXQUANT_MAP, MAXQUANT_USECOLS
+from quantmsio.core.common import MAXQUANT_MAP, MAXQUANT_USECOLS
 from quantmsio.core.feature import Feature
 from quantmsio.core.psm import Psm
 

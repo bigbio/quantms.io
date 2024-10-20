@@ -125,11 +125,6 @@ PSM_UNIQUE_FIELDS = [
         },
     ),
     pa.field(
-        "precursor_charge",
-        pa.int32(),
-        metadata={"description": "Precursor charge"},
-    ),
-    pa.field(
         "rt",
         pa.float32(),
         metadata={"description": "MS2 scan’s precursor retention time (in seconds)"},
