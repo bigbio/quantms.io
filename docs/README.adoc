@@ -585,7 +585,7 @@ We suggest including the following properties in the header:
 
 - `project_accession`: The project accession in PRIDE Archive
 - `project_title`: The project title in PRIDE Archive
-- `project_description: The project description in PRIDE Archive
+- `project_description`: The project description in PRIDE Archive
 - `quantmsio_version`: The version of the quantmsio used to generate the file.
 - `factor_value`: The factor values used in the analysis (e.g. ``phenotype``)
 - `adj_pvalue`: The FDR threshold used to filter the protein lists (e.g. ``adj_pvalue < 0.05``)

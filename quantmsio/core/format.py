@@ -68,23 +68,6 @@ PEPTIDE_FIELDS = [
         metadata={"description": "List of structures, each structure contains two fields: name and value"},
     ),
     pa.field(
-        "consensus_support",
-        pa.float32(),
-        metadata={
-            "description": "Consensus support for the given peptide spectrum match, when multiple search engines are used"
-        },
-    ),
-    # pa.field(
-    #     "pg_accessions",
-    #     pa.list_(pa.string()),
-    #     metadata={"description": "Protein group accessions of all the proteins that the peptide maps to"},
-    # ),
-    # pa.field(
-    #     "pg_positions",
-    #     pa.list_(pa.string()),
-    #     metadata={"description": "Protein start and end positions written as start_post:end_post"},
-    # ),
-    pa.field(
         "unique",
         pa.int32(),
         metadata={
@@ -101,20 +84,35 @@ PEPTIDE_FIELDS = [
         pa.list_(pa.string()),
         metadata={"description": "Protein accessions of all the proteins that the peptide maps to"},
     ),
-    # pa.field(
-    #     "gg_accessions",
-    #     pa.list_(pa.string()),
-    #     metadata={"description": "Gene accessions, as string array"},
-    # ),
-    # pa.field(
-    #     "gg_names",
-    #     pa.list_(pa.string()),
-    #     metadata={"description": "Gene names, as string array"},
-    # ),
     pa.field(
-        "precursor_charge",
-        pa.int32(),
-        metadata={"description": "Precursor charge"},
+        "predicted_rt",
+        pa.float32(),
+        metadata={"description": "Predicted retention time of the peptide (in seconds)"},
+    ),
+    pa.field(
+        "reference_file_name",
+        pa.string(),
+        metadata={"description": "Spectrum file name with no path information and not including the file extension"},
+    ),
+    pa.field(
+        "cv_params",
+        pa.list_(pa.struct([("name", pa.string()), ("value", pa.string())])),
+        metadata={"description": "Optional list of CV parameters for additional metadata"},
+    ),
+    pa.field(
+        "scan",
+        pa.string(),
+        metadata={"description": "Scan index (number of nativeId) of the spectrum identified"},
+    ),
+]
+
+PSM_UNIQUE_FIELDS = [
+    pa.field(
+        "consensus_support",
+        pa.float32(),
+        metadata={
+            "description": "Consensus support for the given peptide spectrum match, when multiple search engines are used"
+        },
     ),
     pa.field(
         "observed_mz",
@@ -122,35 +120,17 @@ PEPTIDE_FIELDS = [
         metadata={"description": "Experimental peptide mass-to-charge ratio of identified peptide (in Da)"},
     ),
     pa.field(
+        "precursor_charge",
+        pa.int32(),
+        metadata={"description": "Precursor charge"},
+    ),
+    pa.field(
         "rt",
         pa.float32(),
         metadata={"description": "MS2 scan’s precursor retention time (in seconds)"},
     ),
     pa.field(
-        "predicted_rt",
-        pa.float32(),
-        metadata={"description": "Predicted retention time of the peptide (in seconds)"},
-    ),
-]
-
-PSM_UNIQUE_FIELDS = [
-    pa.field(
-        "reference_file_name",
-        pa.string(),
-        metadata={"description": "Spectrum file name with no path information and not including the file extension"},
-    ),
-    pa.field(
-        "scan",
-        pa.string(),
-        metadata={"description": "Scan index (number of nativeId) of the spectrum identified"},
-    ),
-    pa.field(
         "rank", pa.int32(), metadata={"description": "Rank of the peptide spectrum match in the search engine output"}
-    ),
-    pa.field(
-        "cv_params",
-        pa.list_(pa.struct([("name", pa.string()), ("value", pa.string())])),
-        metadata={"description": "Optional list of CV parameters for additional metadata"},
     ),
     pa.field(
         "ion_mobility",
@@ -174,7 +154,6 @@ PSM_UNIQUE_FIELDS = [
     ),
 ]
 
-
 FEATURE_UNIQUE_FIELDS = [
     pa.field(
         "intensity",
@@ -187,8 +166,8 @@ FEATURE_UNIQUE_FIELDS = [
         metadata={"description": "The sample accession in the SDRF, which column is called source name"},
     ),
     pa.field(
-        "condition",
-        pa.string(),
+        "conditions",
+        pa.list_(pa.string()),
         metadata={
             "description": "The value for the factor value column in the SDRF, for example, the tissue factor value[organism part]"
         },
@@ -218,23 +197,9 @@ FEATURE_UNIQUE_FIELDS = [
         metadata={"description": "The channel used to label the sample, (e.g., TMT115)"},
     ),
     pa.field(
-        "reference_file_name",
+        "scan_reference_file_name",
         pa.string(),
-        metadata={"description": "The reference file name that contains the feature"},
-    ),
-    pa.field(
-        "psm_reference_file_name",
-        pa.string(),
-        metadata={
-            "description": "The reference file containing the best psm that identified the feature. Note: This file can be different from the file that contains the feature ().ReferenceFile"
-        },
-    ),
-    pa.field(
-        "psm_scan_number",
-        pa.string(),
-        metadata={
-            "description": "The scan number of the spectrum. The scan number or index of the spectrum in the file"
-        },
+        metadata={"description": "The reference file containing the best psm that identified the feature."},
     ),
     pa.field(
         "rt_start",
@@ -247,48 +212,24 @@ FEATURE_UNIQUE_FIELDS = [
         metadata={"description": "End of the retention time window for feature"},
     ),
     pa.field(
-        "cv_params",
-        pa.list_(pa.struct([("name", pa.string()), ("value", pa.string())])),
-        metadata={"description": "Optional list of CV parameters for additional metadata"},
+        "additional_intensities",
+        pa.list_(pa.struct([("name", pa.string()), ("value", pa.float32())])),
+        metadata={"description": "Apart from the raw intensity, multiple intensity values can be provided as key-values pairs, for example, normalized intensity."},
     ),
-]
-
-
-PG_MATRIX = [
     pa.field(
         "pg_accessions",
         pa.list_(pa.string()),
         metadata={"description": "Protein group accessions of all the proteins that the peptide maps to"},
     ),
     pa.field(
+        "gg_accessions",
+        pa.list_(pa.string()),
+        metadata={"description": "Gene accessions, as string array"},
+    ),
+    pa.field(
         "gg_names",
         pa.list_(pa.string()),
         metadata={"description": "Gene names, as string array"},
-    ),
-    pa.field(
-        "quantmsio_version",
-        pa.string(),
-        metadata={"description": "The version of quantms.io"},
-    ),
-    pa.field(
-        "first_protein_description",
-        pa.string(),
-        metadata={"description": "About the specific information of the first protein"},
-    ),
-    pa.field(
-        "reference_file_name",
-        pa.string(),
-        metadata={"description": "The reference file name that contains the feature"},
-    ),
-    pa.field(
-        "peptides",
-        pa.list_(pa.struct([("name", pa.string()), ("value", pa.string())])),
-        metadata={"description": "The count of peptides in each reference"},
-    ),
-    pa.field(
-        "intensities",
-        pa.list_(pa.struct([("name", pa.string()), ("value", pa.float32())])),
-        metadata={"description": "The total intensity of proteins in the reference"},
     ),
 ]
 
