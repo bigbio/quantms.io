@@ -1,6 +1,7 @@
 from .common import datafile
 from unittest import TestCase
 from quantmsio.core.diann import DiaNNConvert
+from quantmsio.core.feature import Feature
 from ddt import data
 from ddt import ddt
 
@@ -11,7 +12,6 @@ class TestFeatureHandler(TestCase):
     test_datas = [
         (
             "DIANN/diann_report.tsv",
-            "DIANN/PXD019909-DIA.sdrf_openms_design.tsv",
             "DIANN/PXD019909-DIA.sdrf.tsv",
             "DIANN/mzml",
         ),
@@ -20,9 +20,10 @@ class TestFeatureHandler(TestCase):
     @data(*test_datas)
     def test_transform_msstats(self, test_data):
         report_file = datafile(test_data[0])
-        # design_file = datafile(test_data[1])
-        sdrf_file = datafile(test_data[2])
-        mzml = datafile(test_data[3])
+        sdrf_file = datafile(test_data[1])
+        mzml = datafile(test_data[2])
         D = DiaNNConvert(report_file, sdrf_file)
-        for _ in D.main_report_df(0.05, mzml, 2):
-            print("ok")
+        for report in D.main_report_df(0.05, mzml, 2):
+            report = D.merge_sdrf_to_feature(report)
+            Feature.convert_to_parquet_format(report, D._modifications)
+            Feature.transform_feature(report)

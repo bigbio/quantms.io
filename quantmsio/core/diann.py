@@ -11,54 +11,13 @@ from pathlib import Path
 from pyopenms import AASequence
 from pyopenms.Constants import PROTON_MASS_U
 from quantmsio.core.project import create_uuid_filename
+from quantmsio.utils.file_utils import extract_protein_list
 from quantmsio.core.sdrf import SDRFHandler
-from quantmsio.core.psm import Psm
 from quantmsio.core.feature import Feature
 from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab, generate_scan_number
-from quantmsio.core.common import DIANN_MAP, QUANTMSIO_VERSION
+from quantmsio.core.common import DIANN_MAP
 
 MODIFICATION_PATTERN = re.compile(r"\((.*?)\)")
-
-
-def get_exp_design_dfs(exp_design_file):
-    with open(exp_design_file, "r") as f:
-        data = f.readlines()
-        empty_row = data.index("\n")
-        f_table = [i.replace("\n", "").split("\t") for i in data[1:empty_row]]
-        f_header = data[0].replace("\n", "").split("\t")
-        f_table = pd.DataFrame(f_table, columns=f_header)
-        f_table.loc[:, "run"] = f_table.apply(lambda x: _true_stem(x["Spectra_Filepath"]), axis=1)
-        f_table.rename(columns={"Fraction_Group": "ms_run", "run": "Run"}, inplace=True)
-        s_table = [i.replace("\n", "").split("\t") for i in data[empty_row + 1 :]][1:]
-        s_header = data[empty_row + 1].replace("\n", "").split("\t")
-        s_data_frame = pd.DataFrame(s_table, columns=s_header)
-
-    return s_data_frame, f_table
-
-
-def _true_stem(x):
-    """
-    Return the true stem of a file name, i.e. the
-    file name without the extension.
-
-    :param x: The file name
-    :type x: str
-    :return: The true stem of the file name
-    :rtype: str
-
-    Examples:
-    >>> _true_stem("foo.mzML")
-    'foo'
-    >>> _true_stem("foo.d.tar")
-    'foo'
-
-    These examples can be tested with pytest:
-    $ pytest -v --doctest-modules
-    """
-    stem = os.path.splitext(os.path.basename(x))[0]
-
-    return stem
-
 
 def find_modification(peptide):
     """
@@ -137,8 +96,8 @@ class DiaNNConvert:
         s = time.time()
         database = self._duckdb.query(
             """
-            select "File.Name", "Run", "Protein.Ids", "Genes", "RT", "Predicted.RT", "RT.Start", "RT.Stop", "Precursor.Id", "Q.Value", "Global.Q.Value", "PEP",
-                   "Global.PG.Q.Value", "Modified.Sequence", "Stripped.Sequence", "Precursor.Charge", "Precursor.Normalised"
+            select "File.Name", "Run", "Protein.Group", "Protein.Ids", "Genes", "RT", "Predicted.RT", "RT.Start", "RT.Stop", "Precursor.Id", "Q.Value", "Global.Q.Value", "PEP",
+                   "PG.Q.Value", "Global.PG.Q.Value", "Modified.Sequence", "Stripped.Sequence", "Precursor.Charge", "Precursor.Quantity", "Precursor.Normalised"
                     from diann_report
             where Run IN {}
             """.format(
@@ -189,6 +148,7 @@ class DiaNNConvert:
         qvalue_threshold: float,
         mzml_info_folder: str,
         file_num: int,
+        protein_str: str = None
     ):
         def intergrate_msg(n):
             nonlocal report
@@ -227,6 +187,8 @@ class DiaNNConvert:
         info_list = [info_list[i : i + file_num] for i in range(0, len(info_list), file_num)]
         for refs in info_list:
             report = self.get_report_from_database(refs)
+            if protein_str:
+                report = report[report["Protein.Ids"].str.contains(f"{protein_str}", na=False)]
             # restrict
             report = report[report["Q.Value"] < qvalue_threshold]
             usecols = report.columns.to_list() + [
@@ -246,8 +208,8 @@ class DiaNNConvert:
             report["modifications"] = report["Modified.Sequence"].apply(find_modification)
             report["Modified.Sequence"] = report["Modified.Sequence"].map(modifications_map)
             # pep
-            report["psm_reference_file_name"] = report["Precursor.Id"].map(best_ref_map)
-            report["psm_scan_number"] = None
+            report["scan_reference_file_name"] = report["Precursor.Id"].map(best_ref_map)
+            #report["scan"] = None
             report.rename(columns=DIANN_MAP, inplace=True)
             # add extra msg
             report = self.add_additional_msg(report)
@@ -262,9 +224,8 @@ class DiaNNConvert:
         report["reference_file_name"] = report["reference_file_name"].apply(lambda x: x.split(".")[0])
 
         report.loc[:, "is_decoy"] = "0"
+        report.loc[:, "channel"] = "LFQ"
         report.loc[:, "unique"] = report["pg_accessions"].apply(lambda x: "0" if ";" in str(x) else "1")
-
-        report.loc[:, "pg_positions"] = None
 
         report["peptidoform"] = report[["sequence", "modifications"]].apply(
             lambda row: get_peptidoform_proforma_version_in_mztab(
@@ -272,59 +233,51 @@ class DiaNNConvert:
             ),
             axis=1,
         )
-        report["scan_number"] = report["scan_number"].apply(generate_scan_number)
+        report["scan"] = report["scan"].apply(generate_scan_number)
         report.loc[:, "gg_names"] = report["gg_names"].str.split(",")
-        report.loc[:, "additional_scores"] = None
+        report.loc[:, "additional_intensities"] = report["Precursor.Normalised"].apply(lambda v: [{"name": "normalized intensity", "value": np.float32(v)}])
+        report.loc[:, "additional_scores"] = report[["Q.Value","PG.Q.Value"]].apply(lambda row: [{"name": "qvalue", "value": row["Q.Value"]}, {"name": "pg_qvalue", "value": row["PG.Q.Value"]}],axis=1)
         report.loc[:, "modification_details"] = None
         report.loc[:, "cv_params"] = None
-        report.loc[:, "quantmsio_version"] = QUANTMSIO_VERSION
         report.loc[:, "gg_accessions"] = None
-
+        report.loc[:, "best_id_score"] = None
         return report
 
-    def generate_psm_file(self, report, psm_pqwriter, psm_output_path):
-        psm = report.copy()
-        psm.loc[:, "intensity_array"] = None
-        psm.loc[:, "ion_mobility"] = None
-        psm.loc[:, "mz_array"] = None
-        psm.loc[:, "num_peaks"] = None
-        psm.loc[:, "rank"] = None
-        parquet_table = Psm.convert_to_parquet(psm, self._modifications)
-        if not psm_pqwriter:
-            psm_pqwriter = pq.ParquetWriter(psm_output_path, parquet_table.schema)
-        psm_pqwriter.write_table(parquet_table)
-        return psm_pqwriter
 
-    def generate_psm_and_feature_file(
+    def generate_feature(
         self,
         qvalue_threshold: float,
         mzml_info_folder: str,
-        design_file: str,
-        psm_output_path: str,
-        feature_output_path: str,
         file_num: int = 50,
+        protein_str: str = None
     ):
-        psm_pqwriter = None
-        feature_pqwriter = None
-
-        s_data_frame, f_table = get_exp_design_dfs(design_file)
-        for report in self.main_report_df(qvalue_threshold, mzml_info_folder, file_num):
+        for report in self.main_report_df(qvalue_threshold, mzml_info_folder, file_num, protein_str):
             s = time.time()
-            psm_pqwriter = self.generate_psm_file(report, psm_pqwriter, psm_output_path)
-            feature_pqwriter = self.generate_feature_file(
-                report,
-                s_data_frame,
-                f_table,
-                feature_pqwriter,
-                feature_output_path,
-            )
+            report = self.merge_sdrf_to_feature(report)
+            Feature.convert_to_parquet_format(report, self._modifications)
+            feature = Feature.transform_feature(report)
             et = time.time() - s
             logging.info("Time to generate psm and feature file {} seconds".format(et))
-        if psm_pqwriter:
-            psm_pqwriter.close()
-        if feature_pqwriter:
-            feature_pqwriter.close()
+            yield feature
 
+
+    def write_feature_to_file(
+        self,
+        qvalue_threshold: float,
+        mzml_info_folder: str,
+        output_path: str,
+        file_num: int = 50,
+        protein_file=None,
+    ):
+        protein_list = extract_protein_list(protein_file) if protein_file else None
+        protein_str = "|".join(protein_list) if protein_list else None
+        pqwriter = None
+        for feature in self.generate_feature(qvalue_threshold, mzml_info_folder, file_num, protein_str):
+            if not pqwriter:
+                pqwriter = pq.ParquetWriter(output_path, feature.schema)
+            pqwriter.write_table(feature)
+        if pqwriter:
+            pqwriter.close()
         self.destroy_duckdb_database()
 
     def destroy_duckdb_database(self):
@@ -337,70 +290,23 @@ class DiaNNConvert:
             self._duckdb_name = None
             self._duckdb = None
 
-    def generate_feature_file(
-        self,
-        report,
-        s_data_frame,
-        f_table,
-        feature_pqwriter,
-        feature_output_path,
-    ):
-        sdrf = pd.read_csv(
-            self._sdrf_path,
-            sep="\t",
-            usecols=[
-                "source name",
-                "comment[data file]",
-                "comment[technical replicate]",
+    def merge_sdrf_to_feature(self, report):
+        sdrf = Feature.transform_sdrf(self._sdrf_path)
+        report = pd.merge(
+            report,
+            sdrf,
+            left_on=["reference_file_name"],
+            right_on=["reference"],
+            how="left",
+        )
+        report.drop(
+            [
+                "reference",
+                "label",
             ],
-        )
-        samples = sdrf["source name"].unique()
-        mixed_map = dict(zip(samples, range(1, len(samples) + 1)))
-        sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(lambda x: x.split(".")[0])
-        sdrf = sdrf.set_index(["comment[data file]"])
-        sdrf_map = sdrf.to_dict()["source name"]
-        tec_map = sdrf.to_dict()["comment[technical replicate]"]
-        report = report[report["intensity"] != 0]
-        report = report.merge(
-            (
-                s_data_frame[["Sample", "MSstats_Condition", "MSstats_BioReplicate"]]
-                .merge(f_table[["Fraction", "Sample", "Run"]], on="Sample")
-                .rename(
-                    columns={
-                        "MSstats_BioReplicate": "BioReplicate",
-                        "MSstats_Condition": "Condition",
-                    }
-                )
-                .drop(columns=["Sample"])
-            ),
-            on="Run",
-            validate="many_to_one",
-        )
-        report.rename(
-            columns={
-                "Condition": "condition",
-                "Fraction": "fraction",
-                "BioReplicate": "biological_replicate",
-                "Run": "run",
-            },
+            axis=1,
             inplace=True,
         )
-        report.loc[:, "channel"] = "LFQ"
-        report.loc[:, "sample_accession"] = report["reference_file_name"].map(sdrf_map)
-        report.loc[:, "comment[technical replicate]"] = report["reference_file_name"].map(tec_map)
-        report.loc[:, "run"] = report[["sample_accession", "comment[technical replicate]", "fraction"]].apply(
-            lambda row: str(mixed_map[row["sample_accession"]])
-            + "_"
-            + str(row["comment[technical replicate]"])
-            + "_"
-            + str(row["fraction"]),
-            axis=1,
-        )
-        report.drop(["comment[technical replicate]"], axis=1, inplace=True)
-        Feature.convert_to_parquet_format(report, self._modifications)
-        parquet_table = Feature.transform_feature(report)
-        if not feature_pqwriter:
-            feature_pqwriter = pq.ParquetWriter(feature_output_path, parquet_table.schema)
-        feature_pqwriter.write_table(parquet_table)
+        return report
 
-        return feature_pqwriter
+
