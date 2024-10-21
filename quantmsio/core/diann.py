@@ -19,6 +19,7 @@ from quantmsio.core.common import DIANN_MAP
 
 MODIFICATION_PATTERN = re.compile(r"\((.*?)\)")
 
+
 def find_modification(peptide):
     """
     Identify the modification site based on the peptide containing modifications.
@@ -143,13 +144,7 @@ class DiaNNConvert:
         logging.info("Time to load peptide map {} seconds".format(et))
         return best_ref_map
 
-    def main_report_df(
-        self,
-        qvalue_threshold: float,
-        mzml_info_folder: str,
-        file_num: int,
-        protein_str: str = None
-    ):
+    def main_report_df(self, qvalue_threshold: float, mzml_info_folder: str, file_num: int, protein_str: str = None):
         def intergrate_msg(n):
             nonlocal report
             nonlocal mzml_info_folder
@@ -209,7 +204,7 @@ class DiaNNConvert:
             report["Modified.Sequence"] = report["Modified.Sequence"].map(modifications_map)
             # pep
             report["scan_reference_file_name"] = report["Precursor.Id"].map(best_ref_map)
-            #report["scan"] = None
+            # report["scan"] = None
             report.rename(columns=DIANN_MAP, inplace=True)
             # add extra msg
             report = self.add_additional_msg(report)
@@ -235,21 +230,24 @@ class DiaNNConvert:
         )
         report["scan"] = report["scan"].apply(generate_scan_number)
         report.loc[:, "gg_names"] = report["gg_names"].str.split(",")
-        report.loc[:, "additional_intensities"] = report["Precursor.Normalised"].apply(lambda v: [{"name": "normalized intensity", "value": np.float32(v)}])
-        report.loc[:, "additional_scores"] = report[["Q.Value","PG.Q.Value"]].apply(lambda row: [{"name": "qvalue", "value": row["Q.Value"]}, {"name": "pg_qvalue", "value": row["PG.Q.Value"]}],axis=1)
+        report.loc[:, "additional_intensities"] = report["Precursor.Normalised"].apply(
+            lambda v: [{"name": "normalized intensity", "value": np.float32(v)}]
+        )
+        report.loc[:, "additional_scores"] = report[["Q.Value", "PG.Q.Value"]].apply(
+            lambda row: [
+                {"name": "qvalue", "value": row["Q.Value"]},
+                {"name": "pg_qvalue", "value": row["PG.Q.Value"]},
+            ],
+            axis=1,
+        )
         report.loc[:, "modification_details"] = None
         report.loc[:, "cv_params"] = None
         report.loc[:, "gg_accessions"] = None
         report.loc[:, "best_id_score"] = None
         return report
 
-
     def generate_feature(
-        self,
-        qvalue_threshold: float,
-        mzml_info_folder: str,
-        file_num: int = 50,
-        protein_str: str = None
+        self, qvalue_threshold: float, mzml_info_folder: str, file_num: int = 50, protein_str: str = None
     ):
         for report in self.main_report_df(qvalue_threshold, mzml_info_folder, file_num, protein_str):
             s = time.time()
@@ -259,7 +257,6 @@ class DiaNNConvert:
             et = time.time() - s
             logging.info("Time to generate psm and feature file {} seconds".format(et))
             yield feature
-
 
     def write_feature_to_file(
         self,
@@ -308,5 +305,3 @@ class DiaNNConvert:
             inplace=True,
         )
         return report
-
-

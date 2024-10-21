@@ -71,12 +71,7 @@ def diann_convert_to_parquet(
     duckdb_threads: The number of threads for the DuckDB engine (e.g 4)
     file_num: The number of files being processed at the same time
     """
-    if (
-        report_path is None
-        or mzml_info_folder is None
-        or output_folder is None
-        or sdrf_path is None
-    ):
+    if report_path is None or mzml_info_folder is None or output_folder is None or sdrf_path is None:
         raise click.UsageError("Please provide all the required parameters")
 
     if not os.path.exists(output_folder):
@@ -97,7 +92,7 @@ def diann_convert_to_parquet(
     dia_nn.write_feature_to_file(
         qvalue_threshold=qvalue_threshold,
         mzml_info_folder=mzml_info_folder,
-        output_path = feature_output_path,
-        file_num = file_num,
+        output_path=feature_output_path,
+        file_num=file_num,
         protein_file=protein_file,
     )
