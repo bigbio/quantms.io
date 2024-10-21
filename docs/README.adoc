@@ -1471,27 +1471,27 @@ The mass spectra view is a tabular file that contains the details of the mass sp
 
 [cols="1,1,2", options="header"]
 |===
-| Field               | Type                         | Description
+| Field               | Type                 | Description
 
-| `id`               | string                       | Unique identifier for the scan or spectrum.
-| `ms_level`         | int                          | The MS level (e.g., 1 for MS1, 2 for MS2).
-| `centroid`         | boolean                      | Indicates whether the data is centroided (true) or profile mode (false).
-| `scan_start_time`  | float                        | The start time of the scan in minutes.
-| `inverse_ion_mobility` | [null, "float"]         | Inverse ion mobility, if available, used for TIMS data.
-| `ion_injection_time` | float                      | The ion injection time in milliseconds.
-| `total_ion_current` | float                       | Total ion current (TIC) for the scan.
+| `id`               | string                | Unique identifier for the scan or spectrum.
+| `ms_level`         | int                   | The MS level (e.g., 1 for MS1, 2 for MS2).
+| `centroid`         | boolean               | Indicates whether the data is centroided (true) or profile mode (false).
+| `scan_start_time`  | float32               | The start time of the scan in minutes.
+| `inverse_ion_mobility` | float32, null     | Inverse ion mobility, if available, used for TIMS data.
+| `ion_injection_time` | float32             | The ion injection time in milliseconds.
+| `total_ion_current` | float                | Total ion current (TIC) for the scan.
 | `precursors`       | [null, {"type": "array", "items": {"type": "record", "name": "precursor"}}] | List of precursors for this scan, if applicable.
 
-| `selected_ion_mz`  | float                        | The m/z value of the selected precursor ion.
-| `selected_ion_charge` | [null, "int"]           | Charge state of the selected precursor ion, if available.
-| `selected_ion_intensity` | [null, "float"]      | Intensity of the selected precursor ion.
-| `isolation_window_target` | [null, "float"]     | The target m/z for the isolation window.
-| `isolation_window_lower` | [null, "float"]      | The lower bound of the isolation window.
-| `isolation_window_upper` | [null, "float"]      | The upper bound of the isolation window.
-| `spectrum_ref`     | [null, "string"]           | Reference to another spectrum (e.g., for linking to external datasets).
+| `selected_ion_mz`  | float32              | The m/z value of the selected precursor ion.
+| `selected_ion_charge` | int32, null       | Charge state of the selected precursor ion, if available.
+| `selected_ion_intensity` | float32, null  | Intensity of the selected precursor ion.
+| `isolation_window_target` | float32, null | The target m/z for the isolation window.
+| `isolation_window_lower` | float32, null  | The lower bound of the isolation window.
+| `isolation_window_upper` | float32, null  | The upper bound of the isolation window.
+| `spectrum_ref`     | float32, null        | Reference to another spectrum (e.g., for linking to external datasets).
 
-| `mz`               | {"type": "array", "items": "float"} | List of m/z values for the scan.
-| `intensity`        | {"type": "array", "items": "float"} | List of intensity values corresponding to the m/z values.
+| `mz`               | {"type": "array", "items": "float32"} | List of m/z values for the scan.
+| `intensity`        | {"type": "array", "items": "float32"} | List of intensity values corresponding to the m/z values.
 | `cv_params`        | [null, {"type": "array", "items": {"type": "record", "name": "cv_param"}}] | Optional list of CV parameters for additional metadata.
 
 | name             | string                       | Name of the CV term (e.g., from PSI-MS or other ontologies).
