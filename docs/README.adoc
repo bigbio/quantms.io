@@ -675,14 +675,6 @@ We added to the following table the corresponding fields in different tools and 
 | PEP
 | opt_global_Posterior_Error_Probability_score
 
-| `global_qvalue`
-| Global q-value for the peptide or psm at the level of the experiment, <<psm-global-qvalue>>
-| float32, null
-| Global.Q.Value
-| x
-| -
-| opt_global_q-value
-
 7+^| Peptide fields shared with feature (<<feature>>)
 | `is_decoy`
 | Decoy indicator, 1 if the peptide is a decoy, 0 target
@@ -822,8 +814,9 @@ We added to the following table the corresponding fields in different tools and 
 
 Additional scores are stored as a list of key-value pairs, where the key is the name of the score (is RECOMMENDED to use HUPO-PSI MS ontology) and the value is the score value. Additional scores are mainly the search engine and protein scores that want to be added at PSM level. Some RECOMMENDED scores are:
 
-- pg_blobal_qvalue: 0.01
-- rank: 3
+- pg_global_qvalue: Protein group global q-value used to filter the psm at the level of the protein group and experiment.
+- rank: Rank of the peptide in the search engine results. (1.0)
+- global_qvalue: Global q-value of the PSM at the level of the experiment.
 
 
 [[NOTE]]
