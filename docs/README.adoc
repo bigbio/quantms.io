@@ -708,13 +708,6 @@ We added to the following table the corresponding fields in different tools and 
 | MaxQuant Scores
 | search_engine_score
 
-| `rank`
-| Rank of the peptide spectrum match in the search engine output | integer, null
-| int32, null
-| -
-| -
-| -
-
 | `cv_params`
 | Optional list of CV parameters for additional metadata <<psm-cv-params>>
 | array[struct{name:string, value:string}], null
@@ -724,22 +717,6 @@ We added to the following table the corresponding fields in different tools and 
 | -
 
 7+^| Protein fields shared by <<feature>> <<psm>>
-| `unique`
-| Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0
-| int32, null
-| -
-| Is Unique
-| Unique
-| unique
-
-| `pg_global_qvalue`
-| Global q-value of the protein group at the experiment level
-| float32, null
-| Global.PG.Q.Value
-| x
-| x
-| best_search_engine_score
-
 | `mp_accessions`
 | Protein accessions of all the proteins that the peptide maps to
 | array[string], null
@@ -838,17 +815,25 @@ We added to the following table the corresponding fields in different tools and 
 | -
 | Modifications
 | modifications
-
 |===
 
-[NOTE]
-====
+[[additional-scores]]
+==== Additional scores
+
+Additional scores are stored as a list of key-value pairs, where the key is the name of the score (is RECOMMENDED to use HUPO-PSI MS ontology) and the value is the score value. Additional scores are mainly the search engine and protein scores that want to be added at PSM level. Some RECOMMENDED scores are:
+
+- pg_blobal_qvalue: 0.01
+- rank: 3
+
+
+[[NOTE]]
+=====
  - Psm view is NOT RECOMMENDED to be generated for **DIA** methods because it will be duplicated information with the feature view. The psm view is more suitable for **DDA** methods where the psm is the main output of the identification process.
 
  - Protein inference SHOULD NOT be included in the psm view, as it is not the main purpose of the psm view. However, for some use cases like peptide filtering, search, etc., maybe interesting to have access to all the psms for a given protein accession, you can include that in the `mp_accessions`: mapped protein accessions. Another two protein-related fields can help the users to understand the resulted psm table, `unique` (if the peptide only maps to one protein), `pg_global_qvalue`: The Global qvalue at the protein group use to filter the psm. For protein inference please look into the feature view (<<feature>>) and protein group (<<pg>>).
 
  - The `mz_array` and `intensity_array` are arrays of the same length, where the `mz_array` contains the m/z values and the `intensity_array` contains the intensity values; and the size of the arrays is the same as the number of peaks in the spectrum. These three columns could help use cases like AI/ML that need the spectrum information for a given psm. We RECOMMEND using for spectra data the mz view (<<mz>>), where the spectra are stored in a more efficient way.
-====
+=====
 
 [[psm-cv-params]]
 ==== Psm CV parameters
