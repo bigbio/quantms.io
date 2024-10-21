@@ -58,7 +58,7 @@ def get_mod_map(sdrf_path):
         elif "PP" in mod_dict:
             mod = f"{mod_dict['NT']} ({mod_dict['PP']})"
         else:
-            mod = mod_dict['NT']
+            mod = mod_dict["NT"]
         mod_map[mod] = mod_dict["AC"]
 
     return mod_map
