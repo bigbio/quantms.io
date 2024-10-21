@@ -857,7 +857,7 @@ Cv params are a key-value pairs list that allows to store additional information
 - 'prot:FDR threshold': 0.01
 - number of unmatched peaks: 3
 
-In quantms we use consensus_support where the value is the number of search engines that support the identification. This field could be added as a cv_param as: `consensus result: 3`
+In quantms we use `consensus_support` where the value is the number of search engines that support the identification. This field could be added as a cv_param as: `consensus result: 3`
 
 The cv_params are stored as a list of key-value pairs, where the key is the name of the parameter, and the value is the value of the parameter. This is similar to the CVParams in the mzIdentML format. Please, be aware that search engine scores should be stored for psms in the column `additional_scores`.
 
