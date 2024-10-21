@@ -126,7 +126,7 @@ class Feature(MzTab):
             for key, df in psm.groupby(["opt_global_cv_MS:1000889_peptidoform_sequence", "precursor_charge"]):
                 df = df.reset_index(drop=True)
                 if key not in map_dict:
-                    map_dict[key] = [None for i in range(10)]
+                    map_dict[key] = [None for _ in range(10)]
                 qvalue = None
                 temp_df = None
                 if len(df["best_qvalue"].unique()) > 1 or not pd.isna(df.loc[0, "best_qvalue"]):

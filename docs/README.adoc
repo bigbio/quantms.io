@@ -1156,7 +1156,7 @@ The following table presents the fields needed to describe each feature in quant
 | `pg_accessions`
 | Protein group accession. Could be one single protein or multiple protein accessions, depending on the tool.
 | array[string], null
-| Protein.Ids
+| Protein.Group
 | x
 | Proteins
 | accession

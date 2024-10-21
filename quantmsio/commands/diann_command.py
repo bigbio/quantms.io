@@ -13,11 +13,6 @@ from quantmsio.core.project import create_uuid_filename
     help="the diann report file path",
     required=True,
 )
-@click.option(
-    "--design_file",
-    help="the design file path",
-    required=True,
-)
 @click.option("--qvalue_threshold", help="qvalue_threshold", required=True, default=0.05)
 @click.option(
     "--mzml_info_folder",
@@ -35,6 +30,11 @@ from quantmsio.core.project import create_uuid_filename
     required=True,
 )
 @click.option(
+    "--protein_file",
+    help="Protein file that meets specific requirements",
+    required=False,
+)
+@click.option(
     "--output_prefix_file",
     help="Prefix of the Json file needed to generate the file name",
     required=False,
@@ -50,11 +50,11 @@ from quantmsio.core.project import create_uuid_filename
 )
 def diann_convert_to_parquet(
     report_path: str,
-    design_file: str,
     qvalue_threshold: float,
     mzml_info_folder: str,
     sdrf_path: str,
     output_folder: str,
+    protein_file: str,
     output_prefix_file: str,
     duckdb_max_memory: str,
     duckdb_threads: int,
@@ -62,7 +62,6 @@ def diann_convert_to_parquet(
 ):
     """
     report_path: diann report file path
-    design_file: the disign file path
     qvalue_threshold: qvalue threshold
     mzml_info_folder: mzml info file folder
     sdrf_path: sdrf file path
@@ -74,7 +73,6 @@ def diann_convert_to_parquet(
     """
     if (
         report_path is None
-        or design_file is None
         or mzml_info_folder is None
         or output_folder is None
         or sdrf_path is None
@@ -88,7 +86,6 @@ def diann_convert_to_parquet(
         output_prefix_file = ""
 
     feature_output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".feature.parquet")
-    psm_output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
 
     dia_nn = DiaNNConvert(
         diann_report=report_path,
@@ -97,11 +94,10 @@ def diann_convert_to_parquet(
         duckdb_threads=duckdb_threads,
     )
 
-    dia_nn.generate_psm_and_feature_file(
+    dia_nn.write_feature_to_file(
         qvalue_threshold=qvalue_threshold,
         mzml_info_folder=mzml_info_folder,
-        design_file=design_file,
-        psm_output_path=psm_output_path,
-        feature_output_path=feature_output_path,
-        file_num=file_num,
+        output_path = feature_output_path,
+        file_num = file_num,
+        protein_file=protein_file,
     )
