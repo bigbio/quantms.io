@@ -620,7 +620,6 @@ The following table presents all the fields and attributes for each PSM entry in
 
 We added to the following table the corresponding fields in different tools and mzTab for each field. For each tool, we use the following output tables:
 
-- DIA-NN   - report_matrix.parquet
 - MQ       - msms.txt
 - FragPipe - psm.tsv
 - mzTab - PSM section
