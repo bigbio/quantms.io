@@ -652,14 +652,6 @@ We added to the following table the corresponding fields in different tools and 
 | Modified sequence
 | opt_global_cv_MS:1000889_peptidoform_sequence
 
-| `modifications`
-| List of modifications as a string array, easy for search and filter
-| array[string], null
-| -
-| -
-| Modifications
-| modifications
-
 | `modification_details`
 | Modifications details: modification name, positions and localization probabilities: read <<modifications>>
 | array[struct], null
@@ -831,13 +823,23 @@ We added to the following table the corresponding fields in different tools and 
 | -
 | -
 
-| `intesity_array`
+| `intensity_array`
 | Array of intensity values for the spectrum used for the peptide spectrum match
 | array[float], null
 | -
 | -
 | -
 | -
+
+7+^| Optional fields for the psm files <<psm>>
+| `modifications`
+| List of modifications as a string array, easy for search and filter
+| array[string], null
+| -
+| -
+| Modifications
+| modifications
+
 |===
 
 [NOTE]
