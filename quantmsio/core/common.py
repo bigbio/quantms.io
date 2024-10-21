@@ -11,11 +11,9 @@ PSM_MAP = {
     "unique": "unique",
     "charge": "precursor_charge",
     "exp_mass_to_charge": "observed_mz",
-    "retention_time": "rt"
+    "retention_time": "rt",
 }
-PSM_USECOLS = list(PSM_MAP.keys()) + [
-    "spectra_ref"
-]
+PSM_USECOLS = list(PSM_MAP.keys()) + ["spectra_ref"]
 
 MSSTATS_MAP = {
     "ProteinName": "pg_accessions",

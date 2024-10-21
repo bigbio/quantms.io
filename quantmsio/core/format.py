@@ -214,7 +214,9 @@ FEATURE_UNIQUE_FIELDS = [
     pa.field(
         "additional_intensities",
         pa.list_(pa.struct([("name", pa.string()), ("value", pa.float32())])),
-        metadata={"description": "Apart from the raw intensity, multiple intensity values can be provided as key-values pairs, for example, normalized intensity."},
+        metadata={
+            "description": "Apart from the raw intensity, multiple intensity values can be provided as key-values pairs, for example, normalized intensity."
+        },
     ),
     pa.field(
         "pg_accessions",

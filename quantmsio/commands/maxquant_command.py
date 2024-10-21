@@ -2,6 +2,7 @@ from quantmsio.core.maxquant import MaxQuant
 import click
 from quantmsio.core.project import create_uuid_filename
 
+
 @click.command(
     "convert-maxquant-psm",
     short_help="Convert psm from mzTab to parquet file in quantms io",

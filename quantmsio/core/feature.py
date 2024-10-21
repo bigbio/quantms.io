@@ -191,7 +191,7 @@ class Feature(MzTab):
         sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(lambda x: x.split(".")[0])
         samples = sdrf["source name"].unique()
         mixed_map = dict(zip(samples, range(1, len(samples) + 1)))
-        sdrf.loc[:, 'conditions'] = sdrf[factor].apply(lambda row:[str(row[col]) for col in factor],axis=1)
+        sdrf.loc[:, "conditions"] = sdrf[factor].apply(lambda row: [str(row[col]) for col in factor], axis=1)
         sdrf.loc[:, "run"] = sdrf[
             [
                 "source name",
@@ -209,7 +209,8 @@ class Feature(MzTab):
         sdrf.drop(
             [
                 "comment[technical replicate]",
-            ] + factor,
+            ]
+            + factor,
             axis=1,
             inplace=True,
         )

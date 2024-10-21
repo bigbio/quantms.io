@@ -70,7 +70,7 @@ class Psm(MzTab):
             axis=1,
         )
         df.drop(["spectra_ref", "search_engine", "search_engine_score[1]"], inplace=True, axis=1)
-    
+
     @staticmethod
     def transform_parquet(df):
         return pa.Table.from_pandas(df, schema=PSM_SCHEMA)
