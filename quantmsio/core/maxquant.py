@@ -5,6 +5,9 @@ import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 from quantmsio.core.sdrf import SDRFHandler
+from pyopenms import AASequence
+from quantmsio.operate.tools import get_ahocorasick, get_modification_details
+from pyopenms.Constants import PROTON_MASS_U
 from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
 from quantmsio.core.common import MAXQUANT_MAP, MAXQUANT_USECOLS
 from quantmsio.core.feature import Feature
@@ -65,7 +68,7 @@ def get_mod_map(sdrf_path):
 
 
 def generate_mods(row, mod_map):
-    mod_seq = row["Modified sequence"].replace("_", "")
+    mod_seq = row["Modified sequence"]
     mod_p = find_modification(mod_seq)
     if mod_p == "null" or mod_p is None:
         return None
@@ -75,10 +78,6 @@ def generate_mods(row, mod_map):
             mod = mod.group()
             if mod in mod_map.keys():
                 mod_p = mod_p.replace(mod.upper(), mod_map[mod])
-                # if "(" in mod_p:
-                #     mod_p = mod_p.replace(mod.upper(), mod_map[mod])
-                # else:
-                #     mod_p = mod_p.replace(mod[:2].upper(), mod_map[mod])
     return mod_p
 
 
@@ -88,6 +87,7 @@ class MaxQuant:
         self._sdrf_path = sdrf_path
         self._msms_path = msms_path
         self.mods_map = get_mod_map(sdrf_path)
+        self._automaton = get_ahocorasick(self.mods_map)
 
     def iter_batch(self, chunksize: int = 100000):
         col_df = pd.read_csv(self._msms_path, sep="\t", nrows=1)
@@ -105,6 +105,15 @@ class MaxQuant:
         ):
             df = self.main_operate(df)
             yield df
+    
+    def generete_calculated_mz(self, df):
+        uniq_p = df["Modified sequence"].unique()
+        masses_map = {k: AASequence.fromString(k).getMonoWeight() for k in uniq_p}
+        mass_vector = df["Modified sequence"].map(masses_map)
+        df.loc[:,"calculated_mz"] = (
+                mass_vector + (PROTON_MASS_U * df["Charge"].values)
+            ) / df["Charge"].values
+        
 
     def open_from_zip_archive(self, zip_file, file_name):
         """Open file from zip archive."""
@@ -120,6 +129,7 @@ class MaxQuant:
             col = f"{key} Probabilities"
             if col in df.columns:
                 keys[key] = col
+        other_mods = list(set(self.mods_map.keys()) - set(keys.keys()))
 
         def get_details(rows):
             modification_details = []
@@ -138,20 +148,26 @@ class MaxQuant:
                     match_obj = re.search(pattern, seq)
                 modification_map["fields"] = details
                 modification_details.append(modification_map)
+            seq = rows["Modified sequence"]
+            other_modification_details = get_modification_details(seq, self.mods_map, self._automaton, other_mods)
+            modification_details = modification_details + other_modification_details
             if len(modification_details) == 0:
                 return None
             else:
                 return modification_details
 
         if len(keys.values()) != 0:
-            df.loc[:, "modification_details"] = df[keys.values()].apply(get_details, axis=1)
+            df.loc[:, "modification_details"] = df[list(keys.values()) + ["Modified sequence"]].apply(get_details, axis=1)
         else:
             df.loc[:, "modification_details"] = None
 
     def main_operate(self, df: pd.DataFrame):
+        df["Modified sequence"] = df["Modified sequence"].str.replace("_","")
         df.loc[:, "Modifications"] = df[["Modified sequence", "Modifications"]].apply(
             lambda row: generate_mods(row, self.mods_map), axis=1
         )
+        self.generate_modification_details(df)
+        self.generete_calculated_mz(df)
         df = df[df["PEP"] < 0.05]
         df = df.rename(columns=MAXQUANT_MAP)
         df.loc[:, "peptidoform"] = df[["sequence", "modifications"]].apply(
@@ -161,7 +177,6 @@ class MaxQuant:
             axis=1,
         )
         df["is_decoy"] = df["is_decoy"].map({None: "0", np.nan: "0", "+": "1"})
-        self.generate_modification_details(df)
         df.loc[:, "unique"] = df["mp_accessions"].apply(lambda x: "0" if ";" in str(x) else "1")
         df["additional_scores"] = df["additional_scores"].apply(
             lambda x: [{"name": "maxquant", "value": np.float32(x)}]
@@ -171,7 +186,6 @@ class MaxQuant:
         df.loc[:, "consensus_support"] = None
         df.loc[:, "predicted_rt"] = None
         df.loc[:, "global_qvalue"] = None
-        df.loc[:, "observed_mz"] = None
         df.loc[:, "pg_global_qvalue"] = None
         return df
 

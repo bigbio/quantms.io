@@ -5,6 +5,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from Bio import SeqIO
 from quantmsio.core.project import ProjectHandler
+import ahocorasick
 from quantmsio.core.feature import FEATURE_SCHEMA
 from quantmsio.core.psm import PSM_SCHEMA
 from quantmsio.operate.query import Query
@@ -170,3 +171,28 @@ def load_de_or_ae(path):
         line = f.readline()
     f.seek(pos - 1)
     return pd.read_csv(f, sep="\t"), content
+
+def get_modification_details(seq: str, mods_dict: dict, automaton: any, modifications: list=None):
+    if "(" not in seq:
+        return []
+    total = 0
+    modification_details = [{"name": mods_dict[key], "fields": []} for key in modifications]
+    for item in automaton.iter(seq):
+        total += len(item[1])
+        modification = item[1][1:-1]
+        if modification in modifications:
+            index = modifications.index(modification)
+            position = item[0] - total + 1
+            modification_details[index]["fields"].append({
+                "position": position,
+                "localization_probability": 1.0
+            })
+    return modification_details
+    
+def get_ahocorasick(mods_dict: dict):
+    automaton = ahocorasick.Automaton()
+    for key in mods_dict.keys():
+        key = "(" + key + ")"
+        automaton.add_word(key,key)
+    automaton.make_automaton()
+    return automaton
