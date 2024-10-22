@@ -651,7 +651,7 @@ We added to the following table the corresponding fields in different tools and 
 | Modified sequence
 | opt_global_cv_MS:1000889_peptidoform_sequence
 
-| `modification_details`
+| `modifications`
 | Modifications details: modification name, positions and localization probabilities: read <<modifications>>
 | array[struct], null
 | -
@@ -832,12 +832,12 @@ For parquet psm files, the metadata of the file including quantms.io version and
 - `project_accession`: The project accession in PRIDE Archive if available.
 - `project_title`: The project title in PRIDE Archive if available.
 - `project_description`: The project description in PRIDE Archive if available.
-- `scan_format`: The format of the scan, with possible values: `scan`, `index`, `nativeId`.
+- `scan_format`: The format of the scan, with possible values: `scan`, `index`, `nativeId`, `multiple`. Multiple is used when multiple experiments are merged into one file.
 - `creator`: Name of the tool or person who created the file.
 - `file_type` Type of the file (psm_file)
 - `creation_date`: Date when the file was created
 - `uuid`: Unique identifier for the file
-- `compression_format`: ?
+- `compression_format`: [gzip, snappy, lzo, none]
 
 Example parquet in Python:
 
@@ -936,7 +936,7 @@ The following table presents the fields needed to describe each feature in quant
 | Modified sequence
 | opt_global_cv_MS:1000889_peptidoform_sequence
 
-| `modification_details`
+| `modifications`
 | Modifications details: modification name, positions and localization probabilities: read <<modifications>>
 | array[struct], null
 | -
@@ -960,15 +960,6 @@ The following table presents the fields needed to describe each feature in quant
 | PEP
 | opt_global_Posterior_Error_Probability_score
 
-| `global_qvalue`
-| Global q-value for the peptide or psm at the level of the experiment
-| float32, null
-| Global.Q.Value
-| x
-| -
-| opt_global_q-value
-
-7+^| Peptide fields shared with psm (<<psm>>)
 | `is_decoy`
 | Decoy indicator, 1 if the peptide is a decoy, 0 target
 | int32
@@ -1026,37 +1017,13 @@ The following table presents the fields needed to describe each feature in quant
 | search_engine_score
 
 7+^| Feature quantification fields and relation with sample properties
-| `intensity`
-| The intensity-based abundance of the peptide in the sample.
-| float, null
+| `intensities`
+| The intensity-based abundance of the feature in the reference file for different channels
+| <<intensities>>
 | Precursor.Quantity
 | Intensity
 | Intensity
 | peptide_abundance_assay[1-n]
-
-| `sample_accession`
-| The sample accession in the SDRF, which column is called `source name`
-| string, null
-| -
-| -
-| -
-| -
-
-| `run`
-| The column stores IDs of mass spectrometry runs for LFQ experiments (e.g., 1). For TMT/iTRAQ experiments, it is an identifier of mixture combined with technical replicate and fractions `{mixture}_{technical_replicate}_{fraction}` (e.g., 1_2_3)
-| string
-| -
-| -
-| -
-| -
-
-| `channel`
-| The channel used to label the sample, (e.g., TMT115)
-| string, null
-| -
-| -
-| -
-| -
 
 | `reference_file_name`
 | The reference file name that contains the feature
@@ -1068,7 +1035,7 @@ The following table presents the fields needed to describe each feature in quant
 
 | `additional_intensities`
 | Apart from the raw intensity, multiple intensity values can be provided as key-values pairs, for example, normalized intensity.
-| array[struct[name:string, value:float32]]
+| <<intensities>>
 |
 |
 |
@@ -1156,6 +1123,19 @@ The following table presents the fields needed to describe each feature in quant
 - conditions: Conditions for every feature, are the values of the `factor values`.
 //TODO: We have to decide if we want to have one condition as anchor that can be used to understand better the experiment.
 =====
+
+[[intensities]]
+==== Intensities
+
+We capture an intensity value for each `feature` on a given `reference_file_name`. In label-free experiments that it is a single value, but in multiple experiments it could be multiple values depending on the number of channels, and each channel is associated with one sample accession (normally the `source name` in the SDRF). Then, we suggest storing the intensities as a list of struct in parquet like:
+
+- `intensity: 1234.1`
+- `sample_accession: Sample-1`
+- `channel: TMT126`
+
+Additional intensities could be added could be added in the similar way in the field/column `additional_intensities`, but and additional field will be added with the name of the intensity, for example, `normalized_intensity: 0.1234`.
+
+[[scan]]
 
 [[diann-scan]]
 ==== DIANN scan
