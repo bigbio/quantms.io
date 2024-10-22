@@ -984,6 +984,14 @@ The following table presents the fields needed to describe each feature in quant
 | 
 | exp_mass_to_charge
 
+| `rt`
+| Precursor retention time (in seconds)
+| float32, null
+| RT
+| x
+| RT
+| retention_time
+
 | `rt_start`
 | Start of the retention time window for feature
 | float, null
@@ -1008,6 +1016,14 @@ The following table presents the fields needed to describe each feature in quant
 | x
 | -
 
+| `ion_mobility`
+| Ion mobility value for the precursor ion
+| float, null
+| x
+| x
+| x
+| x
+
 | `additional_scores`
 | List of structures, each structure contains two fields: name and value.
 | array[struct{name: string, value: float32}]
@@ -1016,7 +1032,15 @@ The following table presents the fields needed to describe each feature in quant
 | MaxQuant Scores
 | search_engine_score
 
-7+^| Feature quantification fields and relation with sample properties
+| `cv_params`
+| Optional list of CV parameters for additional metadata <<psm-cv-params>>
+| array[struct{name:string, value:string}], null
+| -
+| -
+| -
+| -
+
+7+^| Feature quantification and relation to the given reference file
 | `intensities`
 | The intensity-based abundance of the feature in the reference file for different channels
 | <<intensities>>
@@ -1049,6 +1073,14 @@ The following table presents the fields needed to describe each feature in quant
 | x
 | Proteins
 | accession
+
+| `anchor_protein`
+| One protein accession that represents the protein group
+| string, null
+| -
+| -
+| -
+| -
 
 | `unique`
 | Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0
@@ -1103,14 +1135,6 @@ The following table presents the fields needed to describe each feature in quant
 | The scan number of the spectrum. The scan number or index of the spectrum in the file.
 | string, null
 | <<diann-scan>>
-| -
-| -
-| -
-
-| `cv_params`
-| Optional list of CV parameters for additional metadata <<psm-cv-params>>
-| array[struct{name:string, value:string}], null
-| -
 | -
 | -
 | -
