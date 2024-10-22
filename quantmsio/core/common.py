@@ -62,7 +62,7 @@ MAXQUANT_MAP = {
     "PEP": "posterior_error_probability",
     "Modifications": "modifications",
     "Reverse": "is_decoy",
-    "m/z": "calculated_mz",
+    "m/z": "observed_mz",
     "Scan number": "scan",
     "Retention time": "rt",
     "Charge": "precursor_charge",
