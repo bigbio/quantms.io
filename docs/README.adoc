@@ -675,7 +675,6 @@ We added to the following table the corresponding fields in different tools and 
 | PEP
 | opt_global_Posterior_Error_Probability_score
 
-7+^| Peptide fields shared with feature (<<feature>>)
 | `is_decoy`
 | Decoy indicator, 1 if the peptide is a decoy, 0 target
 | int32
@@ -691,40 +690,6 @@ We added to the following table the corresponding fields in different tools and 
 | Calculated M/Z
 | m/z
 | calc_mass_to_charge
-
-| `additional_scores`
-| List of structures, each structure contains two fields: name and value.
-| array[struct{name: string, value: float32}]
-| DIA-NN Scores
-| FragPipe Scores
-| MaxQuant Scores
-| search_engine_score
-
-| `cv_params`
-| Optional list of CV parameters for additional metadata <<psm-cv-params>>
-| array[struct{name:string, value:string}], null
-| -
-| -
-| -
-| -
-
-7+^| Protein fields shared by <<feature>> <<psm>>
-| `mp_accessions`
-| Protein accessions of all the proteins that the peptide maps to
-| array[string], null
-| Protein.Ids
-| x
-| Proteins
-| accession
-
-7+^| Spectra fields shared by <<feature>> <<psm>>
-| `precursor_charge`
-| Precursor charge
-| int32
-| Precursor.Charge
-| x
-| Charge
-| charge
 
 | `observed_mz`
 | Experimental peptide mass-to-charge ratio of identified peptide (in Da)
@@ -766,6 +731,31 @@ We added to the following table the corresponding fields in different tools and 
 | MS/MS scan number
 | spectra_ref
 
+| `additional_scores`
+| List of structures, each structure contains two fields: name and value.
+| array[struct{name: string, value: float32}]
+| DIA-NN Scores
+| FragPipe Scores
+| MaxQuant Scores
+| search_engine_score
+
+| `cv_params`
+| Optional list of CV parameters for additional metadata <<psm-cv-params>>
+| array[struct{name:string, value:string}], null
+| -
+| -
+| -
+| -
+
+7+^| Protein fields shared by <<feature>> <<psm>>
+| `mp_accessions`
+| Protein accessions of all the proteins that the peptide maps to
+| array[string], null
+| Protein.Ids
+| x
+| Proteins
+| accession
+
 7+^|These fields are optional and part of the MS/MS information <<mz>>
 | `ion_mobility`
 | Ion mobility value for the precursor ion
@@ -798,15 +788,6 @@ We added to the following table the corresponding fields in different tools and 
 | -
 | -
 | -
-
-7+^| Optional fields for the psm files <<psm>>
-| `modifications`
-| List of modifications as a string array, easy for search and filter
-| array[string], null
-| -
-| -
-| Modifications
-| modifications
 |===
 
 [[additional-scores]]
@@ -817,7 +798,6 @@ Additional scores are stored as a list of key-value pairs, where the key is the 
 - pg_global_qvalue: Protein group global q-value used to filter the psm at the level of the protein group and experiment.
 - rank: Rank of the peptide in the search engine results. (1.0)
 - global_qvalue: Global q-value of the PSM at the level of the experiment.
-
 
 [[NOTE]]
 =====
@@ -856,7 +836,8 @@ For parquet psm files, the metadata of the file including quantms.io version and
 - `creator`: Name of the tool or person who created the file.
 - `file_type` Type of the file (psm_file)
 - `creation_date`: Date when the file was created
-- `uuid`: Unique identifier for the file.
+- `uuid`: Unique identifier for the file
+- `compression_format`: ?
 
 Example parquet in Python:
 
@@ -955,14 +936,6 @@ The following table presents the fields needed to describe each feature in quant
 | Modified sequence
 | opt_global_cv_MS:1000889_peptidoform_sequence
 
-| `modifications`
-| List of modifications as a string array, easy for search and filter
-| array[string], null
-| -
-| -
-| Modifications
-| modifications
-
 | `modification_details`
 | Modifications details: modification name, positions and localization probabilities: read <<modifications>>
 | array[struct], null
@@ -1020,6 +993,30 @@ The following table presents the fields needed to describe each feature in quant
 | 
 | exp_mass_to_charge
 
+| `rt_start`
+| Start of the retention time window for feature
+| float, null
+| RT.Start
+| x
+| Calibrated retention time start
+| -
+
+| `rt_stop`
+| End of the retention time window for feature
+| float, null
+| RT.Stop
+| x
+| Calibrated retention time finish
+| -
+
+| `predicted_rt`
+| Predicted retention time of the peptide (in seconds)
+| float, null
+| Predicted.RT
+| x
+| x
+| -
+
 | `additional_scores`
 | List of structures, each structure contains two fields: name and value.
 | array[struct{name: string, value: float32}]
@@ -1039,30 +1036,6 @@ The following table presents the fields needed to describe each feature in quant
 
 | `sample_accession`
 | The sample accession in the SDRF, which column is called `source name`
-| string, null
-| -
-| -
-| -
-| -
-
-| `conditions`
-| The list of factor values in the SDRF, for example, the tissue `factor value[organism part]` <<conditions>>
-| array[string], null
-| -
-| -
-| -
-| -
-
-| `fraction`
-| The index value in the SDRF for the fraction column
-| string, null
-| -
-| -
-| -
-| -
-
-| `biological_replicate`
-| The value of the biological replicate column in the SDRF in relation to the condition
 | string, null
 | -
 | -
@@ -1091,30 +1064,6 @@ The following table presents the fields needed to describe each feature in quant
 | Run
 | -
 | -
-| -
-
-| `rt_start`
-| Start of the retention time window for feature
-| float, null
-| RT.Start
-| x
-| Calibrated retention time start
-| -
-
-| `rt_stop`
-| End of the retention time window for feature
-| float, null
-| RT.Stop
-| x
-| Calibrated retention time finish
-| -
-
-| `predicted_rt`
-| Predicted retention time of the peptide (in seconds)
-| float, null
-| Predicted.RT
-| x
-| x
 | -
 
 | `additional_intensities`
