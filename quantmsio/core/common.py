@@ -1,5 +1,6 @@
 from quantmsio import __version__
-
+from quantmsio.core.format import PSM_FIELDS, FEATURE_FIELDS
+import pyarrow as pa
 PSM_MAP = {
     "sequence": "sequence",
     "modifications": "modifications",
@@ -75,3 +76,12 @@ MAXQUANT_MAP = {
 MAXQUANT_USECOLS = list(MAXQUANT_MAP.keys())
 
 QUANTMSIO_VERSION = __version__
+
+PSM_SCHEMA = pa.schema(
+    PSM_FIELDS,
+    metadata={"description": "psm file in quantms.io format"},
+)
+FEATURE_SCHEMA = pa.schema(
+    FEATURE_FIELDS,
+    metadata={"description": "feature file in quantms.io format"},
+)

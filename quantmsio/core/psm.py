@@ -3,24 +3,20 @@ import pyarrow.parquet as pq
 from quantmsio.utils.file_utils import extract_protein_list
 from quantmsio.utils.pride_utils import generate_scan_number
 from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
-from quantmsio.core.common import PSM_USECOLS, PSM_MAP, QUANTMSIO_VERSION
+from quantmsio.operate.tools import get_ahocorasick, get_modification_details, get_mod_map
+from quantmsio.core.common import PSM_USECOLS, PSM_MAP, PSM_SCHEMA
 from quantmsio.core.mztab import MzTab, generate_modification_list
-from quantmsio.core.format import PSM_FIELDS
 import pandas as pd
-
-PSM_SCHEMA = pa.schema(
-    PSM_FIELDS,
-    metadata={"description": "psm file in quantms.io format"},
-)
-
 
 class Psm(MzTab):
     def __init__(self, mzTab_path):
         super(Psm, self).__init__(mzTab_path)
         self._ms_runs = self.extract_ms_runs()
         self._protein_global_qvalue_map = self.get_protein_map()
-        self._modifications = self.get_modifications()
+        #self._modifications = self.get_modifications()
         self._score_names = self.get_score_names()
+        self._mods_map = self.get_mods_map()
+        self._automaton = get_ahocorasick(self._mods_map)
 
     def iter_psm_table(self, chunksize=1000000, protein_str=None):
         for df in self.skip_and_load_csv("PSH", chunksize=chunksize):
@@ -57,6 +53,7 @@ class Psm(MzTab):
             yield df
 
     def transform_psm(self, df):
+        df.loc[:, "modifications"] = df["peptidoform"].apply(lambda row: self.generate_modifications_details(row["peptidoform"], self._mods_map, self._automaton),axis=1)
         df.loc[:, "scan"] = df["spectra_ref"].apply(generate_scan_number)
 
         df.loc[:, "reference_file_name"] = df["spectra_ref"].apply(lambda x: self._ms_runs[x[: x.index(":")]])
@@ -111,7 +108,7 @@ class Psm(MzTab):
         res["mp_accessions"] = res["mp_accessions"].str.split(";")
         res["pg_global_qvalue"] = res["pg_global_qvalue"].astype(float)
         res["unique"] = res["unique"].astype("Int32")
-        res["modifications"] = res["modifications"].apply(lambda x: generate_modification_list(x, modifications))
+        #res["modifications"] = res["modifications"].apply(lambda x: generate_modification_list(x, modifications))
         res["precursor_charge"] = res["precursor_charge"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
         res["calculated_mz"] = res["calculated_mz"].astype(float)
         res["observed_mz"] = res["observed_mz"].astype(float)

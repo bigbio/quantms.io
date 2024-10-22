@@ -1,8 +1,10 @@
 import codecs
 import os
 import pandas as pd
+import re
+from pyopenms import ModificationsDB
 from quantmsio.utils.pride_utils import get_quantmsio_modifications
-
+from quantmsio.operate.tools import get_modification_details
 
 def generate_modification_list(modification_str: str, modifications):
 
@@ -221,3 +223,37 @@ class MzTab:
             line = f.readline()
         f.close()
         return mod_dict
+
+    def get_mods_map(self):
+        if os.stat(self.mztab_path).st_size == 0:
+            raise ValueError("File is empty")
+        f = codecs.open(self.mztab_path, "r", "utf-8")
+        line = f.readline()
+        mods_map = {}
+        modifications_db = ModificationsDB()
+        while line.startswith("MTD"):
+            if "software" in line and "_modifications" in line:
+                parts = line.split("\t")
+                mods = parts[2].split(":")[1].strip().split(",")
+                for mod in mods:
+                    match = re.search(r'\((.*?)\)', mod)
+                    mod = re.search(r'^[a-zA-Z]+', mod)
+                    if match:
+                        site = match.group(1)
+                    else:
+                        site = "X"
+                    mod = mod.group(0)
+                    Mod = modifications_db.getModification(mod)
+                    unimod = Mod.getUniModAccession()
+                    mods_map[mod] = [unimod.upper(), site]
+            line = f.readline()
+        f.close()
+        return mods_map
+
+    def generate_modifications_details(self, seq, mods_map, automaton):
+        seq = seq.replace('.','')
+        modification_details = get_modification_details(seq, mods_map, automaton)
+        if(len(modification_details) == 0):
+            return None
+        else:
+            return modification_details
