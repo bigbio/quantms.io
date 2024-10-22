@@ -105,15 +105,12 @@ class MaxQuant:
         ):
             df = self.main_operate(df)
             yield df
-    
+
     def generete_calculated_mz(self, df):
         uniq_p = df["Modified sequence"].unique()
         masses_map = {k: AASequence.fromString(k).getMonoWeight() for k in uniq_p}
         mass_vector = df["Modified sequence"].map(masses_map)
-        df.loc[:,"calculated_mz"] = (
-                mass_vector + (PROTON_MASS_U * df["Charge"].values)
-            ) / df["Charge"].values
-        
+        df.loc[:, "calculated_mz"] = (mass_vector + (PROTON_MASS_U * df["Charge"].values)) / df["Charge"].values
 
     def open_from_zip_archive(self, zip_file, file_name):
         """Open file from zip archive."""
@@ -157,12 +154,14 @@ class MaxQuant:
                 return modification_details
 
         if len(keys.values()) != 0:
-            df.loc[:, "modification_details"] = df[list(keys.values()) + ["Modified sequence"]].apply(get_details, axis=1)
+            df.loc[:, "modification_details"] = df[list(keys.values()) + ["Modified sequence"]].apply(
+                get_details, axis=1
+            )
         else:
             df.loc[:, "modification_details"] = None
 
     def main_operate(self, df: pd.DataFrame):
-        df["Modified sequence"] = df["Modified sequence"].str.replace("_","")
+        df["Modified sequence"] = df["Modified sequence"].str.replace("_", "")
         df.loc[:, "Modifications"] = df[["Modified sequence", "Modifications"]].apply(
             lambda row: generate_mods(row, self.mods_map), axis=1
         )

@@ -172,7 +172,8 @@ def load_de_or_ae(path):
     f.seek(pos - 1)
     return pd.read_csv(f, sep="\t"), content
 
-def get_modification_details(seq: str, mods_dict: dict, automaton: any, modifications: list=None):
+
+def get_modification_details(seq: str, mods_dict: dict, automaton: any, modifications: list = None):
     if "(" not in seq:
         return []
     total = 0
@@ -183,16 +184,14 @@ def get_modification_details(seq: str, mods_dict: dict, automaton: any, modifica
         if modification in modifications:
             index = modifications.index(modification)
             position = item[0] - total + 1
-            modification_details[index]["fields"].append({
-                "position": position,
-                "localization_probability": 1.0
-            })
+            modification_details[index]["fields"].append({"position": position, "localization_probability": 1.0})
     return modification_details
-    
+
+
 def get_ahocorasick(mods_dict: dict):
     automaton = ahocorasick.Automaton()
     for key in mods_dict.keys():
         key = "(" + key + ")"
-        automaton.add_word(key,key)
+        automaton.add_word(key, key)
     automaton.make_automaton()
     return automaton
