@@ -246,6 +246,7 @@ class MzTab:
                     Mod = modifications_db.getModification(mod)
                     unimod = Mod.getUniModAccession()
                     mods_map[mod] = [unimod.upper(), site]
+                    mods_map[unimod.upper()] = [mod, site]
             line = f.readline()
         f.close()
         return mods_map
