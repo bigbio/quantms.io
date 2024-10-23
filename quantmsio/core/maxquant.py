@@ -6,7 +6,7 @@ import pandas as pd
 import pyarrow.parquet as pq
 from quantmsio.core.sdrf import SDRFHandler
 from pyopenms import AASequence
-from quantmsio.operate.tools import get_ahocorasick, get_modification_details
+from quantmsio.operate.tools import get_ahocorasick, get_modification_details, get_mod_map
 from pyopenms.Constants import PROTON_MASS_U
 from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
 from quantmsio.core.common import MAXQUANT_MAP, MAXQUANT_USECOLS
@@ -47,24 +47,6 @@ def find_modification(peptide):
     original_mods = ",".join(str(i) for i in original_mods) if len(original_mods) > 0 else "null"
 
     return original_mods
-
-
-def get_mod_map(sdrf_path):
-    sdrf = pd.read_csv(sdrf_path, sep="\t", nrows=1)
-    mod_cols = [col for col in sdrf.columns if col.startswith("comment[modification parameters]")]
-    mod_map = {}
-    for col in mod_cols:
-        mod_msg = sdrf[col].values[0].split(";")
-        mod_dict = {k.split("=")[0]: k.split("=")[1] for k in mod_msg}
-        if "TA" in mod_dict:
-            mod = f"{mod_dict['NT']} ({mod_dict['TA']})"
-        elif "PP" in mod_dict:
-            mod = f"{mod_dict['NT']} ({mod_dict['PP']})"
-        else:
-            mod = mod_dict["NT"]
-        mod_map[mod] = mod_dict["AC"]
-
-    return mod_map
 
 
 def generate_mods(row, mod_map):

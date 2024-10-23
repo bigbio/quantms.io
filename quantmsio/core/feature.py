@@ -14,12 +14,6 @@ from quantmsio.utils.pride_utils import (
 )
 from quantmsio.utils.constants import ITRAQ_CHANNEL, TMT_CHANNELS
 from quantmsio.core.common import MSSTATS_MAP, MSSTATS_USECOLS, SDRF_USECOLS, SDRF_MAP, QUANTMSIO_VERSION
-from quantmsio.core.format import FEATURE_FIELDS
-
-FEATURE_SCHEMA = pa.schema(
-    FEATURE_FIELDS,
-    metadata={"description": "feature file in quantms.io format"},
-)
 
 
 class Feature(MzTab):

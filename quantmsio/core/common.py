@@ -1,14 +1,16 @@
 from quantmsio import __version__
-
+from quantmsio.core.format import PSM_FIELDS, FEATURE_FIELDS
+import pyarrow as pa
 PSM_MAP = {
     "sequence": "sequence",
     "modifications": "modifications",
+    "opt_global_cv_MS:1000889_peptidoform_sequence": "peptidoform",
     "opt_global_Posterior_Error_Probability_score": "posterior_error_probability",
-    "opt_global_q-value": "global_qvalue",
+    #"opt_global_q-value": "global_qvalue",
     "opt_global_cv_MS:1002217_decoy_peptide": "is_decoy",
     "calc_mass_to_charge": "calculated_mz",
     "accession": "mp_accessions",
-    "unique": "unique",
+    #"unique": "unique",
     "charge": "precursor_charge",
     "exp_mass_to_charge": "observed_mz",
     "retention_time": "rt",
@@ -75,3 +77,12 @@ MAXQUANT_MAP = {
 MAXQUANT_USECOLS = list(MAXQUANT_MAP.keys())
 
 QUANTMSIO_VERSION = __version__
+
+PSM_SCHEMA = pa.schema(
+    PSM_FIELDS,
+    metadata={"description": "psm file in quantms.io format"},
+)
+FEATURE_SCHEMA = pa.schema(
+    FEATURE_FIELDS,
+    metadata={"description": "feature file in quantms.io format"},
+)

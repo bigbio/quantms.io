@@ -13,11 +13,6 @@ PEPTIDE_FIELDS = [
     ),
     pa.field(
         "modifications",
-        pa.list_(pa.string()),
-        metadata={"description": "List of modifications as string array, easy for search and filter"},
-    ),
-    pa.field(
-        "modification_details",
         pa.list_(
             pa.struct(
                 [
@@ -42,11 +37,6 @@ PEPTIDE_FIELDS = [
         "posterior_error_probability",
         pa.float32(),
         metadata={"description": "Posterior error probability for the given peptide spectrum match"},
-    ),
-    pa.field(
-        "global_qvalue",
-        pa.float32(),
-        metadata={"description": "Global q-value of the peptide or psm at the level of the experiment"},
     ),
     pa.field(
         "is_decoy",
@@ -78,18 +68,6 @@ PEPTIDE_FIELDS = [
         metadata={"description": "List of structures, each structure contains two fields: name and value"},
     ),
     pa.field(
-        "unique",
-        pa.int32(),
-        metadata={
-            "description": "Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0"
-        },
-    ),
-    pa.field(
-        "pg_global_qvalue",
-        pa.float32(),
-        metadata={"description": "Global q-value of the protein group at the experiment level"},
-    ),
-    pa.field(
         "mp_accessions",
         pa.list_(pa.string()),
         metadata={"description": "Protein accessions of all the proteins that the peptide maps to"},
@@ -118,19 +96,9 @@ PEPTIDE_FIELDS = [
 
 PSM_UNIQUE_FIELDS = [
     pa.field(
-        "consensus_support",
-        pa.float32(),
-        metadata={
-            "description": "Consensus support for the given peptide spectrum match, when multiple search engines are used"
-        },
-    ),
-    pa.field(
         "rt",
         pa.float32(),
         metadata={"description": "MS2 scan’s precursor retention time (in seconds)"},
-    ),
-    pa.field(
-        "rank", pa.int32(), metadata={"description": "Rank of the peptide spectrum match in the search engine output"}
     ),
     pa.field(
         "ion_mobility",
@@ -278,3 +246,35 @@ PG_MATRIX = [
 PSM_FIELDS = PEPTIDE_FIELDS + PSM_UNIQUE_FIELDS
 
 FEATURE_FIELDS = PEPTIDE_FIELDS + FEATURE_UNIQUE_FIELDS
+
+# pa.field(
+#     "modifications",
+#     pa.list_(pa.string()),
+#     metadata={"description": "List of modifications as string array, easy for search and filter"},
+# ),
+
+# pa.field(
+#     "pg_global_qvalue",
+#     pa.float32(),
+#     metadata={"description": "Global q-value of the protein group at the experiment level"},
+# ),
+
+# pa.field(
+#     "consensus_support",
+#     pa.float32(),
+#     metadata={
+#         "description": "Consensus support for the given peptide spectrum match, when multiple search engines are used"
+#     },
+# ),
+
+# pa.field(
+#     "unique",
+#     pa.int32(),
+#     metadata={
+#         "description": "Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0"
+#     },
+# ),
+
+# pa.field(
+#     "rank", pa.int32(), metadata={"description": "Rank of the peptide spectrum match in the search engine output"}
+# ),

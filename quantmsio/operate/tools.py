@@ -6,8 +6,7 @@ import pyarrow.parquet as pq
 from Bio import SeqIO
 from quantmsio.core.project import ProjectHandler
 import ahocorasick
-from quantmsio.core.feature import FEATURE_SCHEMA
-from quantmsio.core.psm import PSM_SCHEMA
+from quantmsio.core.common import FEATURE_SCHEMA, PSM_SCHEMA
 from quantmsio.operate.query import Query
 from quantmsio.utils.pride_utils import get_unanimous_name
 from quantmsio.utils.file_utils import read_large_parquet
@@ -173,20 +172,24 @@ def load_de_or_ae(path):
     return pd.read_csv(f, sep="\t"), content
 
 
-def get_modification_details(seq: str, mods_dict: dict, automaton: any, modifications: list = None):
+def get_modification_details(seq: str, mods_dict: dict, automaton: any):
     if "(" not in seq:
         return []
     total = 0
-    modification_details = [{"name": mods_dict[key], "fields": []} for key in modifications]
+    modifications = []
+    modification_details = []
     for item in automaton.iter(seq):
         total += len(item[1])
         modification = item[1][1:-1]
+        position = item[0] - total + 1  
         if modification in modifications:
             index = modifications.index(modification)
-            position = item[0] - total + 1
             modification_details[index]["fields"].append({"position": position, "localization_probability": 1.0})
+        else:
+            modifications.append(modification)
+            modification_details.append({"name": mods_dict[modification][0], "fields": [{"position": position, "localization_probability": 1.0}]})
+            
     return modification_details
-
 
 def get_ahocorasick(mods_dict: dict):
     automaton = ahocorasick.Automaton()
@@ -195,3 +198,21 @@ def get_ahocorasick(mods_dict: dict):
         automaton.add_word(key, key)
     automaton.make_automaton()
     return automaton
+
+
+def get_mod_map(sdrf_path):
+    sdrf = pd.read_csv(sdrf_path, sep="\t", nrows=1)
+    mod_cols = [col for col in sdrf.columns if col.startswith("comment[modification parameters]")]
+    mod_map = {}
+    for col in mod_cols:
+        mod_msg = sdrf[col].values[0].split(";")
+        mod_dict = {k.split("=")[0]: k.split("=")[1] for k in mod_msg}
+        if "TA" in mod_dict:
+            mod = f"{mod_dict['NT']} ({mod_dict['TA']})"
+        elif "PP" in mod_dict:
+            mod = f"{mod_dict['NT']} ({mod_dict['PP']})"
+        else:
+            mod = mod_dict["NT"]
+        mod_map[mod] = mod_dict["AC"]
+
+    return mod_map
