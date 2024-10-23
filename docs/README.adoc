@@ -1024,6 +1024,22 @@ The following table presents the fields needed to describe each feature in quant
 | x
 | x
 
+| `start_ion_mobility`
+| start ion mobility value for the precursor ion
+| float, null
+| x
+| x
+| x
+| x
+
+| `stop_ion_mobility`
+| start ion mobility value for the precursor ion
+| float, null
+| x
+| x
+| x
+| x
+
 | `additional_scores`
 | List of structures, each structure contains two fields: name and value.
 | array[struct{name: string, value: float32}]
@@ -1171,9 +1187,9 @@ The `DIA-NN` scan is a string that contains the scan number of the MS2 used to i
 The feature view can be found in link:feature.avsc[feature.avsc].
 
 [[peptide]]
-=== Peptide view
+=== Peptide summary view
 
-The peptide view aims to cover detail on peptides quantified in the experiment and sample. A peptide could be a modified peptide (sequence with modifications) or non-modified peptide (sequence with no modifications) depending on the use case and the granularity of the data. The peptide view is a tab-delimited file format that claims to represent the peptides quantified in the experiment.
+The peptide summary view aims to cover detail on peptides quantified in the experiment and sample. A peptide could be a modified peptide (sequence with modifications) or non-modified peptide (sequence with no modifications) depending on the use case and the granularity of the data. The peptide view is a tab-delimited file format that claims to represent the peptides quantified in the experiment.
 
 ==== Peptide use cases
 
@@ -1182,8 +1198,7 @@ The peptide view aims to cover detail on peptides quantified in the experiment a
 
 ==== Peptide fields
 
-Some of the fields are shared between the <<psm>> and <<feature>> views, they can be found in the following table <<peptide-fields>>.
-
+Some of the fields are shared between the <<psm>> and <<feature>> views.
 
 [cols="1,1,1", options="header"]
 |===
@@ -1201,10 +1216,6 @@ Some of the fields are shared between the <<psm>> and <<feature>> views, they ca
 | string
 
 | `modifications`
-| List of modifications as a string array, easy for search and filter
-| array[string], null
-
-| `modification_details`
 | Modifications details: modification name, positions and localization probabilities: read <<modifications>>
 | array[struct], null
 
@@ -1265,13 +1276,6 @@ The file defines the relation between a protein groups and the raw file that con
 | *FragPipe*
 | *MaxQuant*
 
-| `quantmsio_version`
-| The version of the quantms.io specification
-| string
-| -
-| -
-| -
-
 | `pg_accessions`
 | Protein group accessions of all the proteins within this group
 | array[string]
@@ -1299,7 +1303,6 @@ The file defines the relation between a protein groups and the raw file that con
 |Run
 |-
 |-
-
 
 | global_qvalue
 | Global q-value of the protein group at the experiment level
@@ -1329,7 +1332,6 @@ The file defines the relation between a protein groups and the raw file that con
 | -
 | Potential contaminant
 
-
 | `peptides`
 | Number of peptides per protein in the protein group
 | null, struct{sequence: string, count: int}
@@ -1344,14 +1346,7 @@ The file defines the relation between a protein groups and the raw file that con
 |Protein ID
 |Protein IDs
 
-|`unique`
-| Unique protein group indicator, if the protein group maps to a single protein, the value is 1, otherwise 0
-| int32, null
-| -
-| -
-| -
-
-|`protein_identification_scores`
+|`additional_scores`
 | List of structures, each structure contains two fields: name and value.
 | array[struct{name: string, value: float}]
 | -
