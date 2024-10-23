@@ -1,4 +1,5 @@
 import os
+import re
 from collections import defaultdict
 import pandas as pd
 import pyarrow as pa
@@ -172,30 +173,37 @@ def load_de_or_ae(path):
     return pd.read_csv(f, sep="\t"), content
 
 
-def get_modification_details(seq: str, mods_dict: dict, automaton: any):
+def get_modification_details(seq: str, mods_dict: dict, automaton: any, select_mods: list=None):
     if "(" not in seq:
-        return []
+        return (seq, [])
     total = 0
     modifications = []
     modification_details = []
+    peptidoform = ""
+    pre = 0
     for item in automaton.iter(seq):
         total += len(item[1])
         modification = item[1][1:-1]
         position = item[0] - total + 1
+        name = re.search(r"([^ ]+)\s?", modification)
+        name = name.group(1)
+        if position == 0:
+            peptidoform = f"[{name}]-{peptidoform}"
+        elif item[0]+1 == len(seq):
+            peptidoform += seq[pre:item[0]-len(item[1])+1]
+            peptidoform += f"-[{name}]"
+        else:
+            peptidoform += seq[pre:item[0]-len(item[1])+1]
+            peptidoform += f"[{name}]"
+        pre = item[0]+1
         if modification in modifications:
             index = modifications.index(modification)
             modification_details[index]["fields"].append({"position": position, "localization_probability": 1.0})
-        else:
+        elif modification in select_mods:
             modifications.append(modification)
-            modification_details.append(
-                {
-                    "name": mods_dict[modification][0],
-                    "fields": [{"position": position, "localization_probability": 1.0}],
-                }
-            )
-
-    return modification_details
-
+            modification_details.append({"name": mods_dict[modification][0], "fields": [{"position": position, "localization_probability": 1.0}]})
+    peptidoform += seq[pre:]
+    return (peptidoform, modification_details)
 
 def get_ahocorasick(mods_dict: dict):
     automaton = ahocorasick.Automaton()

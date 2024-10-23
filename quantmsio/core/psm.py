@@ -2,12 +2,12 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from quantmsio.utils.file_utils import extract_protein_list
 from quantmsio.utils.pride_utils import generate_scan_number
-from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
-from quantmsio.operate.tools import get_ahocorasick, get_modification_details, get_mod_map
+from quantmsio.operate.tools import get_ahocorasick
 from quantmsio.core.common import PSM_USECOLS, PSM_MAP, PSM_SCHEMA
-from quantmsio.core.mztab import MzTab, generate_modification_list
+from quantmsio.core.mztab import MzTab
 import pandas as pd
 
+import random
 
 class Psm(MzTab):
     def __init__(self, mzTab_path):
@@ -50,8 +50,12 @@ class Psm(MzTab):
             yield df
 
     def transform_psm(self, df):
-        modifications = df["peptidoform"].apply(
-            lambda seq: self.generate_modifications_details(seq, self._mods_map, self._automaton)
+        select_mods = list(self._mods_map.keys())
+        df[["peptidoform", "modifications"]] = df[["peptidoform"]].apply(
+            lambda row: self.generate_modifications_details(
+                row["peptidoform"], self._mods_map, self._automaton, select_mods),
+                axis = 1,
+                result_type="expand"
         )
         df.loc[:, "scan"] = df["spectra_ref"].apply(generate_scan_number)
 
@@ -59,13 +63,6 @@ class Psm(MzTab):
         df.loc[:, "additional_scores"] = df[list(self._score_names.values())].apply(
             self._genarate_additional_scores, axis=1
         )
-        df.loc[:, "peptidoform"] = df[["modifications", "sequence"]].apply(
-            lambda row: get_peptidoform_proforma_version_in_mztab(
-                row["sequence"], row["modifications"], self._mods_map
-            ),
-            axis=1,
-        )
-        df.loc[:, "modifications"] = modifications
         df.drop(["spectra_ref", "search_engine", "search_engine_score[1]"], inplace=True, axis=1)
 
     @staticmethod
@@ -113,8 +110,7 @@ class Psm(MzTab):
         else:
             res.loc[:, "rt"] = None
 
-
-# df.loc[:, "pg_global_qvalue"] = df["mp_accessions"].map(self._protein_global_qvalue_map)
-# res["pg_global_qvalue"] = res["pg_global_qvalue"].astype(float)
-# res["unique"] = res["unique"].astype("Int32")
-# res["global_qvalue"] = res["global_qvalue"].astype(float)
+#df.loc[:, "pg_global_qvalue"] = df["mp_accessions"].map(self._protein_global_qvalue_map)
+#res["pg_global_qvalue"] = res["pg_global_qvalue"].astype(float)
+#res["unique"] = res["unique"].astype("Int32")
+#res["global_qvalue"] = res["global_qvalue"].astype(float)

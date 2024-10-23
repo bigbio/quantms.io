@@ -3,12 +3,14 @@ import re
 import zipfile
 import numpy as np
 import pandas as pd
+import codecs
+import os
 import pyarrow.parquet as pq
 from quantmsio.core.sdrf import SDRFHandler
+from pyopenms import ModificationsDB
 from pyopenms import AASequence
-from quantmsio.operate.tools import get_ahocorasick, get_modification_details, get_mod_map
+from quantmsio.operate.tools import get_ahocorasick, get_modification_details
 from pyopenms.Constants import PROTON_MASS_U
-from quantmsio.utils.pride_utils import get_peptidoform_proforma_version_in_mztab
 from quantmsio.core.common import MAXQUANT_MAP, MAXQUANT_USECOLS
 from quantmsio.core.feature import Feature
 from quantmsio.core.psm import Psm
@@ -64,11 +66,9 @@ def generate_mods(row, mod_map):
 
 
 class MaxQuant:
-    def __init__(self, sdrf_path, msms_path):
-        self._modifications = SDRFHandler(sdrf_path).get_mods_dict()
-        self._sdrf_path = sdrf_path
+    def __init__(self, msms_path):
         self._msms_path = msms_path
-        self.mods_map = get_mod_map(sdrf_path)
+        self.mods_map =  self.get_mods_map()
         self._automaton = get_ahocorasick(self.mods_map)
 
     def iter_batch(self, chunksize: int = 100000):
@@ -85,14 +85,15 @@ class MaxQuant:
             low_memory=False,
             chunksize=chunksize,
         ):
+            df = df.rename(columns=MAXQUANT_MAP)
             df = self.main_operate(df)
             yield df
 
     def generete_calculated_mz(self, df):
-        uniq_p = df["Modified sequence"].unique()
+        uniq_p = df["peptidoform"].unique()
         masses_map = {k: AASequence.fromString(k).getMonoWeight() for k in uniq_p}
-        mass_vector = df["Modified sequence"].map(masses_map)
-        df.loc[:, "calculated_mz"] = (mass_vector + (PROTON_MASS_U * df["Charge"].values)) / df["Charge"].values
+        mass_vector = df["peptidoform"].map(masses_map)
+        df.loc[:, "calculated_mz"] = (mass_vector + (PROTON_MASS_U * df["precursor_charge"].values)) / df["precursor_charge"].values
 
     def open_from_zip_archive(self, zip_file, file_name):
         """Open file from zip archive."""
@@ -100,6 +101,31 @@ class MaxQuant:
             with z.open(file_name) as f:
                 df = pd.read_csv(f, sep="\t", usecols=MAXQUANT_USECOLS, low_memory=False)
         return df
+
+    def get_mods_map(self):
+        if os.stat(self._msms_path).st_size == 0:
+            raise ValueError("File is empty")
+        f = codecs.open(self._msms_path, "r", "utf-8")
+        line = f.readline()
+        pattern = r"sequence\s+(.*?)\s+Proteins"
+        match = re.search(pattern, line, re.DOTALL)
+        mod_seq = match.group(1)
+        mods_map = {}
+        modifications_db = ModificationsDB()
+        if mod_seq:
+            for mod in mod_seq.split('\t'):
+                if "Probabilities" not in mod and "diffs" not in mod:
+                    name = re.search(r"([^ ]+)\s?", mod)
+                    Mod = modifications_db.getModification(name.group(1))
+                    unimod = Mod.getUniModAccession()
+                    match = re.search(r'\((.*?)\)', mod)
+                    if match:
+                        site = match.group(1)
+                    else:
+                        site = "X"
+                    mods_map[mod] = [unimod.upper(), site]
+                    mods_map[unimod.upper()] = [mod, site]
+        return mods_map
 
     def generate_modification_details(self, df):
         keys = {}
@@ -113,7 +139,7 @@ class MaxQuant:
         def get_details(rows):
             modification_details = []
             for key, col in keys.items():
-                modification_map = {"name": self.mods_map[key]}
+                modification_map = {"name": self.mods_map[key][0]}
                 details = []
                 seq = rows[col]
                 if not isinstance(seq, str):
@@ -127,47 +153,36 @@ class MaxQuant:
                     match_obj = re.search(pattern, seq)
                 modification_map["fields"] = details
                 modification_details.append(modification_map)
-            seq = rows["Modified sequence"]
-            other_modification_details = get_modification_details(seq, self.mods_map, self._automaton, other_mods)
+            seq = rows["peptidoform"]
+            peptidoform, other_modification_details = get_modification_details(seq, self.mods_map, self._automaton, other_mods)
             modification_details = modification_details + other_modification_details
             if len(modification_details) == 0:
-                return None
+                return [peptidoform, None]
             else:
-                return modification_details
+                return [peptidoform, modification_details]
 
-        if len(keys.values()) != 0:
-            df.loc[:, "modification_details"] = df[list(keys.values()) + ["Modified sequence"]].apply(
-                get_details, axis=1
-            )
-        else:
-            df.loc[:, "modification_details"] = None
+        df[["peptidoform", "modifications"]] = df[list(keys.values()) + ["peptidoform"]].apply(
+            get_details, 
+            axis=1,
+            result_type="expand"
+        )
+
 
     def main_operate(self, df: pd.DataFrame):
-        df["Modified sequence"] = df["Modified sequence"].str.replace("_", "")
-        df.loc[:, "Modifications"] = df[["Modified sequence", "Modifications"]].apply(
-            lambda row: generate_mods(row, self.mods_map), axis=1
-        )
-        self.generate_modification_details(df)
+        df["peptidoform"] = df["peptidoform"].str.replace("_", "")
+        # df.loc[:, "Modifications"] = df[["Modified sequence", "Modifications"]].apply(
+        #     lambda row: generate_mods(row, self.mods_map), axis=1
+        # )
         self.generete_calculated_mz(df)
-        df = df[df["PEP"] < 0.05]
-        df = df.rename(columns=MAXQUANT_MAP)
-        df.loc[:, "peptidoform"] = df[["sequence", "modifications"]].apply(
-            lambda row: get_peptidoform_proforma_version_in_mztab(
-                row["sequence"], row["modifications"], self._modifications
-            ),
-            axis=1,
-        )
+        self.generate_modification_details(df)
+        df = df[df["posterior_error_probability"] < 0.05].copy()
         df["is_decoy"] = df["is_decoy"].map({None: "0", np.nan: "0", "+": "1"})
-        df.loc[:, "unique"] = df["mp_accessions"].apply(lambda x: "0" if ";" in str(x) else "1")
         df["additional_scores"] = df["additional_scores"].apply(
             lambda x: [{"name": "maxquant", "value": np.float32(x)}]
         )
         df.loc[:, "best_id_score"] = None
         df.loc[:, "cv_params"] = None
-        df.loc[:, "consensus_support"] = None
         df.loc[:, "predicted_rt"] = None
-        df.loc[:, "global_qvalue"] = None
-        df.loc[:, "pg_global_qvalue"] = None
         return df
 
     @staticmethod
@@ -176,7 +191,6 @@ class MaxQuant:
         df.loc[:, "ion_mobility"] = None
         df.loc[:, "mz_array"] = None
         df.loc[:, "number_peaks"] = None
-        df.loc[:, "rank"] = None
 
     def transform_feature(self, df: pd.DataFrame):
         df = self.merge_sdrf(df)
@@ -210,22 +224,10 @@ class MaxQuant:
         pqwriter = None
         for df in self.iter_batch(chunksize=chunksize):
             self.transform_psm(df)
-            Psm.convert_to_parquet_format(df, self._modifications)
+            Psm.convert_to_parquet_format(df)
             parquet = Psm.transform_parquet(df)
             if not pqwriter:
                 pqwriter = pq.ParquetWriter(output_path, parquet.schema)
             pqwriter.write_table(parquet)
         if pqwriter:
             pqwriter.close()
-
-    # def convert_to_parquet(self, output_path: str, chunksize: int = None):
-    #     pqwriter = None
-    #     for df in self.iter_batch(chunksize=chunksize):
-    #         df = self.transform_feature(df)
-    #         Feature.convert_to_parquet_format(df, self._modifications)
-    #         feature = Feature.transform_feature(df)
-    #         if not pqwriter:
-    #             pqwriter = pq.ParquetWriter(output_path, feature.schema)
-    #         pqwriter.write_table(feature)
-    #     if pqwriter:
-    #         pqwriter.close()

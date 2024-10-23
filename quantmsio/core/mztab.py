@@ -237,25 +237,26 @@ class MzTab:
                 parts = line.split("\t")
                 mods = parts[2].split(":")[1].strip().split(",")
                 for mod in mods:
-                    match = re.search(r"\((.*?)\)", mod)
-                    mod = re.search(r"^[a-zA-Z]+", mod)
-                    if match:
-                        site = match.group(1)
-                    else:
-                        site = "X"
-                    mod = mod.group(0)
-                    Mod = modifications_db.getModification(mod)
-                    unimod = Mod.getUniModAccession()
-                    mods_map[mod] = [unimod.upper(), site]
-                    mods_map[unimod.upper()] = [mod, site]
+                    if mod != "null":
+                        match = re.search(r'\((.*?)\)', mod)
+                        mod = re.search(r"([^ ]+)\s?", mod)
+                        if match:
+                            site = match.group(1)
+                        else:
+                            site = "X"
+                        mod = mod.group(1)
+                        Mod = modifications_db.getModification(mod)
+                        unimod = Mod.getUniModAccession()
+                        mods_map[mod] = [unimod.upper(), site]
+                        mods_map[unimod.upper()] = [mod, site]
             line = f.readline()
         f.close()
         return mods_map
 
-    def generate_modifications_details(self, seq, mods_map, automaton):
-        seq = seq.replace(".", "")
-        modification_details = get_modification_details(seq, mods_map, automaton)
-        if len(modification_details) == 0:
-            return None
+    def generate_modifications_details(self, seq, mods_map, automaton, select_mods):
+        seq = seq.replace('.','')
+        peptidoform, modification_details = get_modification_details(seq, mods_map, automaton, select_mods)
+        if(len(modification_details) == 0):
+            return [peptidoform, None]
         else:
-            return modification_details
+            return [peptidoform, modification_details]

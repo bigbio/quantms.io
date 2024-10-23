@@ -84,7 +84,12 @@ PEPTIDE_FIELDS = [
     ),
     pa.field(
         "cv_params",
-        pa.list_(pa.struct([("name", pa.string()), ("value", pa.string())])),
+        #pa.list_(pa.struct([("name", pa.string()), ("value", pa.string())])),
+        pa.struct([
+            ('centroid', pa.string()),
+            ('consensus_support', pa.float32()),
+            ('unique', pa.int32())
+        ]),
         metadata={"description": "Optional list of CV parameters for additional metadata"},
     ),
     pa.field(
