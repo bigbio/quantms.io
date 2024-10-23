@@ -8,6 +8,7 @@ from quantmsio.core.common import PSM_USECOLS, PSM_MAP, PSM_SCHEMA
 from quantmsio.core.mztab import MzTab, generate_modification_list
 import pandas as pd
 
+
 class Psm(MzTab):
     def __init__(self, mzTab_path):
         super(Psm, self).__init__(mzTab_path)
@@ -49,7 +50,9 @@ class Psm(MzTab):
             yield df
 
     def transform_psm(self, df):
-        modifications = df["peptidoform"].apply(lambda seq: self.generate_modifications_details(seq, self._mods_map, self._automaton))
+        modifications = df["peptidoform"].apply(
+            lambda seq: self.generate_modifications_details(seq, self._mods_map, self._automaton)
+        )
         df.loc[:, "scan"] = df["spectra_ref"].apply(generate_scan_number)
 
         df.loc[:, "reference_file_name"] = df["spectra_ref"].apply(lambda x: self._ms_runs[x[: x.index(":")]])
@@ -110,7 +113,8 @@ class Psm(MzTab):
         else:
             res.loc[:, "rt"] = None
 
-#df.loc[:, "pg_global_qvalue"] = df["mp_accessions"].map(self._protein_global_qvalue_map)
-#res["pg_global_qvalue"] = res["pg_global_qvalue"].astype(float)
-#res["unique"] = res["unique"].astype("Int32")
-#res["global_qvalue"] = res["global_qvalue"].astype(float)
+
+# df.loc[:, "pg_global_qvalue"] = df["mp_accessions"].map(self._protein_global_qvalue_map)
+# res["pg_global_qvalue"] = res["pg_global_qvalue"].astype(float)
+# res["unique"] = res["unique"].astype("Int32")
+# res["global_qvalue"] = res["global_qvalue"].astype(float)

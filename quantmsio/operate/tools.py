@@ -181,15 +181,21 @@ def get_modification_details(seq: str, mods_dict: dict, automaton: any):
     for item in automaton.iter(seq):
         total += len(item[1])
         modification = item[1][1:-1]
-        position = item[0] - total + 1  
+        position = item[0] - total + 1
         if modification in modifications:
             index = modifications.index(modification)
             modification_details[index]["fields"].append({"position": position, "localization_probability": 1.0})
         else:
             modifications.append(modification)
-            modification_details.append({"name": mods_dict[modification][0], "fields": [{"position": position, "localization_probability": 1.0}]})
-            
+            modification_details.append(
+                {
+                    "name": mods_dict[modification][0],
+                    "fields": [{"position": position, "localization_probability": 1.0}],
+                }
+            )
+
     return modification_details
+
 
 def get_ahocorasick(mods_dict: dict):
     automaton = ahocorasick.Automaton()

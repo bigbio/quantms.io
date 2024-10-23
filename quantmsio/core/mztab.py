@@ -6,6 +6,7 @@ from pyopenms import ModificationsDB
 from quantmsio.utils.pride_utils import get_quantmsio_modifications
 from quantmsio.operate.tools import get_modification_details
 
+
 def generate_modification_list(modification_str: str, modifications):
 
     if pd.isna(modification_str):
@@ -236,8 +237,8 @@ class MzTab:
                 parts = line.split("\t")
                 mods = parts[2].split(":")[1].strip().split(",")
                 for mod in mods:
-                    match = re.search(r'\((.*?)\)', mod)
-                    mod = re.search(r'^[a-zA-Z]+', mod)
+                    match = re.search(r"\((.*?)\)", mod)
+                    mod = re.search(r"^[a-zA-Z]+", mod)
                     if match:
                         site = match.group(1)
                     else:
@@ -252,9 +253,9 @@ class MzTab:
         return mods_map
 
     def generate_modifications_details(self, seq, mods_map, automaton):
-        seq = seq.replace('.','')
+        seq = seq.replace(".", "")
         modification_details = get_modification_details(seq, mods_map, automaton)
-        if(len(modification_details) == 0):
+        if len(modification_details) == 0:
             return None
         else:
             return modification_details
