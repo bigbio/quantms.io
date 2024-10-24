@@ -7,8 +7,6 @@ from quantmsio.core.common import PSM_USECOLS, PSM_MAP, PSM_SCHEMA
 from quantmsio.core.mztab import MzTab
 import pandas as pd
 
-import random
-
 class Psm(MzTab):
     def __init__(self, mzTab_path):
         super(Psm, self).__init__(mzTab_path)

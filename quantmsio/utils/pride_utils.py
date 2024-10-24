@@ -66,7 +66,8 @@ def get_gene_accessions(gene_list, map_dict):
 
 
 def generate_scan_number(spectra_ref: str):
-    if "scan" in spectra_ref:
+    isScan = re.findall(r"controllerType=0 controllerNumber=1", spectra_ref)
+    if len(isScan) != 0:
         return re.findall(r"scan=(\d+)", spectra_ref)[0]
     else:
         return ",".join(re.findall(r"=(\d+)", spectra_ref))

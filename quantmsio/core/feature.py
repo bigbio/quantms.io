@@ -13,7 +13,7 @@ from quantmsio.utils.pride_utils import (
     get_peptidoform_proforma_version_in_mztab,
 )
 from quantmsio.utils.constants import ITRAQ_CHANNEL, TMT_CHANNELS
-from quantmsio.core.common import MSSTATS_MAP, MSSTATS_USECOLS, SDRF_USECOLS, SDRF_MAP, QUANTMSIO_VERSION
+from quantmsio.core.common import MSSTATS_MAP, MSSTATS_USECOLS, SDRF_USECOLS, SDRF_MAP
 
 
 class Feature(MzTab):
