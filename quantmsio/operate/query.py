@@ -33,12 +33,9 @@ def map_spectrum_mz(mz_path: str, scan: str, mzml: dict, mzml_directory: str):
     mzml: OpenMSHandler object
     """
     reference = mz_path
-    if mzml_directory.endswith("/"):
-        mz_path = mzml_directory + mz_path + ".mzML"
-    else:
-        mz_path = mzml_directory + "/" + mz_path + ".mzML"
-    mz_array, array_intensity = mzml[reference].get_spectrum_from_scan(mz_path, int(scan))
-    return mz_array, array_intensity, 0
+    mz_path = os.path.join(mzml_directory, mz_path + '.mzML')
+    number_peaks, mz_array, intensity_array = mzml[reference].get_spectrum_from_scan(mz_path, int(scan))
+    return number_peaks, mz_array, intensity_array
 
 
 def fill_start_and_end(row, protein_dict):
@@ -142,38 +139,15 @@ class Query:
             batch_df = self.get_report_from_database(refs, columns)
             yield refs, batch_df
 
-    def inject_spectrum_msg(self, df: pd.DataFrame, mzml_directory: str):
+    def get_spectrum_msg(self, reference: str, scan: str, mzml_directory: str):
         """
-        :params df: parquet file
-        :params maml_directory: Mzml folder
-        :return df
+        :params reference: reference_file_name
+        :params scan: scan
+        :params mzml_directory: Mzml folder
+        :return (number_peaks, mz_array, intensity_array)
         """
-        refs = df["reference_file_name"].unique()
-        mzml = {ref: OpenMSHandler() for ref in refs}
-        if "psm_reference_file_name" in df.columns:
-            df[["mz_array", "intensity_array", "num_peaks"]] = df[["psm_reference_file_name", "psm_scan_number"]].apply(
-                lambda x: map_spectrum_mz(
-                    x["psm_reference_file_name"],
-                    x["psm_scan_number"],
-                    mzml,
-                    mzml_directory,
-                ),
-                axis=1,
-                result_type="expand",
-            )
-            return df
-        elif "reference_file_name" in df.columns:
-            df[["mz_array", "intensity_array", "num_peaks"]] = df[["reference_file_name", "scan_number"]].apply(
-                lambda x: map_spectrum_mz(
-                    x["reference_file_name"],
-                    x["scan_number"],
-                    mzml,
-                    mzml_directory,
-                ),
-                axis=1,
-                result_type="expand",
-            )
-            return df
+        mzml_handler = {reference: OpenMSHandler()}
+        return map_spectrum_mz(reference, scan, mzml_handler, mzml_directory)
 
     def inject_position_msg(self, df: pd.DataFrame, protein_dict: dict):
         """

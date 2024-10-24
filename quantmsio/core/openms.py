@@ -33,7 +33,7 @@ class OpenMSHandler:
             return [], []
         spectrum = self._mzml_exp.getSpectrum(index)
         spectrum_mz, spectrum_intensities = spectrum.get_peaks()
-        return spectrum_mz, spectrum_intensities
+        return len(spectrum_mz), spectrum_mz, spectrum_intensities
 
     def get_intensity_map(self, consensusxml_path: str, experiment_type: str = None) -> dict:
         """

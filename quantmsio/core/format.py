@@ -97,14 +97,14 @@ PEPTIDE_FIELDS = [
         pa.string(),
         metadata={"description": "Scan index (number of nativeId) of the spectrum identified"},
     ),
-]
-
-PSM_UNIQUE_FIELDS = [
     pa.field(
         "rt",
         pa.float32(),
         metadata={"description": "MS2 scan’s precursor retention time (in seconds)"},
     ),
+]
+
+PSM_UNIQUE_FIELDS = [
     pa.field(
         "ion_mobility",
         pa.float32(),

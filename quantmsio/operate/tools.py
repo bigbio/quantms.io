@@ -5,21 +5,19 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 from Bio import SeqIO
-from quantmsio.core.project import ProjectHandler
 import ahocorasick
 from quantmsio.core.common import FEATURE_SCHEMA, PSM_SCHEMA
-from quantmsio.operate.query import Query
+from quantmsio.operate.query import Query, map_spectrum_mz
+from quantmsio.core.openms import OpenMSHandler
 from quantmsio.utils.pride_utils import get_unanimous_name
-from quantmsio.utils.file_utils import read_large_parquet
-
+from quantmsio.utils.file_utils import load_de_or_ae, read_large_parquet
 
 def generate_features_of_spectrum(
     parquet_path: str,
     mzml_directory: str,
-    output_path: str,
-    label: str,
+    output_folder: str,
     file_num: int,
-    partition: str = None,
+    partitions: list = None,
 ):
     """
     parquet_path: parquet file path
@@ -27,62 +25,47 @@ def generate_features_of_spectrum(
     """
     pqwriters = {}
     pqwriter_no_part = None
+    filename = os.path.basename(parquet_path)
     p = Query(parquet_path)
     for _, table in p.iter_file(file_num=file_num):
-        table = p.inject_spectrum_msg(table, mzml_directory)
-        if label == "feature":
-            schema = FEATURE_SCHEMA
-        else:
-            schema = PSM_SCHEMA
-        # save
-        if partition == "charge":
-            for key, df in table.groupby(["charge"]):
-                parquet_table = pa.Table.from_pandas(df, schema=schema)
-                save_path = output_path.split(".")[0] + "-" + str(key) + ".parquet"
+        refs = table["reference_file_name"].unique()
+        mzml_handlers = {ref: OpenMSHandler() for ref in refs}
+        table[["number_peaks", "mz_array", "intensity_array"]] = table[["reference_file_name", "scan"]].apply(
+                lambda x: map_spectrum_mz(
+                    x["reference_file_name"],
+                    x["scan"],
+                    mzml_handlers,
+                    mzml_directory,
+                ),
+                axis=1,
+                result_type="expand",
+            )
+        if not partitions or len(partitions) > 0:
+            for key, df in table.groupby(partitions):
+                parquet_table = pa.Table.from_pandas(df, schema=PSM_SCHEMA)
+                folder = [output_folder] + [str(col) for col in key]
+                folder = os.path.join(*folder)
+                if not os.path.exists(folder):
+                    os.makedirs(folder, exist_ok=True)
+                save_path = os.path.join(*[folder, filename])
                 if not os.path.exists(save_path):
                     pqwriter = pq.ParquetWriter(save_path, parquet_table.schema)
                     pqwriters[key] = pqwriter
                 pqwriters[key].write_table(parquet_table)
-        elif partition == "reference_file_name":
-            for key, df in table.groupby(["reference_file_name"]):
-                parquet_table = pa.Table.from_pandas(df, schema=schema)
-                save_path = output_path.split(".")[0] + "-" + str(key) + ".parquet"
-                if not os.path.exists(save_path):
-                    pqwriter = pq.ParquetWriter(save_path, parquet_table.schema)
-                    pqwriters[key] = pqwriter
-                pqwriters[key].write_table(parquet_table)
         else:
-            parquet_table = pa.Table.from_pandas(table, schema=schema)
+            parquet_table = pa.Table.from_pandas(table, schema=PSM_SCHEMA)
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder, exist_ok=True)
+            save_path = os.path.join(*[output_folder, filename])
             if not pqwriter_no_part:
-                pqwriter_no_part = pq.ParquetWriter(output_path, parquet_table.schema)
+                pqwriter_no_part = pq.ParquetWriter(save_path, parquet_table.schema)
             pqwriter_no_part.write_table(parquet_table)
-    # close f
-    if not partition:
+    if not partitions or len(partitions) == 0:
         if pqwriter_no_part:
             pqwriter_no_part.close()
     else:
         for pqwriter in pqwriters.values():
             pqwriter.close()
-
-
-def slice_parquet_file(df, partitions, output_folder, label):
-    pqwriters = {}
-    cols = df.columns
-    if label == "feature":
-        schema = FEATURE_SCHEMA
-    else:
-        schema = PSM_SCHEMA
-    for key, df in df.groupby(partitions):
-        parquet_table = pa.Table.from_pandas(df, schema=schema)
-        folder = [output_folder] + [str(col) for col in key]
-        folder = os.path.join(*folder)
-        if not os.path.exists(folder):
-            os.makedirs(folder, exist_ok=True)
-        save_path = os.path.join(*[folder, label, ".parquet"])
-        if not os.path.exists(save_path):
-            pqwriter = pq.ParquetWriter(save_path, parquet_table.schema)
-            pqwriters[key] = pqwriter
-        pqwriters[key].write_table(parquet_table)
 
 
 # gei unqnimous name
@@ -160,17 +143,7 @@ def map_protein_for_tsv(path: str, fasta: str, output_path: str, map_parameter: 
         f.write(content)
 
 
-def load_de_or_ae(path):
-    f = open(path, encoding="utf-8")
-    line = f.readline()
-    pos = 0
-    content = ""
-    while line.startswith("#"):
-        pos = f.tell()
-        content += line
-        line = f.readline()
-    f.seek(pos - 1)
-    return pd.read_csv(f, sep="\t"), content
+
 
 
 def get_modification_details(seq: str, mods_dict: dict, automaton: any, select_mods: list=None):
