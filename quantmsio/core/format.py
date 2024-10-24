@@ -102,14 +102,14 @@ PEPTIDE_FIELDS = [
         pa.float32(),
         metadata={"description": "MS2 scan’s precursor retention time (in seconds)"},
     ),
-]
-
-PSM_UNIQUE_FIELDS = [
     pa.field(
         "ion_mobility",
         pa.float32(),
         metadata={"description": "Ion mobility value for the precursor ion"},
     ),
+]
+
+PSM_UNIQUE_FIELDS = [
     pa.field(
         "number_peaks",
         pa.int32(),
@@ -129,45 +129,58 @@ PSM_UNIQUE_FIELDS = [
 
 FEATURE_UNIQUE_FIELDS = [
     pa.field(
-        "intensity",
+        "intensities",
         pa.float32(),
         metadata={"description": "The intensity-based abundance of the peptide in the sample"},
     ),
     pa.field(
-        "sample_accession",
-        pa.string(),
-        metadata={"description": "The sample accession in the SDRF, which column is called source name"},
+        "additional_intensities",
+        pa.list_(pa.struct([("name", pa.string()), ("value", pa.float32())])),
+        metadata={
+            "description": "Apart from the raw intensity, multiple intensity values can be provided as key-values pairs, for example, normalized intensity."
+        },
     ),
     pa.field(
-        "conditions",
+        "pg_accessions",
         pa.list_(pa.string()),
+        metadata={"description": "Protein group accessions of all the proteins that the peptide maps to"},
+    ),
+    pa.field(
+        "anchor_protein",
+        pa.string(),
+        metadata={"description": "One protein accession that represents the protein group"},
+    ),
+    pa.field(
+        "unique",
+        pa.int32(),
         metadata={
-            "description": "The value for the factor value column in the SDRF, for example, the tissue factor value[organism part]"
+            "description": "Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0"
         },
     ),
     pa.field(
-        "fraction",
-        pa.string(),
-        metadata={"description": "The index value in the SDRF for the fraction column"},
+        "pg_global_qvalue",
+        pa.float32(),
+        metadata={"description": "Global q-value of the protein group at the experiment level"},
     ),
     pa.field(
-        "biological_replicate",
-        pa.string(),
-        metadata={
-            "description": "The value of the biological replicate column in the SDRF in relation to the condition"
-        },
+        "start_ion_mobility",
+        pa.float32(),
+        metadata={"description": "start ion mobility value for the precursor ion"},
+    ),
+        pa.field(
+        "stop_ion_mobility",
+        pa.float32(),
+        metadata={"description": "stop ion mobility value for the precursor ion"},
     ),
     pa.field(
-        "run",
-        pa.string(),
-        metadata={
-            "description": "The column stores IDs of mass spectrometry runs for LFQ experiments (e.g., 1). For TMT/iTRAQ experiments, it is an identifier of mixture combined with technical replicate and fractions `{mixture}_{technical_replicate}_{fraction}` (e.g., 1_2_3)"
-        },
+        "gg_accessions",
+        pa.list_(pa.string()),
+        metadata={"description": "Gene accessions, as string array"},
     ),
     pa.field(
-        "channel",
-        pa.string(),
-        metadata={"description": "The channel used to label the sample, (e.g., TMT115)"},
+        "gg_names",
+        pa.list_(pa.string()),
+        metadata={"description": "Gene names, as string array"},
     ),
     pa.field(
         "scan_reference_file_name",
@@ -183,28 +196,6 @@ FEATURE_UNIQUE_FIELDS = [
         "rt_stop",
         pa.float32(),
         metadata={"description": "End of the retention time window for feature"},
-    ),
-    pa.field(
-        "additional_intensities",
-        pa.list_(pa.struct([("name", pa.string()), ("value", pa.float32())])),
-        metadata={
-            "description": "Apart from the raw intensity, multiple intensity values can be provided as key-values pairs, for example, normalized intensity."
-        },
-    ),
-    pa.field(
-        "pg_accessions",
-        pa.list_(pa.string()),
-        metadata={"description": "Protein group accessions of all the proteins that the peptide maps to"},
-    ),
-    pa.field(
-        "gg_accessions",
-        pa.list_(pa.string()),
-        metadata={"description": "Gene accessions, as string array"},
-    ),
-    pa.field(
-        "gg_names",
-        pa.list_(pa.string()),
-        metadata={"description": "Gene names, as string array"},
     ),
 ]
 
@@ -259,12 +250,6 @@ FEATURE_FIELDS = PEPTIDE_FIELDS + FEATURE_UNIQUE_FIELDS
 # ),
 
 # pa.field(
-#     "pg_global_qvalue",
-#     pa.float32(),
-#     metadata={"description": "Global q-value of the protein group at the experiment level"},
-# ),
-
-# pa.field(
 #     "consensus_support",
 #     pa.float32(),
 #     metadata={
@@ -272,13 +257,7 @@ FEATURE_FIELDS = PEPTIDE_FIELDS + FEATURE_UNIQUE_FIELDS
 #     },
 # ),
 
-# pa.field(
-#     "unique",
-#     pa.int32(),
-#     metadata={
-#         "description": "Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0"
-#     },
-# ),
+
 
 # pa.field(
 #     "rank", pa.int32(), metadata={"description": "Rank of the peptide spectrum match in the search engine output"}

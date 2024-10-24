@@ -135,6 +135,9 @@ class SDRFHandler:
 
     def get_enzymes(self):
         return get_complex_value_sdrf_column(self.sdrf_table, self.ENZYME_COLUMN)
+    
+    def get_runs(self):
+        return self.sdrf_table["comment[data file]"].str.split('.').str[0].unique()
 
     def get_acquisition_properties(self):
         """
