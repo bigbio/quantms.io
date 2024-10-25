@@ -116,6 +116,7 @@ class Feature(MzTab):
         Msstats = MsstatsIN(self._msstats_in, self._sdrf_path, duckdb_max_memory, duckdb_threads)
         for msstats in Msstats.generate_msstats_in(file_num, protein_str):
             yield msstats
+        Msstats.destroy_duckdb_database()
 
     def merge_msstats_and_psm(self, msstats, map_dict):
         map_features = [

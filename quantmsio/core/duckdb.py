@@ -1,6 +1,7 @@
 import duckdb
 import time
 import logging
+import os
 from quantmsio.core.project import create_uuid_filename
 
 class DuckDB:
@@ -71,3 +72,10 @@ class DuckDB:
         cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
         database = self._duckdb.sql(f"SELECT {cols} FROM report WHERE {query_key}")
         return database.df()
+    
+    def destroy_duckdb_database(self):
+        if self._duckdb_name and self._duckdb:
+            self._duckdb.close()
+            os.remove(self._duckdb_name)
+            self._duckdb_name = None
+            self._duckdb = None

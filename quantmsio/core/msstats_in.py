@@ -85,3 +85,4 @@ class MsstatsIN(DuckDB):
                 }],
                 axis=1
             )
+    
