@@ -132,9 +132,9 @@ class Feature(MzTab):
                 axis=1,
             )
 
-    def generate_feature(self, chunksize=1000000, protein_str=None):
-        map_dict = self.extract_psm_msg(chunksize, protein_str)
-        for msstats in self.transform_msstats_in(chunksize, protein_str):
+    def generate_feature(self, file_num=10, protein_str=None, duckdb_max_memory="16GB", duckdb_threads=4):
+        map_dict = self.extract_psm_msg(1000000, protein_str)
+        for msstats in self.transform_msstats_in(file_num, protein_str, duckdb_max_memory, duckdb_threads):
             self.merge_msstats_and_psm(msstats, map_dict)
             self.add_additional_msg(msstats)
             self.convert_to_parquet_format(msstats, self._modifications)
@@ -154,9 +154,9 @@ class Feature(MzTab):
         for key, df in df.groupby(partitions):
             yield key, df
 
-    def generate_slice_feature(self, partitions, chunksize=1000000, protein_str=None):
-        map_dict = self.extract_psm_msg(chunksize, protein_str)
-        for msstats in self.transform_msstats_in(chunksize, protein_str):
+    def generate_slice_feature(self, partitions, file_num=10, protein_str=None, duckdb_max_memory="16GB", duckdb_threads=4):
+        map_dict = self.extract_psm_msg(1000000, protein_str)
+        for msstats in self.transform_msstats_in(file_num, protein_str, duckdb_max_memory, duckdb_threads):
             self.merge_msstats_and_psm(msstats, map_dict)
             self.add_additional_msg(msstats)
             self.convert_to_parquet_format(msstats)
@@ -226,7 +226,6 @@ class Feature(MzTab):
         )
         msstats["mp_accessions"] = msstats["mp_accessions"].str.split(";")
         msstats.loc[:, "additional_intensities"] = None
-        msstats.loc[:, "best_id_score"] = None
         msstats.loc[:, "predicted_rt"] = None
         msstats.loc[:, "gg_accessions"] = None
         msstats.loc[:, "gg_names"] = None

@@ -56,13 +56,6 @@ PEPTIDE_FIELDS = [
         metadata={"description": "Experimental peptide mass-to-charge ratio of identified peptide (in Da)"},
     ),
     pa.field(
-        "best_id_score",
-        pa.list_(pa.struct([("name", pa.string()), ("value", pa.float32())])),
-        metadata={
-            "description": "A named score type and value representing an identification's measure of confidence or input feature"
-        },
-    ),
-    pa.field(
         "additional_scores",
         pa.list_(pa.struct([("name", pa.string()), ("value", pa.float32())])),
         metadata={"description": "List of structures, each structure contains two fields: name and value"},
@@ -273,4 +266,11 @@ FEATURE_FIELDS = PEPTIDE_FIELDS + FEATURE_UNIQUE_FIELDS
 
 # pa.field(
 #     "rank", pa.int32(), metadata={"description": "Rank of the peptide spectrum match in the search engine output"}
+# ),
+# pa.field(
+#     "best_id_score",
+#     pa.list_(pa.struct([("name", pa.string()), ("value", pa.float32())])),
+#     metadata={
+#         "description": "A named score type and value representing an identification's measure of confidence or input feature"
+#     },
 # ),

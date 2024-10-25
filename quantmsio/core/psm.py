@@ -75,7 +75,6 @@ class Psm(MzTab):
 
     def add_addition_msg(self, df):
         df.loc[:, "cv_params"] = None
-        df.loc[:, "best_id_score"] = None
         df.loc[:, "predicted_rt"] = None
         df.loc[:, "ion_mobility"] = None
         df.loc[:, "number_peaks"] = None
