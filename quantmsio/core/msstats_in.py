@@ -53,6 +53,8 @@ class MsstatsIN(DuckDB):
                     lambda row: ITRAQ_CHANNEL[self.experiment_type][row - 1]
                 )
         msstats.loc[:, "unique"] = msstats["pg_accessions"].apply(lambda x: 0 if ";" in x else 1)
+        msstats["pg_accessions"] = msstats["pg_accessions"].str.split(";")
+        msstats.loc[:,"anchor_protein"] = msstats["pg_accessions"].str[0]
 
     def transform_experiment(self, msstats):
         intensities_map = {}
@@ -73,6 +75,7 @@ class MsstatsIN(DuckDB):
             msstats.drop_duplicates(subset=["reference_file_name","peptidoform","precursor_charge"], inplace=True)
             msstats.reset_index(inplace=True, drop=True)
             msstats.loc[:, "intensities"] = msstats["map"].map(intensities_map)
+            msstats.drop(["map"], inplace=True, axis=1)
         else:
             msstats.loc[:, "intensities"] = msstats[["reference_file_name","channel","intensity"]].apply(
                 lambda rows: [{

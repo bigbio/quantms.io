@@ -130,12 +130,24 @@ PSM_UNIQUE_FIELDS = [
 FEATURE_UNIQUE_FIELDS = [
     pa.field(
         "intensities",
-        pa.float32(),
+        pa.list_(
+            pa.struct([
+                ('sample_accession', pa.string()),
+                ('channel', pa.string()),
+                ('intensity', pa.float32())
+            ])
+        ),
         metadata={"description": "The intensity-based abundance of the peptide in the sample"},
     ),
     pa.field(
         "additional_intensities",
-        pa.list_(pa.struct([("name", pa.string()), ("value", pa.float32())])),
+        pa.list_(
+            pa.struct([
+                ('sample_accession', pa.string()),
+                ('channel', pa.string()),
+                ('intensity', pa.float32())
+            ])
+        ),
         metadata={
             "description": "Apart from the raw intensity, multiple intensity values can be provided as key-values pairs, for example, normalized intensity."
         },

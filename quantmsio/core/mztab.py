@@ -160,7 +160,7 @@ class MzTab:
         f = open(self.mztab_path)
         f.seek(pos)
         self.__set_table_config(header, fle_len, pos)
-        return pd.read_csv(f, nrows=fle_len, sep="\t", **kwargs)
+        return pd.read_csv(f, nrows=fle_len, sep="\t", low_memory=False, **kwargs)
 
     def extract_ms_runs(self):
         if os.stat(self.mztab_path).st_size == 0:

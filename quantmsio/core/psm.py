@@ -24,6 +24,10 @@ class Psm(MzTab):
             for col in no_cols:
                 df.loc[:, col] = None
             df.rename(columns=PSM_MAP, inplace=True)
+            df.loc[:, "additional_scores"] = df[list(self._score_names.values())].apply(
+            self._genarate_additional_scores, axis=1
+            )
+            df.loc[:, "reference_file_name"] = df["spectra_ref"].apply(lambda x: self._ms_runs[x[: x.index(":")]])
             yield df
 
     @staticmethod
@@ -56,11 +60,6 @@ class Psm(MzTab):
                 result_type="expand"
         )
         df.loc[:, "scan"] = df["spectra_ref"].apply(generate_scan_number)
-
-        df.loc[:, "reference_file_name"] = df["spectra_ref"].apply(lambda x: self._ms_runs[x[: x.index(":")]])
-        df.loc[:, "additional_scores"] = df[list(self._score_names.values())].apply(
-            self._genarate_additional_scores, axis=1
-        )
         df.drop(["spectra_ref", "search_engine", "search_engine_score[1]"], inplace=True, axis=1)
 
     @staticmethod
