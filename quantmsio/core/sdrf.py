@@ -356,3 +356,14 @@ class SDRFHandler:
             mods[mod_dict["AC"]] = mod
 
         return mods
+    
+    def get_sample_map_run(self):
+        sdrf = self.sdrf_table[["source name","comment[data file]","comment[label]"]].copy()
+        sdrf["comment[data file]"] = sdrf["comment[data file]"].str.split(".").str[0]
+        if self.get_experiment_type_from_sdrf() != "LFQ":
+            sdrf.loc[:, "map_sample"] = sdrf["comment[data file]"] + "-" + sdrf["comment[label]"]
+        else:
+            sdrf.loc[:, "map_sample"] = sdrf["comment[data file]"] + "-LFQ" 
+        sdrf.set_index("map_sample",inplace=True)
+        sample_map = sdrf.to_dict()["source name"]
+        return sample_map 
