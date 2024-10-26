@@ -51,13 +51,13 @@ DIANN_MAP = {
     "PEP": "posterior_error_probability",
     "Global.Q.Value": "global_qvalue",
     "Global.PG.Q.Value": "pg_global_qvalue",
+    "Q.Value": "qvalue",
+    "PG.Q.Value": "pg_qvalue",
+    "Precursor.Normalised": "normalize_intensity",
     "Precursor.Charge": "precursor_charge",
     "Stripped.Sequence": "sequence",
     "Modified.Sequence": "peptidoform",
     "Genes": "gg_names",
-    "opt_global_spectrum_reference": "scan",
-    "Calculate.Precursor.Mz": "calculated_mz",
-    "exp_mass_to_charge": "observed_mz",
 }
 MAXQUANT_MAP = {
     "Sequence": "sequence",

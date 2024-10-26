@@ -138,7 +138,12 @@ FEATURE_UNIQUE_FIELDS = [
             pa.struct([
                 ('sample_accession', pa.string()),
                 ('channel', pa.string()),
-                ('intensity', pa.float32())
+                ('additional_intensity', pa.list_(
+                    pa.struct([
+                        ("name", pa.string()),
+                        ("value", pa.float32())
+                    ])
+                ))
             ])
         ),
         metadata={

@@ -172,24 +172,33 @@ class Feature(MzTab):
     def write_feature_to_file(
         self,
         output_path,
-        chunksize=1000000,
+        file_num=10,
         protein_file=None,
+        duckdb_max_memory="16GB", 
+        duckdb_threads=4
     ):
         protein_list = extract_protein_list(protein_file) if protein_file else None
         protein_str = "|".join(protein_list) if protein_list else None
         pqwriter = None
-        for feature in self.generate_feature(chunksize, protein_str):
+        for feature in self.generate_feature(file_num, protein_str, duckdb_max_memory, duckdb_threads):
             if not pqwriter:
                 pqwriter = pq.ParquetWriter(output_path, feature.schema)
             pqwriter.write_table(feature)
         if pqwriter:
             pqwriter.close()
 
-    def write_features_to_file(self, output_folder, filename, partitions, chunksize=1000000, protein_file=None):
+    def write_features_to_file(self, 
+        output_folder, 
+        filename, 
+        partitions,         
+        file_num=10,
+        protein_file=None,
+        duckdb_max_memory="16GB", 
+        duckdb_threads=4):
         pqwriters = {}
         protein_list = extract_protein_list(protein_file) if protein_file else None
         protein_str = "|".join(protein_list) if protein_list else None
-        for key, feature in self.generate_slice_feature(partitions, chunksize, protein_str):
+        for key, feature in self.generate_slice_feature(partitions, file_num, protein_str, duckdb_max_memory, duckdb_threads):
             folder = [output_folder] + [str(col) for col in key]
             folder = os.path.join(*folder)
             if not os.path.exists(folder):

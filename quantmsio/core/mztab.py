@@ -253,7 +253,8 @@ class MzTab:
         f.close()
         return mods_map
 
-    def generate_modifications_details(self, seq, mods_map, automaton, select_mods):
+    @staticmethod
+    def generate_modifications_details(seq, mods_map, automaton, select_mods):
         seq = seq.replace('.','')
         peptidoform, modification_details = get_modification_details(seq, mods_map, automaton, select_mods)
         if(len(modification_details) == 0):
