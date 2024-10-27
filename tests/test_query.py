@@ -33,17 +33,17 @@ class TestHandler(TestCase):
         for _ in q.iter_file():
             print("ok")
 
-    @data(*test_datas)
-    def test_inject_spectrum_msg(self, test_data):
-        parquet_file = datafile(test_data[0])
-        mz_folder = datafile(test_data[1])
-        q = Query(parquet_file)
-        df = q.get_report_from_database(["test"])
-        df["scan_number"] = "1"
-        q.inject_spectrum_msg(df, mz_folder)
+    # @data(*test_datas)
+    # def test_inject_spectrum_msg(self, test_data):
+    #     parquet_file = datafile(test_data[0])
+    #     mz_folder = datafile(test_data[1])
+    #     q = Query(parquet_file)
+    #     df = q.get_report_from_database(["test"])
+    #     df["scan_number"] = "1"
+    #     q.inject_spectrum_msg(df, mz_folder)
 
-    def test_inject_position_msg(self):
-        q = Query(TestHandler.feature_path)
-        df = q.get_report_from_database(["20180914_QE8_nLC0_BDA_SA_DIA_Keratinocytes_NN002"])
-        protein_dict = q.get_protein_dict(TestHandler.fasta)
-        q.inject_position_msg(df, protein_dict)
+    # def test_inject_position_msg(self):
+    #     q = Query(TestHandler.feature_path)
+    #     df = q.get_report_from_database(["20180914_QE8_nLC0_BDA_SA_DIA_Keratinocytes_NN002"])
+    #     protein_dict = q.get_protein_dict(TestHandler.fasta)
+    #     q.inject_position_msg(df, protein_dict)

@@ -10,10 +10,9 @@ class TestFeatureHandler(TestCase):
     global test_datas
     test_datas = [
         (
-            "DDA-plex/MSV000079033.mzTab",
-            "DDA-plex/MSV000079033_msstats_in.csv",
-            "DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv",
-            "ITRAQ4",
+            "DDA-lfq/PXD040438.mzTab",
+            "DDA-lfq/PXD040438_msstats_in.csv",
+            "DDA-lfq/PXD040438.sdrf.tsv",
         ),
     ]
 
@@ -34,22 +33,7 @@ class TestFeatureHandler(TestCase):
         F = Feature(mztab_file, sdrf_file, msstats_file)
         F.extract_psm_msg()
 
-    @data(*test_datas)
-    def test_extract_sdrf(self, test_data):
-        mztab_file = datafile(test_data[0])
-        msstats_file = datafile(test_data[1])
-        sdrf_file = datafile(test_data[2])
-        F = Feature(mztab_file, sdrf_file, msstats_file)
-        F.transform_sdrf(F._sdrf_path)
 
-    @data(*test_datas)
-    def test_merge_msstats_and_sdrf(self, test_data):
-        mztab_file = datafile(test_data[0])
-        msstats_file = datafile(test_data[1])
-        sdrf_file = datafile(test_data[2])
-        F = Feature(mztab_file, sdrf_file, msstats_file)
-        for msstats in F.transform_msstats_in():
-            F.merge_msstats_and_sdrf(msstats)
 
     @data(*test_datas)
     def test_merge_msstats_and_psm(self, test_data):
@@ -67,5 +51,5 @@ class TestFeatureHandler(TestCase):
         msstats_file = datafile(test_data[1])
         sdrf_file = datafile(test_data[2])
         F = Feature(mztab_file, sdrf_file, msstats_file)
-        for msstats in F.generate_feature():
+        for _ in F.generate_feature():
             print("ok")

@@ -3,7 +3,7 @@ import pyarrow.parquet as pq
 from quantmsio.utils.file_utils import extract_protein_list
 from quantmsio.utils.pride_utils import generate_scan_number
 from quantmsio.operate.tools import get_ahocorasick
-from quantmsio.core.common import PSM_USECOLS, PSM_MAP, PSM_SCHEMA
+from quantmsio.core.common import PSM_USECOLS, PSM_MAP, PSM_SCHEMA, PEP
 from quantmsio.core.mztab import MzTab
 import pandas as pd
 
@@ -23,7 +23,12 @@ class Psm(MzTab):
             no_cols = set(PSM_USECOLS) - set(df.columns)
             for col in no_cols:
                 df.loc[:, col] = None
-            df.rename(columns=PSM_MAP, inplace=True)
+            psm_map = PSM_MAP.copy()
+            for key in PEP:
+                if key in df.columns:
+                    psm_map[key] = "posterior_error_probability"
+                    break
+            df.rename(columns=psm_map, inplace=True)
             df.loc[:, "additional_scores"] = df[list(self._score_names.values())].apply(
             self._genarate_additional_scores, axis=1
             )

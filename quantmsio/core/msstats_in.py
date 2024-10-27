@@ -10,9 +10,14 @@ class MsstatsIN(DuckDB):
         self._sdrf = SDRFHandler(sdrf_path)
         self.experiment_type = self._sdrf.get_experiment_type_from_sdrf()
         self._sample_map = self._sdrf.get_sample_map_run()
-        
+    
+    def get_runs(self):
+        references = self._duckdb.sql(f"SELECT Reference FROM report").df()
+        references = references["Reference"].str.split('.').str[0]
+        return list(set(references))
+
     def iter_runs(self, file_num=10, columns: list = None):
-        references = self._sdrf.get_runs()
+        references = self.get_runs()
         ref_list = [references[i : i + file_num] for i in range(0, len(references), file_num)]
         for refs in ref_list:
             batch_df = self.query_field("Reference", refs, columns)

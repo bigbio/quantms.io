@@ -170,9 +170,6 @@ class MaxQuant:
 
     def main_operate(self, df: pd.DataFrame):
         df["peptidoform"] = df["peptidoform"].str.replace("_", "")
-        # df.loc[:, "Modifications"] = df[["Modified sequence", "Modifications"]].apply(
-        #     lambda row: generate_mods(row, self.mods_map), axis=1
-        # )
         self.generete_calculated_mz(df)
         self.generate_modification_details(df)
         df = df[df["posterior_error_probability"] < 0.05].copy()
@@ -180,7 +177,7 @@ class MaxQuant:
         df["additional_scores"] = df["additional_scores"].apply(
             lambda x: [{"name": "maxquant", "value": np.float32(x)}]
         )
-        df.loc[:, "best_id_score"] = None
+        #df.loc[:, "best_id_score"] = None
         df.loc[:, "cv_params"] = None
         df.loc[:, "predicted_rt"] = None
         return df

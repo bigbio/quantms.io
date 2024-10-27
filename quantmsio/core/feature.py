@@ -102,7 +102,7 @@ class Feature(MzTab):
                 temp_df = df.iloc[df["posterior_error_probability"].idxmin()]
                 if key not in map_dict:
                     map_dict[key] = [None for _ in range(6)]
-                pep_value = temp_df["posterior_error_probability"]
+                pep_value = temp_df["posterior_error_probability"] 
                 if map_dict[key][0] is None or float(map_dict[key][0]) > float(pep_value):
                     map_dict[key][0] = pep_value
                     map_dict[key][1] = temp_df["calculated_mz"]
@@ -127,9 +127,16 @@ class Feature(MzTab):
             "is_decoy",
             "additional_scores",
         ]
+        def merge_psm(rows, index):
+            key = (rows["reference_file_name"], rows["peptidoform"], rows["precursor_charge"])
+            if key in map_dict:
+                return map_dict[key][index]
+            else:
+                return None
+
         for i, feature in enumerate(map_features):
             msstats.loc[:, feature] = msstats[["reference_file_name", "peptidoform", "precursor_charge"]].apply(
-                lambda row: map_dict[(row["reference_file_name"], row["peptidoform"], row["precursor_charge"])][i],
+                lambda rows: merge_psm(rows, i),
                 axis=1,
             )
 
@@ -138,7 +145,7 @@ class Feature(MzTab):
         for msstats in self.transform_msstats_in(file_num, protein_str, duckdb_max_memory, duckdb_threads):
             self.merge_msstats_and_psm(msstats, map_dict)
             self.add_additional_msg(msstats)
-            self.convert_to_parquet_format(msstats, self._modifications)
+            self.convert_to_parquet_format(msstats)
             feature = self.transform_feature(msstats)
             yield feature
 

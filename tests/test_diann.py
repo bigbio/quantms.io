@@ -24,6 +24,6 @@ class TestFeatureHandler(TestCase):
         mzml = datafile(test_data[2])
         D = DiaNNConvert(report_file, sdrf_file)
         for report in D.main_report_df(0.05, mzml, 2):
-            report = D.merge_sdrf_to_feature(report)
-            Feature.convert_to_parquet_format(report, D._modifications)
+            D.add_additional_msg(report)
+            Feature.convert_to_parquet_format(report)
             Feature.transform_feature(report)
