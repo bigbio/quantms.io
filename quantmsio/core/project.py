@@ -104,7 +104,7 @@ class ProjectHandler:
     def populate_from_pride_archive(self):
         # Simulate API request to PRIDE Archive
         api_url = f"https://www.ebi.ac.uk/pride/ws/archive/v2/projects/{self.project_accession}"
-        response = requests.get(api_url)
+        response = requests.get(api_url, timeout=1000)
 
         if response.status_code == 200:
             pride_data = response.json()

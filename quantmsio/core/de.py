@@ -161,7 +161,7 @@ class DifferentialExpressionHandler:
 
         output_lines += DifferentialExpressionHandler.DE_HEADER
         output_lines += quantms_df.columns.str.cat(sep="\t") + "\n"
-        for index, row in quantms_df.iterrows():
+        for _, row in quantms_df.iterrows():
             output_lines += "\t".join(map(str, row)).strip() + "\n"
 
         # Create the output file name
@@ -218,14 +218,6 @@ class DifferentialExpressionHandler:
         for label in quantms_df["label"].unique():
             for condition in label.split("-", 1):
                 unique_labels.append(condition)
-        """
-        if len(unique_label) == 1:
-            labels = unique_label[0].split("-")
-            first_contrast = labels[0].strip()
-            second_contrast = labels[1].strip()
-        else:
-            raise ValueError("QuantMS file has more than one label divided by '-'")
-        """
         return list(set(unique_labels))
 
     def get_factor_value(self):

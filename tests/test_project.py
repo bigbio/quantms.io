@@ -12,7 +12,6 @@ from .common import datafile
 
 @ddt
 class TestProjectHandler(TestCase):
-    global test_datas
     test_datas = [
         ("MSV000079033", datafile("/examples/DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv")),
     ]

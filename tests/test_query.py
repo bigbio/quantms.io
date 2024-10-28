@@ -1,22 +1,11 @@
 from .common import datafile
-from ddt import data
-from ddt import ddt
 from unittest import TestCase
 from quantmsio.operate.query import Query
 
-
-@ddt
 class TestHandler(TestCase):
-    global test_datas
     psm_path = datafile("parquet/psm.parquet")
     feature_path = datafile("parquet/feature.parquet")
     fasta = datafile("fasta/Homo-sapiens.fasta")
-    test_datas = [
-        (
-            "/examples/mzml/test.parquet",
-            "/examples/mzml/mzml",
-        ),
-    ]
 
     def test_iter_samples(self):
         q = Query(TestHandler.feature_path)

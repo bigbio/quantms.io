@@ -42,7 +42,7 @@ class DuckDB:
         references = self.get_unique_references(filed)
         ref_list = [references[i : i + file_num] for i in range(0, len(references), file_num)]
         for refs in ref_list:
-            batch_df = self.get_report_from_database(filed, refs, columns)
+            batch_df = self.get_report(filed, refs, columns)
             yield refs, batch_df
     
     def get_unique_references(self, field):
@@ -50,7 +50,7 @@ class DuckDB:
         unique_reference = self._duckdb.sql(f"SELECT DISTINCT {field} FROM report").df()
         return unique_reference[field].tolist()
     
-    def get_report_from_database(self, filed: str, runs: list, columns: list = None):
+    def get_report(self, filed: str, runs: list, columns: list = None):
 
         cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
         cols = cols.replace("unique", '"unique"')
