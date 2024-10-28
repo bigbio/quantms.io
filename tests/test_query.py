@@ -2,6 +2,7 @@ from .common import datafile
 from unittest import TestCase
 from quantmsio.operate.query import Query
 
+
 class TestHandler(TestCase):
     psm_path = datafile("parquet/psm.parquet")
     feature_path = datafile("parquet/feature.parquet")

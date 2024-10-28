@@ -16,10 +16,10 @@ PSM_MAP = {
 }
 PSM_USECOLS = list(PSM_MAP.keys()) + ["spectra_ref"]
 PEP = [
-        "opt_global_Posterior_Error_Probability_score",
-        "opt_global_Posterior_Error_Probability",
-        "opt_global_MS:1001493_score"
-    ]
+    "opt_global_Posterior_Error_Probability_score",
+    "opt_global_Posterior_Error_Probability",
+    "opt_global_MS:1001493_score",
+]
 
 MSSTATS_MAP = {
     "ProteinName": "pg_accessions",

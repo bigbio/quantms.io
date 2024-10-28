@@ -17,13 +17,14 @@ from quantmsio.core.duckdb import DuckDB
 from quantmsio.utils.pride_utils import generate_scan_number
 from quantmsio.core.common import DIANN_MAP
 
+
 class DiaNNConvert(DuckDB):
 
     def __init__(self, diann_report, sdrf_path, duckdb_max_memory="16GB", duckdb_threads=4):
         super(DiaNNConvert, self).__init__(diann_report, duckdb_max_memory, duckdb_threads)
         self.init_duckdb()
         self._sdrf = SDRFHandler(sdrf_path)
-        self._mods_map  = self._sdrf.get_mods_dict()
+        self._mods_map = self._sdrf.get_mods_dict()
         self._automaton = get_ahocorasick(self._mods_map)
         self._sample_map = self._sdrf.get_sample_map_run()
 
@@ -31,7 +32,6 @@ class DiaNNConvert(DuckDB):
 
         self._duckdb.execute("""CREATE INDEX idx_precursor_q ON report ("Precursor.Id", "Q.Value")""")
         self._duckdb.execute("""CREATE INDEX idx_run ON report ("Run")""")
-
 
     def get_report_from_database(self, runs: list) -> pd.DataFrame:
         """
@@ -116,7 +116,7 @@ class DiaNNConvert(DuckDB):
             return res
 
         # query duckdb
-        #best_ref_map = self.get_peptide_map_from_database()
+        # best_ref_map = self.get_peptide_map_from_database()
         masses_map, modifications_map = self.get_masses_and_modifications_map()
 
         info_list = [
@@ -143,15 +143,15 @@ class DiaNNConvert(DuckDB):
 
             # cal value and mod
             mass_vector = report["peptidoform"].map(masses_map)
-            report["calculated_mz"] = (
-                mass_vector + (PROTON_MASS_U * report["precursor_charge"].values)
-            ) / report["precursor_charge"].values
+            report["calculated_mz"] = (mass_vector + (PROTON_MASS_U * report["precursor_charge"].values)) / report[
+                "precursor_charge"
+            ].values
 
             report["peptidoform"] = report["peptidoform"].map(modifications_map)
 
             # report["scan_reference_file_name"] = report["Precursor.Id"].map(best_ref_map)
             # report["scan"] = None
-            
+
             yield report
 
     def add_additional_msg(self, report: pd.DataFrame):
@@ -163,18 +163,21 @@ class DiaNNConvert(DuckDB):
         report["reference_file_name"] = report["reference_file_name"].apply(lambda x: x.split(".")[0])
         report[["peptidoform", "modifications"]] = report[["peptidoform"]].apply(
             lambda row: MzTab.generate_modifications_details(
-                row["peptidoform"], self._mods_map, self._automaton, select_mods),
-                axis = 1,
-                result_type="expand"
+                row["peptidoform"], self._mods_map, self._automaton, select_mods
+            ),
+            axis=1,
+            result_type="expand",
         )
         report.loc[:, "channel"] = "LFQ"
-        report.loc[:, "intensities"] = report[["reference_file_name","channel","intensity"]].apply(
-            lambda rows: [{
-                "sample_accession": self._sample_map[rows["reference_file_name"]+"-"+rows["channel"]],
-                "channel": rows["channel"],
-                "intensity": rows["intensity"]
-            }],
-            axis=1
+        report.loc[:, "intensities"] = report[["reference_file_name", "channel", "intensity"]].apply(
+            lambda rows: [
+                {
+                    "sample_accession": self._sample_map[rows["reference_file_name"] + "-" + rows["channel"]],
+                    "channel": rows["channel"],
+                    "intensity": rows["intensity"],
+                }
+            ],
+            axis=1,
         )
         report.loc[:, "is_decoy"] = "0"
         report.loc[:, "unique"] = report["pg_accessions"].apply(lambda x: "0" if ";" in str(x) else "1")
@@ -184,16 +187,17 @@ class DiaNNConvert(DuckDB):
         report.loc[:, "anchor_protein"] = report["pg_accessions"].str[0]
         report.loc[:, "gg_names"] = report["gg_names"].str.split(",")
 
-        report.loc[:, "additional_intensities"] = report[["reference_file_name","channel","normalize_intensity"]].apply(
-            lambda rows: [{
-                "sample_accession": self._sample_map[rows["reference_file_name"]+"-"+rows["channel"]],
-                "channel": rows["channel"],
-                "additional_intensity": [{
-                    "name": "normalize_intensity",
-                    "value": rows["normalize_intensity"]
-                }]
-            }],
-            axis=1
+        report.loc[:, "additional_intensities"] = report[
+            ["reference_file_name", "channel", "normalize_intensity"]
+        ].apply(
+            lambda rows: [
+                {
+                    "sample_accession": self._sample_map[rows["reference_file_name"] + "-" + rows["channel"]],
+                    "channel": rows["channel"],
+                    "additional_intensity": [{"name": "normalize_intensity", "value": rows["normalize_intensity"]}],
+                }
+            ],
+            axis=1,
         )
         report.loc[:, "additional_scores"] = report[["qvalue", "pg_qvalue"]].apply(
             lambda row: [
@@ -240,4 +244,3 @@ class DiaNNConvert(DuckDB):
         if pqwriter:
             pqwriter.close()
         self.destroy_duckdb_database()
-

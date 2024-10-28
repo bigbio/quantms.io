@@ -33,8 +33,6 @@ class TestFeatureHandler(TestCase):
         F = Feature(mztab_file, sdrf_file, msstats_file)
         F.extract_psm_msg()
 
-
-
     @data(*test_datas)
     def test_merge_msstats_and_psm(self, test_data):
         mztab_file = datafile(test_data[0])

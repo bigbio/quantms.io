@@ -16,10 +16,11 @@ from quantmsio.core.psm import Psm
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
+
 class MaxQuant:
     def __init__(self, msms_path):
         self._msms_path = msms_path
-        self.mods_map =  self.get_mods_map()
+        self.mods_map = self.get_mods_map()
         self._automaton = get_ahocorasick(self.mods_map)
 
     def iter_batch(self, chunksize: int = 100000):
@@ -44,7 +45,9 @@ class MaxQuant:
         uniq_p = df["peptidoform"].unique()
         masses_map = {k: AASequence.fromString(k).getMonoWeight() for k in uniq_p}
         mass_vector = df["peptidoform"].map(masses_map)
-        df.loc[:, "calculated_mz"] = (mass_vector + (PROTON_MASS_U * df["precursor_charge"].values)) / df["precursor_charge"].values
+        df.loc[:, "calculated_mz"] = (mass_vector + (PROTON_MASS_U * df["precursor_charge"].values)) / df[
+            "precursor_charge"
+        ].values
 
     def open_from_zip_archive(self, zip_file, file_name):
         """Open file from zip archive."""
@@ -64,12 +67,12 @@ class MaxQuant:
         mods_map = {}
         modifications_db = ModificationsDB()
         if mod_seq:
-            for mod in mod_seq.split('\t'):
+            for mod in mod_seq.split("\t"):
                 if "Probabilities" not in mod and "diffs" not in mod:
                     name = re.search(r"([^ ]+)\s?", mod)
                     Mod = modifications_db.getModification(name.group(1))
                     unimod = Mod.getUniModAccession()
-                    match = re.search(r'\((.*?)\)', mod)
+                    match = re.search(r"\((.*?)\)", mod)
                     if match:
                         site = match.group(1)
                     else:
@@ -105,7 +108,9 @@ class MaxQuant:
                 modification_map["fields"] = details
                 modification_details.append(modification_map)
             seq = rows["peptidoform"]
-            peptidoform, other_modification_details = get_modification_details(seq, self.mods_map, self._automaton, other_mods)
+            peptidoform, other_modification_details = get_modification_details(
+                seq, self.mods_map, self._automaton, other_mods
+            )
             modification_details = modification_details + other_modification_details
             if len(modification_details) == 0:
                 return [peptidoform, None]
@@ -113,11 +118,8 @@ class MaxQuant:
                 return [peptidoform, modification_details]
 
         df[["peptidoform", "modifications"]] = df[list(keys.values()) + ["peptidoform"]].apply(
-            get_details, 
-            axis=1,
-            result_type="expand"
+            get_details, axis=1, result_type="expand"
         )
-
 
     def main_operate(self, df: pd.DataFrame):
         df["peptidoform"] = df["peptidoform"].str.replace("_", "")
@@ -128,7 +130,7 @@ class MaxQuant:
         df["additional_scores"] = df["additional_scores"].apply(
             lambda x: [{"name": "maxquant", "value": np.float32(x)}]
         )
-        #df.loc[:, "best_id_score"] = None
+        # df.loc[:, "best_id_score"] = None
         df.loc[:, "cv_params"] = None
         df.loc[:, "predicted_rt"] = None
         return df

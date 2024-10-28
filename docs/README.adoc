@@ -741,7 +741,7 @@ We added to the following table the corresponding fields in different tools and 
 
 | `cv_params`
 | Optional list of CV parameters for additional metadata <<psm-cv-params>>
-| array[struct{name:string, value:string}], null
+| array[struct{cv_name:string, cv_value:string}], null
 | -
 | -
 | -
@@ -816,7 +816,7 @@ Cv params are a key-value pairs list that allows to store additional information
 - 'prot:FDR threshold': 0.01
 - number of unmatched peaks: 3
 
-In quantms we use `consensus_support` where the value is the number of search engines that support the identification. This field could be added as a cv_param as: `consensus result: 3`
+In quantms we use `consensus_support` where the value is the number of search engines that support the identification. This field could be added as an additional_score as: `consensus_result: 3`
 
 The cv_params are stored as a list of key-value pairs, where the key is the name of the parameter, and the value is the value of the parameter. This is similar to the CVParams in the mzIdentML format. Please, be aware that search engine scores should be stored for psms in the column `additional_scores`.
 
@@ -984,7 +984,7 @@ The following table presents the fields needed to describe each feature in quant
 | m/z
 | exp_mass_to_charge
 
-| `rt`
+| `rt_apex`
 | Precursor retention time (in seconds)
 | float32, null
 | RT
@@ -1050,7 +1050,7 @@ The following table presents the fields needed to describe each feature in quant
 
 | `cv_params`
 | Optional list of CV parameters for additional metadata <<psm-cv-params>>
-| array[struct{name:string, value:string}], null
+| array[struct{cv_name:string, cv_value:string}], null
 | -
 | -
 | -
@@ -1312,14 +1312,21 @@ The file defines the relation between a protein groups and the raw file that con
 |Q-value
 
 |`intensities`
-| Array of intensities for the protein group in the run, the intensities are key-value pairs where the key is the type of intensity raw, normalized, etc the value is the intensity
-| array[struct{name: string, value: float}]
+| Similar to the feature view, the intensity-based abundance of the protein group in the reference file for different channels
+| <<intensities>>
 |Intensity, Normalized Intensity
 |-
 |iBAQ, Intensity, LFQ intensity
 
+|`additional_intensities`
+| Apart from the raw intensity, multiple intensity values can be provided as key-values pairs, for example, normalized intensity.
+| <<intensities>>
+| -
+| -
+| -
+
 | `is_decoy`
-| If the protein is decoy
+| Definition of the protein group as decoy or target
 | null, integer
 | -
 | -
@@ -1348,11 +1355,16 @@ The file defines the relation between a protein groups and the raw file that con
 
 |`additional_scores`
 | List of structures, each structure contains two fields: name and value.
-| array[struct{name: string, value: float}]
+| <<protein_additional_scores>>
 | -
 | -
 | -
 |===
+
+[[protein_additional_scores]]
+==== protein additional scores
+
+At the protein level, additional scores should be store for each given protein group. The additional scores are stored as a list of key-value pairs, where the key is the name of the score (is RECOMMENDED to use HUPO-PSI MS ontology) and the value is an array of float32 values where the index of values matches to the index on the `pg_accessions` field. Additional scores are mainly the search engine and protein scores that want to be added at the protein group level.
 
 [[proteinsummary]]
 == Protein view

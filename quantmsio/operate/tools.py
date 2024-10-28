@@ -12,6 +12,7 @@ from quantmsio.core.openms import OpenMSHandler
 from quantmsio.utils.pride_utils import get_unanimous_name
 from quantmsio.utils.file_utils import load_de_or_ae, read_large_parquet
 
+
 def generate_features_of_spectrum(
     parquet_path: str,
     mzml_directory: str,
@@ -31,15 +32,15 @@ def generate_features_of_spectrum(
         refs = table["reference_file_name"].unique()
         mzml_handlers = {ref: OpenMSHandler() for ref in refs}
         table[["number_peaks", "mz_array", "intensity_array"]] = table[["reference_file_name", "scan"]].apply(
-                lambda x: map_spectrum_mz(
-                    x["reference_file_name"],
-                    x["scan"],
-                    mzml_handlers,
-                    mzml_directory,
-                ),
-                axis=1,
-                result_type="expand",
-            )
+            lambda x: map_spectrum_mz(
+                x["reference_file_name"],
+                x["scan"],
+                mzml_handlers,
+                mzml_directory,
+            ),
+            axis=1,
+            result_type="expand",
+        )
         if not partitions or len(partitions) > 0:
             for key, df in table.groupby(partitions):
                 parquet_table = pa.Table.from_pandas(df, schema=PSM_SCHEMA)
@@ -158,21 +159,27 @@ def get_modification_details(seq: str, mods_dict: dict, automaton: any, select_m
         name = name.group(1)
         if position == 0:
             peptidoform = f"[{name}]-{peptidoform}"
-        elif item[0]+1 == len(seq):
-            peptidoform += seq[pre:item[0]-len(item[1])+1]
+        elif item[0] + 1 == len(seq):
+            peptidoform += seq[pre : item[0] - len(item[1]) + 1]
             peptidoform += f"-[{name}]"
         else:
-            peptidoform += seq[pre:item[0]-len(item[1])+1]
+            peptidoform += seq[pre : item[0] - len(item[1]) + 1]
             peptidoform += f"[{name}]"
-        pre = item[0]+1
+        pre = item[0] + 1
         if modification in modifications:
             index = modifications.index(modification)
             modification_details[index]["fields"].append({"position": position, "localization_probability": 1.0})
         elif modification in select_mods:
             modifications.append(modification)
-            modification_details.append({"name": mods_dict[modification][0], "fields": [{"position": position, "localization_probability": 1.0}]})
+            modification_details.append(
+                {
+                    "name": mods_dict[modification][0],
+                    "fields": [{"position": position, "localization_probability": 1.0}],
+                }
+            )
     peptidoform += seq[pre:]
     return (peptidoform, modification_details)
+
 
 def get_ahocorasick(mods_dict: dict):
     automaton = ahocorasick.Automaton()

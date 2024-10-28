@@ -4,13 +4,14 @@ import logging
 import os
 from quantmsio.core.project import create_uuid_filename
 
+
 class DuckDB:
 
     def __init__(self, report_path, duckdb_max_memory="16GB", duckdb_threads=4):
         self._report_path = report_path
         self._duckdb_name = create_uuid_filename("report-duckdb", ".db")
         self._duckdb = self.create_duckdb_from_diann_report(duckdb_max_memory, duckdb_threads)
-    
+
     def create_duckdb_from_diann_report(self, max_memory, worker_threads):
         """
         This function creates a duckdb database from a diann report for fast performance queries. The database
@@ -36,7 +37,7 @@ class DuckDB:
         et = time.time() - s
         logging.info("Time to create duckdb database {} seconds".format(et))
         return database
-    
+
     def iter_file(self, filed: str, file_num: int = 10, columns: list = None):
 
         references = self.get_unique_references(filed)
@@ -44,12 +45,12 @@ class DuckDB:
         for refs in ref_list:
             batch_df = self.get_report(filed, refs, columns)
             yield refs, batch_df
-    
+
     def get_unique_references(self, field):
 
         unique_reference = self._duckdb.sql(f"SELECT DISTINCT {field} FROM report").df()
         return unique_reference[field].tolist()
-    
+
     def get_report(self, filed: str, runs: list, columns: list = None):
 
         cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
@@ -64,7 +65,7 @@ class DuckDB:
         )
         report = database.df()
         return report
-    
+
     def query_field(self, field: str, querys: list, columns: list = None):
 
         proteins_key = [f"{field} LIKE '%{p}%'" for p in querys]
@@ -72,7 +73,7 @@ class DuckDB:
         cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
         database = self._duckdb.sql(f"SELECT {cols} FROM report WHERE {query_key}")
         return database.df()
-    
+
     def destroy_duckdb_database(self):
         if self._duckdb_name and self._duckdb:
             self._duckdb.close()
