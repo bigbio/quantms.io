@@ -66,7 +66,6 @@ MAXQUANT_MAP = {
     "Sequence": "sequence",
     "Proteins": "mp_accessions",
     "PEP": "posterior_error_probability",
-    #"Modifications": "modifications",
     "Modified sequence": "peptidoform",
     "Reverse": "is_decoy",
     "m/z": "observed_mz",

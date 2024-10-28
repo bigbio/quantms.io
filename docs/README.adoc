@@ -655,23 +655,23 @@ We added to the following table the corresponding fields in different tools and 
 | Modifications details: modification name, positions and localization probabilities: read <<modifications>>
 | array[struct], null
 | -
-| [modified residue]:[modification mass]
-| Score for localization in Site Tables
-| x
+| -
+| -
+| -
 
 | `precursor_charge`
 | Precursor charge
 | int32
+| Precursor.Charge
 | -
-| -
-| -
+| Charge
 | charge
 
 | `posterior_error_probability`
 | Posterior error probability (PEP) for the given peptide or psm match.
 | float32, null
 | PEP
-| x
+| -
 | PEP
 | opt_global_Posterior_Error_Probability_score
 
@@ -686,24 +686,24 @@ We added to the following table the corresponding fields in different tools and 
 | `calculated_mz`
 | Theoretical peptide mass-to-charge ratio based on an identified sequence and modifications
 | float32
-| Calculate.Precursor.Mz
+| -
 | Calculated M/Z
-| m/z
+| -
 | calc_mass_to_charge
 
 | `observed_mz`
 | Experimental peptide mass-to-charge ratio of identified peptide (in Da)
 | float32
-| x
+| -
 | Observed M/Z
-| x
+| m/z
 | exp_mass_to_charge
 
 | `rt`
 | MS2 scan’s precursor retention time (in seconds)
 | float32, null
 | RT
-| x
+| -
 | Retention time
 | retention_time
 
@@ -711,8 +711,8 @@ We added to the following table the corresponding fields in different tools and 
 | Predicted retention time of the peptide (in seconds)
 | float32, null
 | Predicted.RT
-| x
-| x
+| -
+| -
 | -
 
 | `reference_file_name`
@@ -720,7 +720,7 @@ We added to the following table the corresponding fields in different tools and 
 | string
 | Run
 | Spectrum File
-| x
+| Raw file
 | spectra_ref
 
 | `scan`
@@ -752,7 +752,7 @@ We added to the following table the corresponding fields in different tools and 
 | Protein accessions of all the proteins that the peptide maps to
 | array[string], null
 | Protein.Ids
-| x
+| -
 | Proteins
 | accession
 
@@ -760,10 +760,10 @@ We added to the following table the corresponding fields in different tools and 
 | `ion_mobility`
 | Ion mobility value for the precursor ion
 | float, null
-| x
-| x
-| x
-| x
+| -
+| -
+| -
+| -
 
 | `number_peaks`
 | Number of peaks in the spectrum used for the peptide spectrum match
@@ -940,16 +940,16 @@ The following table presents the fields needed to describe each feature in quant
 | Modifications details: modification name, positions and localization probabilities: read <<modifications>>
 | array[struct], null
 | -
-| [modified residue]:[modification mass]
-| Score for localization in Site Tables
-| x
+| -
+| -
+| -
 
 | `precursor_charge`
 | Precursor charge
 | int32
+| Precursor.Charge
 | -
-| -
-| -
+| Charge
 | charge
 
 | `posterior_error_probability`
@@ -971,74 +971,74 @@ The following table presents the fields needed to describe each feature in quant
 | `calculated_mz`
 | Theoretical peptide mass-to-charge ratio based on an identified sequence and modifications
 | float32
-| Calculate.Precursor.Mz
+| -
 | Calculated M/Z
-| m/z
+| -
 | calc_mass_to_charge
 
 | `observed_mz`
 | Experimental peptide mass-to-charge ratio of identified peptide (in Da)
 | float32
-| 
-| 
-| 
+| -
+| -
+| m/z
 | exp_mass_to_charge
 
 | `rt`
 | Precursor retention time (in seconds)
 | float32, null
 | RT
-| x
-| RT
+| -
+| Retention time
 | retention_time
 
 | `rt_start`
 | Start of the retention time window for feature
 | float, null
 | RT.Start
-| x
-| Calibrated retention time start
+| -
+| -
 | -
 
 | `rt_stop`
 | End of the retention time window for feature
 | float, null
 | RT.Stop
-| x
-| Calibrated retention time finish
+| -
+| -
 | -
 
 | `predicted_rt`
 | Predicted retention time of the peptide (in seconds)
 | float, null
 | Predicted.RT
-| x
-| x
+| -
+| -
 | -
 
 | `ion_mobility`
 | Ion mobility value for the precursor ion
 | float, null
-| x
-| x
-| x
-| x
+| -
+| -
+| -
+| -
 
 | `start_ion_mobility`
 | start ion mobility value for the precursor ion
 | float, null
-| x
-| x
-| x
-| x
+| -
+| -
+| -
+| -
 
 | `stop_ion_mobility`
-| start ion mobility value for the precursor ion
+| stop ion mobility value for the precursor ion
 | float, null
-| x
-| x
-| x
-| x
+| -
+| -
+| -
+| -
 
 | `additional_scores`
 | List of structures, each structure contains two fields: name and value.
@@ -1070,7 +1070,7 @@ The following table presents the fields needed to describe each feature in quant
 | string
 | Run
 | -
-| -
+| Raw file
 | -
 
 | `additional_intensities`
@@ -1110,23 +1110,23 @@ The following table presents the fields needed to describe each feature in quant
 | Global q-value of the protein group at the experiment level
 | float, null
 | Global.PG.Q.Value
-| x
-| x
+| -
+| -
 | best_search_engine_score
 
 | `gg_accessions`
 | Gene group accessions.
 | array[string], null
-| x
-| x
-| x
+| -
+| -
+| -
 | -
 
 | `gg_names`
 | Gene names, as a string array
 | array[string], null
+| Genes
 | -
-| x
 | -
 | -
 
@@ -1134,7 +1134,7 @@ The following table presents the fields needed to describe each feature in quant
 | Protein accessions of all the proteins that the peptide maps to
 | array[string], null
 | Protein.Ids
-| x
+| -
 | Proteins
 | accession
 
