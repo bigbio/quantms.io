@@ -110,8 +110,3 @@ class Psm(MzTab):
             res["rt"] = res["rt"].astype(float)
         else:
             res.loc[:, "rt"] = None
-
-#df.loc[:, "pg_global_qvalue"] = df["mp_accessions"].map(self._protein_global_qvalue_map)
-#res["pg_global_qvalue"] = res["pg_global_qvalue"].astype(float)
-#res["unique"] = res["unique"].astype("Int32")
-#res["global_qvalue"] = res["global_qvalue"].astype(float)

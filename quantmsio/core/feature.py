@@ -4,18 +4,15 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from quantmsio.operate.tools import get_ahocorasick
 from quantmsio.utils.file_utils import extract_protein_list
-from quantmsio.core.mztab import MzTab, generate_modification_list
+from quantmsio.core.mztab import MzTab
 from quantmsio.core.psm import Psm
 from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.core.msstats_in import MsstatsIN
 from quantmsio.utils.pride_utils import (
-    clean_peptidoform_sequence,
     get_petidoform_msstats_notation,
     generate_scan_number,
-    get_peptidoform_proforma_version_in_mztab,
 )
-from quantmsio.utils.constants import ITRAQ_CHANNEL, TMT_CHANNELS
-from quantmsio.core.common import MSSTATS_MAP, MSSTATS_USECOLS, SDRF_USECOLS, SDRF_MAP, FEATURE_SCHEMA
+from quantmsio.core.common import FEATURE_SCHEMA
 
 
 class Feature(MzTab):
