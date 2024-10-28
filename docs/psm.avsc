@@ -61,8 +61,7 @@
             }],
               "doc": "List of identification scores subsidiary to the best score"
             },
-            {"name": "rank", "type": ["null", "int"], "doc": "Rank of the peptide spectrum match in the search engine output"},
-              {
+            {
               "name": "cv_params",
               "type": [
                 "null",
@@ -74,12 +73,12 @@
                     "doc": "Controlled vocabulary (CV) parameters providing additional metadata for the scan.",
                     "fields": [
                       {
-                        "name": "name",
+                        "name": "cv_name",
                         "type": "string",
                         "doc": "Name of the CV term (e.g., from PSI-MS or other ontologies)."
                       },
                       {
-                        "name": "value",
+                        "name": "cv_value",
                         "type": "string",
                         "doc": "Value associated with the CV term."
                       }
