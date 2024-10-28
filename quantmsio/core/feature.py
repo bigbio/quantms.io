@@ -98,7 +98,7 @@ class Feature(MzTab):
                 df.reset_index(drop=True, inplace=True)
                 temp_df = df.iloc[df["posterior_error_probability"].idxmin()]
                 if key not in map_dict:
-                    map_dict[key] = [None for _ in range(6)]
+                    map_dict[key] = [None for _ in range(7)]
                 pep_value = temp_df["posterior_error_probability"]
                 if map_dict[key][0] is None or float(map_dict[key][0]) > float(pep_value):
                     map_dict[key][0] = pep_value
@@ -107,6 +107,7 @@ class Feature(MzTab):
                     map_dict[key][3] = temp_df["mp_accessions"]
                     map_dict[key][4] = temp_df["is_decoy"]
                     map_dict[key][5] = temp_df["additional_scores"]
+                    map_dict[key][6] = temp_df["cv_params"]
         return map_dict
 
     def transform_msstats_in(self, file_num=10, protein_str=None, duckdb_max_memory="16GB", duckdb_threads=4):
@@ -123,6 +124,7 @@ class Feature(MzTab):
             "mp_accessions",
             "is_decoy",
             "additional_scores",
+            "cv_params"
         ]
 
         def merge_psm(rows, index):
@@ -244,7 +246,6 @@ class Feature(MzTab):
         msstats.loc[:, "predicted_rt"] = None
         msstats.loc[:, "gg_accessions"] = None
         msstats.loc[:, "gg_names"] = None
-        msstats.loc[:, "cv_params"] = None
         msstats.loc[:, "rt_start"] = None
         msstats.loc[:, "rt_stop"] = None
         msstats.loc[:, "ion_mobility"] = None

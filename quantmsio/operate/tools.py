@@ -173,7 +173,7 @@ def get_modification_details(seq: str, mods_dict: dict, automaton: any, select_m
             modifications.append(modification)
             modification_details.append(
                 {
-                    "name": mods_dict[modification][0],
+                    "modification_name": mods_dict[modification][0],
                     "fields": [{"position": position, "localization_probability": 1.0}],
                 }
             )

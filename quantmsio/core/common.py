@@ -7,6 +7,7 @@ PSM_MAP = {
     "modifications": "modifications",
     "opt_global_cv_MS:1000889_peptidoform_sequence": "peptidoform",
     "opt_global_q-value": "global_qvalue",
+    "opt_global_consensus_support": "consensus_support",
     "opt_global_cv_MS:1002217_decoy_peptide": "is_decoy",
     "calc_mass_to_charge": "calculated_mz",
     "accession": "mp_accessions",

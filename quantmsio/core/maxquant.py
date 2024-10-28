@@ -93,7 +93,7 @@ class MaxQuant:
         def get_details(rows):
             modification_details = []
             for key, col in keys.items():
-                modification_map = {"name": self.mods_map[key][0]}
+                modification_map = {"modification_name": self.mods_map[key][0]}
                 details = []
                 seq = rows[col]
                 if not isinstance(seq, str):
