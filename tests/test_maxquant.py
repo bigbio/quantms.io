@@ -8,7 +8,6 @@ from ddt import ddt
 
 @ddt
 class TestFeatureHandler(TestCase):
-    global test_datas
     test_datas = [
         (
             "Maxquant/msms.txt",

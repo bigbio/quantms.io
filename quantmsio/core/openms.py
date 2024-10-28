@@ -71,7 +71,7 @@ class OpenMSHandler:
         peptide_columns = ["sequence", "charge", "RT", "mz", "quality"]
         intensity_columns = [column for column in df.columns if column not in peptide_columns]
         intensity_map = {}
-        for index, row in df.iterrows():
+        for _, row in df.iterrows():
             for column in intensity_columns:
                 if np.float64(row[f"{column}"]) > 0.0:
                     reference_file = column.split(".")[0]

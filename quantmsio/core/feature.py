@@ -4,18 +4,15 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from quantmsio.operate.tools import get_ahocorasick
 from quantmsio.utils.file_utils import extract_protein_list
-from quantmsio.core.mztab import MzTab, generate_modification_list
+from quantmsio.core.mztab import MzTab
 from quantmsio.core.psm import Psm
 from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.core.msstats_in import MsstatsIN
 from quantmsio.utils.pride_utils import (
-    clean_peptidoform_sequence,
     get_petidoform_msstats_notation,
     generate_scan_number,
-    get_peptidoform_proforma_version_in_mztab,
 )
-from quantmsio.utils.constants import ITRAQ_CHANNEL, TMT_CHANNELS
-from quantmsio.core.common import MSSTATS_MAP, MSSTATS_USECOLS, SDRF_USECOLS, SDRF_MAP, FEATURE_SCHEMA
+from quantmsio.core.common import FEATURE_SCHEMA
 
 
 class Feature(MzTab):
@@ -141,13 +138,17 @@ class Feature(MzTab):
             )
 
     def generate_feature(self, file_num=10, protein_str=None, duckdb_max_memory="16GB", duckdb_threads=4):
+        for msstats in self.generate_feature_report(file_num, protein_str, duckdb_max_memory, duckdb_threads):
+            feature = self.transform_feature(msstats)
+            yield feature
+
+    def generate_feature_report(self, file_num=10, protein_str=None, duckdb_max_memory="16GB", duckdb_threads=4):
         map_dict = self.extract_psm_msg(1000000, protein_str)
         for msstats in self.transform_msstats_in(file_num, protein_str, duckdb_max_memory, duckdb_threads):
             self.merge_msstats_and_psm(msstats, map_dict)
             self.add_additional_msg(msstats)
             self.convert_to_parquet_format(msstats)
-            feature = self.transform_feature(msstats)
-            yield feature
+            yield msstats
 
     @staticmethod
     def slice(df, partitions):
@@ -163,11 +164,7 @@ class Feature(MzTab):
             yield key, df
 
     def generate_slice_feature(self, partitions, file_num=10, protein_str=None, duckdb_max_memory="16GB", duckdb_threads=4):
-        map_dict = self.extract_psm_msg(1000000, protein_str)
-        for msstats in self.transform_msstats_in(file_num, protein_str, duckdb_max_memory, duckdb_threads):
-            self.merge_msstats_and_psm(msstats, map_dict)
-            self.add_additional_msg(msstats)
-            self.convert_to_parquet_format(msstats)
+        for msstats in self.generate_feature_report(file_num, protein_str, duckdb_max_memory, duckdb_threads):
             for key, df in self.slice(msstats, partitions):
                 feature = self.transform_feature(df)
                 yield key, feature

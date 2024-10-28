@@ -6,7 +6,6 @@ import pandas as pd
 import codecs
 import os
 import pyarrow.parquet as pq
-from quantmsio.core.sdrf import SDRFHandler
 from pyopenms import ModificationsDB
 from pyopenms import AASequence
 from quantmsio.operate.tools import get_ahocorasick, get_modification_details
@@ -15,55 +14,7 @@ from quantmsio.core.common import MAXQUANT_MAP, MAXQUANT_USECOLS
 from quantmsio.core.feature import Feature
 from quantmsio.core.psm import Psm
 
-# format the log entries
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
-
-MODIFICATION_PATTERN = re.compile(r"\((.*?\)?)\)")
-
-
-def find_modification(peptide):
-    """
-    Identify the modification site based on the peptide containing modifications.
-
-    :param peptide: Sequences of peptides
-    :type peptide: str
-    :return: Modification sites
-    :rtype: str
-
-    Examples:
-    >>> find_modification("PEPM(UNIMOD:35)IDE")
-    '4-UNIMOD:35'
-    >>> find_modification("SM(UNIMOD:35)EWEIRDS(UNIMOD:21)EPTIDEK")
-    '2-UNIMOD:35,9-UNIMOD:21'
-    """
-    peptide = str(peptide)
-    original_mods = MODIFICATION_PATTERN.findall(peptide)
-    peptide = MODIFICATION_PATTERN.sub(".", peptide)
-    position = [i for i, x in enumerate(peptide) if x == "."]
-    for j in range(1, len(position)):
-        position[j] -= j
-
-    for k in range(0, len(original_mods)):
-        original_mods[k] = str(position[k]) + "-" + original_mods[k].upper()
-
-    original_mods = ",".join(str(i) for i in original_mods) if len(original_mods) > 0 else "null"
-
-    return original_mods
-
-
-def generate_mods(row, mod_map):
-    mod_seq = row["Modified sequence"]
-    mod_p = find_modification(mod_seq)
-    if mod_p == "null" or mod_p is None:
-        return None
-    for mod in row["Modifications"].split(","):
-        mod = re.search(r"[A-Za-z]+.*", mod)
-        if mod:
-            mod = mod.group()
-            if mod in mod_map.keys():
-                mod_p = mod_p.replace(mod.upper(), mod_map[mod])
-    return mod_p
-
 
 class MaxQuant:
     def __init__(self, msms_path):
