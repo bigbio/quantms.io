@@ -7,6 +7,7 @@ from quantmsio.core.common import PSM_USECOLS, PSM_MAP, PSM_SCHEMA, PEP
 from quantmsio.core.mztab import MzTab
 import pandas as pd
 
+
 class Psm(MzTab):
     def __init__(self, mzTab_path):
         super(Psm, self).__init__(mzTab_path)
@@ -30,7 +31,7 @@ class Psm(MzTab):
                     break
             df.rename(columns=psm_map, inplace=True)
             df.loc[:, "additional_scores"] = df[list(self._score_names.values())].apply(
-            self._genarate_additional_scores, axis=1
+                self._genarate_additional_scores, axis=1
             )
             df.loc[:, "reference_file_name"] = df["spectra_ref"].apply(lambda x: self._ms_runs[x[: x.index(":")]])
             yield df
@@ -60,9 +61,10 @@ class Psm(MzTab):
         select_mods = list(self._mods_map.keys())
         df[["peptidoform", "modifications"]] = df[["peptidoform"]].apply(
             lambda row: self.generate_modifications_details(
-                row["peptidoform"], self._mods_map, self._automaton, select_mods),
-                axis = 1,
-                result_type="expand"
+                row["peptidoform"], self._mods_map, self._automaton, select_mods
+            ),
+            axis=1,
+            result_type="expand",
         )
         df.loc[:, "scan"] = df["spectra_ref"].apply(generate_scan_number)
         df.drop(["spectra_ref", "search_engine", "search_engine_score[1]"], inplace=True, axis=1)

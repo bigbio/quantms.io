@@ -238,7 +238,7 @@ class MzTab:
                 mods = parts[2].split(":")[1].strip().split(",")
                 for mod in mods:
                     if mod != "null":
-                        match = re.search(r'\((.*?)\)', mod)
+                        match = re.search(r"\((.*?)\)", mod)
                         mod = re.search(r"([^ ]+)\s?", mod)
                         if match:
                             site = match.group(1)
@@ -255,9 +255,9 @@ class MzTab:
 
     @staticmethod
     def generate_modifications_details(seq, mods_map, automaton, select_mods):
-        seq = seq.replace('.','')
+        seq = seq.replace(".", "")
         peptidoform, modification_details = get_modification_details(seq, mods_map, automaton, select_mods)
-        if(len(modification_details) == 0):
+        if len(modification_details) == 0:
             return [peptidoform, None]
         else:
             return [peptidoform, modification_details]

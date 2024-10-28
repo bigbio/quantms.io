@@ -33,7 +33,7 @@ def map_spectrum_mz(mz_path: str, scan: str, mzml: dict, mzml_directory: str):
     mzml: OpenMSHandler object
     """
     reference = mz_path
-    mz_path = os.path.join(mzml_directory, mz_path + '.mzML')
+    mz_path = os.path.join(mzml_directory, mz_path + ".mzML")
     number_peaks, mz_array, intensity_array = mzml[reference].get_spectrum_from_scan(mz_path, int(scan))
     return number_peaks, mz_array, intensity_array
 

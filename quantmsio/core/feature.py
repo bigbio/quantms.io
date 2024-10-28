@@ -99,7 +99,7 @@ class Feature(MzTab):
                 temp_df = df.iloc[df["posterior_error_probability"].idxmin()]
                 if key not in map_dict:
                     map_dict[key] = [None for _ in range(6)]
-                pep_value = temp_df["posterior_error_probability"] 
+                pep_value = temp_df["posterior_error_probability"]
                 if map_dict[key][0] is None or float(map_dict[key][0]) > float(pep_value):
                     map_dict[key][0] = pep_value
                     map_dict[key][1] = temp_df["calculated_mz"]
@@ -124,6 +124,7 @@ class Feature(MzTab):
             "is_decoy",
             "additional_scores",
         ]
+
         def merge_psm(rows, index):
             key = (rows["reference_file_name"], rows["peptidoform"], rows["precursor_charge"])
             if key in map_dict:
@@ -163,7 +164,9 @@ class Feature(MzTab):
         for key, df in df.groupby(partitions):
             yield key, df
 
-    def generate_slice_feature(self, partitions, file_num=10, protein_str=None, duckdb_max_memory="16GB", duckdb_threads=4):
+    def generate_slice_feature(
+        self, partitions, file_num=10, protein_str=None, duckdb_max_memory="16GB", duckdb_threads=4
+    ):
         for msstats in self.generate_feature_report(file_num, protein_str, duckdb_max_memory, duckdb_threads):
             for key, df in self.slice(msstats, partitions):
                 feature = self.transform_feature(df)
@@ -174,12 +177,7 @@ class Feature(MzTab):
         return pa.Table.from_pandas(df, schema=FEATURE_SCHEMA)
 
     def write_feature_to_file(
-        self,
-        output_path,
-        file_num=10,
-        protein_file=None,
-        duckdb_max_memory="16GB", 
-        duckdb_threads=4
+        self, output_path, file_num=10, protein_file=None, duckdb_max_memory="16GB", duckdb_threads=4
     ):
         protein_list = extract_protein_list(protein_file) if protein_file else None
         protein_str = "|".join(protein_list) if protein_list else None
@@ -191,18 +189,22 @@ class Feature(MzTab):
         if pqwriter:
             pqwriter.close()
 
-    def write_features_to_file(self, 
-        output_folder, 
-        filename, 
-        partitions,         
+    def write_features_to_file(
+        self,
+        output_folder,
+        filename,
+        partitions,
         file_num=10,
         protein_file=None,
-        duckdb_max_memory="16GB", 
-        duckdb_threads=4):
+        duckdb_max_memory="16GB",
+        duckdb_threads=4,
+    ):
         pqwriters = {}
         protein_list = extract_protein_list(protein_file) if protein_file else None
         protein_str = "|".join(protein_list) if protein_list else None
-        for key, feature in self.generate_slice_feature(partitions, file_num, protein_str, duckdb_max_memory, duckdb_threads):
+        for key, feature in self.generate_slice_feature(
+            partitions, file_num, protein_str, duckdb_max_memory, duckdb_threads
+        ):
             folder = [output_folder] + [str(col) for col in key]
             folder = os.path.join(*folder)
             if not os.path.exists(folder):
@@ -219,7 +221,7 @@ class Feature(MzTab):
     def generate_best_scan(self, rows, pep_dict):
         key = (rows["peptidoform"], rows["precursor_charge"])
         if key in pep_dict:
-            return [pep_dict[key][1],pep_dict[key][2]]
+            return [pep_dict[key][1], pep_dict[key][2]]
         else:
             return [None, None]
 
@@ -227,16 +229,15 @@ class Feature(MzTab):
         select_mods = list(self._mods_map.keys())
         pep_dict = self.extract_from_pep()
         msstats.loc[:, "pg_global_qvalue"] = msstats["mp_accessions"].map(self._protein_global_qvalue_map)
-        msstats[["scan_reference_file_name", "scan"]] = msstats[["peptidoform","precursor_charge"]].apply(
-            lambda rows: self.generate_best_scan(rows, pep_dict),
-            axis = 1,
-            result_type="expand"
+        msstats[["scan_reference_file_name", "scan"]] = msstats[["peptidoform", "precursor_charge"]].apply(
+            lambda rows: self.generate_best_scan(rows, pep_dict), axis=1, result_type="expand"
         )
         msstats[["peptidoform", "modifications"]] = msstats[["peptidoform"]].apply(
             lambda row: self.generate_modifications_details(
-                row["peptidoform"], self._mods_map, self._automaton, select_mods),
-                axis = 1,
-                result_type="expand"
+                row["peptidoform"], self._mods_map, self._automaton, select_mods
+            ),
+            axis=1,
+            result_type="expand",
         )
         msstats["mp_accessions"] = msstats["mp_accessions"].str.split(";")
         msstats.loc[:, "additional_intensities"] = None

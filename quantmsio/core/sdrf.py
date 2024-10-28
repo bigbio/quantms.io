@@ -135,9 +135,9 @@ class SDRFHandler:
 
     def get_enzymes(self):
         return get_complex_value_sdrf_column(self.sdrf_table, self.ENZYME_COLUMN)
-    
+
     def get_runs(self):
-        return self.sdrf_table["comment[data file]"].str.split('.').str[0].unique()
+        return self.sdrf_table["comment[data file]"].str.split(".").str[0].unique()
 
     def get_acquisition_properties(self):
         """
@@ -339,16 +339,16 @@ class SDRFHandler:
             name = mod_dict["NT"]
             site = mod_dict["TA"] if "TA" in mod_dict else mod_dict["PP"]
             mods[accession] = [name, site]
-            mods[name] = [accession, site]  
+            mods[name] = [accession, site]
         return mods
-    
+
     def get_sample_map_run(self):
-        sdrf = self.sdrf_table[["source name","comment[data file]","comment[label]"]].copy()
+        sdrf = self.sdrf_table[["source name", "comment[data file]", "comment[label]"]].copy()
         sdrf["comment[data file]"] = sdrf["comment[data file]"].str.split(".").str[0]
         if self.get_experiment_type_from_sdrf() != "LFQ":
             sdrf.loc[:, "map_sample"] = sdrf["comment[data file]"] + "-" + sdrf["comment[label]"]
         else:
-            sdrf.loc[:, "map_sample"] = sdrf["comment[data file]"] + "-LFQ" 
-        sdrf.set_index("map_sample",inplace=True)
+            sdrf.loc[:, "map_sample"] = sdrf["comment[data file]"] + "-LFQ"
+        sdrf.set_index("map_sample", inplace=True)
         sample_map = sdrf.to_dict()["source name"]
-        return sample_map 
+        return sample_map

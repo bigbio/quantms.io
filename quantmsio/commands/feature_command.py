@@ -59,7 +59,7 @@ def convert_feature_file(
     partitions: str,
     output_prefix_file: str,
     duckdb_max_memory: str,
-    duckdb_threads: int
+    duckdb_threads: int,
 ):
     """
     Convert a msstats/mztab file to a parquet file. The parquet file will contain the features and the metadata.
@@ -87,8 +87,8 @@ def convert_feature_file(
             file_num=file_num,
             protein_file=protein_file,
             duckdb_max_memory=duckdb_max_memory,
-            duckdb_threads=duckdb_threads
-            )
+            duckdb_threads=duckdb_threads,
+        )
     else:
         partitions = partitions.split(",")
         feature_manager.write_features_to_file(
@@ -98,5 +98,5 @@ def convert_feature_file(
             file_num=file_num,
             protein_file=protein_file,
             duckdb_max_memory=duckdb_max_memory,
-            duckdb_threads=duckdb_threads
+            duckdb_threads=duckdb_threads,
         )
