@@ -142,10 +142,6 @@ def map_protein_for_tsv(path: str, fasta: str, output_path: str, map_parameter: 
     with open(output_path, "w", encoding="utf8") as f:
         f.write(content)
 
-
-
-
-
 def get_modification_details(seq: str, mods_dict: dict, automaton: any, select_mods: list=None):
     if "(" not in seq:
         return (seq, [])
@@ -186,20 +182,3 @@ def get_ahocorasick(mods_dict: dict):
     automaton.make_automaton()
     return automaton
 
-
-def get_mod_map(sdrf_path):
-    sdrf = pd.read_csv(sdrf_path, sep="\t", nrows=1)
-    mod_cols = [col for col in sdrf.columns if col.startswith("comment[modification parameters]")]
-    mod_map = {}
-    for col in mod_cols:
-        mod_msg = sdrf[col].values[0].split(";")
-        mod_dict = {k.split("=")[0]: k.split("=")[1] for k in mod_msg}
-        if "TA" in mod_dict:
-            mod = f"{mod_dict['NT']} ({mod_dict['TA']})"
-        elif "PP" in mod_dict:
-            mod = f"{mod_dict['NT']} ({mod_dict['PP']})"
-        else:
-            mod = mod_dict["NT"]
-        mod_map[mod] = mod_dict["AC"]
-
-    return mod_map

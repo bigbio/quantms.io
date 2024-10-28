@@ -16,7 +16,7 @@ PEPTIDE_FIELDS = [
         pa.list_(
             pa.struct(
                 [
-                    ("name", pa.string()),
+                    ("modification_name", pa.string()),
                     (
                         "fields",
                         pa.list_(pa.struct([("position", pa.int32()), ("localization_probability", pa.float32())])),
@@ -57,7 +57,7 @@ PEPTIDE_FIELDS = [
     ),
     pa.field(
         "additional_scores",
-        pa.list_(pa.struct([("name", pa.string()), ("value", pa.float32())])),
+        pa.list_(pa.struct([("score_name", pa.string()), ("score_value", pa.float32())])),
         metadata={"description": "List of structures, each structure contains two fields: name and value"},
     ),
     pa.field(
@@ -77,12 +77,7 @@ PEPTIDE_FIELDS = [
     ),
     pa.field(
         "cv_params",
-        #pa.list_(pa.struct([("name", pa.string()), ("value", pa.string())])),
-        pa.struct([
-            ('centroid', pa.string()),
-            ('consensus_support', pa.float32()),
-            ('unique', pa.int32())
-        ]),
+        pa.list_(pa.struct([("cv_name", pa.string()), ("cv_value", pa.string())])),
         metadata={"description": "Optional list of CV parameters for additional metadata"},
     ),
     pa.field(
