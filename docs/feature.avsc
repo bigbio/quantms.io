@@ -27,7 +27,8 @@
 					]
 				}
 			}], 
-		"doc": "List of modifications as string array, easy for search and filter"},
+		"doc": "List of modifications as string array, easy for search and filter"
+		},
 		{"name": "precursor_charge", "type": "int", "doc": "Precursor charge"},
 		{"name": "posterior_error_probability", "type": ["null", "float32"], "doc": "Posterior error probability for the given peptide spectrum match"},
 		{"name": "is_decoy", "type": "int", "doc": "Decoy indicator, 1 if the PSM is a decoy, 0 target"},

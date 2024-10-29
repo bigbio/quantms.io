@@ -189,3 +189,7 @@ def get_ahocorasick(mods_dict: dict):
     automaton.make_automaton()
     return automaton
 
+def get_field_schema(parquet_path):
+    schema = pq.read_schema(parquet_path)
+    return schema
+

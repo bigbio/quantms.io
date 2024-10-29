@@ -31,77 +31,67 @@
           "fields": [
             {"name": "sequence", "type": "string", "doc": "The peptide’s sequence corresponding to the PSM"},
             {"name": "peptidoform", "type": "string", "doc": "Peptide sequence with modifications: Read the specification for more details"},
-            {"name": "modification_details","type": ["null", {"type": "array", "items": "string"}],
-              "doc": "List of alternative site probabilities for the modification format: read the specification for more details"},
-            {"name": "posterior_error_probability", "type": ["null", "float32"],
-              "doc": "Posterior error probability for the given peptide spectrum match"},
-            {"name": "global_qvalue", "type": ["null", "float32"], "doc": "Global q-value of the peptide or psm at the level of the experiment"},
-            {"name": "is_decoy", "type": "int", "doc": "Decoy indicator, 1 if the PSM is a decoy, 0 target"},
-            {"name": "calculated_mz", "type": "double", "doc": "Theoretical peptide mass-to-charge ratio based on identified sequence and modifications"},
-            {"name": "best_id_score", "type": ["null", {
-              "type": "record",
-              "name": "score",
-              "fields": [
-                { "name": "name", "type": "string" },
-                { "name": "value", "type": "float32" }
-              ],
-              "doc": "A named score type and value representing an identification's measure of confidence or input feature"}
-            ]
-            },
-            {"name": "additional_scores", "type": ["null", {"type": "array",
-              "items": {
-                "type": "record",
-                "name": "score",
-                "fields": [
-                  {"name": "name", "type": "string"},
-                  {"name": "value", "type": "float32"}
-                ],
-                "doc": "A named score type and value representing an identification's measure of confidence or input feature"
-              }
-            }],
-              "doc": "List of identification scores subsidiary to the best score"
-            },
-            {
-              "name": "cv_params",
-              "type": [
-                "null",
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "record",
-                    "name": "cv_param",
-                    "doc": "Controlled vocabulary (CV) parameters providing additional metadata for the scan.",
-                    "fields": [
-                      {
-                        "name": "cv_name",
-                        "type": "string",
-                        "doc": "Name of the CV term (e.g., from PSI-MS or other ontologies)."
-                      },
-                      {
-                        "name": "cv_value",
-                        "type": "string",
-                        "doc": "Value associated with the CV term."
+            {"name": "modifications", "type": ["null", 
+              {
+                "type": "array", 
+                "items": {
+                  "type": "struct",
+                  "fields": [
+                    { "name": "modification_name", "type": "string" },
+                    {
+                      "name": "fields",
+                      "type": {
+                        "type": "array",
+                        "items": {
+                          "type": "struct",
+                          "fields": [
+                            { "name": "position", "type": "int32" },
+                            { "name": "localization_probability", "type": "float32" },
+                          ]
+                        }
                       }
-                    ]
-                  }
+                    }
+                  ]
                 }
-              ],
-              "default": null,
-              "doc": "Optional list of CV parameters for additional metadata."
+              }], 
+            "doc": "List of modifications as string array, easy for search and filter"
+            },
+            {"name": "precursor_charge", "type": "int", "doc": "Precursor charge"},
+            {"name": "posterior_error_probability", "type": ["null", "float32"], "doc": "Posterior error probability for the given peptide spectrum match"},
+            {"name": "is_decoy", "type": "int", "doc": "Decoy indicator, 1 if the PSM is a decoy, 0 target"},
+            {"name": "calculated_mz", "type": "float32", "doc": "Theoretical peptide mass-to-charge ratio based on identified sequence and modifications"},
+            {"name": "observed_mz", "type": "float32", "doc": "Experimental peptide mass-to-charge ratio of identified peptide (in Da)"},
+            {"name": "additional_scores", "type": ["null", {
+              "type": "array",
+              "items": {
+                "type": "struct",
+                "fields": [
+                  {"name": "score_name", "type": "string"},
+                  {"name": "score_value", "type": "float32"}
+                ],
+                }
+              }],
+              "doc": "A named score type and value representing an identification's measure of confidence or input feature"
             },
 
-            {"name": "unique", "type": ["null", "int"], "doc": "Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0"},
-            {"name": "pg_global_qvalue", "type": ["null", "float32"], "doc": "Global q-value of the protein group at the experiment level"},
-            {"name": "mp_accessions", "type": ["null", {"type": "array","items": "string"}], "doc": "List of all proteins accession where the given peptide map to"},
-
-            {"name": "precursor_charge", "type": "int", "doc": "Precursor charge"},
-            {"name": "observed_mz", "type": "float32", "doc": "Experimental peptide mass-to-charge ratio of identified peptide (in Da)"},
-            {"name": "rt", "type": ["null", "float32"], "doc": "MS2 scan’s precursor retention time (in seconds)"},
+            {"name": "mp_accessions", "type": ["null", {"type": "array","items": "string"}], "doc": "Protein group accessions of all the proteins that the peptide maps to"},
             {"name": "predicted_rt", "type": ["null", "float32"], "doc": "Predicted retention time of the peptide (in seconds)"},
-
-            {"name": "reference_file_name", "type": "string", "doc": "Spectrum file name with no path information and not including the file extension"},
+            {"name": "reference_file_name", "type": "string", "doc": "The reference file name that contains the feature"},
+            {"name": "cv_params", "type": ["null", {
+              "type": "array",
+              "items": {
+                "type": "struct",
+                "fields": [
+                  {"name": "cv_name", "type": "string"},
+                  {"name": "cv_value", "type": "string"}
+                ],
+              }
+              }],
+              "doc": "Optional list of CV parameters for additional metadata"
+            },
             {"name": "scan", "type": "string", "doc": "Scan number of the spectrum"},
-            {"name": "ion_mobility", "type": ["null", "float32"], "doc": "Ion mobility value for the precursor ion"},
+		        {"name": "rt", "type": ["null", "float32"], "doc": "MS2 scan’s precursor retention time (in seconds)"},
+		        {"name": "ion_mobility", "type": ["null", "float32"], "doc": "Ion mobility value for the precursor ion"},
             {"name": "num_peaks", "type": ["null", "int"], "doc": "Number of peaks in the spectrum used for the peptide spectrum match"},
             {"name": "mz_array", "type": ["null", {"type": "array", "items": "float32"}], "doc": "Array of m/z values for the spectrum used for the peptide spectrum match"},
             {"name": "intensity_array", "type": ["null", {"type": "array", "items": "float32"}], "doc": "Array of intensity values for the spectrum used for the peptide spectrum match"},
