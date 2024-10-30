@@ -2,7 +2,7 @@ import pandas as pd
 import os
 import pyarrow as pa
 import pyarrow.parquet as pq
-from quantmsio.operate.tools import get_ahocorasick
+from quantmsio.operate.tools import get_ahocorasick, get_protein_accession
 from quantmsio.utils.file_utils import extract_protein_list
 from quantmsio.core.mztab import MzTab
 from quantmsio.core.psm import Psm
@@ -241,7 +241,7 @@ class Feature(MzTab):
             axis=1,
             result_type="expand",
         )
-        msstats["mp_accessions"] = msstats["mp_accessions"].str.split(";")
+        msstats["mp_accessions"] = msstats["mp_accessions"].apply(get_protein_accession)
         msstats.loc[:, "additional_intensities"] = None
         msstats.loc[:, "predicted_rt"] = None
         msstats.loc[:, "gg_accessions"] = None

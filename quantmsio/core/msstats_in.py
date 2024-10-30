@@ -3,7 +3,7 @@ from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.core.common import MSSTATS_USECOLS, MSSTATS_MAP
 from quantmsio.utils.constants import ITRAQ_CHANNEL, TMT_CHANNELS
 from quantmsio.utils.pride_utils import clean_peptidoform_sequence
-
+from quantmsio.operate.tools import get_protein_accession
 
 class MsstatsIN(DuckDB):
     def __init__(self, report_path, sdrf_path, duckdb_max_memory="16GB", duckdb_threads=4):
@@ -42,11 +42,11 @@ class MsstatsIN(DuckDB):
             if protein_str:
                 msstats = msstats[msstats["ProteinName"].str.contains(f"{protein_str}", na=False)]
             msstats.rename(columns=msstats_map, inplace=True)
-            self.traansform_msstats_in(msstats)
+            self.transform_msstats_in(msstats)
             self.transform_experiment(msstats)
             yield msstats
 
-    def traansform_msstats_in(self, msstats):
+    def transform_msstats_in(self, msstats):
         msstats["reference_file_name"] = msstats["reference_file_name"].str.split(".").str[0]
         msstats.loc[:, "sequence"] = msstats["peptidoform"].apply(clean_peptidoform_sequence)
         if self.experiment_type != "LFQ":
@@ -54,8 +54,8 @@ class MsstatsIN(DuckDB):
                 msstats["channel"] = msstats["channel"].apply(lambda row: TMT_CHANNELS[self.experiment_type][row - 1])
             else:
                 msstats["channel"] = msstats["channel"].apply(lambda row: ITRAQ_CHANNEL[self.experiment_type][row - 1])
-        msstats.loc[:, "unique"] = msstats["pg_accessions"].apply(lambda x: 0 if ";" in x else 1)
-        msstats["pg_accessions"] = msstats["pg_accessions"].str.split(";")
+        msstats.loc[:, "unique"] = msstats["pg_accessions"].apply(lambda x: 0 if ";" in x or "," in x else 1)
+        msstats["pg_accessions"] = msstats["pg_accessions"].apply(get_protein_accession)
         msstats.loc[:, "anchor_protein"] = msstats["pg_accessions"].str[0]
 
     def transform_experiment(self, msstats):

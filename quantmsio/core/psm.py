@@ -2,7 +2,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from quantmsio.utils.file_utils import extract_protein_list
 from quantmsio.utils.pride_utils import generate_scan_number
-from quantmsio.operate.tools import get_ahocorasick
+from quantmsio.operate.tools import get_ahocorasick, get_protein_accession
 from quantmsio.core.common import PSM_USECOLS, PSM_MAP, PSM_SCHEMA, PEP
 from quantmsio.core.mztab import MzTab
 import pandas as pd
@@ -115,7 +115,7 @@ class Psm(MzTab):
 
     @staticmethod
     def convert_to_parquet_format(res):
-        res["mp_accessions"] = res["mp_accessions"].str.split(";")
+        res["mp_accessions"] = res["mp_accessions"].apply(get_protein_accession)
         res["precursor_charge"] = res["precursor_charge"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
         res["calculated_mz"] = res["calculated_mz"].astype(float)
         res["observed_mz"] = res["observed_mz"].astype(float)

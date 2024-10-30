@@ -6,7 +6,6 @@ from pyopenms import ModificationsDB
 from quantmsio.utils.pride_utils import get_quantmsio_modifications
 from quantmsio.operate.tools import get_modification_details
 
-
 def generate_modification_list(modification_str: str, modifications):
 
     if pd.isna(modification_str):

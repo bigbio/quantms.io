@@ -193,3 +193,9 @@ def get_field_schema(parquet_path):
     schema = pq.read_schema(parquet_path)
     return schema
 
+PROTEIN_ACCESSION = r"\|([^|]*)\|"
+def get_protein_accession(proteins: str=None):
+    if "|" in proteins:
+        return re.findall(PROTEIN_ACCESSION, proteins)
+    else:
+        return re.split(r'[;,]', proteins)
