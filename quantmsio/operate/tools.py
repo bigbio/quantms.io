@@ -195,6 +195,7 @@ def get_field_schema(parquet_path):
 
 PROTEIN_ACCESSION = r"\|([^|]*)\|"
 def get_protein_accession(proteins: str=None):
+    proteins = str(proteins)
     if "|" in proteins:
         return re.findall(PROTEIN_ACCESSION, proteins)
     else:

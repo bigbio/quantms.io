@@ -8,36 +8,56 @@ import os
 import pyarrow.parquet as pq
 from pyopenms import ModificationsDB
 from pyopenms import AASequence
-from quantmsio.operate.tools import get_ahocorasick, get_modification_details
+from quantmsio.core.sdrf import SDRFHandler
+from quantmsio.operate.tools import get_ahocorasick, get_modification_details, get_protein_accession
 from pyopenms.Constants import PROTON_MASS_U
-from quantmsio.core.common import MAXQUANT_MAP, MAXQUANT_USECOLS
+from quantmsio.utils.constants import ITRAQ_CHANNEL, TMT_CHANNELS
+from quantmsio.core.common import MAXQUANT_PSM_MAP, MAXQUANT_PSM_USECOLS, MAXQUANT_FEATURE_MAP, MAXQUANT_FEATURE_USECOLS
 from quantmsio.core.feature import Feature
 from quantmsio.core.psm import Psm
-
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
+
+intensity_normalize_pattern = r'Reporter intensity corrected \d+'
+intensity_pattern = r'Reporter intensity \d+'
+MOD_PARTTEN = r"\((.*?)\)"
 
 
 class MaxQuant:
-    def __init__(self, msms_path):
-        self._msms_path = msms_path
-        self.mods_map = self.get_mods_map()
-        self._automaton = get_ahocorasick(self.mods_map)
+    def __init__(self):
+        pass
 
-    def iter_batch(self, chunksize: int = 100000):
-        col_df = pd.read_csv(self._msms_path, sep="\t", nrows=1)
-        cols = []
+    def iter_batch(self, file_path: str, label:str = "feature", chunksize: int = 100000):
+        col_df = pd.read_csv(file_path, sep="\t", nrows=1)
+        if label == "feature":
+            intensity_normalize_names = []
+            intensity_names = []
+            use_cols = MAXQUANT_FEATURE_USECOLS.copy()
+            use_map = MAXQUANT_FEATURE_MAP.copy()
+            for col in col_df.columns:
+                if re.search(intensity_normalize_pattern, col, re.IGNORECASE):
+                    use_cols.append(col)
+                    intensity_normalize_names.append(col)
+                elif re.search(intensity_pattern, col, re.IGNORECASE):
+                    use_cols.append(col)
+                    intensity_names.append(col)
+            self._intensity_normalize_names = intensity_normalize_names
+            self._intensity_names = intensity_names
+            use_cols.append("Intensity")
+        else:
+            use_cols = MAXQUANT_PSM_USECOLS.copy()
+            use_map = MAXQUANT_PSM_MAP.copy()
         for key in self.mods_map.keys():
             col = f"{key} Probabilities"
             if col in col_df.columns:
-                cols.append(col)
+                use_cols.append(col)
         for df in pd.read_csv(
-            self._msms_path,
+            file_path,
             sep="\t",
-            usecols=MAXQUANT_USECOLS + cols,
+            usecols=use_cols,
             low_memory=False,
             chunksize=chunksize,
         ):
-            df = df.rename(columns=MAXQUANT_MAP)
+            df.rename(columns=use_map, inplace=True)
             df = self.main_operate(df)
             yield df
 
@@ -49,35 +69,38 @@ class MaxQuant:
             "precursor_charge"
         ].values
 
-    def open_from_zip_archive(self, zip_file, file_name):
-        """Open file from zip archive."""
-        with zipfile.ZipFile(zip_file) as z:
-            with z.open(file_name) as f:
-                df = pd.read_csv(f, sep="\t", usecols=MAXQUANT_USECOLS, low_memory=False)
-        return df
-
-    def get_mods_map(self):
-        if os.stat(self._msms_path).st_size == 0:
+    def _transform_mod(self, match):
+        if not match:
+            return None
+        else:
+            key = match.group(1)
+            if key in self.mods_map:
+                return f"({self.mods_map[key]})"
+            else:
+                return None
+    def get_mods_map(self, report_path):
+        if os.stat(report_path).st_size == 0:
             raise ValueError("File is empty")
-        f = codecs.open(self._msms_path, "r", "utf-8")
+        f = codecs.open(report_path, "r", "utf-8")
         line = f.readline()
-        pattern = r"sequence\s+(.*?)\s+Proteins"
+        pattern = r"sequence\s+(.*?)\s+(Missed|Proteins)"
         match = re.search(pattern, line, re.DOTALL)
         mod_seq = match.group(1)
         mods_map = {}
         modifications_db = ModificationsDB()
         if mod_seq:
             for mod in mod_seq.split("\t"):
-                if "Probabilities" not in mod and "diffs" not in mod:
+                if "Probabilities" not in mod and "diffs" not in mod and "Diffs" not in mod:
                     name = re.search(r"([^ ]+)\s?", mod)
                     Mod = modifications_db.getModification(name.group(1))
                     unimod = Mod.getUniModAccession()
-                    match = re.search(r"\((.*?)\)", mod)
+                    match = re.search(MOD_PARTTEN, mod)
                     if match:
                         site = match.group(1)
                     else:
                         site = "X"
                     mods_map[mod] = [unimod.upper(), site]
+                    mods_map[mod[:2].lower()] = mod
                     mods_map[unimod.upper()] = [mod, site]
         return mods_map
 
@@ -121,8 +144,80 @@ class MaxQuant:
             get_details, axis=1, result_type="expand"
         )
 
+    def generete_peptidoform(self, df):
+        def trasform_peptidoform(row):
+            row = row.replace("_", "")
+            return re.sub(MOD_PARTTEN,self._transform_mod, row)
+        
+        df["peptidoform"] = df["peptidoform"].apply(trasform_peptidoform)
+
+    def generate_intensity_msg(self, df, intensity_cols, additions_intensity_cols):
+        def get_intensities_map(rows):
+            result_intensity = []
+            result_additions_intensity = []
+            reference = rows["reference_file_name"]
+            for col in intensity_cols:
+                channel = channel_map[col]
+                sample_key = reference + "-" + channel
+                result_intensity.append(
+                    {
+                        "sample_accession": self._sample_map[sample_key],
+                        "channel": channel,
+                        "intensity": rows[col],
+                    }
+                )
+            for col in additions_intensity_cols:
+                channel = channel_map[col]
+                sample_key = reference + "-" + channel
+                result_additions_intensity.append(
+                    {
+                        "sample_accession": self._sample_map[sample_key],
+                        "channel": channel,
+                        "additional_intensity": [{"intensity_name": "normalize_intensity", "intensity_value": rows[col]}],
+                    }   
+                )
+            if len(result_intensity) > 1 and len(result_additions_intensity) > 1:
+                return result_intensity, result_additions_intensity
+            elif len(result_intensity) > 1:
+                return result_intensity, None
+            elif len(result_additions_intensity) > 1:
+                return None, result_additions_intensity
+            else:
+                return None, None
+        
+        channel_map = {}
+        if self.experiment_type != "LFQ":
+            for col,col1 in zip(intensity_cols, additions_intensity_cols):
+                key = re.search(r"\d+",col).group()
+                if "TMT" in self.experiment_type:
+                    c = TMT_CHANNELS[self.experiment_type][int(key)]
+                    channel_map[col] = c
+                    channel_map[col1] = c
+
+                else:
+                    c = ITRAQ_CHANNEL[self.experiment_type][int(key)]
+                    channel_map[col] = c
+                    channel_map[col1] = c
+            df[["intensities", "additional_intensities"]] = df[["reference_file_name"]+intensity_cols+additions_intensity_cols].apply(
+                get_intensities_map,
+                axis=1,
+                result_type="expand"
+            )
+        else:
+            df.loc[:, "intensities"] = df[["reference_file_name", "Intensity"]].apply(
+                lambda rows: [
+                    {
+                        "sample_accession": self._sample_map[rows["reference_file_name"] + "-" + "LFQ"],
+                        "channel": "LFQ",
+                        "intensity": rows["Intensity"],
+                    }
+                ],
+                axis=1,
+            )
+            df.loc[:, "additional_intensities"] = None
+
     def main_operate(self, df: pd.DataFrame):
-        df["peptidoform"] = df["peptidoform"].str.replace("_", "")
+        self.generete_peptidoform(df)
         self.generete_calculated_mz(df)
         self.generate_modification_details(df)
         df = df[df["posterior_error_probability"] < 0.05].copy()
@@ -130,45 +225,30 @@ class MaxQuant:
         df["additional_scores"] = df["additional_scores"].apply(
             lambda x: [{"name": "maxquant", "value": np.float32(x)}]
         )
-        # df.loc[:, "best_id_score"] = None
         df.loc[:, "cv_params"] = None
         df.loc[:, "predicted_rt"] = None
+        df.loc[:, "ion_mobility"] = None
         return df
 
     @staticmethod
     def transform_psm(df: pd.DataFrame):
         df.loc[:, "intensity_array"] = None
-        df.loc[:, "ion_mobility"] = None
         df.loc[:, "mz_array"] = None
         df.loc[:, "number_peaks"] = None
 
     def transform_feature(self, df: pd.DataFrame):
-        df = self.merge_sdrf(df)
-        df.loc[:, "global_qvalue"] = None
-        df.loc[:, "pg_positions"] = None
-        df.loc[:, "protein_global_qvalue"] = None
-        df.loc[:, "psm_reference_file_name"] = None
-        df.loc[:, "psm_scan_number"] = None
-        return df
-
-    def merge_sdrf(self, df: pd.DataFrame):
-        sdrf = Feature.transform_sdrf(self._sdrf_path)
-        df = pd.merge(
-            df,
-            sdrf,
-            left_on=["reference_file_name"],
-            right_on=["reference"],
-            how="left",
-        )
-        df.drop(
-            [
-                "reference",
-                "label",
-            ],
-            axis=1,
-            inplace=True,
-        )
-        return df
+        self.generate_intensity_msg(df,self._intensity_names,self._intensity_normalize_names)
+        df.loc[:, "unique"] = df["pg_accessions"].apply(lambda x: 0 if ";" in x or "," in x else 1)
+        df["pg_accessions"] = df["pg_accessions"].apply(get_protein_accession)
+        df["mp_accessions"] = df["mp_accessions"].apply(get_protein_accession)
+        df["gg_names"] = df["gg_names"].str.split(";")
+        df.loc[:, "anchor_protein"] = df["pg_accessions"].str[0]
+        df.loc[:, "gg_accessions"] = None
+        df.loc[:, "pg_global_qvalue"] = None
+        df.loc[:, "scan"] = None
+        df.loc[:, "scan_reference_file_name"] = None
+        df.loc[:, "start_ion_mobility"] = None
+        df.loc[:, "stop_ion_mobility"] = None
 
     def convert_to_parquet(self, output_path: str, chunksize: int = None):
         pqwriter = None
@@ -176,6 +256,23 @@ class MaxQuant:
             self.transform_psm(df)
             Psm.convert_to_parquet_format(df)
             parquet = Psm.transform_parquet(df)
+            if not pqwriter:
+                pqwriter = pq.ParquetWriter(output_path, parquet.schema)
+            pqwriter.write_table(parquet)
+        if pqwriter:
+            pqwriter.close()
+
+    def covert_feature_to_parquet(self, evidence_path: str, sdrf_path: str, output_path: str, chunksize: int = 1000000):
+        Sdrf = SDRFHandler(sdrf_path)
+        self.experiment_type = Sdrf.get_experiment_type_from_sdrf()
+        self._sample_map = Sdrf.get_sample_map_run()
+        self.mods_map = self.get_mods_map(evidence_path)
+        self._automaton = get_ahocorasick(self.mods_map)
+        pqwriter = None
+        for df in self.iter_batch(evidence_path, chunksize=chunksize):
+            self.transform_feature(df)
+            Feature.convert_to_parquet_format(df)
+            parquet = Feature.transform_feature(df)
             if not pqwriter:
                 pqwriter = pq.ParquetWriter(output_path, parquet.schema)
             pqwriter.write_table(parquet)

@@ -63,7 +63,7 @@ DIANN_MAP = {
     "Modified.Sequence": "peptidoform",
     "Genes": "gg_names",
 }
-MAXQUANT_MAP = {
+MAXQUANT_PSM_MAP = {
     "Sequence": "sequence",
     "Proteins": "mp_accessions",
     "PEP": "posterior_error_probability",
@@ -78,8 +78,28 @@ MAXQUANT_MAP = {
     "Score": "additional_scores",
 }
 
+MAXQUANT_FEATURE_MAP = {
+    "Sequence": "sequence",
+    "Proteins": "mp_accessions",
+    "Leading proteins": "pg_accessions",
+    "Gene names": "gg_names",
+    "PEP": "posterior_error_probability",
+    "Modified sequence": "peptidoform",
+    "Charge": "precursor_charge",
+    "Modified sequence": "peptidoform",
+    "Raw file": "reference_file_name",
+    "Score": "additional_scores",
+    "Reverse": "is_decoy",
+    "m/z": "observed_mz",
+    "Calibrated retention time": "rt",
+    "Calibrated retention time start": "rt_start",
+    "Calibrated retention time finish": "rt_stop",
+}
 
-MAXQUANT_USECOLS = list(MAXQUANT_MAP.keys())
+
+MAXQUANT_PSM_USECOLS = list(MAXQUANT_PSM_MAP.keys())
+
+MAXQUANT_FEATURE_USECOLS = list(MAXQUANT_FEATURE_MAP.keys())
 
 QUANTMSIO_VERSION = __version__
 
