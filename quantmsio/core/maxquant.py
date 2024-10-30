@@ -15,10 +15,11 @@ from quantmsio.utils.constants import ITRAQ_CHANNEL, TMT_CHANNELS
 from quantmsio.core.common import MAXQUANT_PSM_MAP, MAXQUANT_PSM_USECOLS, MAXQUANT_FEATURE_MAP, MAXQUANT_FEATURE_USECOLS
 from quantmsio.core.feature import Feature
 from quantmsio.core.psm import Psm
+
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
-intensity_normalize_pattern = r'Reporter intensity corrected \d+'
-intensity_pattern = r'Reporter intensity \d+'
+intensity_normalize_pattern = r"Reporter intensity corrected \d+"
+intensity_pattern = r"Reporter intensity \d+"
 MOD_PARTTEN = r"\((.*?)\)"
 
 
@@ -26,7 +27,7 @@ class MaxQuant:
     def __init__(self):
         pass
 
-    def iter_batch(self, file_path: str, label:str = "feature", chunksize: int = 100000):
+    def iter_batch(self, file_path: str, label: str = "feature", chunksize: int = 100000):
         col_df = pd.read_csv(file_path, sep="\t", nrows=1)
         if label == "feature":
             intensity_normalize_names = []
@@ -78,6 +79,7 @@ class MaxQuant:
                 return f"({self.mods_map[key]})"
             else:
                 return None
+
     def get_mods_map(self, report_path):
         if os.stat(report_path).st_size == 0:
             raise ValueError("File is empty")
@@ -147,8 +149,8 @@ class MaxQuant:
     def generete_peptidoform(self, df):
         def trasform_peptidoform(row):
             row = row.replace("_", "")
-            return re.sub(MOD_PARTTEN,self._transform_mod, row)
-        
+            return re.sub(MOD_PARTTEN, self._transform_mod, row)
+
         df["peptidoform"] = df["peptidoform"].apply(trasform_peptidoform)
 
     def generate_intensity_msg(self, df, intensity_cols, additions_intensity_cols):
@@ -173,8 +175,10 @@ class MaxQuant:
                     {
                         "sample_accession": self._sample_map[sample_key],
                         "channel": channel,
-                        "additional_intensity": [{"intensity_name": "normalize_intensity", "intensity_value": rows[col]}],
-                    }   
+                        "additional_intensity": [
+                            {"intensity_name": "normalize_intensity", "intensity_value": rows[col]}
+                        ],
+                    }
                 )
             if len(result_intensity) > 1 and len(result_additions_intensity) > 1:
                 return result_intensity, result_additions_intensity
@@ -184,11 +188,11 @@ class MaxQuant:
                 return None, result_additions_intensity
             else:
                 return None, None
-        
+
         channel_map = {}
         if self.experiment_type != "LFQ":
-            for col,col1 in zip(intensity_cols, additions_intensity_cols):
-                key = re.search(r"\d+",col).group()
+            for col, col1 in zip(intensity_cols, additions_intensity_cols):
+                key = re.search(r"\d+", col).group()
                 if "TMT" in self.experiment_type:
                     c = TMT_CHANNELS[self.experiment_type][int(key)]
                     channel_map[col] = c
@@ -198,11 +202,9 @@ class MaxQuant:
                     c = ITRAQ_CHANNEL[self.experiment_type][int(key)]
                     channel_map[col] = c
                     channel_map[col1] = c
-            df[["intensities", "additional_intensities"]] = df[["reference_file_name"]+intensity_cols+additions_intensity_cols].apply(
-                get_intensities_map,
-                axis=1,
-                result_type="expand"
-            )
+            df[["intensities", "additional_intensities"]] = df[
+                ["reference_file_name"] + intensity_cols + additions_intensity_cols
+            ].apply(get_intensities_map, axis=1, result_type="expand")
         else:
             df.loc[:, "intensities"] = df[["reference_file_name", "Intensity"]].apply(
                 lambda rows: [
@@ -237,7 +239,7 @@ class MaxQuant:
         df.loc[:, "number_peaks"] = None
 
     def transform_feature(self, df: pd.DataFrame):
-        self.generate_intensity_msg(df,self._intensity_names,self._intensity_normalize_names)
+        self.generate_intensity_msg(df, self._intensity_names, self._intensity_normalize_names)
         df.loc[:, "unique"] = df["pg_accessions"].apply(lambda x: 0 if ";" in x or "," in x else 1)
         df["pg_accessions"] = df["pg_accessions"].apply(get_protein_accession)
         df["mp_accessions"] = df["mp_accessions"].apply(get_protein_accession)

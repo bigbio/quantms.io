@@ -33,7 +33,7 @@ class Psm(MzTab):
             df.loc[:, "additional_scores"] = df[list(self._score_names.values()) + ["global_qvalue"]].apply(
                 self._genarate_additional_scores, axis=1
             )
-            df.loc[:, "cv_params"] = df[["consensus_support"]].apply(self._generate_cv_params,axis=1)
+            df.loc[:, "cv_params"] = df[["consensus_support"]].apply(self._generate_cv_params, axis=1)
             df.loc[:, "reference_file_name"] = df["spectra_ref"].apply(lambda x: self._ms_runs[x[: x.index(":")]])
             yield df
 
@@ -57,11 +57,11 @@ class Psm(MzTab):
             self.convert_to_parquet_format(df)
             df = self.transform_parquet(df)
             yield df
-    
+
     def _generate_cv_params(self, rows):
         cv_list = []
         if rows["consensus_support"]:
-            struct = { "cv_name": "consesus_support", "cv_value": str(rows["consensus_support"])}
+            struct = {"cv_name": "consesus_support", "cv_value": str(rows["consensus_support"])}
             cv_list.append(struct)
         if len(cv_list) > 0:
             return cv_list

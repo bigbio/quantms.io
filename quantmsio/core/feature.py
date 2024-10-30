@@ -124,7 +124,7 @@ class Feature(MzTab):
             "mp_accessions",
             "is_decoy",
             "additional_scores",
-            "cv_params"
+            "cv_params",
         ]
 
         def merge_psm(rows, index):

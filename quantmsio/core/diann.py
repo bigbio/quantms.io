@@ -194,7 +194,9 @@ class DiaNNConvert(DuckDB):
                 {
                     "sample_accession": self._sample_map[rows["reference_file_name"] + "-" + rows["channel"]],
                     "channel": rows["channel"],
-                    "additional_intensity": [{"intensity_name": "normalize_intensity", "intensity_value": rows["normalize_intensity"]}],
+                    "additional_intensity": [
+                        {"intensity_name": "normalize_intensity", "intensity_value": rows["normalize_intensity"]}
+                    ],
                 }
             ],
             axis=1,
