@@ -3,11 +3,63 @@
 	"type": "record",
 	"fields": [
 		{"name": "pg_accessions", "type": ["null",{"type": "array","items": "string"}], "doc": "Protein group accessions of all the proteins that the peptide maps to"},
-		{"name": "gg_names", "type": ["null", {"type": "array", "items": "string"}], "doc": "Gene names, as string array"},
-		{"name": "peptides", "type": {"type": "array","items": { "type": "struct", "field": { "name": "string", "value": "string"}}}, "doc": "The count of peptides in each reference"},
+		{"name": "pg_names", "type": ["null",{"type": "array","items": "string"}], "doc": "Protein group names"},
+		{"name": "gg_accessions", "type": ["null", {"type": "array", "items": "string"}], "doc": "Gene accessions, as string array"},
 		{"name": "reference_file_name", "type": "string", "doc": "The reference file name that contains the feature"},
-		{"name": "first_protein_description", "type": "string", "doc": "About the specific information of the first protein"},
-        {"name": "intensities", "type": {"type": "array","items": { "type": "struct", "field": { "name": "string", "value": "float32"}}}, "doc": "The total intensity of proteins in the reference"},
-		{"name": "quantmsio_version", "type": "string", "doc": "The version of quantms.io"}
+
+
+		{"name": "global_qvalue", "type": ["null", "float32"], "doc": "Global q-value of the protein group at the experiment level"},
+		{"name": "intensities", "type":  ["null",{
+			"type": "array",
+			"items": {
+				"type": "struct",
+				"fields": [
+					{"name": "sample_accession", "type": "string"},
+					{"name": "channel", "type": "string"},
+					{"name": "intensity", "type": "float32"}
+				],
+			}
+			}], 
+			"doc": "The intensity-based abundance of the peptide in the sample"
+		},
+		{"name": "additional_intensities", "type":  ["null",{
+			"type": "array",
+			"items": {
+				"type": "struct",
+				"fields": [
+					{"name": "sample_accession", "type": "string"},
+					{"name": "channel", "type": "string"},
+					{"name": "additional_intensity", "type": {
+						"type": "array",
+						"items: {
+							"type": "struct",
+							"fields": [
+								{"name": "intensity_name", "type": "string"},
+								{"name": "intensity_value", "type": "float32"}
+							],
+						}
+					}
+					}
+				],
+			}
+			}], 
+			"doc": "Apart from the raw intensity, multiple intensity values can be provided as key-values pairs, for example, normalized intensity."
+		},
+		{"name": "is_decoy", "type": "int", "doc": "Decoy indicator, 1 if the PSM is a decoy, 0 target"},
+		{"name": "contaminant", "type": "int", "doc": "If the protein is a contaminant"},
+		{"name": "peptides", "type": {"type": "array","items": { "type": "struct", "field": { "sequence": "string", "count": int"}}}, "doc": "Number of peptides per protein in the protein group"},
+		{"name": "anchor_protein", "type": "string", "doc": "One protein accession that represents the protein group"},
+		{"name": "additional_scores", "type": ["null", {
+			"type": "array",
+			"items": {
+				"type": "struct",
+				"fields": [
+					{"name": "score_name", "type": "string"},
+					{"name": "score_value", "type": "float32"}
+				],
+				}
+			}],
+			"doc": "A named score type and value representing an identification's measure of confidence or input feature"
+		},
 	]
 }

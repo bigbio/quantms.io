@@ -39,6 +39,8 @@ class MaxQuant:
         pass
 
     def iter_batch(self, file_path: str, label: str = "feature", chunksize: int = 100000):
+        self.mods_map = self.get_mods_map(file_path)
+        self._automaton = get_ahocorasick(self.mods_map)
         col_df = pd.read_csv(file_path, sep="\t", nrows=1)
         if label == "feature":
             intensity_normalize_names = []
@@ -283,8 +285,6 @@ class MaxQuant:
         Sdrf = SDRFHandler(sdrf_path)
         self.experiment_type = Sdrf.get_experiment_type_from_sdrf()
         self._sample_map = Sdrf.get_sample_map_run()
-        self.mods_map = self.get_mods_map(evidence_path)
-        self._automaton = get_ahocorasick(self.mods_map)
         pqwriter = None
         for df in self.iter_batch(evidence_path, chunksize=chunksize):
             self.transform_feature(df)
