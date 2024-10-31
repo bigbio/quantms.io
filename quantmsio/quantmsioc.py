@@ -19,6 +19,8 @@ from quantmsio.commands.plot_command import plot
 from quantmsio.commands.statistic_command import statistics
 from quantmsio.commands.pg_matrix_command import convert_pg_matrix
 from quantmsio.commands.maxquant_command import convert_maxquant_psm
+from quantmsio.commands.ibaq_command import convert_ibaq_file
+
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -47,6 +49,7 @@ cli.add_command(plot)
 cli.add_command(statistics)
 cli.add_command(convert_pg_matrix)
 cli.add_command(convert_maxquant_psm)
+cli.add_command(convert_ibaq_file)
 
 # cli.add_command(convert_maxquant)
 # cli.add_command(convert_zip_maxquant)
