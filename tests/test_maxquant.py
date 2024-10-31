@@ -10,8 +10,8 @@ from ddt import ddt
 class TestFeatureHandler(TestCase):
     test_datas = [
         (
-            "Maxquant/msms.txt",
-            "Maxquant/sdrf.tsv",
+            "maxquant/msms.txt",
+            "maxquant/sdrf.tsv",
         ),
     ]
 

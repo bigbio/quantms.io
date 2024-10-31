@@ -22,6 +22,7 @@ intensity_normalize_pattern = r"Reporter intensity corrected \d+"
 intensity_pattern = r"Reporter intensity \d+"
 MOD_PARTTEN = r"\((.*?)\)"
 
+
 def check_acronym(df):
     s = df["peptidoform"]
     for index in s.index:
@@ -33,7 +34,8 @@ def check_acronym(df):
             else:
                 return False
     return False
-            
+
+
 class MaxQuant:
     def __init__(self):
         pass
@@ -161,13 +163,14 @@ class MaxQuant:
 
     def generete_peptidoform(self, df):
         isacronym = check_acronym(df)
+
         def trasform_peptidoform(row):
             row = row.replace("_", "")
             if isacronym:
-                return re.sub(MOD_PARTTEN,self._transform_mod, row)
+                return re.sub(MOD_PARTTEN, self._transform_mod, row)
             else:
                 return row
-        
+
         df["peptidoform"] = df["peptidoform"].apply(trasform_peptidoform)
 
     def generate_intensity_msg(self, df, intensity_cols, additions_intensity_cols):
@@ -269,7 +272,7 @@ class MaxQuant:
         df.loc[:, "start_ion_mobility"] = None
         df.loc[:, "stop_ion_mobility"] = None
 
-    def convert_psm_to_parquet(self, msms_path:str, output_path: str, chunksize: int = 1000000):
+    def convert_psm_to_parquet(self, msms_path: str, output_path: str, chunksize: int = 1000000):
         pqwriter = None
         for df in self.iter_batch(msms_path, "psm", chunksize=chunksize):
             self.transform_psm(df)
@@ -281,7 +284,9 @@ class MaxQuant:
         if pqwriter:
             pqwriter.close()
 
-    def convert_feature_to_parquet(self, evidence_path: str, sdrf_path: str, output_path: str, chunksize: int = 1000000):
+    def convert_feature_to_parquet(
+        self, evidence_path: str, sdrf_path: str, output_path: str, chunksize: int = 1000000
+    ):
         Sdrf = SDRFHandler(sdrf_path)
         self.experiment_type = Sdrf.get_experiment_type_from_sdrf()
         self._sample_map = Sdrf.get_sample_map_run()
