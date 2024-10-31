@@ -11,6 +11,8 @@ import re
 import pandas as pd
 from pandas import DataFrame
 
+from quantmsio.core.common import SDRF_MAP, SDRF_USECOLS
+
 
 def get_unique_from_column_substr(sdrf_table: DataFrame, substr: str) -> list:
     """
@@ -352,3 +354,37 @@ class SDRFHandler:
         sdrf.set_index("map_sample", inplace=True)
         sample_map = sdrf.to_dict()["source name"]
         return sample_map
+
+    def transform_sdrf(self):
+        factor = list(filter(lambda x: x.startswith("factor"), self.sdrf_table.columns))
+        usecols = list(SDRF_USECOLS) + factor
+        sdrf = self.sdrf_table[usecols].copy()
+        sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(lambda x: x.split(".")[0])
+        samples = sdrf["source name"].unique()
+        mixed_map = dict(zip(samples, range(1, len(samples) + 1)))
+        sdrf.loc[:, "condition"] = sdrf[factor].apply(lambda row: ",".join([str(row[col]) for col in factor]), axis=1)
+        sdrf.loc[:, "run"] = sdrf[
+            [
+                "source name",
+                "comment[technical replicate]",
+                "comment[fraction identifier]",
+            ]
+        ].apply(
+            lambda row: str(mixed_map[row["source name"]])
+            + "_"
+            + str(row["comment[technical replicate]"])
+            + "_"
+            + str(row["comment[fraction identifier]"]),
+            axis=1,
+        )
+        sdrf.drop(
+            [
+                "comment[technical replicate]",
+                "source name"
+            ]
+            + factor,
+            axis=1,
+            inplace=True,
+        )
+        sdrf.rename(columns=SDRF_MAP, inplace=True)
+        return sdrf

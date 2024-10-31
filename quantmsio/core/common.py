@@ -1,5 +1,5 @@
 from quantmsio import __version__
-from quantmsio.core.format import PSM_FIELDS, FEATURE_FIELDS
+from quantmsio.core.format import PSM_FIELDS, FEATURE_FIELDS, IBAQ_FIELDS
 import pyarrow as pa
 
 PSM_MAP = {
@@ -96,6 +96,15 @@ MAXQUANT_FEATURE_MAP = {
     "Calibrated retention time finish": "rt_stop",
 }
 
+IBAQ_USECOLS = [
+    "pg_accessions",
+    "peptidoform",
+    "sequence",
+    "precursor_charge",
+    "intensities",
+    "reference_file_name",
+    "unique"
+]
 
 MAXQUANT_PSM_USECOLS = list(MAXQUANT_PSM_MAP.keys())
 
@@ -110,4 +119,9 @@ PSM_SCHEMA = pa.schema(
 FEATURE_SCHEMA = pa.schema(
     FEATURE_FIELDS,
     metadata={"description": "feature file in quantms.io format"},
+)
+
+IBAQ_SCHEMA = pa.schema(
+    IBAQ_FIELDS,
+    metadata={"description": "ibaq file in quantms.io format"},
 )

@@ -6,7 +6,8 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from Bio import SeqIO
 import ahocorasick
-from quantmsio.core.common import FEATURE_SCHEMA, PSM_SCHEMA
+from quantmsio.core.common import FEATURE_SCHEMA, IBAQ_SCHEMA, IBAQ_USECOLS, PSM_SCHEMA
+from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.operate.query import Query, map_spectrum_mz
 from quantmsio.core.openms import OpenMSHandler
 from quantmsio.utils.pride_utils import get_unanimous_name
@@ -205,3 +206,57 @@ def get_protein_accession(proteins: str = None):
         return re.findall(PROTEIN_ACCESSION, proteins)
     else:
         return re.split(r"[;,]", proteins)
+    
+def transform_ibaq(df):
+    def transform(row):
+        map_dict = row["intensities"]
+        return map_dict["sample_accession"],map_dict["channel"],map_dict["intensity"]
+    df = df.explode('intensities')
+    df.reset_index(drop=True,inplace=True)
+    df[["sample_accession","channel","intensity"]] = df[["intensities"]].apply(transform,axis=1,result_type="expand")
+    df.drop(["intensities"],axis=1,inplace=True)
+    return df
+
+def genereate_ibaq_feature(sdrf_path, parquet_path):
+    Sdrf = SDRFHandler(sdrf_path)
+    sdrf = Sdrf.transform_sdrf()
+    experiment_type = Sdrf.get_experiment_type_from_sdrf()
+    p = Query(parquet_path)
+    for _, df in p.iter_file(file_num=10,columns=IBAQ_USECOLS):
+        df = transform_ibaq(df)
+        if experiment_type != "LFQ":
+            df = pd.merge(
+                df,
+                sdrf,
+                left_on=["reference_file_name", "channel"],
+                right_on=["reference", "label"],
+                how="left",
+            )
+        else:
+            df = pd.merge(
+                df,
+                sdrf,
+                left_on=["reference_file_name"],
+                right_on=["reference"],
+                how="left",
+            )
+        df.drop(
+            [
+                "reference",
+                "label",
+            ],
+            axis=1,
+            inplace=True,
+        )
+        df["fraction"] = df["fraction"].astype(str)
+        feature = pa.Table.from_pandas(df, schema=IBAQ_SCHEMA)
+        yield feature
+
+def write_ibaq_feature(sdrf_path, parquet_path, output_path):
+    pqwriter = None
+    for feature in genereate_ibaq_feature(sdrf_path, parquet_path):
+            if not pqwriter:
+                pqwriter = pq.ParquetWriter(output_path, feature.schema)
+            pqwriter.write_table(feature)
+    if pqwriter:
+        pqwriter.close()
