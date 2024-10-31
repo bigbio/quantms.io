@@ -143,7 +143,8 @@ def map_protein_for_tsv(path: str, fasta: str, output_path: str, map_parameter: 
     with open(output_path, "w", encoding="utf8") as f:
         f.write(content)
 
-def get_modification_details(seq: str, mods_dict: dict, automaton: any, select_mods: list=None):
+
+def get_modification_details(seq: str, mods_dict: dict, automaton: any, select_mods: list = None):
     if "(" not in seq:
         return (seq, [])
     total = 0
@@ -189,14 +190,18 @@ def get_ahocorasick(mods_dict: dict):
     automaton.make_automaton()
     return automaton
 
+
 def get_field_schema(parquet_path):
     schema = pq.read_schema(parquet_path)
     return schema
 
+
 PROTEIN_ACCESSION = r"\|([^|]*)\|"
-def get_protein_accession(proteins: str=None):
+
+
+def get_protein_accession(proteins: str = None):
     proteins = str(proteins)
     if "|" in proteins:
         return re.findall(PROTEIN_ACCESSION, proteins)
     else:
-        return re.split(r'[;,]', proteins)
+        return re.split(r"[;,]", proteins)
