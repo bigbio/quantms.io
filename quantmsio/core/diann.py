@@ -201,8 +201,8 @@ class DiaNNConvert(DuckDB):
         )
         report.loc[:, "additional_scores"] = report[["qvalue", "pg_qvalue"]].apply(
             lambda row: [
-                {"name": "qvalue", "value": row["qvalue"]},
-                {"name": "pg_qvalue", "value": row["pg_qvalue"]},
+                {"score_name": "qvalue", "score_value": row["qvalue"]},
+                {"score_name": "pg_qvalue", "score_value": row["pg_qvalue"]},
             ],
             axis=1,
         )

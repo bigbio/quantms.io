@@ -21,7 +21,18 @@ intensity_normalize_pattern = r'Reporter intensity corrected \d+'
 intensity_pattern = r'Reporter intensity \d+'
 MOD_PARTTEN = r"\((.*?)\)"
 
-
+def check_acronym(df):
+    s = df["peptidoform"]
+    for index in s.index:
+        seq = s[index]
+        if "(" in seq:
+            match = re.search(MOD_PARTTEN, seq)
+            if len(match.group(1)) == 2:
+                return True
+            else:
+                return False
+    return False
+            
 class MaxQuant:
     def __init__(self):
         pass
@@ -145,9 +156,13 @@ class MaxQuant:
         )
 
     def generete_peptidoform(self, df):
+        isacronym = check_acronym(df)
         def trasform_peptidoform(row):
             row = row.replace("_", "")
-            return re.sub(MOD_PARTTEN,self._transform_mod, row)
+            if isacronym:
+                return re.sub(MOD_PARTTEN,self._transform_mod, row)
+            else:
+                return row
         
         df["peptidoform"] = df["peptidoform"].apply(trasform_peptidoform)
 
@@ -223,7 +238,7 @@ class MaxQuant:
         df = df[df["posterior_error_probability"] < 0.05].copy()
         df["is_decoy"] = df["is_decoy"].map({None: "0", np.nan: "0", "+": "1"})
         df["additional_scores"] = df["additional_scores"].apply(
-            lambda x: [{"name": "maxquant", "value": np.float32(x)}]
+            lambda x: [{"score_name": "maxquant_score", "score_value": np.float32(x)}]
         )
         df.loc[:, "cv_params"] = None
         df.loc[:, "predicted_rt"] = None
@@ -250,9 +265,9 @@ class MaxQuant:
         df.loc[:, "start_ion_mobility"] = None
         df.loc[:, "stop_ion_mobility"] = None
 
-    def convert_to_parquet(self, output_path: str, chunksize: int = None):
+    def convert_psm_to_parquet(self, msms_path:str, output_path: str, chunksize: int = 1000000):
         pqwriter = None
-        for df in self.iter_batch(chunksize=chunksize):
+        for df in self.iter_batch(msms_path, "psm", chunksize=chunksize):
             self.transform_psm(df)
             Psm.convert_to_parquet_format(df)
             parquet = Psm.transform_parquet(df)
@@ -262,7 +277,7 @@ class MaxQuant:
         if pqwriter:
             pqwriter.close()
 
-    def covert_feature_to_parquet(self, evidence_path: str, sdrf_path: str, output_path: str, chunksize: int = 1000000):
+    def convert_feature_to_parquet(self, evidence_path: str, sdrf_path: str, output_path: str, chunksize: int = 1000000):
         Sdrf = SDRFHandler(sdrf_path)
         self.experiment_type = Sdrf.get_experiment_type_from_sdrf()
         self._sample_map = Sdrf.get_sample_map_run()
