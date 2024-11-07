@@ -198,72 +198,66 @@ FEATURE_UNIQUE_FIELDS = [
     ),
 ]
 
-
-PG_MATRIX = [
+IBAQ_FIELDS = [
     pa.field(
         "pg_accessions",
         pa.list_(pa.string()),
         metadata={"description": "Protein group accessions of all the proteins that the peptide maps to"},
     ),
     pa.field(
-        "gg_names",
-        pa.list_(pa.string()),
-        metadata={"description": "Gene names, as string array"},
+        "sequence",
+        pa.string(),
+        metadata={"description": "The peptide’s sequence corresponding to the PSM"},
     ),
     pa.field(
-        "quantmsio_version",
+        "peptidoform",
         pa.string(),
-        metadata={"description": "The version of quantms.io"},
+        metadata={"description": "Peptide sequence with modifications: Read the specification for more details"},
     ),
     pa.field(
-        "first_protein_description",
-        pa.string(),
-        metadata={"description": "About the specific information of the first protein"},
+        "precursor_charge",
+        pa.int32(),
+        metadata={"description": "charge state of the feature"},
+    ),
+    pa.field(
+        "unique",
+        pa.int32(),
+        metadata={
+            "description": "Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0"
+        },
     ),
     pa.field(
         "reference_file_name",
         pa.string(),
-        metadata={"description": "The reference file name that contains the feature"},
+        metadata={"description": "Spectrum file name with no path information and not including the file extension"},
     ),
     pa.field(
-        "peptides",
-        pa.list_(pa.struct([("name", pa.string()), ("value", pa.string())])),
-        metadata={"description": "The count of peptides in each reference"},
+        "sample_accession",
+        pa.string(),
+        metadata={"description": "accession of the associated sample"},
+    ),
+    pa.field("run", pa.string(), metadata={"description": "experimental run information"}),
+    pa.field(
+        "channel",
+        pa.string(),
+        metadata={"description": "experimental channel information"},
     ),
     pa.field(
-        "intensities",
-        pa.list_(pa.struct([("name", pa.string()), ("value", pa.float32())])),
-        metadata={"description": "The total intensity of proteins in the reference"},
+        "condition",
+        pa.string(),
+        metadata={"description": "experimental condition, value of the experimental factor"},
     ),
+    pa.field("fraction", pa.string(), metadata={"description": "fraction information"}),
+    pa.field(
+        "biological_replicate",
+        pa.int32(),
+        metadata={"description": "biological replicate information"},
+    ),
+    pa.field("intensity", pa.float32(), metadata={"description": "intensity value"}),
 ]
+
 
 
 PSM_FIELDS = PEPTIDE_FIELDS + PSM_UNIQUE_FIELDS
 
 FEATURE_FIELDS = PEPTIDE_FIELDS + FEATURE_UNIQUE_FIELDS
-
-# pa.field(
-#     "modifications",
-#     pa.list_(pa.string()),
-#     metadata={"description": "List of modifications as string array, easy for search and filter"},
-# ),
-
-# pa.field(
-#     "consensus_support",
-#     pa.float32(),
-#     metadata={
-#         "description": "Consensus support for the given peptide spectrum match, when multiple search engines are used"
-#     },
-# ),
-
-
-# pa.field(
-#     "rank", pa.int32(), metadata={"description": "Rank of the peptide spectrum match in the search engine output"}
-# ),
-# pa.field(
-#     "best_id_score",
-#     pa.list_(pa.struct([("name", pa.string()), ("value", pa.float32())])),
-#     metadata={
-#         "description": "A named score type and value representing an identification's measure of confidence or input feature"
-#     },
-# ),
