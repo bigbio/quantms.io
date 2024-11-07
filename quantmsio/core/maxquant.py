@@ -247,7 +247,7 @@ class MaxQuant:
         df["additional_scores"] = df["additional_scores"].apply(
             lambda x: [{"score_name": "maxquant_score", "score_value": np.float32(x)}]
         )
-        df.loc[:, "cv_params"] = None
+        df.loc[:, "cv_params"] = df["parent_ion_score"].apply(lambda socre: [{"cv_name": "parent_ion_score", "cv_value": str(socre)}])
         df.loc[:, "predicted_rt"] = None
         df.loc[:, "ion_mobility"] = None
         return df

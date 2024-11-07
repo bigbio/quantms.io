@@ -106,5 +106,5 @@ def convert_maxquant_feature(
         output_prefix_file = ""
 
     MQ = MaxQuant()
-    output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
+    output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".feature.parquet")
     MQ.convert_feature_to_parquet(evidence_path=evidence_file, sdrf_path=sdrf_file, output_path=output_path, chunksize=chunksize)

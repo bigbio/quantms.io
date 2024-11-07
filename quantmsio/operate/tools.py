@@ -42,7 +42,7 @@ def generate_features_of_spectrum(
             axis=1,
             result_type="expand",
         )
-        if not partitions or len(partitions) > 0:
+        if partitions and len(partitions) > 0:
             for key, df in table.groupby(partitions):
                 parquet_table = pa.Table.from_pandas(df, schema=PSM_SCHEMA)
                 folder = [output_folder] + [str(col) for col in key]

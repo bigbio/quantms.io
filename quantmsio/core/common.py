@@ -76,6 +76,7 @@ MAXQUANT_PSM_MAP = {
     "Modified sequence": "peptidoform",
     "Raw file": "reference_file_name",
     "Score": "additional_scores",
+    "PIF": "parent_ion_score"
 }
 
 MAXQUANT_FEATURE_MAP = {
