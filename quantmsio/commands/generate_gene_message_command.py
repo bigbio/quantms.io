@@ -23,12 +23,14 @@ from quantmsio.operate.tools import generate_feature_of_gene
     help="The field used for splitting files, multiple fields are separated by ,",
     required=False,
 )
+@click.option("--species", help="species", default="human", required=False)
 def map_gene_message_to_parquet(
     parquet_path: str,
     fasta: str,
     output_folder: str,
     file_num: int,
     partitions: str = None,
+    species: str = "human",
 ):
     """
     according fasta file to map the gene message to parquet.
@@ -37,8 +39,9 @@ def map_gene_message_to_parquet(
     :param output_folder: Folder where the Json file will be generated
     :param file_num: reference num
     :param partitions: The field used for splitting files, multiple fields are separated by ,
+    :param species: species
     retrun: None
     """
     if partitions:
         partitions = partitions.split(",")
-    generate_feature_of_gene(parquet_path, fasta, output_folder, file_num, partitions)
+    generate_feature_of_gene(parquet_path, fasta, output_folder, file_num, partitions, species)

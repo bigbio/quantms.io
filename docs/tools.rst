@@ -8,100 +8,6 @@ image::map.png[width=80%]
 
 You can generate separate files or complete project files depending on your needs.A completed project contains the following files:
 
-[[tools-and-libraries]]
-== Querying parquet
-
-The query module provides the ability to quickly search through Parquet files.
-
-Basic query operations allow you to query all ``samples``, ``peptides``, ``proteins``, ``genes``, and ``mzML`` files. The query results will be deduplicated and then returned in a list format.
-
-[source,python]
-----
-    from quantmsio.core.query import Parquet
-    P = Parquet('PXD007683.feature.parquet')
-    P.get_unique_samples()
-    """
-    ['PXD007683-Sample-3',
-    'PXD007683-Sample-9',
-    'PXD007683-Sample-4',
-    'PXD007683-Sample-6',
-    'PXD007683-Sample-11',
-    'PXD007683-Sample-7',
-    'PXD007683-Sample-1',
-    'PXD007683-Sample-10',
-    'PXD007683-Sample-8',
-    'PXD007683-Sample-2',
-    'PXD007683-Sample-5']
-    """
-    P.get_unique_peptides()
-    P.get_unique_proteins()
-    P.get_unique_genes()
-    P.get_unique_references()
-----
-
-Specific queries allow you to individually search for certain values based on specific conditions.
-The results are returned in the form of a ``DataFrame``.
-
-[source,python]
-----
-    P.query_peptide('QPAYVSK')
-    """
-        sequence    protein_accessions	    protein_start_positions ...
-    	QPAYVSK	    [sp|P36016|LHS1_YEAST]	[739]
-        QPAYVSK	    [sp|P36016|LHS1_YEAST]	[739]
-        QPAYVSK	    [sp|P36016|LHS1_YEAST]	[739]
-        ...
-    """
-    P.query_peptide('QPAYVSK',columns=['protein_start_positions','protein_end_positions'])
-----
-
-[source,python]
-----
-    P.query_protein('P36016',columns=None)
-    P.query_proteins(['P36016','O95861'],columns=None)
-    """
-        sequence    protein_accessions	    protein_start_positions ...
-    	QPAYVSK	    [sp|P36016|LHS1_YEAST]	[739]
-        QPAYVSK	    [sp|P36016|LHS1_YEAST]	[739]
-        QPAYVSK	    [sp|P36016|LHS1_YEAST]	[739]
-        ...
-        QPCPSQYSAIK [sp|O95861|BPNT1_HUMAN]	[98]
-        ...
-    """
-
-    P.get_samples_from_database(['PXD007683-Sample-3','PXD007683-Sample-9'],columns=None)
-    """
-    sequence                protein_accessions          sample_accession
-    AAAAAAAAAAAAAAAGAGAGAK  [sp|P55011|S12A2_HUMAN]	PXD007683-Sample-3
-    AAAAAAAAAAAAAAAGAGAGAK  [sp|P55011|S12A2_HUMAN]	PXD007683-Sample-3
-    AAAAAAAAAK	            [sp|Q99453|PHX2B_HUMAN]	PXD007683-Sample-3
-    """
-    P.get_report_from_database(['a05063','a05059'],columns=None) # mzml
-    """
-    sequence    protein_accessions      reference_file_name
-    AAAAAAALQAK [sp|P36578|RL4_HUMAN]   a05063
-    AAAAAAALQAK [sp|P36578|RL4_HUMAN]   a05063
-    AAAAAAALQAK [sp|P36578|RL4_HUMAN]   a05063
-    """
-----
-
-You can use the following method to produce values in batches.
-
-[source,python]
-----
-    for samples,df in P.iter_samples(file_num=10,columns=None):
-        # A batch contains ten samples.
-        print(samples,df)
-
-    for df in P.iter_chunk(batch_size=500000,columns=None):
-        # A batch contains 500,000 rows.
-        print(df)
-
-    for refs,df in P.iter_file(file_num=20,columns=None): # mzml
-        # A batch contains 20 mzML files.
-        print(refs,df)
-----
-
 Project converter tool
 -------------------------
 If your project comes from the PRIDE database, 
@@ -131,8 +37,8 @@ It's like this:
 * Optional parameter
 
 .. code:: shell
-
-   --quantms_version   Quantms version
+   --software_name   software name used to generate the data
+   --software_version   software version used to generate the data
    --delete_existing   Delete existing files in the output folder(default False)
 
 DE converter tool
@@ -201,8 +107,8 @@ It store peptide intensity to perform down-stream analysis and integration.
 
 * If you want to know more, please read :doc:`feature`.
 
-In some projects, mzTab files can be very large, so we provide both `diskcache` and `no-diskcache` versions of the tool. 
-You can choose the desired version according to your server configuration.
+Mztab
+>>>>>>>
 
 Example: 
 
@@ -218,8 +124,53 @@ Example:
 
 .. code:: shell
 
+   --file_num Read batch size(default 50)
    --protein_file   Protein file that meets specific requirements(protein.txt)
+   --partitions The field used for splitting files, multiple fields are separated by `,`
    --output_prefix_file   The prefix of the result file(like {prefix}-{uu.id}-{extension})
+   --duckdb_max_memory  The maximum amount of memory allocated by the DuckDB engine (e.g 16GB)
+   --duckdb_threads The number of threads for the DuckDB engine (e.g 4)
+
+Maxquant
+>>>>>>>>>
+
+Example: 
+
+.. code:: shell
+
+   quantmsioc convert-maxquant-feature
+      --evidence_file evidence.txt
+      --sdrf_file PXD014414.sdrf.tsv
+      --output_folder result
+
+* Optional parameter
+
+.. code:: shell
+      --chunksize Read batch size
+      --output_prefix_file Prefix of the parquet file needed to generate the file name
+
+DiaNN
+>>>>>>>
+
+Example: 
+
+.. code:: shell
+
+   quantmsioc convert-diann
+      --report_path diann_report.tsv
+      --qvalue_threshold 0.05
+      --mzml_info_folder mzml
+      --sdrf_path PXD037682.sdrf.tsv
+      --output_folder result
+
+* Optional parameter
+
+.. code:: shell
+      --protein_file Protein file that meets specific requirements
+      --output_prefix_file Prefix of the Json file needed to generate the file name
+      --duckdb_max_memory  The maximum amount of memory allocated by the DuckDB engine (e.g 16GB)
+      --duckdb_threads The number of threads for the DuckDB engine (e.g 4)
+      --file_num Read batch size(default 50)
 
 
 Psm converter tool
@@ -229,6 +180,9 @@ The PSM table aims to cover detail on PSM level for AI/ML training and other use
 It store details on PSM level including spectrum mz/intensity for specific use-cases such as AI/ML training.
 
 * If you want to know more, please read :doc:`psm`.
+
+Mztab
+>>>>>>>
 
 Example: 
     
@@ -243,94 +197,26 @@ Example:
 .. code:: shell
 
    --protein_file   Protein file that meets specific requirements(protein.txt)
+   --chunksize Read batch size
    --output_prefix_file   The prefix of the result file(like {prefix}-{uu.id}-{extension})
 
-DiaNN convert 
---------------------------
-For DiaNN, the command supports generating `feature.parquet` and `psm.parquet` directly from diann_report files.
-
-* If you want to see `design_file`, please click `sdrf-pipelines <https://github.com/bigbio/sdrf-pipelines>`__
+Maxquant
+>>>>>>>>>
 
 Example: 
-
+    
 .. code:: shell
 
-   quantmsioc convert-diann
-      --report_path diann_report.tsv
-      --design_file PXD037682.sdrf_openms_design.tsv
-      --qvalue_threshold 0.05
-      --mzml_info_folder mzml
-      --sdrf_path PXD037682.sdrf.tsv
+   quantmsioc convert-maxquant-psm
+      --msms_file the msms.txt file, this will be used to extract the peptide information
       --output_folder result
-      --output_prefix_file PXD037682
-   
+
 * Optional parameter
 
 .. code:: shell
 
-   --duckdb_max_memory   The maximum amount of memory allocated by the DuckDB engine (e.g 16GB)
-   --duckdb_threads  The number of threads for the DuckDB engine (e.g 4)
-   --file_num The number of files being processed at the same time (default 100)
-
-Maxquant convert 
---------------------------
-Convert Maxquant evidence.txt to parquet file
-
-* file
-
-Example: 
-
-.. code:: shell
-
-   quantmsioc convert-maxquant
-      --sdrf_file example.sdrf.tsv
-      --evidence_file evidence.tsv
-      --output_folder result
-      --output_prefix_file example
-
-* zip file
-.. code:: shell
-
-   quantmsioc convert-zip-maxquant
-      --sdrf_file example.sdrf.tsv
-      --evidence_file requirement.txt
-      --output_folder result
-      --output_prefix_file example
-
-requirement.txt like this:
-
-.. code:: shell
-
-   #requirement.txt
-   2013_04_03_16_54_Q-Exactive-Orbitrap_1.zip
-   2013_04_03_17_47_Q-Exactive-Orbitrap_1.zip
-
-Inject some messages for DiaNN 
--------------------------------
-For DiaNN, some field information is not available and needs to be filled with other commands.
-
-* bset-psm-scan-number
-Example: 
-
-.. code:: shell
-
-   quantmsioc inject-bset-psm-scan-number
-      --diann_psm_path PXD010154-f75fbb29-4419-455f-a011-e4f776bcf73b.psm.parquet
-      --diann_feature_path PXD010154_map_protein_accession-88d63fca-3ae6-4eab-9262-6e7a68184432.feature.parquet
-      --output_path PXD010154.feature.parquet
-
-* start-and-end-pisition
-Example:
-
-.. code:: shell
-
-   quantmsioc inject-start-and-end-from-fasta
-      --parquet_path PXD010154_map_protein_accession-88d63fca-3ae6-4eab-9262-6e7a68184432.feature.parquet
-      --fasta_path Homo-sapiens-uniprot-reviewed-contaminants-decoy-202210.fasta
-      --label feature
-      --output_path PXD010154.feature.parquet
-
-
+   --chunksize Read batch size
+   --output_prefix_file The prefix of the result file(like {prefix}-{uu.id}-{extension})
 
 Compare psm.parquet
 -------------------
@@ -352,11 +238,10 @@ Example:
 
 Generate spectra message
 -------------------------
-generate_spectra_message support psm and feature. It can be used directly for spectral clustering.
+generate_spectra_message support psm. It can be used directly for spectral clustering.
 
-* `--label` contains two options: `psm` and `feature`.
-* `--partion` contains two options: `charge` and `reference_file_name`.
-Since the result file is too large, you can specify `–-partition` to split the result file.
+
+Since the result file is too large, you can specify `–-partitions` to split the result file.
 
 Example: 
 
@@ -365,18 +250,18 @@ Example:
    quantmsioc map-spectrum-message-to-parquet
       --parquet_path PXD014414-f4fb88f6-0a45-451d-a8a6-b6d58fb83670.psm.parquet
       --mzml_directory mzmls
-      --output_path psm/PXD014414.parquet
-      --label psm
-      --file_num(default 10)
-      --partition charge
+      --output_folder result
 
+* Optional parameter
+
+.. code:: shell
+
+   --file_num The number of rows of parquet read using pandas streaming
+   --partitions The field used for splitting files, multiple fields are separated by `,`
 
 Generate gene message
 -------------------------
-generate_gene_message support psm and feature. 
-
-* `--label` contains two options: `psm` and `feature`.
-* `--map_parameter` contains two options: `map_protein_name` or `map_protein_accession`.
+generate_gene_message support feature. 
 
 Example: 
 
@@ -385,14 +270,14 @@ Example:
    quantmsioc map-gene-msg-to-parquet 
    --parquet_path PXD000672-0beee055-ae78-4d97-b6ac-1f191e91bdd4.featrue.parquet
    --fasta_path Homo-sapiens-uniprot-reviewed-contaminants-decoy-202210.fasta
-   --output_path PXD000672-gene.parquet
-   --label feature 
-   --map_parameter map_protein_name
+   --output_folder result
 
 * Optional parameter
 
 .. code:: shell
 
+   --file_num The number of rows of parquet read using pandas streaming
+   --partitions The field used for splitting files, multiple fields are separated by `,`
    --species species type(default human)
 
 * `species`
@@ -420,69 +305,13 @@ Example:
 +-------------+-------------------------+
 
 
-Map proteins accessions
-------------------------
-
-get_unanimous_name support parquet and tsv. For parquet, map_parameter
-have two option (`map_protein_name` or `map_protein_accession`), and the
-label controls whether it is PSM or Feature.
-
-*  parquet
-* `--label` contains two options: `psm` and `feature`
-
-Example: 
-
-.. code:: shell
-
-   quantmsioc labels convert-accession
-      --parquet_path PXD014414-f4fb88f6-0a45-451d-a8a6-b6d58fb83670.psm.parquet
-      --fasta Reference fasta database
-      --output_path psm/PXD014414.psm.parquet
-      --map_parameter map_protein_name
-      --label psm
-
-* tsv
-  
-Example: 
-
-.. code:: shell
-
-   quantmsioc labels get-unanimous-for-tsv
-      --path PXD014414-c2a52d63-ea64-4a64-b241-f819a3157b77.differential.tsv
-      --fasta Reference fasta database
-      --output_path psm/PXD014414.de.tsv
-      --map_parameter map_protein_name
-
-Compare two parquet files
---------------------------
-This tool is used to compare the feature.parquet file generated by two versions (`diskcache` or `no-diskcache`).
-
-Example: 
-
-.. code:: shell
-
-   quantmsioc compare-parquet
-      --parquet_path_one res_lfq2_discache.parquet
-      --parquet_path_two res_lfq2_no_cache.parquet
-      --report_path report.txt
-
-Generate report about files 
------------------------------
-This tool is used to generate report about all project.
-
-Example: 
-
-.. code:: shell
-
-   quantmsioc generate-project-report
-      --project_folder PXD014414
 
 Register file 
 --------------------------
 This tool is used to register the file to `project.json`.
 If your project comes from the PRIDE database, You can use this command to add file information for `project.json`.
 
-* The parameter `--category` has three options: `feature_file`, `psm_file`, `differential_file`, `absolute_file`.You can add the above file types.
+* The parameter `--category` has three options: `sdrf_file`, `feature_file`, `psm_file`, `differential_file`, `absolute_file`.You can add the above file types.
 * The parameter `--replace_existing` is enable then we remove the old file and add this one. If not then we can have a list of files for a category.
 
 Example: 
@@ -493,41 +322,14 @@ Example:
       --project_file PXD014414/project.json
       --attach_file PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet
       --category feature_file
-      --replace_existing
 
-Convert file to json 
---------------------------
-This tool is used to convert file to json.
 
-* parquet
-* `--data_type` contains two options: `psm` and `feature`
-Example: 
+* Optional parameter
 
-.. code:: shell
-
-   quantmsioc convert-parquet-json
-      --data_type feature
-      --parquet_path PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet
-      --json_path PXD014414.featrue.json
-
-* tsv
-Example: 
-
-.. code:: shell
-
-   quantmsioc json convert-tsv-to-json
-      --file PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.absolute.tsv
-      --json_path PXD010154.ae.json
-
-* sdrf
-Example: 
-
-.. code:: shell
-
-   quantmsioc json convert-sdrf-to-json
-      --file MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv
-      --json_path MSV000079033.sdrf.json
-
+.. code:: shell 
+      --is_folder A boolean value that indicates if the file is a folder or not
+      --replace_existing Whether to delete old files
+      --partitions The fields that are used to partition the data in the file. This is used to optimize the data retrieval and filtering of the data. This field is optional.
 
 Statistics
 -----------
@@ -594,3 +396,5 @@ This tool is used for visualization.
       --feature_path PXD010154-51b34353-227f-4d38-a181-6d42824de9f7.featrue.parquet
       --num_samples 10
       --save_path PXD014414_psm_peptides.svg
+
+

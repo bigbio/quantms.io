@@ -88,13 +88,14 @@ def generate_feature_of_gene(
     fasta: str,
     output_folder: str,
     file_num: int,
-    partitions: list = None,    
+    partitions: list = None,
+    species: str = "human"    
 ):
     pqwriters, pqwriter_no_part, filename = init_save_info(parquet_path)
     p = Query(parquet_path)
     map_gene_names = p.get_protein_to_gene_map(fasta)
     for _, table in p.iter_file(file_num=file_num):
-        table = p.inject_gene_msg(table, map_gene_names)
+        table = p.inject_gene_msg(table, map_gene_names, species)
         pqwriters, pqwriter_no_part = save_parquet_file(partitions, table, output_folder, filename, pqwriters, pqwriter_no_part)
     close_file(partitions, pqwriters, pqwriter_no_part)
 
