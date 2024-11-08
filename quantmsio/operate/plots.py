@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-
+from quantmsio.operate.tools import transform_ibaq
 
 def plot_distribution_of_ibaq(ibaq_path: str, save_path: str = None, selected_column: str = None) -> None:
     """
@@ -107,7 +107,8 @@ def plot_intensity_distribution_of_samples(feature_path: str, save_path: str = N
     :param save_path: save path[xxx.svg]
     :param num_samples: number of samples to plot
     """
-    df = pd.read_parquet(feature_path, columns=["sample_accession", "intensity"])
+    df = pd.read_parquet(feature_path, columns=["intensities"])
+    df = transform_ibaq(df)
     sample_accessions = df["sample_accession"].unique().tolist()
     random.shuffle(sample_accessions)
     if len(sample_accessions) > num_samples:
@@ -133,7 +134,8 @@ def plot_peptide_distribution_of_protein(feature_path: str, save_path: str = Non
     :param save_path: save path[xxx.svg]
     :param num_samples: number of samples to plot
     """
-    df = pd.read_parquet(feature_path, columns=["sample_accession", "sequence"])
+    df = pd.read_parquet(feature_path, columns=["intensities", "sequence"])
+    df = transform_ibaq(df)
     df = df.groupby(["sample_accession"]).agg({"sequence": "count"}).reset_index()
     df.columns = ["sample", "peptides"]
     df = df.sample(frac=1).reset_index(drop=True)
@@ -160,7 +162,8 @@ def plot_intensity_box_of_samples(feature_path: str, save_path: str = None, num_
     :param save_path: save path[xxx.svg]
     :param num_samples: number of samples to plot
     """
-    df = pd.read_parquet(feature_path, columns=["sample_accession", "intensity"])
+    df = pd.read_parquet(feature_path, columns=["intensities"])
+    df = transform_ibaq(df)
     sample_accessions = df["sample_accession"].unique().tolist()
     random.shuffle(sample_accessions)
 

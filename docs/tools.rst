@@ -146,8 +146,9 @@ Example:
 * Optional parameter
 
 .. code:: shell
-      --chunksize Read batch size
-      --output_prefix_file Prefix of the parquet file needed to generate the file name
+   --chunksize Read batch size
+   --output_prefix_file Prefix of the parquet file needed to generate the file name
+
 
 DiaNN
 >>>>>>>
@@ -166,11 +167,11 @@ Example:
 * Optional parameter
 
 .. code:: shell
-      --protein_file Protein file that meets specific requirements
-      --output_prefix_file Prefix of the Json file needed to generate the file name
-      --duckdb_max_memory  The maximum amount of memory allocated by the DuckDB engine (e.g 16GB)
-      --duckdb_threads The number of threads for the DuckDB engine (e.g 4)
-      --file_num Read batch size(default 50)
+   --protein_file Protein file that meets specific requirements
+   --output_prefix_file Prefix of the Json file needed to generate the file name
+   --duckdb_max_memory  The maximum amount of memory allocated by the DuckDB engine (e.g 16GB)
+   --duckdb_threads The number of threads for the DuckDB engine (e.g 4)
+   --file_num Read batch size(default 50)
 
 
 Psm converter tool
@@ -327,9 +328,9 @@ Example:
 * Optional parameter
 
 .. code:: shell 
-      --is_folder A boolean value that indicates if the file is a folder or not
-      --replace_existing Whether to delete old files
-      --partitions The fields that are used to partition the data in the file. This is used to optimize the data retrieval and filtering of the data. This field is optional.
+   --is_folder A boolean value that indicates if the file is a folder or not
+   --replace_existing Whether to delete old files
+   --partitions The fields that are used to partition the data in the file. This is used to optimize the data retrieval and filtering of the data. This field is optional.
 
 Statistics
 -----------
