@@ -1,21 +1,21 @@
 import os
 import re
 
-# from collections import defaultdict
+from collections import defaultdict
 
 import ahocorasick
 import duckdb
 
-# import mygene
+import mygene
 import pandas as pd
 import pyarrow.parquet as pq
 from Bio import SeqIO
 
 from quantmsio.core.openms import OpenMSHandler
 
-# from quantmsio.utils.pride_utils import generate_gene_name_map
-# from quantmsio.utils.pride_utils import get_gene_accessions
-# from quantmsio.utils.pride_utils import get_unanimous_name
+from quantmsio.utils.pride_utils import generate_gene_name_map
+from quantmsio.utils.pride_utils import get_gene_accessions
+from quantmsio.utils.pride_utils import get_unanimous_name
 
 
 def check_string(re_exp, strings):
@@ -160,27 +160,30 @@ class Query:
         )
         return df
 
-    # def inject_gene_msg(
-    #     self,
-    #     df: pd.DataFrame,
-    #     fasta: str,
-    #     map_parameter: str = "map_protein_accession",
-    #     species: str = "human",
-    # ):
-    #     """
-    #     :params df: parquet file
-    #     :params fasta: refence fasta file
-    #     :params map_parameter: map_protein_name or map_protein_accession
-    #     :params species: default human
-    #     :return df
-    #     """
-    #     map_gene_names = generate_gene_name_map(fasta, map_parameter)
-    #     df["gene_names"] = df["protein_accessions"].apply(lambda x: get_unanimous_name(x, map_gene_names))
-    #     gene_list = self.get_gene_list(map_gene_names)
-    #     gene_accessions = self.get_gene_accessions(gene_list, species)
-    #     df["gene_accessions"] = df["gene_names"].apply(lambda x: get_gene_accessions(x, gene_accessions))
+    def inject_gene_msg(
+        self,
+        df: pd.DataFrame,
+        fasta: str,
+        map_parameter: str = "map_protein_accession",
+        species: str = "human",
+    ):
+        """
+        :params df: parquet file
+        :params fasta: refence fasta file
+        :params map_parameter: map_protein_name or map_protein_accession
+        :params species: default human
+        :return df
+        """
+        map_gene_names = generate_gene_name_map(fasta, map_parameter)
+        if "pg_accessions" in df.columns:
+            df["gg_names"] = df["pg_accessions"].apply(lambda x: get_unanimous_name(x, map_gene_names))
+        else:
+            df["gg_names"] = df["mp_accessions"].apply(lambda x: get_unanimous_name(x, map_gene_names))
+        gene_list = self.get_gene_list(map_gene_names)
+        gene_accessions = self.get_gene_accessions(gene_list, species)
+        df["gg_accessions"] = df["gg_names"].apply(lambda x: get_gene_accessions(x, gene_accessions))
 
-    #     return df
+        return df
 
     def get_protein_dict(self, fasta_path):
         """
@@ -232,9 +235,11 @@ class Query:
         return: A list of deduplicated proteins.
         """
 
-        unique_prts = self.parquet_db.sql("SELECT DISTINCT pg_accessions FROM parquet_db").df()
-
-        return unique_prts["pg_accessions"].tolist()
+        unique_prts = self.parquet_db.sql("SELECT mp_accessions FROM parquet_db").df()
+        proteins = set()
+        for protein_accessions in unique_prts["mp_accessions"].tolist():
+            proteins.update(set(protein_accessions))
+        return list(proteins)
 
     def get_unique_genes(self):
         """
@@ -301,25 +306,26 @@ class Query:
         else:
             raise KeyError("Illegal protein!")
 
-    # def get_gene_list(self, map_gene_names: dict):
-    #     """
-    #     :params map_gene_names: protenin => gene
-    #     return: unique gene list
-    #     """
-    #     unique_prts = self.get_unique_proteins()
-    #     gene_names = [get_unanimous_name(proteins, map_gene_names) for proteins in unique_prts]
-    #     gene_list = list(set([item for sublist in gene_names for item in sublist]))
+    def get_gene_list(self, map_gene_names: dict):
+        """
+        :params map_gene_names: protenin => gene
+        return: unique gene list
+        """
+        unique_prts = self.get_unique_proteins()
+        gene_names = [get_unanimous_name(proteins, map_gene_names) for proteins in unique_prts]
+        gene_list = list(set([item for sublist in gene_names for item in sublist]))
 
-    #     return gene_list
+        return gene_list
 
-    # def get_gene_accessions(self, gene_list: list, species: str = "human"):
-    #     """
-    #     :params gene_list
-    #     """
-    #     mg = mygene.MyGeneInfo()
-    #     gene_accessions = mg.querymany(gene_list, scopes="symbol", species=species, fields="accession")
-    #     gene_accessions_maps = defaultdict(list)
-    #     for obj in gene_accessions:
-    #         if "accession" in obj:
-    #             gene_accessions_maps[obj["query"]].append(obj["accession"])
-    #     return gene_accessions_maps
+    def get_gene_accessions(self, gene_list: list, species: str = "human"):
+        """
+        :params gene_list
+        """
+        mg = mygene.MyGeneInfo()
+        gene_accessions = mg.querymany(gene_list, scopes="symbol", species=species, fields="accession")
+        gene_accessions_maps = defaultdict(list)
+        for obj in gene_accessions:
+            if "accession" in obj and "genomic" in obj["accession"]:
+                gene_accessions_maps[obj["query"]] = ",".join(obj["accession"]["genomic"])
+        return gene_accessions_maps
+ 

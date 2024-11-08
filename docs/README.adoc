@@ -984,7 +984,7 @@ The following table presents the fields needed to describe each feature in quant
 | m/z
 | exp_mass_to_charge
 
-| `rt_apex`
+| `rt`
 | Precursor retention time (in seconds)
 | float32, null
 | RT
