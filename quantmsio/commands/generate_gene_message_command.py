@@ -1,13 +1,13 @@
 import click
-from quantmsio.operate.tools import generate_psms_of_spectrum
+from quantmsio.operate.tools import generate_feature_of_gene
 
 
 @click.command(
-    "map-spectrum-message-to-parquet",
-    short_help="According mzMl to map the spectrum message to parquet",
+    "map-gene-message-to-parquet",
+    short_help="According mzMl to map the gene message to parquet",
 )
 @click.option("--parquet_path", help="Psm or feature parquet path")
-@click.option("--mzml_directory", help="mzml file folder")
+@click.option("--fasta", help="fasta file")
 @click.option(
     "--output_folder",
     help="Folder where the Json file will be generated",
@@ -23,17 +23,17 @@ from quantmsio.operate.tools import generate_psms_of_spectrum
     help="The field used for splitting files, multiple fields are separated by ,",
     required=False,
 )
-def map_spectrum_message_to_parquet(
+def map_gene_message_to_parquet(
     parquet_path: str,
-    mzml_directory: str,
+    fasta: str,
     output_folder: str,
     file_num: int,
     partitions: str = None,
 ):
     """
-    according mzML file to map the spectrum message to parquet.
+    according fasta file to map the gene message to parquet.
     :param parquet_path: psm_parquet_path or feature_parquet_path
-    :param mzml_directory: mzml file folder
+    :param fasta: fasta path
     :param output_folder: Folder where the Json file will be generated
     :param file_num: reference num
     :param partitions: The field used for splitting files, multiple fields are separated by ,
@@ -41,4 +41,4 @@ def map_spectrum_message_to_parquet(
     """
     if partitions:
         partitions = partitions.split(",")
-    generate_psms_of_spectrum(parquet_path, mzml_directory, output_folder, file_num, partitions)
+    generate_feature_of_gene(parquet_path, fasta, output_folder, file_num, partitions)

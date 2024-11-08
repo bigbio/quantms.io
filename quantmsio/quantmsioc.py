@@ -13,8 +13,8 @@ from quantmsio.commands.diann_command import diann_convert_to_parquet
 from quantmsio.commands.ae_command import convert_ibaq_absolute
 from quantmsio.commands.de_command import convert_msstats_differential
 from quantmsio.commands.attach_file_command import attach_file_to_json
-from quantmsio.commands.get_unanimous_command import get_unanimous_for_parquet, get_unanimous_for_tsv
 from quantmsio.commands.generate_spectra_message_command import map_spectrum_message_to_parquet
+from quantmsio.commands.generate_gene_message_command import map_gene_message_to_parquet
 from quantmsio.commands.plot_command import plot
 from quantmsio.commands.statistic_command import statistics
 from quantmsio.commands.maxquant_command import convert_maxquant_psm, convert_maxquant_feature
@@ -41,17 +41,13 @@ cli.add_command(diann_convert_to_parquet)
 cli.add_command(convert_ibaq_absolute)
 cli.add_command(convert_msstats_differential)
 cli.add_command(attach_file_to_json)
-cli.add_command(get_unanimous_for_parquet)
-cli.add_command(get_unanimous_for_tsv)
 cli.add_command(map_spectrum_message_to_parquet)
+cli.add_command(map_gene_message_to_parquet)
 cli.add_command(plot)
 cli.add_command(statistics)
 cli.add_command(convert_maxquant_psm)
 cli.add_command(convert_maxquant_feature)
 cli.add_command(convert_ibaq_file)
-
-# cli.add_command(convert_maxquant)
-# cli.add_command(convert_zip_maxquant)
 
 
 def quantms_io_main():

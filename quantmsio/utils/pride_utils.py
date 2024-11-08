@@ -57,7 +57,7 @@ def generate_gene_name_map(fasta, map_parameter):
 
 
 def get_gene_accessions(gene_list, map_dict):
-    if len(gene_list) == 0:
+    if gene_list is None or len(gene_list) == 0:
         return None
     else:
         accessions = []

@@ -163,8 +163,7 @@ class Query:
     def inject_gene_msg(
         self,
         df: pd.DataFrame,
-        fasta: str,
-        map_parameter: str = "map_protein_accession",
+        map_gene_names: dict,
         species: str = "human",
     ):
         """
@@ -174,17 +173,20 @@ class Query:
         :params species: default human
         :return df
         """
-        map_gene_names = generate_gene_name_map(fasta, map_parameter)
         if "pg_accessions" in df.columns:
             df["gg_names"] = df["pg_accessions"].apply(lambda x: get_unanimous_name(x, map_gene_names))
         else:
             df["gg_names"] = df["mp_accessions"].apply(lambda x: get_unanimous_name(x, map_gene_names))
-        gene_list = self.get_gene_list(map_gene_names)
+        gene_list = list(set([gene for gene_names in df["gg_names"] if gene_names is not None for gene in gene_names]))
         gene_accessions = self.get_gene_accessions(gene_list, species)
         df["gg_accessions"] = df["gg_names"].apply(lambda x: get_gene_accessions(x, gene_accessions))
 
         return df
 
+    def get_protein_to_gene_map(self, fasta: str, map_parameter: str = "map_protein_accession"):
+        map_gene_names = generate_gene_name_map(fasta, map_parameter)
+        return map_gene_names
+    
     def get_protein_dict(self, fasta_path):
         """
         return: protein_map {protein_accession:seq}
@@ -237,8 +239,9 @@ class Query:
 
         unique_prts = self.parquet_db.sql("SELECT mp_accessions FROM parquet_db").df()
         proteins = set()
-        for protein_accessions in unique_prts["mp_accessions"].tolist():
-            proteins.update(set(protein_accessions))
+        for protein_accessions in unique_prts["mp_accessions"]:
+            if protein_accessions is not None:
+                proteins.update(set(protein_accessions))
         return list(proteins)
 
     def get_unique_genes(self):
@@ -305,17 +308,6 @@ class Query:
             return self.parquet_db.sql(f"SELECT {cols} FROM parquet_db WHERE pg_accessions LIKE '%{protein}%'").df()
         else:
             raise KeyError("Illegal protein!")
-
-    def get_gene_list(self, map_gene_names: dict):
-        """
-        :params map_gene_names: protenin => gene
-        return: unique gene list
-        """
-        unique_prts = self.get_unique_proteins()
-        gene_names = [get_unanimous_name(proteins, map_gene_names) for proteins in unique_prts]
-        gene_list = list(set([item for sublist in gene_names for item in sublist]))
-
-        return gene_list
 
     def get_gene_accessions(self, gene_list: list, species: str = "human"):
         """
