@@ -52,8 +52,6 @@ def convert_maxquant_psm(
     MQ.convert_psm_to_parquet(msms_path=msms_file, output_path=output_path, chunksize=chunksize)
 
 
-
-
 @click.command(
     "convert-maxquant-feature",
     short_help="Convert feature from evidence to parquet file in quantms.io",
@@ -107,4 +105,6 @@ def convert_maxquant_feature(
 
     MQ = MaxQuant()
     output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
-    MQ.convert_feature_to_parquet(evidence_path=evidence_file, sdrf_path=sdrf_file, output_path=output_path, chunksize=chunksize)
+    MQ.convert_feature_to_parquet(
+        evidence_path=evidence_file, sdrf_path=sdrf_file, output_path=output_path, chunksize=chunksize
+    )

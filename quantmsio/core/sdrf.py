@@ -378,11 +378,7 @@ class SDRFHandler:
             axis=1,
         )
         sdrf.drop(
-            [
-                "comment[technical replicate]",
-                "source name"
-            ]
-            + factor,
+            ["comment[technical replicate]", "source name"] + factor,
             axis=1,
             inplace=True,
         )
