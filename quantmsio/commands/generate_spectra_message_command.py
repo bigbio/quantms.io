@@ -1,5 +1,5 @@
 import click
-from quantmsio.operate.tools import generate_features_of_spectrum
+from quantmsio.operate.tools import generate_psms_of_spectrum
 
 
 @click.command(
@@ -8,11 +8,10 @@ from quantmsio.operate.tools import generate_features_of_spectrum
 )
 @click.option("--parquet_path", help="Psm or feature parquet path")
 @click.option("--mzml_directory", help="mzml file folder")
-@click.option("--output_path", help="output file path(.parquet)")
 @click.option(
-    "--label",
-    type=click.Choice(["feature", "psm"], case_sensitive=False),
-    help="parquet type",
+    "--output_folder",
+    help="Folder where the Json file will be generated",
+    required=True,
 )
 @click.option(
     "--file_num",
@@ -20,29 +19,26 @@ from quantmsio.operate.tools import generate_features_of_spectrum
     default=10,
 )
 @click.option(
-    "--partition",
-    type=click.Choice(["charge", "reference_file_name"], case_sensitive=False),
-    help="partition",
+    "--partitions",
+    help="The field used for splitting files, multiple fields are separated by ,",
     required=False,
 )
 def map_spectrum_message_to_parquet(
     parquet_path: str,
     mzml_directory: str,
-    output_path: str,
-    label: str,
+    output_folder: str,
     file_num: int,
-    partition: str = None,
+    partitions: str = None,
 ):
     """
     according mzML file to map the spectrum message to parquet.
     :param parquet_path: psm_parquet_path or feature_parquet_path
     :param mzml_directory: mzml file folder
-    :param output_path: output file path(extension[.parquet])
-    :param label: feature or psm
+    :param output_folder: Folder where the Json file will be generated
     :param file_num: reference num
-    :param partition: charge or reference_file_name
+    :param partitions: The field used for splitting files, multiple fields are separated by ,
     retrun: None
     """
-    if not output_path.endswith("parquet"):
-        raise click.UsageError("Please provide file extension(.parquet)")
-    generate_features_of_spectrum(parquet_path, mzml_directory, output_path, label, file_num, partition)
+    if partitions:
+        partitions = partitions.split(",")
+    generate_psms_of_spectrum(parquet_path, mzml_directory, output_folder, file_num, partitions)
