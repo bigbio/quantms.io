@@ -186,7 +186,7 @@ class Query:
     def get_protein_to_gene_map(self, fasta: str, map_parameter: str = "map_protein_accession"):
         map_gene_names = generate_gene_name_map(fasta, map_parameter)
         return map_gene_names
-    
+
     def get_protein_dict(self, fasta_path):
         """
         return: protein_map {protein_accession:seq}
@@ -320,4 +320,3 @@ class Query:
             if "accession" in obj and "genomic" in obj["accession"]:
                 gene_accessions_maps[obj["query"]] = ",".join(obj["accession"]["genomic"])
         return gene_accessions_maps
- 

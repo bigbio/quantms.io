@@ -106,7 +106,7 @@ IBAQ_USECOLS = [
     "precursor_charge",
     "intensities",
     "reference_file_name",
-    "unique"
+    "unique",
 ]
 
 MAXQUANT_PSM_USECOLS = list(MAXQUANT_PSM_MAP.keys())

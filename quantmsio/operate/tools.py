@@ -18,15 +18,17 @@ def init_save_info(parquet_path: str):
     pqwriters = {}
     pqwriter_no_part = None
     filename = os.path.basename(parquet_path)
-    return pqwriters, pqwriter_no_part,filename
+    return pqwriters, pqwriter_no_part, filename
 
-def close_file(partitions:list ,pqwriters: dict, pqwriter_no_part: str):
+
+def close_file(partitions: list, pqwriters: dict, pqwriter_no_part: str):
     if not partitions or len(partitions) == 0:
         if pqwriter_no_part:
             pqwriter_no_part.close()
     else:
         for pqwriter in pqwriters.values():
             pqwriter.close()
+
 
 def generate_psms_of_spectrum(
     parquet_path: str,
@@ -54,11 +56,15 @@ def generate_psms_of_spectrum(
             axis=1,
             result_type="expand",
         )
-        pqwriters, pqwriter_no_part = save_parquet_file(partitions, table, output_folder, filename, pqwriters, pqwriter_no_part, PSM_SCHEMA)
+        pqwriters, pqwriter_no_part = save_parquet_file(
+            partitions, table, output_folder, filename, pqwriters, pqwriter_no_part, PSM_SCHEMA
+        )
     close_file(partitions, pqwriters, pqwriter_no_part)
 
 
-def save_parquet_file(partitions, table, output_folder, filename, pqwriters = {}, pqwriter_no_part=None, schema=FEATURE_SCHEMA):
+def save_parquet_file(
+    partitions, table, output_folder, filename, pqwriters={}, pqwriter_no_part=None, schema=FEATURE_SCHEMA
+):
 
     if partitions and len(partitions) > 0:
         for key, df in table.groupby(partitions):
@@ -83,21 +89,20 @@ def save_parquet_file(partitions, table, output_folder, filename, pqwriters = {}
         pqwriter_no_part.write_table(parquet_table)
         return pqwriters, pqwriter_no_part
 
+
 def generate_feature_of_gene(
-    parquet_path: str,
-    fasta: str,
-    output_folder: str,
-    file_num: int,
-    partitions: list = None,
-    species: str = "human"    
+    parquet_path: str, fasta: str, output_folder: str, file_num: int, partitions: list = None, species: str = "human"
 ):
     pqwriters, pqwriter_no_part, filename = init_save_info(parquet_path)
     p = Query(parquet_path)
     map_gene_names = p.get_protein_to_gene_map(fasta)
     for _, table in p.iter_file(file_num=file_num):
         table = p.inject_gene_msg(table, map_gene_names, species)
-        pqwriters, pqwriter_no_part = save_parquet_file(partitions, table, output_folder, filename, pqwriters, pqwriter_no_part)
+        pqwriters, pqwriter_no_part = save_parquet_file(
+            partitions, table, output_folder, filename, pqwriters, pqwriter_no_part
+        )
     close_file(partitions, pqwriters, pqwriter_no_part)
+
 
 def map_protein_for_tsv(path: str, fasta: str, output_path: str, map_parameter: str):
     """
@@ -191,23 +196,28 @@ def get_protein_accession(proteins: str = None):
         return re.findall(PROTEIN_ACCESSION, proteins)
     else:
         return re.split(r"[;,]", proteins)
-    
+
+
 def transform_ibaq(df):
     def transform(row):
         map_dict = row["intensities"]
-        return map_dict["sample_accession"],map_dict["channel"],map_dict["intensity"]
-    df = df.explode('intensities')
-    df.reset_index(drop=True,inplace=True)
-    df[["sample_accession","channel","intensity"]] = df[["intensities"]].apply(transform,axis=1,result_type="expand")
-    df.drop(["intensities"],axis=1,inplace=True)
+        return map_dict["sample_accession"], map_dict["channel"], map_dict["intensity"]
+
+    df = df.explode("intensities")
+    df.reset_index(drop=True, inplace=True)
+    df[["sample_accession", "channel", "intensity"]] = df[["intensities"]].apply(
+        transform, axis=1, result_type="expand"
+    )
+    df.drop(["intensities"], axis=1, inplace=True)
     return df
+
 
 def genereate_ibaq_feature(sdrf_path, parquet_path):
     Sdrf = SDRFHandler(sdrf_path)
     sdrf = Sdrf.transform_sdrf()
     experiment_type = Sdrf.get_experiment_type_from_sdrf()
     p = Query(parquet_path)
-    for _, df in p.iter_file(file_num=10,columns=IBAQ_USECOLS):
+    for _, df in p.iter_file(file_num=10, columns=IBAQ_USECOLS):
         df = transform_ibaq(df)
         if experiment_type != "LFQ":
             df = pd.merge(
@@ -237,11 +247,12 @@ def genereate_ibaq_feature(sdrf_path, parquet_path):
         feature = pa.Table.from_pandas(df, schema=IBAQ_SCHEMA)
         yield feature
 
+
 def write_ibaq_feature(sdrf_path, parquet_path, output_path):
     pqwriter = None
     for feature in genereate_ibaq_feature(sdrf_path, parquet_path):
-            if not pqwriter:
-                pqwriter = pq.ParquetWriter(output_path, feature.schema)
-            pqwriter.write_table(feature)
+        if not pqwriter:
+            pqwriter = pq.ParquetWriter(output_path, feature.schema)
+        pqwriter.write_table(feature)
     if pqwriter:
         pqwriter.close()
