@@ -75,7 +75,8 @@ MAXQUANT_PSM_MAP = {
     "Charge": "precursor_charge",
     "Modified sequence": "peptidoform",
     "Raw file": "reference_file_name",
-    "Score": "additional_scores",
+    "Score": "andromeda_score",
+    "Delta score": "delta_score",   
     "PIF": "parent_ion_score"
 }
 
@@ -89,7 +90,8 @@ MAXQUANT_FEATURE_MAP = {
     "Charge": "precursor_charge",
     "Modified sequence": "peptidoform",
     "Raw file": "reference_file_name",
-    "Score": "additional_scores",
+    "Score": "andromeda_score",
+    "Delta score": "delta_score",  
     "Reverse": "is_decoy",
     "m/z": "observed_mz",
     "Calibrated retention time": "rt",

@@ -244,8 +244,12 @@ class MaxQuant:
         self.generate_modification_details(df)
         df = df[df["posterior_error_probability"] < 0.05].copy()
         df["is_decoy"] = df["is_decoy"].map({None: "0", np.nan: "0", "+": "1"})
-        df["additional_scores"] = df["additional_scores"].apply(
-            lambda x: [{"score_name": "maxquant_score", "score_value": np.float32(x)}]
+        df["additional_scores"] = df[["andromeda_score", "delta_score"]].apply(
+            lambda row: [
+                {"score_name": "andromeda_score", "score_value": row["andromeda_score"]},
+                {"score_name": "delta_score", "score_value": row["delta_score"]},
+            ],
+            axis=1
         )
         df.loc[:, "cv_params"] = df["parent_ion_score"].apply(lambda socre: [{"cv_name": "parent_ion_score", "cv_value": str(socre)}])
         df.loc[:, "predicted_rt"] = None

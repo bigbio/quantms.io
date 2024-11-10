@@ -6,10 +6,7 @@ import itertools
 import logging
 import re
 import time
-
-# from builtins import sorted
 from collections import defaultdict
-
 import pandas as pd
 from Bio import SeqIO
 
