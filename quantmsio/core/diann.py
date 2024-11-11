@@ -263,3 +263,4 @@ class DiaNNConvert(DuckDB):
                 pqwriters = save_slice_file(feature, pqwriters, output_folder, key, filename)
         for pqwriter in pqwriters.values():
             pqwriter.close()
+        self.destroy_duckdb_database()
