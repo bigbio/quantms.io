@@ -3,7 +3,7 @@ import os
 import pyarrow as pa
 import pyarrow.parquet as pq
 from quantmsio.operate.tools import get_ahocorasick, get_protein_accession
-from quantmsio.utils.file_utils import extract_protein_list,save_slice_file
+from quantmsio.utils.file_utils import extract_protein_list,save_slice_file, close_file
 from quantmsio.core.mztab import MzTab
 from quantmsio.core.psm import Psm
 from quantmsio.core.sdrf import SDRFHandler
@@ -188,8 +188,7 @@ class Feature(MzTab):
             if not pqwriter:
                 pqwriter = pq.ParquetWriter(output_path, feature.schema)
             pqwriter.write_table(feature)
-        if pqwriter:
-            pqwriter.close()
+        close_file(pqwriter=pqwriter)
 
     def write_features_to_file(
         self,
@@ -208,8 +207,7 @@ class Feature(MzTab):
             partitions, file_num, protein_str, duckdb_max_memory, duckdb_threads
         ):
             pqwriters = save_slice_file(feature, pqwriters, output_folder, key, filename)
-        for pqwriter in pqwriters.values():
-            pqwriter.close()
+        close_file(pqwriters)
 
     def generate_best_scan(self, rows, pep_dict):
         key = (rows["peptidoform"], rows["precursor_charge"])

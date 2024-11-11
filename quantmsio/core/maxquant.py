@@ -15,7 +15,7 @@ from quantmsio.utils.constants import ITRAQ_CHANNEL, TMT_CHANNELS
 from quantmsio.core.common import MAXQUANT_PSM_MAP, MAXQUANT_PSM_USECOLS, MAXQUANT_FEATURE_MAP, MAXQUANT_FEATURE_USECOLS
 from quantmsio.core.feature import Feature
 from quantmsio.core.psm import Psm
-from quantmsio.utils.file_utils import extract_protein_list, save_slice_file
+from quantmsio.utils.file_utils import close_file, extract_protein_list, save_slice_file
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
@@ -290,8 +290,7 @@ class MaxQuant:
             if not pqwriter:
                 pqwriter = pq.ParquetWriter(output_path, parquet.schema)
             pqwriter.write_table(parquet)
-        if pqwriter:
-            pqwriter.close()
+        close_file(pqwriter=pqwriter)
 
     def _init_sdrf(self, sdrf_path: str):
         Sdrf = SDRFHandler(sdrf_path)
@@ -310,8 +309,7 @@ class MaxQuant:
             if not pqwriter:
                 pqwriter = pq.ParquetWriter(output_path, parquet.schema)
             pqwriter.write_table(parquet)
-        if pqwriter:
-            pqwriter.close()
+        close_file(pqwriter=pqwriter)
 
     def write_features_to_file(
         self,
@@ -333,5 +331,4 @@ class MaxQuant:
             for key, df in Feature.slice(report, partitions):
                 feature = Feature.transform_feature(df)
                 pqwriters = save_slice_file(feature, pqwriters, output_folder, key, filename)
-        for pqwriter in pqwriters.values():
-            pqwriter.close()
+        close_file(pqwriters=pqwriters)

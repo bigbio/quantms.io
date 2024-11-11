@@ -11,22 +11,13 @@ from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.operate.query import Query, map_spectrum_mz
 from quantmsio.core.openms import OpenMSHandler
 from quantmsio.utils.pride_utils import get_unanimous_name
-from quantmsio.utils.file_utils import load_de_or_ae, save_slice_file, save_file
+from quantmsio.utils.file_utils import load_de_or_ae, save_slice_file, save_file, close_file
 
 def init_save_info(parquet_path: str):
     pqwriters = {}
     pqwriter_no_part = None
     filename = os.path.basename(parquet_path)
     return pqwriters, pqwriter_no_part, filename
-
-
-def close_file(partitions: list, pqwriters: dict, pqwriter_no_part: str):
-    if not partitions or len(partitions) == 0:
-        if pqwriter_no_part:
-            pqwriter_no_part.close()
-    else:
-        for pqwriter in pqwriters.values():
-            pqwriter.close()
 
 
 def generate_psms_of_spectrum(
@@ -58,7 +49,7 @@ def generate_psms_of_spectrum(
         pqwriters, pqwriter_no_part = save_parquet_file(
             partitions, table, output_folder, filename, pqwriters, pqwriter_no_part, PSM_SCHEMA
         )
-    close_file(partitions, pqwriters, pqwriter_no_part)
+    close_file(pqwriters, pqwriter_no_part)
 
 
 def save_parquet_file(

@@ -9,7 +9,7 @@ from pathlib import Path
 from pyopenms import AASequence
 from pyopenms.Constants import PROTON_MASS_U
 from quantmsio.operate.tools import get_ahocorasick
-from quantmsio.utils.file_utils import extract_protein_list, save_slice_file
+from quantmsio.utils.file_utils import close_file, extract_protein_list, save_slice_file
 from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.core.mztab import MzTab
 from quantmsio.core.feature import Feature
@@ -240,8 +240,7 @@ class DiaNNConvert(DuckDB):
             if not pqwriter:
                 pqwriter = pq.ParquetWriter(output_path, feature.schema)
             pqwriter.write_table(feature)
-        if pqwriter:
-            pqwriter.close()
+        close_file(pqwriter=pqwriter)
         self.destroy_duckdb_database()
 
     def write_features_to_file(
@@ -261,6 +260,5 @@ class DiaNNConvert(DuckDB):
             for key, df in Feature.slice(report, partitions):
                 feature = Feature.transform_feature(df)
                 pqwriters = save_slice_file(feature, pqwriters, output_folder, key, filename)
-        for pqwriter in pqwriters.values():
-            pqwriter.close()
+        close_file(pqwriters=pqwriters)
         self.destroy_duckdb_database()
