@@ -9,7 +9,7 @@ from pathlib import Path
 from pyopenms import AASequence
 from pyopenms.Constants import PROTON_MASS_U
 from quantmsio.operate.tools import get_ahocorasick
-from quantmsio.utils.file_utils import extract_protein_list
+from quantmsio.utils.file_utils import extract_protein_list, save_slice_file
 from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.core.mztab import MzTab
 from quantmsio.core.feature import Feature
@@ -149,9 +149,6 @@ class DiaNNConvert(DuckDB):
 
             report["peptidoform"] = report["peptidoform"].map(modifications_map)
 
-            # report["scan_reference_file_name"] = report["Precursor.Id"].map(best_ref_map)
-            # report["scan"] = None
-
             yield report
 
     def add_additional_msg(self, report: pd.DataFrame):
@@ -223,10 +220,9 @@ class DiaNNConvert(DuckDB):
             s = time.time()
             self.add_additional_msg(report)
             Feature.convert_to_parquet_format(report)
-            feature = Feature.transform_feature(report)
             et = time.time() - s
             logging.info("Time to generate psm and feature file {} seconds".format(et))
-            yield feature
+            yield report
 
     def write_feature_to_file(
         self,
@@ -239,10 +235,31 @@ class DiaNNConvert(DuckDB):
         protein_list = extract_protein_list(protein_file) if protein_file else None
         protein_str = "|".join(protein_list) if protein_list else None
         pqwriter = None
-        for feature in self.generate_feature(qvalue_threshold, mzml_info_folder, file_num, protein_str):
+        for report in self.generate_feature(qvalue_threshold, mzml_info_folder, file_num, protein_str):
+            feature = Feature.transform_feature(report)
             if not pqwriter:
                 pqwriter = pq.ParquetWriter(output_path, feature.schema)
             pqwriter.write_table(feature)
         if pqwriter:
             pqwriter.close()
         self.destroy_duckdb_database()
+
+    def write_features_to_file(
+        self,
+        qvalue_threshold: float,
+        mzml_info_folder: str,
+        output_folder: str,
+        filename: str,
+        partitions: list,
+        file_num:int = 50,
+        protein_file=None,
+    ):
+        pqwriters = {}
+        protein_list = extract_protein_list(protein_file) if protein_file else None
+        protein_str = "|".join(protein_list) if protein_list else None
+        for report in self.generate_feature(qvalue_threshold, mzml_info_folder, file_num, protein_str):
+            for key, df in Feature.slice(report, partitions):
+                feature = Feature.transform_feature(df)
+                pqwriters = save_slice_file(feature, pqwriters, output_folder, key, filename)
+        for pqwriter in pqwriters.values():
+            pqwriter.close()

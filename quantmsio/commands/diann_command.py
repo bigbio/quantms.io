@@ -40,6 +40,11 @@ from quantmsio.core.project import create_uuid_filename
     required=False,
 )
 @click.option(
+    "--partitions",
+    help="The field used for splitting files, multiple fields are separated by ,",
+    required=False,
+)
+@click.option(
     "--duckdb_max_memory", help="The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)", required=False
 )
 @click.option("--duckdb_threads", help="The number of threads for the DuckDB engine (e.g 4)", required=False)
@@ -56,6 +61,7 @@ def diann_convert_to_parquet(
     output_folder: str,
     protein_file: str,
     output_prefix_file: str,
+    partitions: str,
     duckdb_max_memory: str,
     duckdb_threads: int,
     file_num: int,
@@ -66,6 +72,7 @@ def diann_convert_to_parquet(
     mzml_info_folder: mzml info file folder
     sdrf_path: sdrf file path
     output_folder: Folder where the Json file will be generated
+    param partitions: The field used for splitting files, multiple fields are separated by ,
     output_prefix_file: Prefix of the Json file needed to generate the file name
     duckdb_max_memory: The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)
     duckdb_threads: The number of threads for the DuckDB engine (e.g 4)
@@ -79,8 +86,8 @@ def diann_convert_to_parquet(
 
     if not output_prefix_file:
         output_prefix_file = ""
-
-    feature_output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".feature.parquet")
+    filename = create_uuid_filename(output_prefix_file, ".feature.parquet")
+    feature_output_path = output_folder + "/" + filename
 
     dia_nn = DiaNNConvert(
         diann_report=report_path,
@@ -88,11 +95,22 @@ def diann_convert_to_parquet(
         duckdb_max_memory=duckdb_max_memory,
         duckdb_threads=duckdb_threads,
     )
-
-    dia_nn.write_feature_to_file(
-        qvalue_threshold=qvalue_threshold,
-        mzml_info_folder=mzml_info_folder,
-        output_path=feature_output_path,
-        file_num=file_num,
-        protein_file=protein_file,
-    )
+    if not partitions:
+        dia_nn.write_feature_to_file(
+            qvalue_threshold=qvalue_threshold,
+            mzml_info_folder=mzml_info_folder,
+            output_path=feature_output_path,
+            file_num=file_num,
+            protein_file=protein_file,
+        )
+    else:
+        partitions = partitions.split(",")
+        dia_nn.write_features_to_file(
+            qvalue_threshold=qvalue_threshold,
+            mzml_info_folder=mzml_info_folder,
+            output_folder=output_folder,
+            filename=filename,
+            partitions=partitions,
+            file_num=file_num,
+            protein_file=protein_file,
+        )

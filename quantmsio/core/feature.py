@@ -3,7 +3,7 @@ import os
 import pyarrow as pa
 import pyarrow.parquet as pq
 from quantmsio.operate.tools import get_ahocorasick, get_protein_accession
-from quantmsio.utils.file_utils import extract_protein_list
+from quantmsio.utils.file_utils import extract_protein_list,save_slice_file
 from quantmsio.core.mztab import MzTab
 from quantmsio.core.psm import Psm
 from quantmsio.core.sdrf import SDRFHandler
@@ -207,16 +207,7 @@ class Feature(MzTab):
         for key, feature in self.generate_slice_feature(
             partitions, file_num, protein_str, duckdb_max_memory, duckdb_threads
         ):
-            folder = [output_folder] + [str(col) for col in key]
-            folder = os.path.join(*folder)
-            if not os.path.exists(folder):
-                os.makedirs(folder, exist_ok=True)
-            save_path = os.path.join(*[folder, filename])
-            if not os.path.exists(save_path):
-                pqwriter = pq.ParquetWriter(save_path, feature.schema)
-                pqwriters[key] = pqwriter
-            pqwriters[key].write_table(feature)
-
+            pqwriters = save_slice_file(feature, pqwriters, output_folder, key, filename)
         for pqwriter in pqwriters.values():
             pqwriter.close()
 

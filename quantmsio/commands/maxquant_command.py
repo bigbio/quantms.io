@@ -49,7 +49,7 @@ def convert_maxquant_psm(
 
     MQ = MaxQuant()
     output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
-    MQ.convert_psm_to_parquet(msms_path=msms_file, output_path=output_path, chunksize=chunksize)
+    MQ.write_psm_to_file(msms_path=msms_file, output_path=output_path, chunksize=chunksize)
 
 
 @click.command(
@@ -72,6 +72,16 @@ def convert_maxquant_psm(
     required=True,
 )
 @click.option(
+    "--protein_file",
+    help="Protein file that meets specific requirements",
+    required=False,
+)
+@click.option(
+    "--partitions",
+    help="The field used for splitting files, multiple fields are separated by ,",
+    required=False,
+)
+@click.option(
     "--chunksize",
     help="Read batch size",
     default=1000000,
@@ -85,6 +95,8 @@ def convert_maxquant_feature(
     evidence_file: str,
     sdrf_file: str,
     output_folder: str,
+    protein_file: str,
+    partitions: str,
     chunksize: int,
     output_prefix_file: str,
 ):
@@ -93,6 +105,7 @@ def convert_maxquant_feature(
     :param evidence_file: the msms.txt file, this will be used to extract the peptide information
     :param sdrf_file: the SDRF file needed to extract some of the metadata
     :param output_folder: Folder where the Json file will be generated
+    :param partitions: The field used for splitting files, multiple fields are separated by ,
     :param chunksize: Read batch size
     :param output_prefix_file: Prefix of the Json file needed to generate the file name
     """
@@ -104,7 +117,20 @@ def convert_maxquant_feature(
         output_prefix_file = ""
 
     MQ = MaxQuant()
-    output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".feature.parquet")
-    MQ.convert_feature_to_parquet(
-        evidence_path=evidence_file, sdrf_path=sdrf_file, output_path=output_path, chunksize=chunksize
-    )
+    filename = create_uuid_filename(output_prefix_file, ".feature.parquet")
+    output_path = output_folder + "/" + filename
+    if not partitions:
+        MQ.write_feature_to_file(
+            evidence_path=evidence_file, sdrf_path=sdrf_file, output_path=output_path, chunksize=chunksize, protein_file=protein_file
+        )
+    else:
+        partitions = partitions.split(",")
+        MQ.write_features_to_file(
+            evidence_path=evidence_file, 
+            sdrf_path=sdrf_file,
+            output_folder = output_folder,
+            filename=filename,
+            partitions=partitions,
+            chunksize=chunksize,
+            protein_file=protein_file
+        )

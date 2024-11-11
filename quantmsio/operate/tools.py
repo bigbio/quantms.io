@@ -11,8 +11,7 @@ from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.operate.query import Query, map_spectrum_mz
 from quantmsio.core.openms import OpenMSHandler
 from quantmsio.utils.pride_utils import get_unanimous_name
-from quantmsio.utils.file_utils import load_de_or_ae, read_large_parquet
-
+from quantmsio.utils.file_utils import load_de_or_ae, save_slice_file, save_file
 
 def init_save_info(parquet_path: str):
     pqwriters = {}
@@ -69,24 +68,11 @@ def save_parquet_file(
     if partitions and len(partitions) > 0:
         for key, df in table.groupby(partitions):
             parquet_table = pa.Table.from_pandas(df, schema=schema)
-            folder = [output_folder] + [str(col) for col in key]
-            folder = os.path.join(*folder)
-            if not os.path.exists(folder):
-                os.makedirs(folder, exist_ok=True)
-            save_path = os.path.join(*[folder, filename])
-            if not os.path.exists(save_path):
-                pqwriter = pq.ParquetWriter(save_path, parquet_table.schema)
-                pqwriters[key] = pqwriter
-            pqwriters[key].write_table(parquet_table)
+            pqwriters = save_slice_file(parquet_table, pqwriters, output_folder, key, filename)
         return pqwriters, pqwriter_no_part
     else:
         parquet_table = pa.Table.from_pandas(table, schema=schema)
-        if not os.path.exists(output_folder):
-            os.makedirs(output_folder, exist_ok=True)
-        save_path = os.path.join(*[output_folder, filename])
-        if not pqwriter_no_part:
-            pqwriter_no_part = pq.ParquetWriter(save_path, parquet_table.schema)
-        pqwriter_no_part.write_table(parquet_table)
+        pqwriter_no_part = save_file(parquet_table, pqwriter_no_part, output_folder, filename)
         return pqwriters, pqwriter_no_part
 
 

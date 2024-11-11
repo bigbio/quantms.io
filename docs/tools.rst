@@ -146,6 +146,8 @@ Example:
 * Optional parameter
 
 .. code:: shell
+   --protein_file   Protein file that meets specific requirements(protein.txt)
+   --partitions The field used for splitting files, multiple fields are separated by `,`
    --chunksize Read batch size
    --output_prefix_file Prefix of the parquet file needed to generate the file name
 
@@ -168,6 +170,7 @@ Example:
 
 .. code:: shell
    --protein_file Protein file that meets specific requirements
+   --partitions The field used for splitting files, multiple fields are separated by `,`
    --output_prefix_file Prefix of the Json file needed to generate the file name
    --duckdb_max_memory  The maximum amount of memory allocated by the DuckDB engine (e.g 16GB)
    --duckdb_threads The number of threads for the DuckDB engine (e.g 4)

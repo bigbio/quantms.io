@@ -15,6 +15,7 @@ from quantmsio.utils.constants import ITRAQ_CHANNEL, TMT_CHANNELS
 from quantmsio.core.common import MAXQUANT_PSM_MAP, MAXQUANT_PSM_USECOLS, MAXQUANT_FEATURE_MAP, MAXQUANT_FEATURE_USECOLS
 from quantmsio.core.feature import Feature
 from quantmsio.core.psm import Psm
+from quantmsio.utils.file_utils import extract_protein_list, save_slice_file
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
@@ -40,7 +41,7 @@ class MaxQuant:
     def __init__(self):
         pass
 
-    def iter_batch(self, file_path: str, label: str = "feature", chunksize: int = 100000):
+    def iter_batch(self, file_path: str, label: str = "feature", chunksize: int = 100000, protein_str:str = None):
         self.mods_map = self.get_mods_map(file_path)
         self._automaton = get_ahocorasick(self.mods_map)
         col_df = pd.read_csv(file_path, sep="\t", nrows=1)
@@ -74,6 +75,8 @@ class MaxQuant:
             chunksize=chunksize,
         ):
             df.rename(columns=use_map, inplace=True)
+            if protein_str:
+                df = df[df["mp_accessions"].str.contains(f"{protein_str}", na=False)]
             df = self.main_operate(df)
             yield df
 
@@ -278,7 +281,7 @@ class MaxQuant:
         df.loc[:, "start_ion_mobility"] = None
         df.loc[:, "stop_ion_mobility"] = None
 
-    def convert_psm_to_parquet(self, msms_path: str, output_path: str, chunksize: int = 1000000):
+    def write_psm_to_file(self, msms_path: str, output_path: str, chunksize: int = 1000000):
         pqwriter = None
         for df in self.iter_batch(msms_path, "psm", chunksize=chunksize):
             self.transform_psm(df)
@@ -290,14 +293,17 @@ class MaxQuant:
         if pqwriter:
             pqwriter.close()
 
-    def convert_feature_to_parquet(
-        self, evidence_path: str, sdrf_path: str, output_path: str, chunksize: int = 1000000
-    ):
+    def _init_sdrf(self, sdrf_path: str):
         Sdrf = SDRFHandler(sdrf_path)
         self.experiment_type = Sdrf.get_experiment_type_from_sdrf()
         self._sample_map = Sdrf.get_sample_map_run()
+
+    def write_feature_to_file(
+        self, evidence_path: str, sdrf_path: str, output_path: str, chunksize: int = 1000000, protein_file=None,
+    ):
+        self._init_sdrf(sdrf_path)
         pqwriter = None
-        for df in self.iter_batch(evidence_path, chunksize=chunksize):
+        for df in self.iter_batch(evidence_path, chunksize=chunksize, protein_str=protein_file):
             self.transform_feature(df)
             Feature.convert_to_parquet_format(df)
             parquet = Feature.transform_feature(df)
@@ -305,4 +311,27 @@ class MaxQuant:
                 pqwriter = pq.ParquetWriter(output_path, parquet.schema)
             pqwriter.write_table(parquet)
         if pqwriter:
+            pqwriter.close()
+
+    def write_features_to_file(
+        self,
+        evidence_path: str, 
+        sdrf_path: str,
+        output_folder: str,
+        filename: str,
+        partitions: list,
+        chunksize: int = 1000000,
+        protein_file=None,
+    ):
+        pqwriters = {}
+        protein_list = extract_protein_list(protein_file) if protein_file else None
+        protein_str = "|".join(protein_list) if protein_list else None
+        self._init_sdrf(sdrf_path)
+        for report in self.iter_batch(evidence_path, chunksize=chunksize, protein_str=protein_str):
+            self.transform_feature(report)
+            Feature.convert_to_parquet_format(report)
+            for key, df in Feature.slice(report, partitions):
+                feature = Feature.transform_feature(df)
+                pqwriters = save_slice_file(feature, pqwriters, output_folder, key, filename)
+        for pqwriter in pqwriters.values():
             pqwriter.close()

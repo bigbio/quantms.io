@@ -82,3 +82,24 @@ def calculate_buffer_size(file_path: str) -> int:
     fraction_of_memory = 0.4  # Adjust as needed
 
     return min(int(total_memory * fraction_of_memory), max_buffer_size, file_size)
+
+def save_slice_file(parquet_table, pqwriters, output_folder, partitions, filename):
+    folder = [output_folder] + [str(col) for col in partitions]
+    folder = os.path.join(*folder)
+    if not os.path.exists(folder):
+        os.makedirs(folder, exist_ok=True)
+    save_path = os.path.join(*[folder, filename])
+    if not os.path.exists(save_path):
+        pqwriter = pq.ParquetWriter(save_path, parquet_table.schema)
+        pqwriters[partitions] = pqwriter
+    pqwriters[partitions].write_table(parquet_table)
+    return pqwriters
+
+def save_file(parquet_table, pqwriter, output_folder, filename):
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder, exist_ok=True)
+    save_path = os.path.join(*[output_folder, filename])
+    if not pqwriter:
+        pqwriter = pq.ParquetWriter(save_path, parquet_table.schema)
+    pqwriter.write_table(parquet_table)
+    return pqwriter
