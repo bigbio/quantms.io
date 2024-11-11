@@ -247,10 +247,10 @@ class MaxQuant:
         self.generate_modification_details(df)
         df = df[df["posterior_error_probability"] < 0.05].copy()
         df["is_decoy"] = df["is_decoy"].map({None: "0", np.nan: "0", "+": "1"})
-        df["additional_scores"] = df[["andromeda_score", "delta_score"]].apply(
+        df["additional_scores"] = df[["andromeda_score", "andromeda_delta_score"]].apply(
             lambda row: [
                 {"score_name": "andromeda_score", "score_value": row["andromeda_score"]},
-                {"score_name": "delta_score", "score_value": row["delta_score"]},
+                {"score_name": "andromeda_delta_score", "score_value": row["andromeda_delta_score"]},
             ],
             axis=1
         )

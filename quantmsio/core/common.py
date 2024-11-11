@@ -76,7 +76,7 @@ MAXQUANT_PSM_MAP = {
     "Modified sequence": "peptidoform",
     "Raw file": "reference_file_name",
     "Score": "andromeda_score",
-    "Delta score": "delta_score",   
+    "Delta score": "andromeda_delta_score",   
     "PIF": "parent_ion_score"
 }
 
@@ -91,7 +91,7 @@ MAXQUANT_FEATURE_MAP = {
     "Modified sequence": "peptidoform",
     "Raw file": "reference_file_name",
     "Score": "andromeda_score",
-    "Delta score": "delta_score",
+    "Delta score": "andromeda_delta_score",
     "PIF": "parent_ion_score",  
     "Reverse": "is_decoy",
     "m/z": "observed_mz",
