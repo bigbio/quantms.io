@@ -13,6 +13,7 @@ from quantmsio.core.openms import OpenMSHandler
 from quantmsio.utils.pride_utils import get_unanimous_name
 from quantmsio.utils.file_utils import load_de_or_ae, save_slice_file, save_file, close_file
 
+
 def init_save_info(parquet_path: str):
     pqwriters = {}
     pqwriter_no_part = None

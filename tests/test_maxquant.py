@@ -51,6 +51,5 @@ class TestFeatureHandler(TestCase):
         for report in M.iter_batch(evidence_file, chunksize=500000):
             M.transform_feature(report)
             Feature.convert_to_parquet_format(report)
-            for _, df in Feature.slice(report, ["reference_file_name","precursor_charge"]):
+            for _, df in Feature.slice(report, ["reference_file_name", "precursor_charge"]):
                 Feature.transform_feature(df)
-            

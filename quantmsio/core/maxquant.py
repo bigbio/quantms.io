@@ -41,7 +41,7 @@ class MaxQuant:
     def __init__(self):
         pass
 
-    def iter_batch(self, file_path: str, label: str = "feature", chunksize: int = 100000, protein_str:str = None):
+    def iter_batch(self, file_path: str, label: str = "feature", chunksize: int = 100000, protein_str: str = None):
         self.mods_map = self.get_mods_map(file_path)
         self._automaton = get_ahocorasick(self.mods_map)
         col_df = pd.read_csv(file_path, sep="\t", nrows=1)
@@ -252,7 +252,7 @@ class MaxQuant:
                 {"score_name": "andromeda_score", "score_value": row["andromeda_score"]},
                 {"score_name": "andromeda_delta_score", "score_value": row["andromeda_delta_score"]},
             ],
-            axis=1
+            axis=1,
         )
         df.loc[:, "cv_params"] = df["parent_ion_score"].apply(
             lambda socre: [{"cv_name": "parent_ion_score", "cv_value": str(socre)}]
@@ -298,7 +298,12 @@ class MaxQuant:
         self._sample_map = Sdrf.get_sample_map_run()
 
     def write_feature_to_file(
-        self, evidence_path: str, sdrf_path: str, output_path: str, chunksize: int = 1000000, protein_file=None,
+        self,
+        evidence_path: str,
+        sdrf_path: str,
+        output_path: str,
+        chunksize: int = 1000000,
+        protein_file=None,
     ):
         self._init_sdrf(sdrf_path)
         pqwriter = None
@@ -313,7 +318,7 @@ class MaxQuant:
 
     def write_features_to_file(
         self,
-        evidence_path: str, 
+        evidence_path: str,
         sdrf_path: str,
         output_folder: str,
         filename: str,

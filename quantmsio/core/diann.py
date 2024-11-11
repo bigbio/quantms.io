@@ -250,7 +250,7 @@ class DiaNNConvert(DuckDB):
         output_folder: str,
         filename: str,
         partitions: list,
-        file_num:int = 50,
+        file_num: int = 50,
         protein_file=None,
     ):
         pqwriters = {}

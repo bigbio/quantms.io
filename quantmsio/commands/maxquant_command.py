@@ -121,16 +121,20 @@ def convert_maxquant_feature(
     output_path = output_folder + "/" + filename
     if not partitions:
         MQ.write_feature_to_file(
-            evidence_path=evidence_file, sdrf_path=sdrf_file, output_path=output_path, chunksize=chunksize, protein_file=protein_file
+            evidence_path=evidence_file,
+            sdrf_path=sdrf_file,
+            output_path=output_path,
+            chunksize=chunksize,
+            protein_file=protein_file,
         )
     else:
         partitions = partitions.split(",")
         MQ.write_features_to_file(
-            evidence_path=evidence_file, 
+            evidence_path=evidence_file,
             sdrf_path=sdrf_file,
-            output_folder = output_folder,
+            output_folder=output_folder,
             filename=filename,
             partitions=partitions,
             chunksize=chunksize,
-            protein_file=protein_file
+            protein_file=protein_file,
         )

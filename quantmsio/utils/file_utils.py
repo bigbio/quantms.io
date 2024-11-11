@@ -83,6 +83,7 @@ def calculate_buffer_size(file_path: str) -> int:
 
     return min(int(total_memory * fraction_of_memory), max_buffer_size, file_size)
 
+
 def save_slice_file(parquet_table, pqwriters, output_folder, partitions, filename):
     folder = [output_folder] + [str(col) for col in partitions]
     folder = os.path.join(*folder)
@@ -95,6 +96,7 @@ def save_slice_file(parquet_table, pqwriters, output_folder, partitions, filenam
     pqwriters[partitions].write_table(parquet_table)
     return pqwriters
 
+
 def save_file(parquet_table, pqwriter, output_folder, filename):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder, exist_ok=True)
@@ -103,6 +105,7 @@ def save_file(parquet_table, pqwriter, output_folder, filename):
         pqwriter = pq.ParquetWriter(save_path, parquet_table.schema)
     pqwriter.write_table(parquet_table)
     return pqwriter
+
 
 def close_file(pqwriters: dict = None, pqwriter: object = None):
     if pqwriter:
