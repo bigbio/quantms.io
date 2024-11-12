@@ -100,6 +100,7 @@ MAXQUANT_FEATURE_MAP = {
     "PIF": "parent_ion_score",
     "Reverse": "is_decoy",
     "m/z": "observed_mz",
+    "MS/MS scan number": "scan",
     "Calibrated retention time": "rt",
     "Calibrated retention time start": "rt_start",
     "Calibrated retention time finish": "rt_stop",

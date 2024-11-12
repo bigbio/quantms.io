@@ -276,7 +276,6 @@ class MaxQuant:
         df.loc[:, "anchor_protein"] = df["pg_accessions"].str[0]
         df.loc[:, "gg_accessions"] = None
         df.loc[:, "pg_global_qvalue"] = None
-        df.loc[:, "scan"] = None
         df.loc[:, "scan_reference_file_name"] = None
         df.loc[:, "start_ion_mobility"] = None
         df.loc[:, "stop_ion_mobility"] = None
