@@ -15,9 +15,9 @@ from quantmsio.core.mztab import MzTab
 from quantmsio.core.feature import Feature
 from quantmsio.core.duckdb import DuckDB
 from quantmsio.utils.pride_utils import generate_scan_number
-from quantmsio.core.common import DIANN_MAP
+from quantmsio.core.common import DIANN_MAP, DIANN_USECOLS
 
-
+DIANN_SQL = ', '.join([f'"{name}"' for name in DIANN_USECOLS])
 class DiaNNConvert(DuckDB):
 
     def __init__(self, diann_report, sdrf_path, duckdb_max_memory="16GB", duckdb_threads=4):
@@ -42,11 +42,11 @@ class DiaNNConvert(DuckDB):
         s = time.time()
         database = self._duckdb.query(
             """
-            select "File.Name", "Run", "Protein.Group", "Protein.Ids", "Genes", "RT", "Predicted.RT", "RT.Start", "RT.Stop", "Precursor.Id", "Q.Value", "Global.Q.Value", "PEP",
-                   "PG.Q.Value", "Global.PG.Q.Value", "Modified.Sequence", "Stripped.Sequence", "Precursor.Charge", "Precursor.Quantity", "Precursor.Normalised"
-                    from report
+            select {}
+            from report
             where Run IN {}
             """.format(
+                DIANN_SQL,
                 tuple(runs)
             )
         )
@@ -101,7 +101,7 @@ class DiaNNConvert(DuckDB):
                 sep="\t",
                 usecols=["Retention_Time", "SpectrumID", "Exp_Mass_To_Charge"],
             )
-            group = report[report["Run"] == n].copy()
+            group = report[report["run"] == n].copy()
             group.sort_values(by="rt_start", inplace=True)
             target.rename(
                 columns={
@@ -115,8 +115,6 @@ class DiaNNConvert(DuckDB):
             res = pd.merge_asof(group, target, on="rt_start", direction="nearest")
             return res
 
-        # query duckdb
-        # best_ref_map = self.get_peptide_map_from_database()
         masses_map, modifications_map = self.get_masses_and_modifications_map()
 
         info_list = [
@@ -183,31 +181,36 @@ class DiaNNConvert(DuckDB):
         report["pg_accessions"] = report["pg_accessions"].str.split(";")
         report.loc[:, "anchor_protein"] = report["pg_accessions"].str[0]
         report.loc[:, "gg_names"] = report["gg_names"].str.split(",")
-
         report.loc[:, "additional_intensities"] = report[
-            ["reference_file_name", "channel", "normalize_intensity"]
+            ["reference_file_name", "channel", "normalize_intensity", "lfq"]
         ].apply(
             lambda rows: [
                 {
                     "sample_accession": self._sample_map[rows["reference_file_name"] + "-" + rows["channel"]],
                     "channel": rows["channel"],
                     "additional_intensity": [
-                        {"intensity_name": "normalize_intensity", "intensity_value": rows["normalize_intensity"]}
+                        {"intensity_name": "normalize_intensity", "intensity_value": rows["normalize_intensity"]},
+                        {"intensity_name": "lfq", "intensity_value": rows["lfq"]}
                     ],
                 }
             ],
             axis=1,
         )
-        report.loc[:, "additional_scores"] = report[["qvalue", "pg_qvalue"]].apply(
+        report.loc[:, "additional_scores"] = report[["qvalue", "pg_qvalue", "global_qvalue"]].apply(
             lambda row: [
                 {"score_name": "qvalue", "score_value": row["qvalue"]},
                 {"score_name": "pg_qvalue", "score_value": row["pg_qvalue"]},
+                {"score_name": "global_qvalue", "score_value": row["global_qvalue"]}
             ],
             axis=1,
         )
+        report.loc[:, "cv_params"] = report[["quantitative_score"]].apply(
+            lambda rows: [
+                {"cv_name": "quantitative_score", "cv_value": str(rows["quantitative_score"])}
+            ],
+            axis=1
+        )
         report.loc[:, "scan_reference_file_name"] = None
-        report.loc[:, "scan"] = None
-        report.loc[:, "cv_params"] = None
         report.loc[:, "gg_accessions"] = None
         report.loc[:, "ion_mobility"] = None
         report.loc[:, "start_ion_mobility"] = None

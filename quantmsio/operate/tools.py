@@ -79,7 +79,7 @@ def generate_feature_of_gene(
         pqwriters, pqwriter_no_part = save_parquet_file(
             partitions, table, output_folder, filename, pqwriters, pqwriter_no_part
         )
-    close_file(partitions, pqwriters, pqwriter_no_part)
+    close_file(pqwriters, pqwriter_no_part)
 
 
 def map_protein_for_tsv(path: str, fasta: str, output_path: str, map_parameter: str):

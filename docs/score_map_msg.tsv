@@ -1,3 +1,6 @@
-type	field	desc	map 	accession
-maxquant	Score	Andromeda:score	andromeda_score	MS:1002338
-maxquant	Delta score	Andromeda: delta score	andromeda_delta_score	MS:1003433
+software	field	desc	map 	accession
+andromeda	Score	Andromeda:score	andromeda_score	MS:1002338
+andromeda	Delta score	Andromeda: delta score	andromeda_delta_score	MS:1003433
+percolator		percolator:score	percolator_score	MS:1001492
+openMS		OpenMS:Best PSM Score	openms_score	MS:1003114
+MS-GF		MS-GF:RawScore	msgf_score	MS:1002049

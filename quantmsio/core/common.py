@@ -58,11 +58,16 @@ DIANN_MAP = {
     "Q.Value": "qvalue",
     "PG.Q.Value": "pg_qvalue",
     "Precursor.Normalised": "normalize_intensity",
+    "PG.MaxLFQ": "lfq",
+    "Quantity.Quality": "quantitative_score",
     "Precursor.Charge": "precursor_charge",
     "Stripped.Sequence": "sequence",
     "Modified.Sequence": "peptidoform",
     "Genes": "gg_names",
+    "Run": "run"
 }
+DIANN_USECOLS = list(DIANN_MAP.keys())
+
 MAXQUANT_PSM_MAP = {
     "Sequence": "sequence",
     "Proteins": "mp_accessions",

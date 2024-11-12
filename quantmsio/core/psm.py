@@ -1,3 +1,4 @@
+import re
 import pyarrow as pa
 import pyarrow.parquet as pq
 from quantmsio.utils.file_utils import extract_protein_list
@@ -87,7 +88,9 @@ class Psm(MzTab):
     def _genarate_additional_scores(self, cols):
         struct_list = []
         for software, score in self._score_names.items():
-            struct = {"score_name": f"search_engine_score({software})", "score_value": cols[score]}
+            software = re.sub(r"[^a-zA-Z0-9\s]", "", software)
+            software = software.lower()
+            struct = {"score_name": f"{software}_score", "score_value": cols[score]}
             struct_list.append(struct)
         if cols["global_qvalue"]:
             struct = {"score_name": "global_qvalue", "score_value": cols["global_qvalue"]}
@@ -95,7 +98,6 @@ class Psm(MzTab):
         return struct_list
 
     def add_addition_msg(self, df):
-        df.loc[:, "cv_params"] = None
         df.loc[:, "predicted_rt"] = None
         df.loc[:, "ion_mobility"] = None
         df.loc[:, "number_peaks"] = None
