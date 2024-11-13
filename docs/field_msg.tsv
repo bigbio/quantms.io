@@ -1,10 +1,10 @@
 field 	ontology_name	ontology_accession	desc
-sequence			
+sequence	AA sequence	MS:1001344	The sequence is a amino acid sequence.
 peptidoform	peptidoform	MS:1003049	"Peptide that contains zero or more mass modifications on the termini or side chains of its amino acid residues, and may be differentiated from other peptidoforms with the same peptide sequence but different mass modification configurations."
-modifications			
-precursor_charge			
+modifications	protein modifications	MS:1000933	"Encoding of modifications of the protein sequence from the specified accession, written in PEFF notation."
+precursor_charge	MS2 known precursor charges fractions	MS:4000063	The fraction of MS/MS precursors of the corresponding charge.
 posterior_error_probability	posterior error probability from identification based on multiple spectra	MS:1003336	PEP score for identifications based on multiple spectra.
-is_decoy			
+is_decoy	decoy peptide	MS:1002217	A putative identified peptide issued from a decoy sequence database.
 calculated_mz			
 observed_mz			
 mp_accessions			
