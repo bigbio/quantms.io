@@ -1,7 +1,0 @@
-field 	ontology_name	ontology_accession
-andromeda_score	Andromeda:score	MS:1002338
-andromeda_delta_score	Andromeda: delta score	MS:1003433
-percolator_score	percolator:score	MS:1001492
-openms_score	OpenMS:Best PSM Score	MS:1003114
-msgf_score	MS-GF:RawScore	MS:1002049
-posterior_error_probability	posterior error probability from identification based on multiple spectra	MS:1003336

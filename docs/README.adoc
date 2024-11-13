@@ -195,7 +195,7 @@ A Parquet table can be distributed across multiple compute nodes, and its key ad
 
 [cols="6*", options="header"]
 |===========================================================================================
-| Project   | Type     | File size(GB) | Convert size(MB) | Psm time(s) | Feature time(s)   
+| Project   | Type     | Original file size(GB) | Converted parquet size(MB) | Writing psm time(s) | Writing feature time(s)   
 | PXD046440 | maxquant | 48            | 337/343          | 985.2671835 | 678.474133        
 | PXD016999 | mzTab    | 160           | 155/228          | 539.0019641 | 3554.52738
 | PXD019909 | diaNN    | 1.9           | 195              |             | 229.482332       
