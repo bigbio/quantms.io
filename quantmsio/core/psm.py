@@ -73,7 +73,9 @@ class Psm(MzTab):
         if "charge" in not_cols or "best_search_engine_score[1]" in not_cols:
             raise Exception("The peptide table don't have best_search_engine_score[1] or charge columns")
         pep_map = {}
-        for pep in self.skip_and_load_csv("PEH", usecols=live_cols, chunksize=chunksize):
+        indexs = [self._pep_columns.index(col) for col in live_cols]
+        for pep in self.skip_and_load_csv("PEH", usecols=indexs, chunksize=chunksize):
+            pep.reset_index(drop=True, inplace=True)
             if "opt_global_cv_MS:1000889_peptidoform_sequence" not in pep.columns:
                 pep.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = pep[["modifications", "sequence"]].apply(
                     lambda row: get_petidoform_msstats_notation(row["sequence"], row["modifications"], self._modifications),
