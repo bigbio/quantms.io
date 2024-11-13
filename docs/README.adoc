@@ -193,6 +193,14 @@ Apache Parquet includes two types of metadata: file metadata and column metadata
 
 A Parquet table can be distributed across multiple compute nodes, and its key advantage is that applications can quickly jump to the relevant fields in a record using metadata. For large-scale analyses, Parquet has helped users reduce storage requirements by at least one-third on large datasets. Additionally, it significantly improves scan and deserialization times (important for web-based use cases), thus reducing overall costs.
 
+[cols="6*", options="header"]
+|===========================================================================================
+| Project   | Type     | File size(GB) | Convert size(MB) | Psm time(s) | Feature time(s)   
+| PXD046440 | maxquant | 48            | 337/343          | 985.2671835 | 678.474133        
+| PXD016999 | mzTab    | 160           | 155/228          | 539.0019641 | 3554.52738
+| PXD019909 | diaNN    | 1.9           | 195              |             | 229.482332       
+|===========================================================================================
+
 [[parquet-features]]
 ==== Parquet features
 
