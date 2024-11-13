@@ -78,24 +78,27 @@ class MzTab:
         self._psm_pos = None
         # psm len
         self._psm_len = None
+        self._psm_end_pos = None
         # pep pos
         self._pep_pos = None
         # pep len
         self._pep_len = None
+        self._pep_end_pos = None
         # prt pos
         self._prt_pos = None
         # prt len
         self._prt_len = None
+        self._prt_end_pos = None
         # load psms columns
         self._psms_columns = None
         # load pep columns
         self._pep_columns = None
 
-    def __get_pos(self, header):
+    def _get_pos(self, header):
         if header == "PSH" and self._pep_pos is not None:
-            return self._pep_pos + self._pep_len - 1
+            return self._pep_end_pos
         elif header == "PEH" and self._prt_pos is not None:
-            return self._prt_pos + self._prt_len - 1
+            return self._prt_end_pos
         else:
             return 0
 
@@ -104,7 +107,7 @@ class MzTab:
         if os.stat(self.mztab_path).st_size == 0:
             raise ValueError("File is empty")
         f = open(self.mztab_path)
-        pos = self.__get_pos(header)
+        pos = self._get_pos(header)
         f.seek(pos)
         line = f.readline()
         while not line.startswith(header):
@@ -121,31 +124,35 @@ class MzTab:
         while line.startswith(map_tag[header]):
             fle_len += 1
             line = f.readline()
+        end_pos = f.tell()
         f.close()
-        return fle_len, pos
+        return fle_len, pos, end_pos
 
     def __load_second(self, header, **kwargs):
         f = open(self.mztab_path)
         if header == "PSH":
             f.seek(self._psm_pos)
-            return pd.read_csv(f, nrows=self._psm_len, **kwargs)
+            return pd.read_csv(f, sep="\t", nrows=self._psm_len, low_memory=False, **kwargs)
         elif header == "PEH":
             f.seek(self._pep_pos)
-            return pd.read_csv(f, nrows=self._pep_len, **kwargs)
+            return pd.read_csv(f, sep="\t", nrows=self._pep_len, low_memory=False, **kwargs)
         else:
             f.seek(self._prt_pos)
-            return pd.read_csv(f, nrows=self._prt_len, **kwargs)
+            return pd.read_csv(f, sep="\t", nrows=self._prt_len, low_memory=False, **kwargs)
 
-    def __set_table_config(self, header, length, pos):
+    def __set_table_config(self, header, length, pos, end_pos):
         if header == "PSH":
             self._psm_pos = pos
             self._psm_len = length
+            self._psm_end_pos = end_pos
         elif header == "PEH":
             self._pep_pos = pos
             self._pep_len = length
+            self._pep_end_pos = end_pos
         else:
             self._prt_pos = pos
             self._prt_len = length
+            self._prt_end_pos = end_pos
 
     def skip_and_load_csv(self, header, **kwargs):
         if self._psm_pos is not None and header == "PSH":
@@ -154,12 +161,12 @@ class MzTab:
             return self.__load_second(header, **kwargs)
         if self._prt_pos is not None and header == "PRH":
             return self.__load_second(header, **kwargs)
-        fle_len, pos = self.__extract_len(header)
+        fle_len, pos, end_pos = self.__extract_len(header)
         if os.stat(self.mztab_path).st_size == 0:
             raise ValueError("File is empty")
         f = open(self.mztab_path)
         f.seek(pos)
-        self.__set_table_config(header, fle_len, pos)
+        self.__set_table_config(header, fle_len, pos, end_pos)
         return pd.read_csv(f, nrows=fle_len, sep="\t", low_memory=False, **kwargs)
 
     def extract_ms_runs(self):
@@ -231,24 +238,17 @@ class MzTab:
         f = codecs.open(self.mztab_path, "r", "utf-8")
         line = f.readline()
         mods_map = {}
-        modifications_db = ModificationsDB()
         while line.startswith("MTD"):
-            if "software" in line and "_modifications" in line:
-                parts = line.split("\t")
-                mods = parts[2].split(":")[1].strip().split(",")
-                for mod in mods:
-                    if mod != "null":
-                        match = re.search(r"\((.*?)\)", mod)
-                        mod = re.search(r"([^ ]+)\s?", mod)
-                        if match:
-                            site = match.group(1)
-                        else:
-                            site = "X"
-                        mod = mod.group(1)
-                        Mod = modifications_db.getModification(mod)
-                        unimod = Mod.getUniModAccession()
-                        mods_map[mod] = [unimod.upper(), site]
-                        mods_map[unimod.upper()] = [mod, site]
+            if "_mod[" in line:
+                line_parts = line.split("\t")
+                if "site" not in line_parts[1] and "position" not in line_parts[1]:
+                    values = line_parts[2].replace("[", "").replace("]", "").split(",")
+                    accession = values[1].strip()
+                    name = values[2].strip()
+                    line = f.readline()
+                    site = line.replace("\n","").split("\t")[2]
+                    mods_map[name] = [accession.upper(),site]
+                    mods_map[accession.upper().upper()] = [name, site]
             line = f.readline()
         f.close()
         return mods_map

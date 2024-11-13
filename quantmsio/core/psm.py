@@ -1,8 +1,12 @@
 import re
+import os
 import pyarrow as pa
 import pyarrow.parquet as pq
 from quantmsio.utils.file_utils import extract_protein_list
-from quantmsio.utils.pride_utils import generate_scan_number
+from quantmsio.utils.pride_utils import (
+    get_petidoform_msstats_notation,
+    generate_scan_number,
+)
 from quantmsio.operate.tools import get_ahocorasick, get_protein_accession
 from quantmsio.core.common import PSM_USECOLS, PSM_MAP, PSM_SCHEMA, PEP
 from quantmsio.core.mztab import MzTab
@@ -15,6 +19,7 @@ class Psm(MzTab):
         self._ms_runs = self.extract_ms_runs()
         self._protein_global_qvalue_map = self.get_protein_map()
         self._score_names = self.get_score_names()
+        self._modifications = self.get_modifications()
         self._mods_map = self.get_mods_map()
         self._automaton = get_ahocorasick(self._mods_map)
 
@@ -38,6 +43,72 @@ class Psm(MzTab):
             df.loc[:, "reference_file_name"] = df["spectra_ref"].apply(lambda x: self._ms_runs[x[: x.index(":")]])
             yield df
 
+    def _extract_pep_columns(self):
+        if os.stat(self.mztab_path).st_size == 0:
+            raise ValueError("File is empty")
+        f = open(self.mztab_path)
+        pos = self._get_pos("PEH")
+        f.seek(pos)
+        line = f.readline()
+        while not line.startswith("PEH"):
+            line = f.readline()
+        self._pep_columns = line.split("\n")[0].split("\t")
+
+    def extract_from_pep(self, chunksize=2000000):
+        self._extract_pep_columns()
+        pep_usecols = [
+            "opt_global_cv_MS:1000889_peptidoform_sequence",
+            "charge",
+            "best_search_engine_score[1]",
+            "spectra_ref",
+        ]
+        live_cols = [col for col in pep_usecols if col in self._pep_columns]
+        not_cols = [col for col in pep_usecols if col not in live_cols]
+        if "opt_global_cv_MS:1000889_peptidoform_sequence" in not_cols:
+            if "sequence" in self._pep_columns and "modifications" in self._pep_columns:
+                live_cols.append("sequence")
+                live_cols.append("modifications")
+            else:
+                raise Exception("The peptide table don't have opt_global_cv_MS:1000889_peptidoform_sequence columns")
+        if "charge" in not_cols or "best_search_engine_score[1]" in not_cols:
+            raise Exception("The peptide table don't have best_search_engine_score[1] or charge columns")
+        pep_map = {}
+        for pep in self.skip_and_load_csv("PEH", usecols=live_cols, chunksize=chunksize):
+            if "opt_global_cv_MS:1000889_peptidoform_sequence" not in pep.columns:
+                pep.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = pep[["modifications", "sequence"]].apply(
+                    lambda row: get_petidoform_msstats_notation(row["sequence"], row["modifications"], self._modifications),
+                    axis=1,
+                )
+            # check spectra_ref
+            if "spectra_ref" not in pep.columns:
+                pep.loc[:, "scan_number"] = None
+                pep.loc[:, "spectra_ref"] = None
+            else:
+                pep.loc[:, "scan_number"] = pep["spectra_ref"].apply(generate_scan_number)
+                pep["spectra_ref"] = pep["spectra_ref"].apply(lambda x: self._ms_runs[x.split(":")[0]])
+            pep_msg = pep.iloc[
+                pep.groupby(["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"]).apply(
+                    lambda row: row["best_search_engine_score[1]"].idxmin()
+                )
+            ]
+            pep_msg = pep_msg.set_index(["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"])
+
+            pep_msg.loc[:, "pep_msg"] = pep_msg[["best_search_engine_score[1]", "spectra_ref", "scan_number"]].apply(
+                lambda row: [
+                    row["best_search_engine_score[1]"],
+                    row["spectra_ref"],
+                    row["scan_number"],
+                ],
+                axis=1,
+            )
+            map_dict = pep_msg.to_dict()["pep_msg"]
+            for key, value in map_dict.items():
+                if key not in pep_map:
+                    pep_map[key] = value
+                elif value[0] < pep_map[key][0]:
+                        pep_map[key] = value
+        return pep_map
+    
     @staticmethod
     def slice(df, partitions):
         cols = df.columns
