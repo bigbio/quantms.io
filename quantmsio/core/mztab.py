@@ -1,8 +1,6 @@
 import codecs
 import os
 import pandas as pd
-import re
-from pyopenms import ModificationsDB
 from quantmsio.utils.pride_utils import get_quantmsio_modifications
 from quantmsio.operate.tools import get_modification_details
 

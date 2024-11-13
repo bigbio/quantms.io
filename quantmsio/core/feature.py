@@ -1,5 +1,4 @@
 import pandas as pd
-import os
 import pyarrow as pa
 import pyarrow.parquet as pq
 from quantmsio.operate.tools import get_ahocorasick, get_protein_accession
