@@ -204,9 +204,9 @@ class DiaNNConvert(DuckDB):
             ],
             axis=1,
         )
-        report.loc[:, "cv_params"] = report[["quantitative_score"]].apply(
+        report.loc[:, "cv_params"] = report[["precursor_quantification_score"]].apply(
             lambda rows: [
-                {"cv_name": "quantitative_score", "cv_value": str(rows["quantitative_score"])}
+                {"cv_name": "precursor_quantification_score", "cv_value": str(rows["precursor_quantification_score"])}
             ],
             axis=1
         )

@@ -254,8 +254,8 @@ class MaxQuant:
             ],
             axis=1,
         )
-        df.loc[:, "cv_params"] = df["parent_ion_score"].apply(
-            lambda socre: [{"cv_name": "parent_ion_score", "cv_value": str(socre)}]
+        df.loc[:, "cv_params"] = df["parent_ion_fraction"].apply(
+            lambda socre: [{"cv_name": "parent_ion_fraction", "cv_value": str(socre)}]
         )
         df.loc[:, "predicted_rt"] = None
         df.loc[:, "ion_mobility"] = None

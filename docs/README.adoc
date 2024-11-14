@@ -1071,7 +1071,7 @@ The following table presents the fields needed to describe each feature in quant
 | Precursor.Quantity
 | Intensity
 | Intensity
-| peptide_abundance_assay[1-n]
+| Intensity
 
 | `reference_file_name`
 | The reference file name that contains the feature

@@ -59,7 +59,7 @@ DIANN_MAP = {
     "PG.Q.Value": "pg_qvalue",
     "Precursor.Normalised": "normalize_intensity",
     "PG.MaxLFQ": "lfq",
-    "Quantity.Quality": "quantitative_score",
+    "Quantity.Quality": "precursor_quantification_score",
     "Precursor.Charge": "precursor_charge",
     "Stripped.Sequence": "sequence",
     "Modified.Sequence": "peptidoform",
@@ -82,7 +82,7 @@ MAXQUANT_PSM_MAP = {
     "Raw file": "reference_file_name",
     "Score": "andromeda_score",
     "Delta score": "andromeda_delta_score",
-    "PIF": "parent_ion_score",
+    "PIF": "parent_ion_fraction",
 }
 
 MAXQUANT_FEATURE_MAP = {
