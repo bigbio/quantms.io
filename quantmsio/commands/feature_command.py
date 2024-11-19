@@ -78,7 +78,7 @@ def convert_feature_file(
         raise click.UsageError("Please provide all the required parameters")
     feature_manager = Feature(mzTab_path=mztab_file, sdrf_path=sdrf_file, msstats_in_path=msstats_file)
     if not output_prefix_file:
-        output_prefix_file = ""
+        output_prefix_file = "feature"
     filename = create_uuid_filename(output_prefix_file, ".feature.parquet")
     output_path = output_folder + "/" + filename
     if not partitions:

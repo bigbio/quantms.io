@@ -85,7 +85,7 @@ def diann_convert_to_parquet(
         os.makedirs(output_folder)
 
     if not output_prefix_file:
-        output_prefix_file = ""
+        output_prefix_file = "feature"
     filename = create_uuid_filename(output_prefix_file, ".feature.parquet")
     feature_output_path = output_folder + "/" + filename
 

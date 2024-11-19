@@ -45,7 +45,7 @@ def convert_maxquant_psm(
         raise click.UsageError("Please provide all the required parameters")
 
     if not output_prefix_file:
-        output_prefix_file = ""
+        output_prefix_file = "psm"
 
     MQ = MaxQuant()
     output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
@@ -114,7 +114,7 @@ def convert_maxquant_feature(
         raise click.UsageError("Please provide all the required parameters")
 
     if not output_prefix_file:
-        output_prefix_file = ""
+        output_prefix_file = "feature"
 
     MQ = MaxQuant()
     filename = create_uuid_filename(output_prefix_file, ".feature.parquet")

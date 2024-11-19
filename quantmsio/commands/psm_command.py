@@ -52,7 +52,7 @@ def convert_psm_file(
         raise click.UsageError("Please provide all the required parameters")
 
     if not output_prefix_file:
-        output_prefix_file = ""
+        output_prefix_file = "psm"
 
     psm_manager = Psm(mzTab_path=mztab_file)
     output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
