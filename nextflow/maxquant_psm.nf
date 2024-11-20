@@ -1,31 +1,39 @@
 nextflow.enable.dsl=2
 
-params.msms_file 
-params.mzml_dir 
-params.output_dir
-params.chunksize = 1000000
-params.output_prefix_file = "psm"
-params.file_num = 20
-params.partitions = ""
 
-workflow {
-    generateResults(params.msms_file, params.output_dir, params.chunksize, params.output_prefix_file)
-    extractInfoFromMzml(generateResults.out, params.mzml_dir, params.output_dir, params.file_num, params.partitions)
+process msconvert {
+    publishDir "${params.mzml_dir}", mode:'copy', overwrite: true
 
+    if (workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container) {
+        container 'https://containers.biocontainers.pro/s3/SingImgsRepo/thermorawfileparser/1.3.3--h1341992_0/thermorawfileparser:1.3.3--h1341992_0'
+    }
+    else {
+        container 'quay.io/biocontainers/thermorawfileparser:1.3.3--h1341992_0'
+    }
+
+    input:
+    path rawFile
+
+    output:
+    path '*.mzML', emit: mzmlFiles
+
+    script:
+    """
+    mkdir mzml
+    ThermoRawFileParser.sh -i=${rawFile} -f=2 -o=./
+    """
 }
+
 process generateResults {
     input:
     path msmsFile
     path outputDir
-    val chunksize
-    val output_prefix_file
-
     output:
     path "**/*.psm.parquet", emit: 'psm'
 
     script:
     """
-    quantmsioc convert-maxquant-psm --msms_file ${msmsFile} --output_folder ${outputDir} --chunksize ${chunksize} --output_prefix_file ${output_prefix_file}
+    quantmsioc convert-maxquant-psm --msms_file ${msmsFile} --output_folder ${outputDir} --chunksize ${params.chunksize} --output_prefix_file ${params.output_prefix_file}
     """
 }
 
@@ -34,17 +42,26 @@ process extractInfoFromMzml {
     path resultsFile
     path mzmlDir
     path outputDir
-    val file_num
-    val partitions
 
     script:
-    if (partitions != ''){
+    if (params.partitions){
         """
-        quantmsioc map-spectrum-message-to-parquet --parquet_path ${resultsFile} --mzml_directory ${mzmlDir} --output_folder res/${outputDir} --file_num ${file_num} --partitions ${partitions}
+        quantmsioc map-spectrum-message-to-parquet --parquet_path ${resultsFile} --mzml_directory ./ --output_folder res/${outputDir} --file_num ${params.file_num} --partitions ${params.partitions}
         """
     }else {
         """
-        quantmsioc map-spectrum-message-to-parquet --parquet_path ${resultsFile} --mzml_directory ${mzmlDir} --output_folder res/${outputDir} --file_num ${file_num}
+        quantmsioc map-spectrum-message-to-parquet --parquet_path ${resultsFile} --mzml_directory ./ --output_folder res/${outputDir} --file_num ${params.file_num}
         """
     }
+}
+
+workflow {
+    Channel
+    .fromPath("${params.raw_dir}/*.raw")
+    .set{ rawFiles }
+
+    msconvert(rawFiles)
+    generateResults(params.msms_file, params.output_dir)
+    extractInfoFromMzml(generateResults.out, msconvert.out, params.output_dir)
+
 }
