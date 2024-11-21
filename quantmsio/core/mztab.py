@@ -244,8 +244,8 @@ class MzTab:
                     accession = values[1].strip()
                     name = values[2].strip()
                     line = f.readline()
-                    site = line.replace("\n","").split("\t")[2]
-                    mods_map[name] = [accession.upper(),site]
+                    site = line.replace("\n", "").split("\t")[2]
+                    mods_map[name] = [accession.upper(), site]
                     mods_map[accession.upper().upper()] = [name, site]
             line = f.readline()
         f.close()

@@ -17,7 +17,9 @@ from quantmsio.core.duckdb import DuckDB
 from quantmsio.utils.pride_utils import generate_scan_number
 from quantmsio.core.common import DIANN_MAP, DIANN_USECOLS
 
-DIANN_SQL = ', '.join([f'"{name}"' for name in DIANN_USECOLS])
+DIANN_SQL = ", ".join([f'"{name}"' for name in DIANN_USECOLS])
+
+
 class DiaNNConvert(DuckDB):
 
     def __init__(self, diann_report, sdrf_path, duckdb_max_memory="16GB", duckdb_threads=4):
@@ -46,8 +48,7 @@ class DiaNNConvert(DuckDB):
             from report
             where Run IN {}
             """.format(
-                DIANN_SQL,
-                tuple(runs)
+                DIANN_SQL, tuple(runs)
             )
         )
         report = database.df()
@@ -190,7 +191,7 @@ class DiaNNConvert(DuckDB):
                     "channel": rows["channel"],
                     "additional_intensity": [
                         {"intensity_name": "normalize_intensity", "intensity_value": rows["normalize_intensity"]},
-                        {"intensity_name": "lfq", "intensity_value": rows["lfq"]}
+                        {"intensity_name": "lfq", "intensity_value": rows["lfq"]},
                     ],
                 }
             ],
@@ -200,7 +201,7 @@ class DiaNNConvert(DuckDB):
             lambda row: [
                 {"score_name": "qvalue", "score_value": row["qvalue"]},
                 {"score_name": "pg_qvalue", "score_value": row["pg_qvalue"]},
-                {"score_name": "global_qvalue", "score_value": row["global_qvalue"]}
+                {"score_name": "global_qvalue", "score_value": row["global_qvalue"]},
             ],
             axis=1,
         )
@@ -208,7 +209,7 @@ class DiaNNConvert(DuckDB):
             lambda rows: [
                 {"cv_name": "precursor_quantification_score", "cv_value": str(rows["precursor_quantification_score"])}
             ],
-            axis=1
+            axis=1,
         )
         report.loc[:, "scan_reference_file_name"] = None
         report.loc[:, "gg_accessions"] = None

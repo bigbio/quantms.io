@@ -64,7 +64,7 @@ DIANN_MAP = {
     "Stripped.Sequence": "sequence",
     "Modified.Sequence": "peptidoform",
     "Genes": "gg_names",
-    "Run": "run"
+    "Run": "run",
 }
 DIANN_USECOLS = list(DIANN_MAP.keys())
 

@@ -78,7 +78,9 @@ class Psm(MzTab):
             pep.reset_index(drop=True, inplace=True)
             if "opt_global_cv_MS:1000889_peptidoform_sequence" not in pep.columns:
                 pep.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = pep[["modifications", "sequence"]].apply(
-                    lambda row: get_petidoform_msstats_notation(row["sequence"], row["modifications"], self._modifications),
+                    lambda row: get_petidoform_msstats_notation(
+                        row["sequence"], row["modifications"], self._modifications
+                    ),
                     axis=1,
                 )
             # check spectra_ref
@@ -108,9 +110,9 @@ class Psm(MzTab):
                 if key not in pep_map:
                     pep_map[key] = value
                 elif value[0] < pep_map[key][0]:
-                        pep_map[key] = value
+                    pep_map[key] = value
         return pep_map
-    
+
     @staticmethod
     def slice(df, partitions):
         cols = df.columns
