@@ -97,7 +97,7 @@ MAXQUANT_FEATURE_MAP = {
     "Raw file": "reference_file_name",
     "Score": "andromeda_score",
     "Delta score": "andromeda_delta_score",
-    "PIF": "parent_ion_score",
+    "PIF": "parent_ion_fraction",
     "Reverse": "is_decoy",
     "m/z": "observed_mz",
     "MS/MS scan number": "scan",
