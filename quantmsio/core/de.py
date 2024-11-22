@@ -23,6 +23,7 @@ import pandas as pd
 from quantmsio.core.project import ProjectHandler
 from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.utils.file_utils import delete_files_extension
+from quantmsio.core.common import QUANTMSIO_VERSION
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -45,15 +46,13 @@ class DifferentialExpressionHandler:
     ISSUE_COLUMN = {"msstats_column": "issue", "quantms_column": "issue"}
 
     DE_HEADER = """#INFO=<ID=protein, Number=inf, Type=String, Description="Protein Accession">
-                #INFO=<ID=label,Number=1, Type=String, Description="Label for the Conditions combination">
-                #INFO=<ID=log2fc, Number=1, Type=Double, Description="Log2 Fold Change">
-                #INFO=<ID=se, Number=1, Type=Double, Description="Standard error of the log2 fold change">
-                #INFO=<ID=df, Number=1, Type=Integer, Description="Degree of freedom of the Student test">
-                #INFO=<ID=pvalue, Number=1, Type=Double, Description="Raw p-values">
-                #INFO=<ID=adj.pvalue, Number=1, Type=Double, Description="P-values adjusted among
-                all the proteins in the specific comparison using the approach by Benjamini and Hochberg">
-                #INFO=<ID=issue, Number=1, Type=String, Description="Issue column shows if there
-                is any issue for inference in corresponding protein and comparison">\n"""
+#INFO=<ID=label,Number=1, Type=String, Description="Label for the Conditions combination">
+#INFO=<ID=log2fc, Number=1, Type=Double, Description="Log2 Fold Change">
+#INFO=<ID=se, Number=1, Type=Double, Description="Standard error of the log2 fold change">
+#INFO=<ID=df, Number=1, Type=Integer, Description="Degree of freedom of the Student test">
+#INFO=<ID=pvalue, Number=1, Type=Double, Description="Raw p-values">
+#INFO=<ID=adj_pvalue, Number=1, Type=Double, Description="P-values adjusted among all the proteins in the specific comparison using the approach by Benjamini and Hochberg">
+#INFO=<ID=issue, Number=1, Type=String, Description="Issue column shows if there is any issue for inference in corresponding protein and comparison">\n"""
 
     DIFFERENTIAL_EXPRESSION_EXTENSION = ".differential.tsv"
 
@@ -133,7 +132,9 @@ class DifferentialExpressionHandler:
                 DifferentialExpressionHandler.ISSUE_COLUMN["msstats_column"],
             ]
         ].copy()
-
+        quantms_df.rename(
+            columns={DifferentialExpressionHandler.ADJUST_PVALUE_COLUMN["msstats_column"]: "adj_pvalue"}, inplace=True
+        )
         # Add project information
         output_lines = ""
         if self.project_manager:
@@ -144,7 +145,11 @@ class DifferentialExpressionHandler:
             output_lines += (
                 "#project_description: " + self.project_manager.project.project_info["project_description"] + "\n"
             )
-            output_lines += "#quantms_version: " + self.project_manager.project.project_info["quantms_version"] + "\n"
+            output_lines += (
+                "#quantmsio_version: " + self.project_manager.project.project_info["quantmsio_version"] + "\n"
+            )
+        else:
+            output_lines += "#quantmsio_version: " + QUANTMSIO_VERSION + "\n"
         factor_value = self.get_factor_value()
         if factor_value is not None:
             output_lines += "#factor_value: " + factor_value + "\n"
@@ -152,12 +157,11 @@ class DifferentialExpressionHandler:
         for contrast in contrasts:
             output_lines += "#contrast: " + contrast + "\n"
         output_lines += "#fdr_threshold: " + str(self.fdr_threshold) + "\n"
-
         # Combine comments and DataFrame into a single list
 
         output_lines += DifferentialExpressionHandler.DE_HEADER
         output_lines += quantms_df.columns.str.cat(sep="\t") + "\n"
-        for index, row in quantms_df.iterrows():
+        for _, row in quantms_df.iterrows():
             output_lines += "\t".join(map(str, row)).strip() + "\n"
 
         # Create the output file name
@@ -214,14 +218,6 @@ class DifferentialExpressionHandler:
         for label in quantms_df["label"].unique():
             for condition in label.split("-", 1):
                 unique_labels.append(condition)
-        """
-        if len(unique_label) == 1:
-            labels = unique_label[0].split("-")
-            first_contrast = labels[0].strip()
-            second_contrast = labels[1].strip()
-        else:
-            raise ValueError("QuantMS file has more than one label divided by '-'")
-        """
         return list(set(unique_labels))
 
     def get_factor_value(self):

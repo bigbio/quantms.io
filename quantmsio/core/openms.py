@@ -33,7 +33,7 @@ class OpenMSHandler:
             return [], []
         spectrum = self._mzml_exp.getSpectrum(index)
         spectrum_mz, spectrum_intensities = spectrum.get_peaks()
-        return spectrum_mz, spectrum_intensities
+        return len(spectrum_mz), spectrum_mz, spectrum_intensities
 
     def get_intensity_map(self, consensusxml_path: str, experiment_type: str = None) -> dict:
         """
@@ -71,7 +71,7 @@ class OpenMSHandler:
         peptide_columns = ["sequence", "charge", "RT", "mz", "quality"]
         intensity_columns = [column for column in df.columns if column not in peptide_columns]
         intensity_map = {}
-        for index, row in df.iterrows():
+        for _, row in df.iterrows():
             for column in intensity_columns:
                 if np.float64(row[f"{column}"]) > 0.0:
                     reference_file = column.split(".")[0]
@@ -101,7 +101,7 @@ class OpenMSHandler:
         peptide_columns = ["sequence", "charge", "RT", "mz", "quality", "file"]
         intensity_columns = [column for column in df.columns if column not in peptide_columns]
         intensity_map = {}
-        for index, row in df.iterrows():
+        for _, row in df.iterrows():
             for column in intensity_columns:
                 if np.float64(row[f"{column}"]) > 0.0:
                     reference_file = row.file.split(".")[0]

@@ -1,6 +1,6 @@
 import click
 
-from quantmsio.core.feature import FeatureHandler
+from quantmsio.core.feature import Feature
 from quantmsio.core.project import create_uuid_filename
 
 
@@ -21,15 +21,9 @@ from quantmsio.core.project import create_uuid_filename
     required=True,
 )
 @click.option(
-    "--consensusxml_file",
-    help="the consensusXML file used to retrieve the mz/rt",
-    required=False,
-)
-@click.option(
-    "--use_cache",
-    help="Use cache instead of in memory conversion",
-    required=False,
-    is_flag=True,
+    "--file_num",
+    help="Read batch size",
+    default=50,
 )
 @click.option(
     "--protein_file",
@@ -42,55 +36,67 @@ from quantmsio.core.project import create_uuid_filename
     required=True,
 )
 @click.option(
+    "--partitions",
+    help="The field used for splitting files, multiple fields are separated by ,",
+    required=False,
+)
+@click.option(
     "--output_prefix_file",
     help="Prefix of the Json file needed to generate the file name",
     required=False,
 )
+@click.option(
+    "--duckdb_max_memory", help="The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)", required=False
+)
+@click.option("--duckdb_threads", help="The number of threads for the DuckDB engine (e.g 4)", required=False)
 def convert_feature_file(
     sdrf_file: str,
     msstats_file: str,
     mztab_file: str,
-    consensusxml_file: str,
-    use_cache: bool,
+    file_num: int,
     protein_file: str,
     output_folder: str,
+    partitions: str,
     output_prefix_file: str,
+    duckdb_max_memory: str,
+    duckdb_threads: int,
 ):
     """
     Convert a msstats/mztab file to a parquet file. The parquet file will contain the features and the metadata.
     :param sdrf_file: the SDRF file needed to extract some of the metadata
     :param msstats_file: the MSstats input file, this will be considered the main format to convert
-    :param mztab_file: the mzTab file, this will be used to extract the protein information
-    :param consensusxml_file: the consensusXML file used to retrieve the mz/rt
-    :param use_cache: Use cache instead of in memory conversion
+    :param mztab_file: the mzTab file, this will be used to extract the protein
+    :param file_num: Read batch size
     :param output_folder: Folder where the Json file will be generated
+    :param partitions: The field used for splitting files, multiple fields are separated by ,
     :param output_prefix_file: Prefix of the Json file needed to generate the file name
-    :return: none
+    :param duckdb_max_memory: The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)
+    :param duckdb_threads: The number of threads for the DuckDB engine (e.g 4)
     """
 
     if sdrf_file is None or msstats_file is None or mztab_file is None or output_folder is None:
         raise click.UsageError("Please provide all the required parameters")
-    if use_cache is None:
-        use_cache = False
-
-    feature_manager = FeatureHandler()
+    feature_manager = Feature(mzTab_path=mztab_file, sdrf_path=sdrf_file, msstats_in_path=msstats_file)
     if not output_prefix_file:
-        output_prefix_file = ""
-    feature_manager.parquet_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".feature.parquet")
-    if consensusxml_file is not None:
-        feature_manager.convert_mztab_msstats_to_feature(
-            mztab_file=mztab_file,
-            msstats_file=msstats_file,
-            sdrf_file=sdrf_file,
-            consesusxml_file=consensusxml_file,
+        output_prefix_file = "feature"
+    filename = create_uuid_filename(output_prefix_file, ".feature.parquet")
+    output_path = output_folder + "/" + filename
+    if not partitions:
+        feature_manager.write_feature_to_file(
+            output_path=output_path,
+            file_num=file_num,
             protein_file=protein_file,
-            use_cache=use_cache,
+            duckdb_max_memory=duckdb_max_memory,
+            duckdb_threads=duckdb_threads,
         )
     else:
-        feature_manager.convert_mztab_msstats_to_feature(
-            mztab_file=mztab_file,
-            msstats_file=msstats_file,
-            sdrf_file=sdrf_file,
+        partitions = partitions.split(",")
+        feature_manager.write_features_to_file(
+            output_folder=output_folder,
+            filename=filename,
+            partitions=partitions,
+            file_num=file_num,
             protein_file=protein_file,
-            use_cache=use_cache,
+            duckdb_max_memory=duckdb_max_memory,
+            duckdb_threads=duckdb_threads,
         )

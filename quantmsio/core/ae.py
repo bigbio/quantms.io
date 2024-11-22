@@ -8,6 +8,7 @@ import pandas as pd
 from quantmsio.core.project import ProjectHandler
 from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.utils.file_utils import delete_files_extension
+from quantmsio.core.common import QUANTMSIO_VERSION
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -25,13 +26,15 @@ class AbsoluteExpressionHander:
         "SampleID": "sample_accession",
         "Condition": "condition",
         "Ibaq": "ibaq",
-        "IbaqLog": "ribaq",
+        "IbaqLog": "ibaq_normalized",
     }
-    AE_HEADER = """#INFO=<ID=protein, Number=inf, Type=String, Description="Protein Accession">
+    AE_HEADER = """
+#INFO=<ID=protein, Number=inf, Type=String, Description="Protein Accession">
 #INFO=<ID=sample_accession, Number=1, Type=String, Description="Sample Accession in the SDRF">
 #INFO=<ID=condition, Number=1, Type=String, Description="Value of the factor value">
 #INFO=<ID=ibaq, Number=1, Type=Float, Description="Intensity based absolute quantification">
-#INFO=<ID=ribaq, Number=1, Type=Float, Description="relative iBAQ">\n"""
+#INFO=<ID=ibaq_normalized, Number=1, Type=Float, Description="relative iBAQ">\n
+"""
 
     ABSOLUTE_EXPRESSION_EXTENSION = ".absolute.tsv"
 
@@ -93,7 +96,11 @@ class AbsoluteExpressionHander:
             output_lines += (
                 "#project_description: " + self.project_manager.project.project_info["project_description"] + "\n"
             )
-            output_lines += "#quantms_version: " + self.project_manager.project.project_info["quantms_version"] + "\n"
+            output_lines += (
+                "#quantmsio_version: " + self.project_manager.project.project_info["quantmsio_version"] + "\n"
+            )
+        else:
+            output_lines += "#quantmsio_version: " + QUANTMSIO_VERSION + "\n"
         factor_value = self.get_factor_value()
         if factor_value is not None:
             output_lines += "#factor_value: " + factor_value + "\n"

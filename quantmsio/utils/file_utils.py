@@ -1,7 +1,8 @@
 import logging
 import os
-
+import pyarrow.parquet as pq
 import psutil
+import pandas as pd
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -44,6 +45,31 @@ def extract_len(fle, header):
     return fle_len, pos
 
 
+def load_de_or_ae(path):
+    f = open(path, encoding="utf-8")
+    line = f.readline()
+    pos = 0
+    content = ""
+    while line.startswith("#"):
+        pos = f.tell()
+        content += line
+        line = f.readline()
+    f.seek(pos - 1)
+    return pd.read_csv(f, sep="\t"), content
+
+
+def read_large_parquet(parquet_path: str, batch_size: int = 500000):
+    """_summary_
+    :param parquet_path: _description_
+    :param batch_size: _description_, defaults to 100000
+    :yield: _description_
+    """
+    parquet_file = pq.ParquetFile(parquet_path)
+    for batch in parquet_file.iter_batches(batch_size=batch_size):
+        batch_df = batch.to_pandas()
+        yield batch_df
+
+
 def calculate_buffer_size(file_path: str) -> int:
     # Get the total available system memory
     total_memory = psutil.virtual_memory().available
@@ -56,3 +82,34 @@ def calculate_buffer_size(file_path: str) -> int:
     fraction_of_memory = 0.4  # Adjust as needed
 
     return min(int(total_memory * fraction_of_memory), max_buffer_size, file_size)
+
+
+def save_slice_file(parquet_table, pqwriters, output_folder, partitions, filename):
+    folder = [output_folder] + [str(col) for col in partitions]
+    folder = os.path.join(*folder)
+    if not os.path.exists(folder):
+        os.makedirs(folder, exist_ok=True)
+    save_path = os.path.join(*[folder, filename])
+    if not os.path.exists(save_path):
+        pqwriter = pq.ParquetWriter(save_path, parquet_table.schema)
+        pqwriters[partitions] = pqwriter
+    pqwriters[partitions].write_table(parquet_table)
+    return pqwriters
+
+
+def save_file(parquet_table, pqwriter, output_folder, filename):
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder, exist_ok=True)
+    save_path = os.path.join(*[output_folder, filename])
+    if not pqwriter:
+        pqwriter = pq.ParquetWriter(save_path, parquet_table.schema)
+    pqwriter.write_table(parquet_table)
+    return pqwriter
+
+
+def close_file(pqwriters: dict = None, pqwriter: object = None):
+    if pqwriter:
+        pqwriter.close()
+    else:
+        for pqwriter in pqwriters.values():
+            pqwriter.close()

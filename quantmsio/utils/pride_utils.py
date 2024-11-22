@@ -6,10 +6,7 @@ import itertools
 import logging
 import re
 import time
-
-# from builtins import sorted
 from collections import defaultdict
-
 import pandas as pd
 from Bio import SeqIO
 
@@ -27,7 +24,10 @@ def get_unanimous_name(protein_accessions, map_dict):
     for accession in protein_accessions:
         if accession in map_dict:
             unqnimous_names.append(list(map_dict[accession])[0])
-    return unqnimous_names
+    if len(unqnimous_names) > 0:
+        return unqnimous_names
+    else:
+        return None
 
 
 def generate_gene_name_map(fasta, map_parameter):
@@ -54,19 +54,24 @@ def generate_gene_name_map(fasta, map_parameter):
 
 
 def get_gene_accessions(gene_list, map_dict):
-    if len(gene_list) == 0:
-        return []
+    if gene_list is None or len(gene_list) == 0:
+        return None
     else:
         accessions = []
         for gene in gene_list:
-            accession = map_dict[gene]
-            if len(accession) > 0:
-                accessions.append(str(accession[0]))
-        return accessions
+            if gene in map_dict:
+                accession = map_dict[gene]
+                if accession:
+                    accessions.append(accession)
+        if len(accessions) > 0:
+            return accessions
+        else:
+            return None
 
 
 def generate_scan_number(spectra_ref: str):
-    if "scan" in spectra_ref:
+    isScan = re.findall(r"controllerType=0 controllerNumber=1", spectra_ref)
+    if len(isScan) != 0:
         return re.findall(r"scan=(\d+)", spectra_ref)[0]
     else:
         return ",".join(re.findall(r"=(\d+)", spectra_ref))

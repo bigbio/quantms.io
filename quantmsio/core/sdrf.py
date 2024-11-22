@@ -11,6 +11,8 @@ import re
 import pandas as pd
 from pandas import DataFrame
 
+from quantmsio.core.common import SDRF_MAP, SDRF_USECOLS
+
 
 def get_unique_from_column_substr(sdrf_table: DataFrame, substr: str) -> list:
     """
@@ -135,6 +137,9 @@ class SDRFHandler:
 
     def get_enzymes(self):
         return get_complex_value_sdrf_column(self.sdrf_table, self.ENZYME_COLUMN)
+
+    def get_runs(self):
+        return self.sdrf_table["comment[data file]"].str.split(".").str[0].unique()
 
     def get_acquisition_properties(self):
         """
@@ -289,7 +294,7 @@ class SDRFHandler:
         sample_map = {}
         sdrf_pd = self.sdrf_table.copy()  # type: DataFrame
         sdrf_pd["comment[data file]"] = sdrf_pd["comment[data file]"].apply(lambda x: x.split(".")[0])
-        for index, row in sdrf_pd.iterrows():
+        for _, row in sdrf_pd.iterrows():
             channel = "LABEL FREE SAMPLE" if "LABEL FREE" in row["comment[label]"].upper() else row["comment[label]"]
             if row["comment[data file]"] + ":_:" + channel in sample_map:
                 if sample_map[row["comment[data file]"] + ":_:" + channel] != row["source name"]:
@@ -320,3 +325,62 @@ class SDRFHandler:
         variable_s = ",".join(variable_m) if len(variable_m) > 0 else "null"
 
         return fix_s, variable_s
+
+    def get_mods_dict(self):
+        sdrf = self.sdrf_table
+        mod_cols = [
+            col
+            for col in sdrf.columns
+            if (col.startswith("comment[modification parameter]") | col.startswith("comment[modification parameters]"))
+        ]
+        mods = {}
+        for col in mod_cols:
+            mod_msg = sdrf[col].values[0].split(";")
+            mod_dict = {k.split("=")[0]: k.split("=")[1] for k in mod_msg}
+            accession = mod_dict["AC"]
+            name = mod_dict["NT"]
+            site = mod_dict["TA"] if "TA" in mod_dict else mod_dict["PP"]
+            mods[accession] = [name, site]
+            mods[name] = [accession, site]
+        return mods
+
+    def get_sample_map_run(self):
+        sdrf = self.sdrf_table[["source name", "comment[data file]", "comment[label]"]].copy()
+        sdrf["comment[data file]"] = sdrf["comment[data file]"].str.split(".").str[0]
+        if self.get_experiment_type_from_sdrf() != "LFQ":
+            sdrf.loc[:, "map_sample"] = sdrf["comment[data file]"] + "-" + sdrf["comment[label]"]
+        else:
+            sdrf.loc[:, "map_sample"] = sdrf["comment[data file]"] + "-LFQ"
+        sdrf.set_index("map_sample", inplace=True)
+        sample_map = sdrf.to_dict()["source name"]
+        return sample_map
+
+    def transform_sdrf(self):
+        factor = list(filter(lambda x: x.startswith("factor"), self.sdrf_table.columns))
+        usecols = list(SDRF_USECOLS) + factor
+        sdrf = self.sdrf_table[usecols].copy()
+        sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(lambda x: x.split(".")[0])
+        samples = sdrf["source name"].unique()
+        mixed_map = dict(zip(samples, range(1, len(samples) + 1)))
+        sdrf.loc[:, "condition"] = sdrf[factor].apply(lambda row: ",".join([str(row[col]) for col in factor]), axis=1)
+        sdrf.loc[:, "run"] = sdrf[
+            [
+                "source name",
+                "comment[technical replicate]",
+                "comment[fraction identifier]",
+            ]
+        ].apply(
+            lambda row: str(mixed_map[row["source name"]])
+            + "_"
+            + str(row["comment[technical replicate]"])
+            + "_"
+            + str(row["comment[fraction identifier]"]),
+            axis=1,
+        )
+        sdrf.drop(
+            ["comment[technical replicate]", "source name"] + factor,
+            axis=1,
+            inplace=True,
+        )
+        sdrf.rename(columns=SDRF_MAP, inplace=True)
+        return sdrf
