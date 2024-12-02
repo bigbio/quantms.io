@@ -3,6 +3,7 @@ Commandline interface for quantmsio package allows generating the quantms.io fil
  steps. The quantms.io specification is available in the docs folder of this repository.
 """
 
+import logging
 import click
 
 from quantmsio import __version__ as __version__
@@ -19,6 +20,7 @@ from quantmsio.commands.plot_command import plot
 from quantmsio.commands.statistic_command import statistics
 from quantmsio.commands.maxquant_command import convert_maxquant_psm, convert_maxquant_feature
 from quantmsio.commands.ibaq_command import convert_ibaq_file
+from quantmsio.commands.fragpipe_command import convert_fragpipe_psm
 
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
@@ -30,7 +32,7 @@ def cli():
     """
     This is the main tool that gives access to all commands to convert SDRF files into pipeline-specific configuration files
     """
-    pass
+    logging.basicConfig(level=logging.INFO)
 
 
 cli.add_command(generate_pride_project_json)
@@ -48,6 +50,7 @@ cli.add_command(statistics)
 cli.add_command(convert_maxquant_psm)
 cli.add_command(convert_maxquant_feature)
 cli.add_command(convert_ibaq_file)
+cli.add_command(convert_fragpipe_psm)
 
 
 def quantms_io_main():
