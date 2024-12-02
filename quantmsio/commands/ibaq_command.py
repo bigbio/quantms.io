@@ -47,4 +47,4 @@ def convert_ibaq_file(
         output_prefix_file = ""
 
     output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".ibaq.parquet")
-    write_ibaq_feature(feature_file, sdrf_file, output_path)
+    write_ibaq_feature(sdrf_file, feature_file, output_path)
