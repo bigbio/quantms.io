@@ -38,6 +38,7 @@ class Parameter:
     def format(self) -> str:
         return f"[{self.controlled_vocabulary or ''}, {self.curie or ''}, {self.name}, {self.value or ''}]"
 
+
 @dataclass
 class ModificationPositions:
     positions: List[int] = field(default_factory=list)
@@ -141,22 +142,13 @@ class MzTabModification:
         fields = []
         if self.position:
             for pos in self.position:
-                fields.append({
-                    "position": pos,
-                    "localization_probability": 1.0
-                })
-        return {
-            "name": str(self.identifier),
-            "fields": fields
-        }
+                fields.append({"position": pos, "localization_probability": 1.0})
+        return {"name": str(self.identifier), "fields": fields}
 
     def to_arrow(cls, batch: Iterator[List["MzTabModification"]]):
         modifications = []
         for block in batch:
-            modifications.append([
-                p.to_arrow_single()
-                for p in block
-            ])
+            modifications.append([p.to_arrow_single() for p in block])
         return pa.array(modifications, type=cls.arrow_type())
 
 
@@ -229,7 +221,7 @@ class Peptide:
         return peptide
 
     @classmethod
-    def to_arrow(cls, batch: Iterator['Peptide']):
+    def to_arrow(cls, batch: Iterator["Peptide"]):
         sequences = []
         peptidoforms = []
         modifications = []
@@ -237,14 +229,16 @@ class Peptide:
         for peptide in batch:
             sequences.append(peptide.sequence)
             peptidoforms.append(str(peptide.peptidoform))
-            modifications.append([
-                mod.to_arrow_single() for mod in peptide.modifications
-            ])
+            modifications.append(
+                [mod.to_arrow_single() for mod in peptide.modifications]
+            )
 
         return {
             "sequence": pa.array(sequences, type=pa.string()),
             "peptidoform": pa.array(peptidoforms, type=pa.string()),
-            "modifications": pa.array(modifications, type=pa.list_(MzTabModification.arrow_type()))
+            "modifications": pa.array(
+                modifications, type=pa.list_(MzTabModification.arrow_type())
+            ),
         }
 
     @classmethod
@@ -262,10 +256,10 @@ class Spectrum:
     ion_mobility: Optional[float] = None
 
     @classmethod
-    def to_arrow(cls, batch: Iterator['Spectrum']):
-        observed_mz = array('f')
-        precursor_charge = array('i')
-        retention_time = array('f')
+    def to_arrow(cls, batch: Iterator["Spectrum"]):
+        observed_mz = array("f")
+        precursor_charge = array("i")
+        retention_time = array("f")
         scan_number = []
         source_file = []
         ion_mobility = []
@@ -284,9 +278,7 @@ class Spectrum:
             "rt": pa.array(retention_time, type=pa.float32()),
             "scan": pa.array(scan_number, type=pa.string()),
             "source_file": pa.array(source_file, type=pa.string(), from_pandas=True),
-            "ion_mobility": pa.array(
-                ion_mobility, type=pa.float32(), from_pandas=True
-            ),
+            "ion_mobility": pa.array(ion_mobility, type=pa.float32(), from_pandas=True),
         }
 
     @classmethod
@@ -323,31 +315,32 @@ class Identification:
     predicted_retention_time: Optional[float] = None
 
     @classmethod
-    def to_arrow(cls, batch: List['Identification']) -> pa.Table:
+    def to_arrow(cls, batch: List["Identification"]) -> pa.Table:
         data_arrays = {}
 
         data_arrays["global_qvalue"] = pa.array(
             [i.global_qvalue for i in batch], type=pa.float64()
         )
-        data_arrays["posterior_error_probability"] = pa.array([
-            i.posterior_error_probability for i in batch
-        ], type=pa.float32())
-        data_arrays["calculated_mz"] = pa.array([i.calculated_mz for i in batch], type=pa.float32())
-        data_arrays['additional_scores'] = pa.array(
-            [[asdict(s) for s in i.additional_scores] for i in batch], type=pa.list_(Score.arrow_type())
+        data_arrays["posterior_error_probability"] = pa.array(
+            [i.posterior_error_probability for i in batch], type=pa.float32()
+        )
+        data_arrays["calculated_mz"] = pa.array(
+            [i.calculated_mz for i in batch], type=pa.float32()
+        )
+        data_arrays["additional_scores"] = pa.array(
+            [[asdict(s) for s in i.additional_scores] for i in batch],
+            type=pa.list_(Score.arrow_type()),
         )
         data_arrays["rank"] = pa.array([i.rank for i in batch], type=pa.int32())
-        data_arrays["predicted_rt"] = pa.array([
-            i.predicted_retention_time for i in batch
-        ], type=pa.float32(), from_pandas=True)
-
-        data_arrays.update(
-            Peptide.to_arrow(i.peptide for i in batch)
+        data_arrays["predicted_rt"] = pa.array(
+            [i.predicted_retention_time for i in batch],
+            type=pa.float32(),
+            from_pandas=True,
         )
 
-        data_arrays.update(
-            Spectrum.to_arrow(i.spectrum for i in batch)
-        )
+        data_arrays.update(Peptide.to_arrow(i.peptide for i in batch))
+
+        data_arrays.update(Spectrum.to_arrow(i.spectrum for i in batch))
         return pa.table(data_arrays)
 
     @classmethod
@@ -363,18 +356,30 @@ class Identification:
 class FragPipe:
     output_directory: Path
 
-    def write_psms_to_parquet(self, file_path: Path, batch_size: int = 10000, output_prefix_file: Optional[str]=None, **metadata):
+    def write_psms_to_parquet(
+        self,
+        file_path: Path,
+        batch_size: int = 10000,
+        output_prefix_file: Optional[str] = None,
+        **metadata,
+    ):
         if not output_prefix_file:
             output_prefix_file = "psm"
 
         file_uuid = uuid.uuid4()
-        output_path = self.output_directory / f"{output_prefix_file}-{file_uuid}.psm.parquet"
+        output_path = (
+            self.output_directory / f"{output_prefix_file}-{file_uuid}.psm.parquet"
+        )
 
-        metadata['file_type'] = 'psm'
-        metadata['uuid'] = str(file_uuid)
+        metadata["file_type"] = "psm"
+        metadata["uuid"] = str(file_uuid)
         metadata["creation_date"] = date.today().isoformat()
 
-        logger.debug("Writing FragPipe PSMs to %s with a batch size of %d", output_path, batch_size)
+        logger.debug(
+            "Writing FragPipe PSMs to %s with a batch size of %d",
+            output_path,
+            batch_size,
+        )
         writer = None
 
         file_metadata = []
@@ -383,7 +388,9 @@ class FragPipe:
             logger.debug("Converting batch %d with %d entries", i, batch.num_rows)
             if writer is None:
                 logger.debug("Initializing ParquetWriter with schema %r", batch.schema)
-                writer = pq.ParquetWriter(output_path, schema=batch.schema, metadata_collector=file_metadata)
+                writer = pq.ParquetWriter(
+                    output_path, schema=batch.schema, metadata_collector=file_metadata
+                )
                 writer.add_key_value_metadata(metadata)
 
             writer.write_batch(batch)
@@ -393,9 +400,12 @@ class FragPipe:
             logger.warning("No PSMs found. Not writing PSM parquet file")
         return file_metadata
 
-
-    def convert_psms(self, file_path: Path, batch_size: int = 10000, ) -> Iterator[pa.RecordBatch]:
-        iterator = pd.read_csv(file_path, iterator=True, chunksize=batch_size, sep='\t')
+    def convert_psms(
+        self,
+        file_path: Path,
+        batch_size: int = 10000,
+    ) -> Iterator[pa.RecordBatch]:
+        iterator = pd.read_csv(file_path, iterator=True, chunksize=batch_size, sep="\t")
         for batch in iterator:
             idents = Identification.from_dataframe(batch)
             table = Identification.to_arrow(idents)
