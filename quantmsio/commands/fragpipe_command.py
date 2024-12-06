@@ -12,6 +12,7 @@ from quantmsio.core.fragpipe import FragPipe
 )
 @click.option(
     "--msms_file",
+    type=click.Path(dir_okay=False, path_type=Path, file_okay=True, exists=True),
     help="the psm.tsv file, this will be used to extract the peptide information",
     required=True,
 )
@@ -20,12 +21,14 @@ from quantmsio.core.fragpipe import FragPipe
     "--output_folder",
     type=click.Path(dir_okay=True, path_type=Path, file_okay=False),
     help="Folder where the parquet file will be generated",
+    required=True,
 )
 @click.option(
     "-b",
     "--chunksize",
     help="Read batch size",
     default=1000000,
+    type=int
 )
 @click.option(
     "--output_prefix_file",
