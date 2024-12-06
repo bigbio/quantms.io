@@ -143,6 +143,7 @@ class MzTabModification:
                 fields.append({"position": pos, "localization_probability": 1.0})
         return {"name": str(self.identifier), "fields": fields}
 
+    @classmethod
     def to_arrow(cls, batch: Iterator[List["MzTabModification"]]):
         modifications = []
         for block in batch:
@@ -375,19 +376,20 @@ class FragPipe:
         writer = None
 
         file_metadata = []
+        try:
+            for i, batch in enumerate(self.convert_psms(file_path, batch_size=batch_size)):
+                logger.debug("Converting batch %d with %d entries", i, batch.num_rows)
+                if writer is None:
+                    logger.debug("Initializing ParquetWriter with schema %r", batch.schema)
+                    writer = pq.ParquetWriter(output_path, schema=batch.schema, metadata_collector=file_metadata)
+                    writer.add_key_value_metadata(metadata)
 
-        for i, batch in enumerate(self.convert_psms(file_path, batch_size=batch_size)):
-            logger.debug("Converting batch %d with %d entries", i, batch.num_rows)
-            if writer is None:
-                logger.debug("Initializing ParquetWriter with schema %r", batch.schema)
-                writer = pq.ParquetWriter(output_path, schema=batch.schema, metadata_collector=file_metadata)
-                writer.add_key_value_metadata(metadata)
-
-            writer.write_batch(batch)
-        if writer is not None:
-            writer.close()
-        else:
-            logger.warning("No PSMs found. Not writing PSM parquet file")
+                writer.write_batch(batch)
+        finally:
+            if writer is not None:
+                writer.close()
+            else:
+                logger.warning("No PSMs found. Not writing PSM parquet file")
         return file_metadata
 
     def convert_psms(
