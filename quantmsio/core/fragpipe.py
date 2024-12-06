@@ -14,8 +14,6 @@ import pyarrow.parquet as pq
 
 from pyteomics import proforma
 
-from quantmsio.core.project import create_uuid_filename
-
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
