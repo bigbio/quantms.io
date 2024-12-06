@@ -1,4 +1,5 @@
 import logging
+from numbers import Number
 import uuid
 from datetime import date
 
@@ -70,9 +71,7 @@ class ModificationPositions:
                     f"{self.__class__.__name__}.format requires the parameter list"
                     f" length ({len(parameters)}) match its length ({len(self)})"
                 )
-            return "|".join(
-                f"{i}{p.format()}" for i, p in zip(self.positions, parameters)
-            )
+            return "|".join(f"{i}{p.format()}" for i, p in zip(self.positions, parameters))
 
 
 @dataclass
@@ -229,16 +228,12 @@ class Peptide:
         for peptide in batch:
             sequences.append(peptide.sequence)
             peptidoforms.append(str(peptide.peptidoform))
-            modifications.append(
-                [mod.to_arrow_single() for mod in peptide.modifications]
-            )
+            modifications.append([mod.to_arrow_single() for mod in peptide.modifications])
 
         return {
             "sequence": pa.array(sequences, type=pa.string()),
             "peptidoform": pa.array(peptidoforms, type=pa.string()),
-            "modifications": pa.array(
-                modifications, type=pa.list_(MzTabModification.arrow_type())
-            ),
+            "modifications": pa.array(modifications, type=pa.list_(MzTabModification.arrow_type())),
         }
 
     @classmethod
@@ -318,15 +313,11 @@ class Identification:
     def to_arrow(cls, batch: List["Identification"]) -> pa.Table:
         data_arrays = {}
 
-        data_arrays["global_qvalue"] = pa.array(
-            [i.global_qvalue for i in batch], type=pa.float64()
-        )
+        data_arrays["global_qvalue"] = pa.array([i.global_qvalue for i in batch], type=pa.float64())
         data_arrays["posterior_error_probability"] = pa.array(
             [i.posterior_error_probability for i in batch], type=pa.float32()
         )
-        data_arrays["calculated_mz"] = pa.array(
-            [i.calculated_mz for i in batch], type=pa.float32()
-        )
+        data_arrays["calculated_mz"] = pa.array([i.calculated_mz for i in batch], type=pa.float32())
         data_arrays["additional_scores"] = pa.array(
             [[asdict(s) for s in i.additional_scores] for i in batch],
             type=pa.list_(Score.arrow_type()),
@@ -363,13 +354,15 @@ class FragPipe:
         output_prefix_file: Optional[str] = None,
         **metadata,
     ):
+        if not file_path.exists():
+            raise FileNotFoundError(file_path)
+        if not self.output_directory.exists():
+            self.output_directory.mkdir(parents=True)
         if not output_prefix_file:
             output_prefix_file = "psm"
 
         file_uuid = uuid.uuid4()
-        output_path = (
-            self.output_directory / f"{output_prefix_file}-{file_uuid}.psm.parquet"
-        )
+        output_path = self.output_directory / f"{output_prefix_file}-{file_uuid}.psm.parquet"
 
         metadata["file_type"] = "psm"
         metadata["uuid"] = str(file_uuid)
@@ -388,9 +381,7 @@ class FragPipe:
             logger.debug("Converting batch %d with %d entries", i, batch.num_rows)
             if writer is None:
                 logger.debug("Initializing ParquetWriter with schema %r", batch.schema)
-                writer = pq.ParquetWriter(
-                    output_path, schema=batch.schema, metadata_collector=file_metadata
-                )
+                writer = pq.ParquetWriter(output_path, schema=batch.schema, metadata_collector=file_metadata)
                 writer.add_key_value_metadata(metadata)
 
             writer.write_batch(batch)
@@ -440,10 +431,7 @@ def peptide_from_row(row: pd.Series) -> Peptide:
     end = row["Protein End"]
     return Peptide(
         row["Peptide"],
-        [
-            mod.as_mztab()
-            for mod in AssignedModification.parse(row["Assigned Modifications"])
-        ],
+        [mod.as_mztab() for mod in AssignedModification.parse(row["Assigned Modifications"])],
         [f"{start}:{end}"],
         [protein_accession],
         [gene_name],
