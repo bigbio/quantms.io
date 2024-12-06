@@ -23,13 +23,7 @@ from quantmsio.core.fragpipe import FragPipe
     help="Folder where the parquet file will be generated",
     required=True,
 )
-@click.option(
-    "-b",
-    "--chunksize",
-    help="Read batch size",
-    default=1000000,
-    type=int
-)
+@click.option("-b", "--chunksize", help="Read batch size", default=1000000, type=int)
 @click.option(
     "--output_prefix_file",
     help="Prefix of the parquet file needed to generate the file name",
