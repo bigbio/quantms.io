@@ -32,7 +32,11 @@ def cli():
     """
     This is the main tool that gives access to all commands to convert SDRF files into pipeline-specific configuration files
     """
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(
+        level=logging.INFO,
+        datefmt="%H:%M:%S",
+        format="[%(asctime)s] %(levelname).1s | %(name)s | %(message)s",
+    )
 
 
 cli.add_command(generate_pride_project_json)

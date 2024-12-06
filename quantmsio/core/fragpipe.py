@@ -389,8 +389,10 @@ class FragPipe:
                 writer.add_key_value_metadata(metadata)
 
             writer.write_batch(batch)
-
-        writer.close()
+        if writer is not None:
+            writer.close()
+        else:
+            logger.warning("No PSMs found. Not writing PSM parquet file")
         return file_metadata
 
 
