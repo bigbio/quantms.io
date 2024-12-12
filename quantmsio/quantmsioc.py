@@ -9,7 +9,7 @@ from quantmsio import __version__ as __version__
 from quantmsio.commands.project_command import generate_pride_project_json
 from quantmsio.commands.feature_command import convert_feature_file
 from quantmsio.commands.psm_command import convert_psm_file, compare_set_of_psms
-from quantmsio.commands.diann_command import diann_convert_to_parquet
+from quantmsio.commands.diann_command import diann_convert_to_parquet, diann_pg_convert_to_parquet
 from quantmsio.commands.ae_command import convert_ibaq_absolute
 from quantmsio.commands.de_command import convert_msstats_differential
 from quantmsio.commands.attach_file_command import attach_file_to_json
@@ -38,6 +38,7 @@ cli.add_command(convert_feature_file)
 cli.add_command(convert_psm_file)
 cli.add_command(compare_set_of_psms)
 cli.add_command(diann_convert_to_parquet)
+cli.add_command(diann_pg_convert_to_parquet)
 cli.add_command(convert_ibaq_absolute)
 cli.add_command(convert_msstats_differential)
 cli.add_command(attach_file_to_json)

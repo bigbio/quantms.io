@@ -2,10 +2,12 @@ import os
 import re
 from collections import defaultdict
 import pandas as pd
+import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 from Bio import SeqIO
 import ahocorasick
+from pyopenms import FASTAFile
 from quantmsio.core.common import FEATURE_SCHEMA, IBAQ_SCHEMA, IBAQ_USECOLS, PSM_SCHEMA
 from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.operate.query import Query, map_spectrum_mz
@@ -112,7 +114,41 @@ def map_protein_for_tsv(path: str, fasta: str, output_path: str, map_parameter: 
     with open(output_path, "w", encoding="utf8") as f:
         f.write(content)
 
+def get_peptide_map(unique_peptides, fasta):
+    peptide_map = defaultdict(list)
+    automaton = ahocorasick.Automaton()
+    for sequence in unique_peptides:
+        automaton.add_word(sequence,sequence)
+    automaton.make_automaton()
 
+    fasta_proteins = list()
+    FASTAFile().load(fasta, fasta_proteins)
+
+    for entry in fasta_proteins:
+        accession = entry.identifier.split("|")[1]
+        for match in automaton.iter(entry.sequence):
+            peptide = match[1]
+            if accession not in peptide_map[peptide]:
+                peptide_map[peptide].append(accession)
+    return peptide_map
+
+def map_peptide_to_protein(parquet_file: str, fasta: str, output_folder, label="feature"):
+    p = Query(parquet_file)
+    unique_peptides = p.get_unique_peptides()
+    peptide_map = get_peptide_map(unique_peptides, fasta)
+    pqwriter = None
+    filename = os.path.basename(parquet_file)
+    for table in p.iter_chunk(batch_size=2000000):
+        table["pg_accessions"] = table["sequence"].map(peptide_map)
+        table = table[table['pg_accessions'].apply(lambda x: len(x) > 0)]
+        table.loc[:,"unique"] = table['pg_accessions'].apply(lambda x: 0 if len(x) > 1 else 1).astype(np.int32)
+        if label == "feature":
+            parquet_table = pa.Table.from_pandas(table, schema=FEATURE_SCHEMA)
+            pqwriter = save_file(parquet_table, pqwriter, output_folder, filename)
+        else:
+            parquet_table = pa.Table.from_pandas(table, schema=IBAQ_SCHEMA)
+            pqwriter = save_file(parquet_table, pqwriter, output_folder, filename)
+    close_file(None, pqwriter)
 def get_modification_details(seq: str, mods_dict: dict, automaton: any, select_mods: list = None):
     if "(" not in seq:
         return (seq, [])
