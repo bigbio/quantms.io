@@ -36,8 +36,7 @@ def generate_psms_of_spectrum(
     """
     pqwriters, pqwriter_no_part, filename = init_save_info(parquet_path)
     p = Query(parquet_path)
-    for _, table in p.iter_file(file_num=file_num):
-        refs = table["reference_file_name"].unique()
+    for refs, table in p.iter_file(file_num=file_num):
         mzml_handlers = {ref: OpenMSHandler() for ref in refs}
         table[["number_peaks", "mz_array", "intensity_array"]] = table[["reference_file_name", "scan"]].apply(
             lambda x: map_spectrum_mz(
