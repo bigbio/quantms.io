@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 def get_ibaq_columns(path):
     with open(path) as f:
         line = f.readline()
-        return line.split("\n")[0].split(",")
+        return line.split("\n")[0].split("\t")
 
 
 class AbsoluteExpressionHander:
@@ -66,7 +66,7 @@ class AbsoluteExpressionHander:
         for col in usecols:
             if col not in ibaq_columns:
                 raise Exception(f"Not found {col} in ibaq file")
-        ibaqs = pd.read_csv(path, usecols=usecols)
+        ibaqs = pd.read_csv(path, usecols=usecols, sep="\t")
         ibaqs.rename(columns=AbsoluteExpressionHander.LABEL_MAP, inplace=True)
         if protein_str:
             ibaqs = ibaqs[ibaqs["protein"].str.contains(f"{protein_str}", na=False)]

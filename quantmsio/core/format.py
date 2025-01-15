@@ -256,6 +256,68 @@ IBAQ_FIELDS = [
     pa.field("intensity", pa.float32(), metadata={"description": "intensity value"}),
 ]
 
+PG_FIELDS = [
+    pa.field(
+        "pg_accessions",
+        pa.list_(pa.string()),
+        metadata={"description": "Protein group accessions of all the proteins that the peptide maps to"},
+    ),
+    pa.field(
+        "pg_names",
+        pa.list_(pa.string()),
+        metadata={"description": "Protein group names"},
+    ),
+    pa.field(
+        "gg_accessions",
+        pa.list_(pa.string()),
+        metadata={"description": "Gene group accessions, as a string array"},
+    ),
+    pa.field(
+        "reference_file_name",
+        pa.string(),
+        metadata={"description": "Spectrum file name with no path information and not including the file extension"},
+    ),
+    pa.field(
+        "global_qvalue",
+        pa.float32(),
+        metadata={"description": "Global q-value of the protein group at the experiment level"},
+    ),
+    pa.field(
+        "intensity",
+        pa.float32(),
+        metadata={"description": "the intensity-based abundance of the protein group in the reference file"},
+    ),
+    pa.field(
+        "additional_intensities",
+        pa.list_(pa.struct([("intensity_name", pa.string()), ("intensity_value", pa.float32())])),
+        metadata={"description": "The intensity-based abundance of the peptide in the sample"},
+    ),
+    pa.field(
+        "is_decoy",
+        pa.int32(),
+        metadata={"description": "Decoy indicator, 1 if the PSM is a decoy, 0 target"},
+    ),
+    pa.field(
+        "contaminant",
+        pa.int32(),
+        metadata={"description": "If the protein is a contaminant"},
+    ),
+    pa.field(
+        "peptides",
+        pa.list_(pa.struct([("protein_name", pa.string()), ("peptide_count", pa.int32())])),
+        metadata={"description": "Number of peptides per protein in the protein group"},
+    ),
+    pa.field(
+        "anchor_protein",
+        pa.string(),
+        metadata={"description": "The anchor protein of the protein group, leading protein or representative"},
+    ),
+    pa.field(
+        "additional_scores",
+        pa.list_(pa.struct([("score_name", pa.string()), ("score_value", pa.float32())])),
+        metadata={"description": "List of structures, each structure contains two fields: name and value"},
+    )
+]
 
 PSM_FIELDS = PEPTIDE_FIELDS + PSM_UNIQUE_FIELDS
 

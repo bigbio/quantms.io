@@ -1,11 +1,11 @@
 import click
 from quantmsio.core.project import create_uuid_filename
-from quantmsio.operate.tools import write_ibaq_feature
+from quantmsio.operate.tools import map_peptide_to_protein
 
 
 @click.command(
-    "convert-ibaq",
-    short_help="Convert psm from mzTab to parquet file in quantms io",
+    "map-latest-uniport",
+    short_help="Map the peptides to the latest UniProt Fasta file.",
 )
 @click.option(
     "--feature_file",
@@ -13,8 +13,8 @@ from quantmsio.operate.tools import write_ibaq_feature
     required=True,
 )
 @click.option(
-    "--sdrf_file",
-    help="the SDRF file needed to extract some of the metadata",
+    "--fasta",
+    help="the latest UniProt Fasta file",
     required=True,
 )
 @click.option(
@@ -27,9 +27,9 @@ from quantmsio.operate.tools import write_ibaq_feature
     help="Prefix of the parquet file needed to generate the file name",
     required=False,
 )
-def convert_ibaq_file(
+def map_latest_uniport(
     feature_file: str,
-    sdrf_file: str,
+    fasta: str,
     output_folder: str,
     output_prefix_file: str,
 ):
@@ -40,11 +40,11 @@ def convert_ibaq_file(
     :param output_prefix_file: Prefix of the Json file needed to generate the file name
     """
 
-    if feature_file is None or sdrf_file is None or output_folder is None:
+    if feature_file is None or fasta is None or output_folder is None:
         raise click.UsageError("Please provide all the required parameters")
 
     if not output_prefix_file:
-        output_prefix_file = ""
+        output_prefix_file = "feature"
 
-    output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".ibaq.parquet")
-    write_ibaq_feature(sdrf_file, feature_file, output_path)
+    filename = create_uuid_filename(output_prefix_file, ".feature.parquet")
+    map_peptide_to_protein(feature_file, fasta, output_folder, filename)
