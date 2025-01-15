@@ -3,9 +3,11 @@ import logging
 import numpy as np
 import pandas as pd
 import os
+import pyarrow as pa
 import pyarrow.parquet as pq
 import concurrent.futures
 from pathlib import Path
+from collections import defaultdict
 from pyopenms import AASequence
 from pyopenms.Constants import PROTON_MASS_U
 from quantmsio.operate.tools import get_ahocorasick
@@ -15,27 +17,22 @@ from quantmsio.core.mztab import MzTab
 from quantmsio.core.feature import Feature
 from quantmsio.core.duckdb import DuckDB
 from quantmsio.utils.pride_utils import generate_scan_number
-from quantmsio.core.common import DIANN_MAP, DIANN_USECOLS
+from quantmsio.core.common import DIANN_MAP, DIANN_USECOLS, DIANN_PG_MAP, DIANN_PG_USECOLS, PG_SCHEMA
 
 DIANN_SQL = ", ".join([f'"{name}"' for name in DIANN_USECOLS])
-
+DIANN_PG_SQL = ", ".join([f'"{name}"' for name in DIANN_PG_USECOLS])
 
 class DiaNNConvert(DuckDB):
 
-    def __init__(self, diann_report, sdrf_path, duckdb_max_memory="16GB", duckdb_threads=4):
+    def __init__(self, diann_report, sdrf_path=None, duckdb_max_memory="16GB", duckdb_threads=4):
         super(DiaNNConvert, self).__init__(diann_report, duckdb_max_memory, duckdb_threads)
-        self.init_duckdb()
-        self._sdrf = SDRFHandler(sdrf_path)
-        self._mods_map = self._sdrf.get_mods_dict()
-        self._automaton = get_ahocorasick(self._mods_map)
-        self._sample_map = self._sdrf.get_sample_map_run()
+        if sdrf_path:
+            self._sdrf = SDRFHandler(sdrf_path)
+            self._mods_map = self._sdrf.get_mods_dict()
+            self._automaton = get_ahocorasick(self._mods_map)
+            self._sample_map = self._sdrf.get_sample_map_run()
 
-    def init_duckdb(self):
-
-        self._duckdb.execute("""CREATE INDEX idx_precursor_q ON report ("Precursor.Id", "Q.Value")""")
-        self._duckdb.execute("""CREATE INDEX idx_run ON report ("Run")""")
-
-    def get_report_from_database(self, runs: list) -> pd.DataFrame:
+    def get_report_from_database(self, runs: list, sql:str = DIANN_SQL) -> pd.DataFrame:
         """
         This function loads the report from the duckdb database for a group of ms_runs.
         :param runs: A list of ms_runs
@@ -48,7 +45,7 @@ class DiaNNConvert(DuckDB):
             from report
             where Run IN {}
             """.format(
-                DIANN_SQL, tuple(runs)
+                sql, tuple(runs)
             )
         )
         report = database.df()
@@ -90,43 +87,75 @@ class DiaNNConvert(DuckDB):
         logging.info("Time to load peptide map {} seconds".format(et))
         return best_ref_map
 
+    def get_peptide_count(self, df):
+        peptide_count = defaultdict(int)
+        for proteins in df["pg_accessions"]:
+            for protein in proteins.split(";"):
+                peptide_count[protein] += 1
+        return peptide_count
+
+    def generate_pg_matrix(self, report):
+        peptide_count = self.get_peptide_count(report)
+        report.drop_duplicates(subset=["pg_accessions"],inplace=True)
+        report["gg_accessions"] = report["gg_accessions"].str.split(";")
+        report["pg_names"] = report["pg_names"].str.split(";")
+        report["reference_file_name"] = report["reference_file_name"].apply(lambda x: x.split(".")[0])
+        report["pg_accessions"] = report["pg_accessions"].str.split(";")
+        report.loc[:,"peptides"] = report["pg_accessions"].apply(
+            lambda proteins: [{
+                "protein_name": protein, 
+                "peptide_count": peptide_count[protein]
+            } for protein in proteins]
+        )
+        report.loc[:, "is_decoy"] = 0
+        report.loc[:, "additional_intensities"] = report[["normalize_intensity","lfq"]].apply(
+            lambda rows: [
+                {
+                    "intensity_name": name,
+                    "intensity_value": rows[name]
+                } for name in ["normalize_intensity","lfq"]
+            ],
+            axis=1,
+        )
+        report.loc[:, "additional_scores"] = report["qvalue"].apply(
+            lambda value: [{
+                "score_name": "qvalue",
+                "score_value": value
+            }]
+        )
+        report.loc[:, "contaminant"] = None
+        report.loc[:, "anchor_protein"] = None
+        return report
+
     def main_report_df(self, qvalue_threshold: float, mzml_info_folder: str, file_num: int, protein_str: str = None):
         def intergrate_msg(n):
             nonlocal report
             nonlocal mzml_info_folder
-            files = list(Path(mzml_info_folder).glob(f"*{n}_mzml_info.tsv"))
+            files = list(Path(mzml_info_folder).glob(f"*{n}_ms_info.parquet"))
             if not files:
                 raise ValueError(f"Could not find {n} info file in {dir}")
-            target = pd.read_csv(
+            target = pd.read_parquet(
                 files[0],
-                sep="\t",
-                usecols=["Retention_Time", "SpectrumID", "Exp_Mass_To_Charge"],
+                columns=["rt", "scan", "observed_mz"],
             )
             group = report[report["run"] == n].copy()
-            group.sort_values(by="rt_start", inplace=True)
-            target.rename(
-                columns={
-                    "Retention_Time": "rt_start",
-                    "SpectrumID": "scan",
-                    "Exp_Mass_To_Charge": "observed_mz",
-                },
-                inplace=True,
-            )
-            target["rt_start"] = target["rt_start"] / 60
-            res = pd.merge_asof(group, target, on="rt_start", direction="nearest")
+            group.sort_values(by="rt", inplace=True)
+            target["rt"] = target["rt"] / 60
+            res = pd.merge_asof(group, target, on="rt", direction="nearest")
             return res
 
         masses_map, modifications_map = self.get_masses_and_modifications_map()
 
         info_list = [
-            mzml.replace("_mzml_info.tsv", "")
+            mzml.replace("_ms_info.parquet", "")
             for mzml in os.listdir(mzml_info_folder)
-            if mzml.endswith("_mzml_info.tsv")
+            if mzml.endswith("_ms_info.parquet")
         ]
         info_list = [info_list[i : i + file_num] for i in range(0, len(info_list), file_num)]
         for refs in info_list:
             report = self.get_report_from_database(refs)
             report.rename(columns=DIANN_MAP, inplace=True)
+            report.dropna(subset=["pg_accessions"], inplace=True)
             if protein_str:
                 report = report[report["pg_accessions"].str.contains(f"{protein_str}", na=False)]
             # restrict
@@ -228,6 +257,23 @@ class DiaNNConvert(DuckDB):
             logging.info("Time to generate psm and feature file {} seconds".format(et))
             yield report
 
+    def write_pg_matrix_to_file(self, output_path:str,file_num=20):
+        info_list = self.get_unique_references("Run")
+        info_list = [info_list[i : i + file_num] for i in range(0, len(info_list), file_num)]
+        pqwriter = None
+        for refs in info_list:
+            report = self.get_report_from_database(refs, DIANN_PG_SQL)
+            report.rename(columns=DIANN_PG_MAP, inplace=True)
+            report.dropna(subset=["pg_accessions"], inplace=True)
+            for ref in refs:
+                df = report[report["reference_file_name"] == ref].copy()
+                df = self.generate_pg_matrix(df)
+                pg_parquet = pa.Table.from_pandas(df, schema=PG_SCHEMA)
+                if not pqwriter:
+                    pqwriter = pq.ParquetWriter(output_path, pg_parquet.schema)
+                pqwriter.write_table(pg_parquet)
+        close_file(pqwriter=pqwriter)
+        self.destroy_duckdb_database()
     def write_feature_to_file(
         self,
         qvalue_threshold: float,

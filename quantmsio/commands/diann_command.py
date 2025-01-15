@@ -114,3 +114,62 @@ def diann_convert_to_parquet(
             file_num=file_num,
             protein_file=protein_file,
         )
+
+
+@click.command(
+    "convert-diann-pg",
+    short_help="Convert diann_report to pg file of quantms.io format",
+)
+@click.option(
+    "--report_path",
+    help="the diann report file path",
+    required=True,
+)
+@click.option(
+    "--output_folder",
+    help="Folder where the Json file will be generated",
+    required=True,
+)
+@click.option(
+    "--output_prefix_file",
+    help="Prefix of the Json file needed to generate the file name",
+    required=False,
+)
+@click.option(
+    "--duckdb_max_memory", help="The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)", required=False
+)
+@click.option("--duckdb_threads", help="The number of threads for the DuckDB engine (e.g 4)", required=False)
+@click.option(
+    "--file_num",
+    help="The number of files being processed at the same time",
+    default=100,
+)
+def diann_pg_convert_to_parquet(
+    report_path: str,
+    output_folder: str,
+    output_prefix_file: str,
+    duckdb_max_memory: str,
+    duckdb_threads: int,
+    file_num: int,
+):
+    if report_path is None  is None or output_folder is None:
+        raise click.UsageError("Please provide all the required parameters")
+
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    if not output_prefix_file:
+        output_prefix_file = "pg"
+    filename = create_uuid_filename(output_prefix_file, ".pg.parquet")
+    pg_output_path = output_folder + "/" + filename
+
+    dia_nn = DiaNNConvert(
+        diann_report=report_path,
+        sdrf_path=None,
+        duckdb_max_memory=duckdb_max_memory,
+        duckdb_threads=duckdb_threads,
+    )
+    dia_nn.write_pg_matrix_to_file(
+        output_path= pg_output_path,
+        file_num=file_num
+    )

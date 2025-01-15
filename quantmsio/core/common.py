@@ -1,5 +1,5 @@
 from quantmsio import __version__
-from quantmsio.core.format import PSM_FIELDS, FEATURE_FIELDS, IBAQ_FIELDS
+from quantmsio.core.format import PSM_FIELDS, FEATURE_FIELDS, IBAQ_FIELDS, PG_FIELDS
 import pyarrow as pa
 
 PSM_MAP = {
@@ -66,7 +66,19 @@ DIANN_MAP = {
     "Genes": "gg_names",
     "Run": "run",
 }
+DIANN_PG_MAP = {
+    "Protein.Group": "pg_accessions",
+    "Protein.Names": "pg_names",
+    "Genes": "gg_accessions",
+    "Run": "reference_file_name",
+    "Global.PG.Q.Value": "global_qvalue",
+    'PG.Quantity': "intensity", 
+    'PG.Normalised': "normalize_intensity",
+    "PG.MaxLFQ": "lfq",
+    'PG.Q.Value': "qvalue"
+}
 DIANN_USECOLS = list(DIANN_MAP.keys())
+DIANN_PG_USECOLS = list(DIANN_PG_MAP.keys())
 
 MAXQUANT_PSM_MAP = {
     "Sequence": "sequence",
@@ -135,3 +147,8 @@ IBAQ_SCHEMA = pa.schema(
     IBAQ_FIELDS,
     metadata={"description": "ibaq file in quantms.io format"},
 )
+PG_SCHEMA = pa.schema(
+    PG_FIELDS,
+    metadata={"description": "PG file in quantms.io format"},
+)
+

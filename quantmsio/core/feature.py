@@ -24,7 +24,7 @@ class Feature(MzTab):
 
     def extract_psm_msg(self, chunksize=2000000, protein_str=None):
         P = Psm(self.mztab_path)
-        pep_dict = P.extract_from_pep(chunksize=chunksize)
+        pep_dict = P.extract_from_pep(chunksize=100000)
         map_dict = {}
         for psm in P.iter_psm_table(chunksize, protein_str):
             for key, df in psm.groupby(["reference_file_name", "peptidoform", "precursor_charge"]):

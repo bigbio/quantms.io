@@ -6,6 +6,8 @@ import pandas as pd
 import codecs
 import os
 import pyarrow.parquet as pq
+from typing import List
+from pathlib import Path
 from pyopenms import ModificationsDB
 from pyopenms import AASequence
 from quantmsio.core.sdrf import SDRFHandler
@@ -41,10 +43,10 @@ class MaxQuant:
     def __init__(self):
         pass
 
-    def iter_batch(self, file_path: str, label: str = "feature", chunksize: int = 100000, protein_str: str = None):
-        self.mods_map = self.get_mods_map(file_path)
+    def extract_col_msg(self, col_df, label: str = "feature"):
+        line = "\t".join(col_df.columns)
+        self.mods_map = self.get_mods_map(line)
         self._automaton = get_ahocorasick(self.mods_map)
-        col_df = pd.read_csv(file_path, sep="\t", nrows=1)
         if label == "feature":
             intensity_normalize_names = []
             intensity_names = []
@@ -67,6 +69,11 @@ class MaxQuant:
             col = f"{key} Probabilities"
             if col in col_df.columns:
                 use_cols.append(col)
+        return use_map, use_cols
+
+    def iter_batch(self, file_path: str, label: str = "feature", chunksize: int = 100000, protein_str: str = None):
+        col_df = pd.read_csv(file_path, sep="\t", nrows=0)
+        use_map, use_cols =  self.extract_col_msg(col_df, label=label)
         for df in pd.read_csv(
             file_path,
             sep="\t",
@@ -75,6 +82,33 @@ class MaxQuant:
             chunksize=chunksize,
         ):
             df.rename(columns=use_map, inplace=True)
+            if protein_str:
+                df = df[df["mp_accessions"].str.contains(f"{protein_str}", na=False)]
+            df = self.main_operate(df)
+            yield df
+
+    def open_from_zip_archive(self, zip_file, file_name, **kwargs):
+        """Open file from zip archive."""
+        with zipfile.ZipFile(zip_file) as z:
+            with z.open(file_name) as f:
+                df = pd.read_csv(f, sep="\t", low_memory=False, **kwargs)
+        return df
+
+    def read_zip_file(self, zip_path: str, **kwargs):
+        filepath = Path(zip_path)
+        df = self.open_from_zip_archive(zip_path, f"{filepath.stem}/evidence.txt", **kwargs)
+        return df
+
+    def iter_zip_batch(self, zip_list: List[str], label: str = "feature", protein_str: str = None):
+        for zip_file in zip_list:
+            col_df = self.read_zip_file(zip_file, nrows=0)
+            use_map, use_cols =  self.extract_col_msg(col_df, label=label)
+            df = self.read_zip_file(
+                zip_file,
+                usecols=use_cols,
+            )
+            df.rename(columns=use_map, inplace=True)
+            #df["reference_file_name"] = zip_file.split(".")[0]
             if protein_str:
                 df = df[df["mp_accessions"].str.contains(f"{protein_str}", na=False)]
             df = self.main_operate(df)
@@ -98,11 +132,7 @@ class MaxQuant:
             else:
                 return None
 
-    def get_mods_map(self, report_path):
-        if os.stat(report_path).st_size == 0:
-            raise ValueError("File is empty")
-        f = codecs.open(report_path, "r", "utf-8")
-        line = f.readline()
+    def get_mods_map(self, line):
         pattern = r"sequence\s+(.*?)\s+(Missed|Proteins)"
         match = re.search(pattern, line, re.DOTALL)
         mod_seq = match.group(1)
@@ -307,6 +337,24 @@ class MaxQuant:
         self._init_sdrf(sdrf_path)
         pqwriter = None
         for df in self.iter_batch(evidence_path, chunksize=chunksize, protein_str=protein_file):
+            self.transform_feature(df)
+            Feature.convert_to_parquet_format(df)
+            parquet = Feature.transform_feature(df)
+            if not pqwriter:
+                pqwriter = pq.ParquetWriter(output_path, parquet.schema)
+            pqwriter.write_table(parquet)
+        close_file(pqwriter=pqwriter)
+
+    def write_zip_feature_to_file(
+        self,
+        zip_list,
+        sdrf_path: str,
+        output_path: str,
+        protein_file=None,
+    ):
+        self._init_sdrf(sdrf_path)
+        pqwriter = None
+        for df in self.iter_zip_batch(zip_list, "feature", protein_str=protein_file):
             self.transform_feature(df)
             Feature.convert_to_parquet_format(df)
             parquet = Feature.transform_feature(df)
