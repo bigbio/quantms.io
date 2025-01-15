@@ -131,34 +131,25 @@ class DiaNNConvert(DuckDB):
         def intergrate_msg(n):
             nonlocal report
             nonlocal mzml_info_folder
-            files = list(Path(mzml_info_folder).glob(f"*{n}_mzml_info.tsv"))
+            files = list(Path(mzml_info_folder).glob(f"*{n}_ms_info.parquet"))
             if not files:
                 raise ValueError(f"Could not find {n} info file in {dir}")
-            target = pd.read_csv(
+            target = pd.read_parquet(
                 files[0],
-                sep="\t",
-                usecols=["Retention_Time", "SpectrumID", "Exp_Mass_To_Charge"],
+                columns=["rt", "scan", "observed_mz"],
             )
             group = report[report["run"] == n].copy()
-            group.sort_values(by="rt_start", inplace=True)
-            target.rename(
-                columns={
-                    "Retention_Time": "rt_start",
-                    "SpectrumID": "scan",
-                    "Exp_Mass_To_Charge": "observed_mz",
-                },
-                inplace=True,
-            )
-            target["rt_start"] = target["rt_start"] / 60
-            res = pd.merge_asof(group, target, on="rt_start", direction="nearest")
+            group.sort_values(by="rt", inplace=True)
+            target["rt"] = target["rt"] / 60
+            res = pd.merge_asof(group, target, on="rt", direction="nearest")
             return res
 
         masses_map, modifications_map = self.get_masses_and_modifications_map()
 
         info_list = [
-            mzml.replace("_mzml_info.tsv", "")
+            mzml.replace("_ms_info.parquet", "")
             for mzml in os.listdir(mzml_info_folder)
-            if mzml.endswith("_mzml_info.tsv")
+            if mzml.endswith("_ms_info.parquet")
         ]
         info_list = [info_list[i : i + file_num] for i in range(0, len(info_list), file_num)]
         for refs in info_list:
