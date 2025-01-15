@@ -131,12 +131,11 @@ def get_peptide_map(unique_peptides, fasta):
                 peptide_map[peptide].append(accession)
     return peptide_map
 
-def map_peptide_to_protein(parquet_file: str, fasta: str, output_folder, label="feature"):
+def map_peptide_to_protein(parquet_file: str, fasta: str, output_folder: str, filename: str, label="feature"):
     p = Query(parquet_file)
     unique_peptides = p.get_unique_peptides()
     peptide_map = get_peptide_map(unique_peptides, fasta)
     pqwriter = None
-    filename = os.path.basename(parquet_file)
     for table in p.iter_chunk(batch_size=2000000):
         table["pg_accessions"] = table["sequence"].map(peptide_map)
         table = table[table['pg_accessions'].apply(lambda x: len(x) > 0)]
