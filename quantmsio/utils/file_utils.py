@@ -3,6 +3,7 @@ import os
 import pyarrow.parquet as pq
 import psutil
 import pandas as pd
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -113,3 +114,8 @@ def close_file(pqwriters: dict = None, pqwriter: object = None):
     else:
         for pqwriter in pqwriters.values():
             pqwriter.close()
+
+def find_ae_files(directory):
+    path = Path(directory)
+    ae_files = list(path.rglob("*.absolute.tsv"))
+    return ae_files
