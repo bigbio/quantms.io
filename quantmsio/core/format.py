@@ -316,7 +316,7 @@ PG_FIELDS = [
         "additional_scores",
         pa.list_(pa.struct([("score_name", pa.string()), ("score_value", pa.float32())])),
         metadata={"description": "List of structures, each structure contains two fields: name and value"},
-    )
+    ),
 ]
 
 PSM_FIELDS = PEPTIDE_FIELDS + PSM_UNIQUE_FIELDS

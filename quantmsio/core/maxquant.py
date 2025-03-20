@@ -73,7 +73,7 @@ class MaxQuant:
 
     def iter_batch(self, file_path: str, label: str = "feature", chunksize: int = 100000, protein_str: str = None):
         col_df = pd.read_csv(file_path, sep="\t", nrows=0)
-        use_map, use_cols =  self.extract_col_msg(col_df, label=label)
+        use_map, use_cols = self.extract_col_msg(col_df, label=label)
         for df in pd.read_csv(
             file_path,
             sep="\t",
@@ -102,13 +102,13 @@ class MaxQuant:
     def iter_zip_batch(self, zip_list: List[str], label: str = "feature", protein_str: str = None):
         for zip_file in zip_list:
             col_df = self.read_zip_file(zip_file, nrows=0)
-            use_map, use_cols =  self.extract_col_msg(col_df, label=label)
+            use_map, use_cols = self.extract_col_msg(col_df, label=label)
             df = self.read_zip_file(
                 zip_file,
                 usecols=use_cols,
             )
             df.rename(columns=use_map, inplace=True)
-            #df["reference_file_name"] = zip_file.split(".")[0]
+            # df["reference_file_name"] = zip_file.split(".")[0]
             if protein_str:
                 df = df[df["mp_accessions"].str.contains(f"{protein_str}", na=False)]
             df = self.main_operate(df)

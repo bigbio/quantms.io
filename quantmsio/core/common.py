@@ -72,10 +72,10 @@ DIANN_PG_MAP = {
     "Genes": "gg_accessions",
     "Run": "reference_file_name",
     "Global.PG.Q.Value": "global_qvalue",
-    'PG.Quantity': "intensity", 
-    'PG.Normalised': "normalize_intensity",
+    "PG.Quantity": "intensity",
+    "PG.Normalised": "normalize_intensity",
     "PG.MaxLFQ": "lfq",
-    'PG.Q.Value': "qvalue"
+    "PG.Q.Value": "qvalue",
 }
 DIANN_USECOLS = list(DIANN_MAP.keys())
 DIANN_PG_USECOLS = list(DIANN_PG_MAP.keys())
@@ -151,4 +151,3 @@ PG_SCHEMA = pa.schema(
     PG_FIELDS,
     metadata={"description": "PG file in quantms.io format"},
 )
-

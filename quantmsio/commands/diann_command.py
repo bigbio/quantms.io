@@ -152,7 +152,7 @@ def diann_pg_convert_to_parquet(
     duckdb_threads: int,
     file_num: int,
 ):
-    if report_path is None  is None or output_folder is None:
+    if report_path is None is None or output_folder is None:
         raise click.UsageError("Please provide all the required parameters")
 
     if not os.path.exists(output_folder):
@@ -169,7 +169,4 @@ def diann_pg_convert_to_parquet(
         duckdb_max_memory=duckdb_max_memory,
         duckdb_threads=duckdb_threads,
     )
-    dia_nn.write_pg_matrix_to_file(
-        output_path= pg_output_path,
-        file_num=file_num
-    )
+    dia_nn.write_pg_matrix_to_file(output_path=pg_output_path, file_num=file_num)

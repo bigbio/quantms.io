@@ -22,6 +22,7 @@ from quantmsio.core.common import DIANN_MAP, DIANN_USECOLS, DIANN_PG_MAP, DIANN_
 DIANN_SQL = ", ".join([f'"{name}"' for name in DIANN_USECOLS])
 DIANN_PG_SQL = ", ".join([f'"{name}"' for name in DIANN_PG_USECOLS])
 
+
 class DiaNNConvert(DuckDB):
 
     def __init__(self, diann_report, sdrf_path=None, duckdb_max_memory="16GB", duckdb_threads=4):
@@ -32,7 +33,7 @@ class DiaNNConvert(DuckDB):
             self._automaton = get_ahocorasick(self._mods_map)
             self._sample_map = self._sdrf.get_sample_map_run()
 
-    def get_report_from_database(self, runs: list, sql:str = DIANN_SQL) -> pd.DataFrame:
+    def get_report_from_database(self, runs: list, sql: str = DIANN_SQL) -> pd.DataFrame:
         """
         This function loads the report from the duckdb database for a group of ms_runs.
         :param runs: A list of ms_runs
@@ -96,32 +97,25 @@ class DiaNNConvert(DuckDB):
 
     def generate_pg_matrix(self, report):
         peptide_count = self.get_peptide_count(report)
-        report.drop_duplicates(subset=["pg_accessions"],inplace=True)
+        report.drop_duplicates(subset=["pg_accessions"], inplace=True)
         report["gg_accessions"] = report["gg_accessions"].str.split(";")
         report["pg_names"] = report["pg_names"].str.split(";")
         report["reference_file_name"] = report["reference_file_name"].apply(lambda x: x.split(".")[0])
         report["pg_accessions"] = report["pg_accessions"].str.split(";")
-        report.loc[:,"peptides"] = report["pg_accessions"].apply(
-            lambda proteins: [{
-                "protein_name": protein, 
-                "peptide_count": peptide_count[protein]
-            } for protein in proteins]
+        report.loc[:, "peptides"] = report["pg_accessions"].apply(
+            lambda proteins: [
+                {"protein_name": protein, "peptide_count": peptide_count[protein]} for protein in proteins
+            ]
         )
         report.loc[:, "is_decoy"] = 0
-        report.loc[:, "additional_intensities"] = report[["normalize_intensity","lfq"]].apply(
+        report.loc[:, "additional_intensities"] = report[["normalize_intensity", "lfq"]].apply(
             lambda rows: [
-                {
-                    "intensity_name": name,
-                    "intensity_value": rows[name]
-                } for name in ["normalize_intensity","lfq"]
+                {"intensity_name": name, "intensity_value": rows[name]} for name in ["normalize_intensity", "lfq"]
             ],
             axis=1,
         )
         report.loc[:, "additional_scores"] = report["qvalue"].apply(
-            lambda value: [{
-                "score_name": "qvalue",
-                "score_value": value
-            }]
+            lambda value: [{"score_name": "qvalue", "score_value": value}]
         )
         report.loc[:, "contaminant"] = None
         report.loc[:, "anchor_protein"] = None
@@ -257,7 +251,7 @@ class DiaNNConvert(DuckDB):
             logging.info("Time to generate psm and feature file {} seconds".format(et))
             yield report
 
-    def write_pg_matrix_to_file(self, output_path:str,file_num=20):
+    def write_pg_matrix_to_file(self, output_path: str, file_num=20):
         info_list = self.get_unique_references("Run")
         info_list = [info_list[i : i + file_num] for i in range(0, len(info_list), file_num)]
         pqwriter = None
@@ -274,6 +268,7 @@ class DiaNNConvert(DuckDB):
                 pqwriter.write_table(pg_parquet)
         close_file(pqwriter=pqwriter)
         self.destroy_duckdb_database()
+
     def write_feature_to_file(
         self,
         qvalue_threshold: float,
