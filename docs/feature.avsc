@@ -1,7 +1,25 @@
 {
 	"name": "feature",
 	"type": "record",
+	"doc": "Schema for a file containing peptide features and associated metadata",
 	"fields": [
+		{
+			"name": "file_metadata",
+			"type": {
+				"type": "record",
+				"name": "file_metadata",
+				"doc": "Metadata for the feature file",
+				"fields": [
+					{"name": "quantmsio_version", "type": "string", "doc": "Version of the quantms.io format"},
+					{"name": "creator", "type": "string", "doc": "Name of the tool or person who created the file"},
+					{"name": "file_type", "type": "string", "doc": "Type of the file (feature_file)"},
+					{"name": "creation_date", "type": "string", "doc": "Date when the file was created"},
+					{"name": "uuid", "type": "string", "doc": "Unique identifier for the file"},
+					{"name": "software_provider", "type": "string", "doc": "Name of the software provider that generated the file"}
+				]
+			},
+			"doc": "File-level metadata information"
+		},
 		{"name": "sequence", "type": "string", "doc": "The peptide’s sequence corresponding to the PSM"},
 		{"name": "peptidoform", "type": "string", "doc": "Peptide sequence with modifications: Read the specification for more details"},
 		{"name": "modifications", "type": ["null", 
@@ -86,12 +104,12 @@
 					{"name": "channel", "type": "string"},
 					{"name": "additional_intensity", "type": {
 						"type": "array",
-						"items: {
+						"items": {
 							"type": "struct",
 							"fields": [
 								{"name": "intensity_name", "type": "string"},
 								{"name": "intensity_value", "type": "float32"}
-							],
+							]
 						}
 					}
 					}
@@ -100,34 +118,6 @@
 			}], 
 			"doc": "Apart from the raw intensity, multiple intensity values can be provided as key-values pairs, for example, normalized intensity."
 		},
-		{
-              "name": "cv_params",
-              "type": [
-                "null",
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "record",
-                    "name": "cv_param",
-                    "doc": "Controlled vocabulary (CV) parameters providing additional metadata for the scan.",
-                    "fields": [
-                      {
-                        "name": "cv_name",
-                        "type": "string",
-                        "doc": "Name of the CV term (e.g., from PSI-MS or other ontologies)."
-                      },
-                      {
-                        "name": "cv_value",
-                        "type": "string",
-                        "doc": "Value associated with the CV term."
-                      }
-                    ]
-                  }
-                }
-              ],
-              "default": null,
-              "doc": "Optional list of CV parameters for additional metadata."
-            },
 		{"name": "pg_accessions", "type": ["null", {"type": "array","items": "string"}], "doc": "Protein group accessions of all the proteins that the peptide maps to"},
 		{"name": "anchor_protein", "type": "string", "doc": "One protein accession that represents the protein group"},
 		{"name": "unique", "type": ["null", "int"], "doc": "Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0"},

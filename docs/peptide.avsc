@@ -1,7 +1,25 @@
 {
 	"name": "peptide",
 	"type": "record",
+	"doc": "Schema for a file containing peptide summary data and associated metadata",
 	"fields": [
+		{
+			"name": "file_metadata",
+			"type": {
+				"type": "record",
+				"name": "file_metadata",
+				"doc": "Metadata for the peptide file",
+				"fields": [
+					{"name": "quantmsio_version", "type": "string", "doc": "Version of the quantms.io format"},
+					{"name": "creator", "type": "string", "doc": "Name of the tool or person who created the file"},
+					{"name": "file_type", "type": "string", "doc": "Type of the file (peptide_file)"},
+					{"name": "creation_date", "type": "string", "doc": "Date when the file was created"},
+					{"name": "uuid", "type": "string", "doc": "Unique identifier for the file"},
+					{"name": "software_provider", "type": "string", "doc": "Name of the software provider that generated the file"}
+				]
+			},
+			"doc": "File-level metadata information"
+		},
 		{"name": "sequence", "type": "string", "doc": "The peptide’s sequence corresponding to the PSM"},
 		{"name": "peptidoform", "type": "string", "doc": "Peptide sequence with modifications: Read the specification for more details"},
 		{"name": "modifications", "type": ["null", 
