@@ -573,6 +573,20 @@ We _RECOMMEND_ including the following properties in the header:
 
 Please check also the differential expression example for more information: <<differential>>
 
+
+[[anndata]]
+== AnnData view
+
+The AnnData view is a collection of multiple AE files. Its obs represents the samples, var represents the proteins, and the conditions are stored in obs. 
+
+- Retrieve all the proteins for a given sample.
+- Obtain all samples under the same condition.
+
+image::images/anndata.png[]
+
+
+
+
 [[differential]]
 == Differential expression view
 
