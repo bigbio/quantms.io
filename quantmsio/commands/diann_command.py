@@ -152,7 +152,7 @@ def diann_pg_convert_to_parquet(
     duckdb_threads: int,
     file_num: int,
 ):
-    if report_path is None is None or output_folder is None:
+    if report_path is None or output_folder is None:
         raise click.UsageError("Please provide all the required parameters")
 
     if not os.path.exists(output_folder):
