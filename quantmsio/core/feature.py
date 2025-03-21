@@ -178,12 +178,12 @@ class Feature(MzTab):
         """
         Convert DataFrame columns to appropriate types for Parquet format.
         This is optimized to handle NaN values and use vectorized operations.
-        
+
         Parameters:
         -----------
         res : pandas.DataFrame
             DataFrame to convert
-            
+
         Returns:
         --------
         None (modifies DataFrame in-place)
@@ -192,25 +192,25 @@ class Feature(MzTab):
         float_columns = ["pg_global_qvalue", "calculated_mz", "observed_mz", "posterior_error_probability"]
         for col in float_columns:
             if col in res.columns:
-                res[col] = pd.to_numeric(res[col], errors='coerce')
-        
+                res[col] = pd.to_numeric(res[col], errors="coerce")
+
         # Convert integer columns with proper handling of NaN values
-        res["unique"] = pd.to_numeric(res["unique"], errors='coerce').astype("Int32")
-        
+        res["unique"] = pd.to_numeric(res["unique"], errors="coerce").astype("Int32")
+
         # Use numpy for faster conversion of precursor_charge
         if "precursor_charge" in res.columns:
-            res["precursor_charge"] = pd.to_numeric(res["precursor_charge"], errors='coerce').astype("Int32")
-        
+            res["precursor_charge"] = pd.to_numeric(res["precursor_charge"], errors="coerce").astype("Int32")
+
         # Convert is_decoy more efficiently
         if "is_decoy" in res.columns:
-            res["is_decoy"] = pd.to_numeric(res["is_decoy"], errors='coerce').astype("Int32")
-        
+            res["is_decoy"] = pd.to_numeric(res["is_decoy"], errors="coerce").astype("Int32")
+
         # Convert string columns
         res["scan"] = res["scan"].astype(str)
         res["scan_reference_file_name"] = res["scan_reference_file_name"].astype(str)
-        
+
         # Handle rt column
         if "rt" in res.columns:
-            res["rt"] = pd.to_numeric(res["rt"], errors='coerce')
+            res["rt"] = pd.to_numeric(res["rt"], errors="coerce")
         else:
             res.loc[:, "rt"] = None

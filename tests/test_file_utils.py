@@ -16,7 +16,7 @@ from quantmsio.utils.file_utils import (
     save_slice_file,
     save_file,
     close_file,
-    find_ae_files
+    find_ae_files,
 )
 
 
@@ -37,7 +37,7 @@ class TestFileUtils(unittest.TestCase):
         """Test extracting protein list from a file."""
         # Create a test protein list file
         protein_file = self.temp_path / "proteins.txt"
-        with open(protein_file, 'w') as f:
+        with open(protein_file, "w") as f:
             f.write("Protein1\nProtein2\nProtein3\n")
 
         # Test the function
@@ -64,7 +64,7 @@ class TestFileUtils(unittest.TestCase):
         """Test extracting length and position from a tab-delimited file."""
         # Create a test file
         test_file = self.temp_path / "test.txt"
-        with open(test_file, 'w') as f:
+        with open(test_file, "w") as f:
             f.write("Header\tValue\n")
             f.write("PSH\tHeader\n")
             f.write("PSM\tValue1\n")
@@ -80,7 +80,7 @@ class TestFileUtils(unittest.TestCase):
         """Test loading differential expression or absolute expression file."""
         # Create a test file
         test_file = self.temp_path / "test.tsv"
-        with open(test_file, 'w') as f:
+        with open(test_file, "w") as f:
             f.write("# Comment 1\n")
             f.write("# Comment 2\n")
             f.write("Column1\tColumn2\n")
@@ -94,56 +94,56 @@ class TestFileUtils(unittest.TestCase):
         self.assertIn("# Comment 1", comments)
         self.assertIn("# Comment 2", comments)
 
-    @patch('pyarrow.parquet.ParquetFile')
+    @patch("pyarrow.parquet.ParquetFile")
     def test_read_large_parquet(self, mock_parquet_file):
         """Test reading a large parquet file in batches."""
         # Mock the ParquetFile and iter_batches
         mock_batch1 = MagicMock()
-        mock_batch1.to_pandas.return_value = pd.DataFrame({'col1': [1, 2]})
+        mock_batch1.to_pandas.return_value = pd.DataFrame({"col1": [1, 2]})
         mock_batch2 = MagicMock()
-        mock_batch2.to_pandas.return_value = pd.DataFrame({'col1': [3, 4]})
-        
+        mock_batch2.to_pandas.return_value = pd.DataFrame({"col1": [3, 4]})
+
         mock_parquet_file.return_value.iter_batches.return_value = [mock_batch1, mock_batch2]
-        
+
         # Test the function
         batches = list(read_large_parquet("dummy.parquet", 1000))
         self.assertEqual(len(batches), 2)
-        self.assertEqual(batches[0]['col1'].tolist(), [1, 2])
-        self.assertEqual(batches[1]['col1'].tolist(), [3, 4])
+        self.assertEqual(batches[0]["col1"].tolist(), [1, 2])
+        self.assertEqual(batches[1]["col1"].tolist(), [3, 4])
 
-    @patch('psutil.virtual_memory')
-    @patch('os.path.getsize')
+    @patch("psutil.virtual_memory")
+    @patch("os.path.getsize")
     def test_calculate_buffer_size(self, mock_getsize, mock_virtual_memory):
         """Test calculating buffer size based on system memory."""
         # Mock the system memory and file size
         mock_virtual_memory.return_value.available = 8 * 1024 * 1024 * 1024  # 8GB
         mock_getsize.return_value = 500 * 1024 * 1024  # 500MB
-        
+
         # Test the function
         buffer_size = calculate_buffer_size("dummy.file")
-        
+
         # Should be 40% of available memory, but capped at 1GB or file size
         self.assertEqual(buffer_size, 500 * 1024 * 1024)  # Should be file size (500MB)
 
     def test_save_slice_file_and_close_file(self):
         """Test saving a parquet table with partitioning and closing writers."""
         # Create test data
-        data = {'col1': [1, 2, 3], 'col2': ['a', 'b', 'c']}
+        data = {"col1": [1, 2, 3], "col2": ["a", "b", "c"]}
         df = pd.DataFrame(data)
         table = pa.Table.from_pandas(df)
-        
+
         # Mock ParquetWriter
         mock_writer = MagicMock()
         pqwriters = {}
-        
-        with patch('pyarrow.parquet.ParquetWriter', return_value=mock_writer):
+
+        with patch("pyarrow.parquet.ParquetWriter", return_value=mock_writer):
             # Test save_slice_file
-            pqwriters = save_slice_file(table, pqwriters, str(self.temp_path), ('part1', 'part2'), 'test.parquet')
-            
+            pqwriters = save_slice_file(table, pqwriters, str(self.temp_path), ("part1", "part2"), "test.parquet")
+
             # Check that the writer was created and write_table was called
-            self.assertIn(('part1', 'part2'), pqwriters)
+            self.assertIn(("part1", "part2"), pqwriters)
             mock_writer.write_table.assert_called_once_with(table)
-            
+
             # Test close_file
             close_file(pqwriters=pqwriters)
             mock_writer.close.assert_called_once()
@@ -151,25 +151,25 @@ class TestFileUtils(unittest.TestCase):
     def test_save_file(self):
         """Test saving a parquet table to a file."""
         # Create test data
-        data = {'col1': [1, 2, 3], 'col2': ['a', 'b', 'c']}
+        data = {"col1": [1, 2, 3], "col2": ["a", "b", "c"]}
         df = pd.DataFrame(data)
         table = pa.Table.from_pandas(df)
-        
+
         # Mock ParquetWriter
         mock_writer = MagicMock()
-        
-        with patch('pyarrow.parquet.ParquetWriter', return_value=mock_writer):
+
+        with patch("pyarrow.parquet.ParquetWriter", return_value=mock_writer):
             # Test with no existing writer
-            writer = save_file(table, None, str(self.temp_path), 'test.parquet')
-            
+            writer = save_file(table, None, str(self.temp_path), "test.parquet")
+
             # Check that the writer was created and write_table was called
             self.assertEqual(writer, mock_writer)
             mock_writer.write_table.assert_called_once_with(table)
-            
+
             # Test with existing writer
             mock_writer.reset_mock()
-            writer = save_file(table, mock_writer, str(self.temp_path), 'test.parquet')
-            
+            writer = save_file(table, mock_writer, str(self.temp_path), "test.parquet")
+
             # Check that write_table was called but no new writer was created
             self.assertEqual(writer, mock_writer)
             mock_writer.write_table.assert_called_once_with(table)
@@ -182,10 +182,10 @@ class TestFileUtils(unittest.TestCase):
         (self.temp_path / "file3.tsv").touch()
         (self.temp_path / "subdir").mkdir()
         (self.temp_path / "subdir" / "file4.absolute.tsv").touch()
-        
+
         # Test the function
         ae_files = find_ae_files(str(self.temp_path))
-        
+
         # Should find 3 .absolute.tsv files (including in subdirectory)
         self.assertEqual(len(ae_files), 3)
         file_names = [f.name for f in ae_files]
@@ -194,5 +194,5 @@ class TestFileUtils(unittest.TestCase):
         self.assertIn("file4.absolute.tsv", file_names)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
