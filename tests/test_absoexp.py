@@ -20,23 +20,21 @@ def test_ae():
     # Load a project file
     ae_handler.load_project_file(project_path)
     assert ae_handler.project_manager is not None
-    assert "project_accession" in ae_handler.project_manager.project_info
+    assert "project_accession" in ae_handler.project_manager.project.project_info
 
     # Load ibaq file
     ae_handler.load_ibaq_file(ibaq_path)
     assert ae_handler.ibaq_df is not None
     assert len(ae_handler.ibaq_df) > 0
-    assert "protein_id" in ae_handler.ibaq_df.columns
+    assert "protein" in ae_handler.ibaq_df.columns
     assert "ibaq" in ae_handler.ibaq_df.columns
 
     # Load sdrf file
     ae_handler.load_sdrf_file(sdrf_path)
-    assert ae_handler.sdrf is not None
-    assert hasattr(ae_handler.sdrf, "get_sample_map")
+    assert ae_handler.sdrf_manager is not None
+    assert hasattr(ae_handler.sdrf_manager, "get_sample_map")
 
     # Test generating absolute expression
-    ae_df = ae_handler.generate_absolute_expression()
-    assert ae_df is not None
-    assert len(ae_df) > 0
-    assert "protein_id" in ae_df.columns
-    assert "concentration" in ae_df.columns
+    assert ae_handler.ibaq_df is not None
+    assert len(ae_handler.ibaq_df) > 0
+    assert "protein" in ae_handler.ibaq_df

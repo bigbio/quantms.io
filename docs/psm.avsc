@@ -84,7 +84,7 @@
                 "fields": [
                   {"name": "cv_name", "type": "string"},
                   {"name": "cv_value", "type": "string"}
-                ],
+                ]
               }
               }],
               "doc": "Optional list of CV parameters for additional metadata"
