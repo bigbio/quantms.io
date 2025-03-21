@@ -1,8 +1,14 @@
+"""
+Common constants and schemas for quantmsio.
+This module provides mapping dictionaries, column lists, and schemas used across the library.
+"""
 from quantmsio import __version__
 from quantmsio.core.format import PSM_FIELDS, FEATURE_FIELDS, IBAQ_FIELDS, PG_FIELDS
 import pyarrow as pa
+from typing import Dict, List, Set, Union
 
-PSM_MAP = {
+# PSM mapping and columns
+PSM_MAP: Dict[str, str] = {
     "sequence": "sequence",
     "modifications": "modifications",
     "opt_global_cv_MS:1000889_peptidoform_sequence": "peptidoform",
@@ -15,14 +21,16 @@ PSM_MAP = {
     "exp_mass_to_charge": "observed_mz",
     "retention_time": "rt",
 }
-PSM_USECOLS = list(PSM_MAP.keys()) + ["spectra_ref"]
-PEP = [
+# Pre-compute lists for better performance
+PSM_USECOLS: List[str] = list(PSM_MAP.keys()) + ["spectra_ref"]
+PEP: List[str] = [
     "opt_global_Posterior_Error_Probability_score",
     "opt_global_Posterior_Error_Probability",
     "opt_global_MS:1001493_score",
 ]
 
-MSSTATS_MAP = {
+# MsStats mapping and columns
+MSSTATS_MAP: Dict[str, str] = {
     "ProteinName": "pg_accessions",
     "Reference": "reference_file_name",
     "Intensity": "intensity",
@@ -31,9 +39,11 @@ MSSTATS_MAP = {
     "PeptideSequence": "peptidoform",
 }
 
-MSSTATS_USECOLS = set(MSSTATS_MAP.keys())
+# Pre-compute sets for faster membership testing
+MSSTATS_USECOLS: Set[str] = set(MSSTATS_MAP.keys())
 
-SDRF_MAP = {
+# SDRF mapping and columns
+SDRF_MAP: Dict[str, str] = {
     "comment[data file]": "reference",
     "comment[label]": "label",
     "source name": "sample_accession",
@@ -41,7 +51,8 @@ SDRF_MAP = {
     "characteristics[biological replicate]": "biological_replicate",
 }
 
-SDRF_USECOLS = set(list(SDRF_MAP.keys()) + ["comment[technical replicate]"])
+# Pre-compute sets for faster membership testing
+SDRF_USECOLS: Set[str] = set(list(SDRF_MAP.keys()) + ["comment[technical replicate]"])
 
 DIANN_MAP = {
     "File.Name": "reference_file_name",

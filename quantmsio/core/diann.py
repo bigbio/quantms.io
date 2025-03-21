@@ -122,56 +122,94 @@ class DiaNNConvert(DuckDB):
         return report
 
     def main_report_df(self, qvalue_threshold: float, mzml_info_folder: str, file_num: int, protein_str: str = None):
-        def intergrate_msg(n):
-            nonlocal report
-            nonlocal mzml_info_folder
-            files = list(Path(mzml_info_folder).glob(f"*{n}_ms_info.parquet"))
-            if not files:
-                raise ValueError(f"Could not find {n} info file in {dir}")
-            target = pd.read_parquet(
-                files[0],
-                columns=["rt", "scan", "observed_mz"],
-            )
-            group = report[report["run"] == n].copy()
-            group.sort_values(by="rt", inplace=True)
+        """
+        Process DIA-NN report data and integrate with MS info.
+        Optimized for better performance with large datasets.
+        
+        Parameters:
+        -----------
+        qvalue_threshold : float
+            Threshold for filtering by q-value
+        mzml_info_folder : str
+            Path to folder containing MS info parquet files
+        file_num : int
+            Number of files to process in each batch
+        protein_str : str, optional
+            Protein accession filter
+            
+        Yields:
+        -------
+        pandas.DataFrame
+            Processed report data
+        """
+        def integrate_msg(n):
+            """Integrate MS info with report data for a specific run"""
+            # Use Path for more reliable file handling
+            ms_info_file = next(Path(mzml_info_folder).glob(f"*{n}_ms_info.parquet"), None)
+            if not ms_info_file:
+                raise ValueError(f"Could not find MS info file for run {n} in {mzml_info_folder}")
+                
+            # Read only necessary columns
+            target = pd.read_parquet(ms_info_file, columns=["rt", "scan", "observed_mz"])
+            
+            # Filter report data for this run (avoid copy if possible)
+            group = report_filtered[report_filtered["run"] == n]
+            
+            # Sort by retention time
+            group = group.sort_values(by="rt")
+            
+            # Convert retention time to minutes
             target["rt"] = target["rt"] / 60
+            
+            # Merge using pandas merge_asof for nearest match
             res = pd.merge_asof(group, target, on="rt", direction="nearest")
             return res
 
+        # Get mass and modification maps once
         masses_map, modifications_map = self.get_masses_and_modifications_map()
 
-        info_list = [
-            mzml.replace("_ms_info.parquet", "")
-            for mzml in os.listdir(mzml_info_folder)
-            if mzml.endswith("_ms_info.parquet")
-        ]
-        info_list = [info_list[i : i + file_num] for i in range(0, len(info_list), file_num)]
-        for refs in info_list:
+        # Get list of MS info files more efficiently
+        info_files = Path(mzml_info_folder).glob("*_ms_info.parquet")
+        info_list = [f.stem.replace("_ms_info", "") for f in info_files]
+        
+        # Process in batches
+        for i in range(0, len(info_list), file_num):
+            refs = info_list[i:i + file_num]
+            
+            # Get report data for this batch
             report = self.get_report_from_database(refs)
+            
+            # Rename columns
             report.rename(columns=DIANN_MAP, inplace=True)
-            report.dropna(subset=["pg_accessions"], inplace=True)
+            
+            # Filter data
+            report = report.dropna(subset=["pg_accessions"])
             if protein_str:
-                report = report[report["pg_accessions"].str.contains(f"{protein_str}", na=False)]
-            # restrict
-            report = report[report["qvalue"] < qvalue_threshold]
-            usecols = report.columns.to_list() + [
-                "scan",
-                "observed_mz",
-            ]
-            with concurrent.futures.ThreadPoolExecutor(100) as executor:
-                results = executor.map(intergrate_msg, refs)
-            report = np.vstack([result.values for result in results])
-            report = pd.DataFrame(report, columns=usecols)
-
-            # cal value and mod
-            mass_vector = report["peptidoform"].map(masses_map)
-            report["calculated_mz"] = (mass_vector + (PROTON_MASS_U * report["precursor_charge"].values)) / report[
-                "precursor_charge"
-            ].values
-
-            report["peptidoform"] = report["peptidoform"].map(modifications_map)
-
-            yield report
+                report = report[report["pg_accessions"].str.contains(protein_str, na=False)]
+            
+            # Apply q-value threshold
+            report_filtered = report[report["qvalue"] < qvalue_threshold]
+            
+            # Define columns for final dataframe
+            usecols = report_filtered.columns.tolist() + ["scan", "observed_mz"]
+            
+            # Process each run in parallel with a more reasonable number of workers
+            max_workers = min(len(refs), os.cpu_count() * 2)
+            with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
+                results = list(executor.map(integrate_msg, refs))
+            
+            # Combine results more efficiently
+            if results:
+                combined_report = pd.concat(results, ignore_index=True)
+                
+                # Calculate m/z values vectorized
+                mass_vector = combined_report["peptidoform"].map(masses_map)
+                combined_report["calculated_mz"] = (mass_vector + (PROTON_MASS_U * combined_report["precursor_charge"])) / combined_report["precursor_charge"]
+                
+                # Map peptidoforms
+                combined_report["peptidoform"] = combined_report["peptidoform"].map(modifications_map)
+                
+                yield combined_report
 
     def add_additional_msg(self, report: pd.DataFrame):
         """

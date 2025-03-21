@@ -175,16 +175,42 @@ class Feature(MzTab):
 
     @staticmethod
     def convert_to_parquet_format(res):
-        res["pg_global_qvalue"] = res["pg_global_qvalue"].astype(float)
-        res["unique"] = res["unique"].astype("Int32")
-        res["precursor_charge"] = res["precursor_charge"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
-        res["calculated_mz"] = res["calculated_mz"].astype(float)
-        res["observed_mz"] = res["observed_mz"].astype(float)
-        res["posterior_error_probability"] = res["posterior_error_probability"].astype(float)
-        res["is_decoy"] = res["is_decoy"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
+        """
+        Convert DataFrame columns to appropriate types for Parquet format.
+        This is optimized to handle NaN values and use vectorized operations.
+        
+        Parameters:
+        -----------
+        res : pandas.DataFrame
+            DataFrame to convert
+            
+        Returns:
+        --------
+        None (modifies DataFrame in-place)
+        """
+        # Convert float columns in a single pass
+        float_columns = ["pg_global_qvalue", "calculated_mz", "observed_mz", "posterior_error_probability"]
+        for col in float_columns:
+            if col in res.columns:
+                res[col] = pd.to_numeric(res[col], errors='coerce')
+        
+        # Convert integer columns with proper handling of NaN values
+        res["unique"] = pd.to_numeric(res["unique"], errors='coerce').astype("Int32")
+        
+        # Use numpy for faster conversion of precursor_charge
+        if "precursor_charge" in res.columns:
+            res["precursor_charge"] = pd.to_numeric(res["precursor_charge"], errors='coerce').astype("Int32")
+        
+        # Convert is_decoy more efficiently
+        if "is_decoy" in res.columns:
+            res["is_decoy"] = pd.to_numeric(res["is_decoy"], errors='coerce').astype("Int32")
+        
+        # Convert string columns
         res["scan"] = res["scan"].astype(str)
         res["scan_reference_file_name"] = res["scan_reference_file_name"].astype(str)
+        
+        # Handle rt column
         if "rt" in res.columns:
-            res["rt"] = res["rt"].astype(float)
+            res["rt"] = pd.to_numeric(res["rt"], errors='coerce')
         else:
             res.loc[:, "rt"] = None
