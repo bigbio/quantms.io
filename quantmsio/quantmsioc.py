@@ -60,6 +60,7 @@ cli.add_command(map_latest_uniport)
 cli.add_command(convert_fragpipe_psm)
 cli.add_command(merge_ae_files)
 
+
 def quantms_io_main():
     """
     Main function to run the quantmsio command line interface

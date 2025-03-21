@@ -4,6 +4,7 @@ from quantmsio.core.combiner import Combiner
 from quantmsio.utils.file_utils import find_ae_files
 from quantmsio.core.project import create_uuid_filename
 
+
 @click.command(
     "merge-ae-files",
     short_help="Merge multiple AE files into a file in AnnData format.",

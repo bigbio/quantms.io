@@ -1,12 +1,13 @@
 import pandas as pd
 import anndata as ad
 
+
 def pivot_wider(
     df: pd.DataFrame,
     row_name: str,
     col_name: str,
     values: str,
-    fillna = False,
+    fillna=False,
 ) -> pd.DataFrame:
     """
     Create a matrix from a DataFrame given the row, column, and value columns.
@@ -62,49 +63,51 @@ def pivot_wider(
 
     return matrix
 
+
 def get_condition_map(df: pd.DataFrame) -> dict:
     m2 = df.drop_duplicates(subset=["sample_accession"])
-    m2.set_index('sample_accession',inplace=True)
+    m2.set_index("sample_accession", inplace=True)
     s2 = m2.to_dict()["condition"]
     return s2
+
 
 class Combiner:
     def __init__(self):
         self.combined_adata: ad.AnnData = None
-    
+
     @staticmethod
     def transform_to_adata(df: pd.DataFrame) -> ad.AnnData:
-        express_matrix = pivot_wider(df,row_name="sample_accession",col_name="protein",values="ibaq")
-        express2_matrix = pivot_wider(df,row_name="sample_accession",col_name="protein",values="ibaq_normalized")
+        express_matrix = pivot_wider(df, row_name="sample_accession", col_name="protein", values="ibaq")
+        express2_matrix = pivot_wider(df, row_name="sample_accession", col_name="protein", values="ibaq_normalized")
         adata = ad.AnnData(
-            X = express_matrix.to_numpy(),
-            obs = express_matrix.index.to_frame(),
-            var = express_matrix.columns.to_frame(),
+            X=express_matrix.to_numpy(),
+            obs=express_matrix.index.to_frame(),
+            var=express_matrix.columns.to_frame(),
         )
         condition_map = get_condition_map(df)
         adata.obs["condition"] = adata.obs["sample_accession"].map(condition_map)
         adata.layers["ibaq_normalized"] = express2_matrix.to_numpy()
         return adata
 
-    def combine_adata(self, adata: ad.AnnData, axis=0, join='outer') -> None:
+    def combine_adata(self, adata: ad.AnnData, axis=0, join="outer") -> None:
         if self.combined_adata is None:
             self.combined_adata = adata
         else:
             self.combined_adata = ad.concat([self.combined_adata, adata], axis=axis, join=join)
         return self.combined_adata
-    
+
     def save_adata(self, output_path: str) -> None:
         if self.combined_adata is not None:
             self.combined_adata.write(output_path)
 
     def filter_contion(self, condition: str) -> ad.AnnData:
-        if self.combined_adata is None: 
+        if self.combined_adata is None:
             return None
         else:
             return self.combined_adata[self.combined_adata.obs.condition == condition]
-        
+
     def to_df(self, layer=None) -> pd.DataFrame:
-        if self.combined_adata is None: 
+        if self.combined_adata is None:
             return None
         else:
             return self.combined_adata.to_df(layer=layer)

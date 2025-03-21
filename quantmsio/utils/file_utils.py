@@ -115,6 +115,7 @@ def close_file(pqwriters: dict = None, pqwriter: object = None):
         for pqwriter in pqwriters.values():
             pqwriter.close()
 
+
 def find_ae_files(directory):
     path = Path(directory)
     ae_files = list(path.rglob("*.absolute.tsv"))

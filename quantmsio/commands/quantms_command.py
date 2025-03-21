@@ -2,22 +2,26 @@ from pathlib import Path
 import os
 import subprocess
 import click
+
+
 def is_diann(directory):
     dirs = [dir for dir in os.listdir(directory) if os.path.isdir(os.path.join(directory, dir))]
     if "diannsummary" in dirs:
         return True
     else:
         return False
-        
+
+
 def check_dir(folder_path):
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
 
 
-def find_file(directory,kind):
+def find_file(directory, kind):
     path = Path(directory)
     ae_files = list(path.rglob(f"*{kind}"))
     return ae_files
+
 
 def run_task(command):
     try:
@@ -26,26 +30,38 @@ def run_task(command):
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.stderr)
+
+
 def quantmsio_workflow(directory, output_root_folder):
-    dirs = [os.path.join(directory, dir) for dir in os.listdir(directory) if os.path.isdir(os.path.join(directory, dir))]
+    dirs = [
+        os.path.join(directory, dir) for dir in os.listdir(directory) if os.path.isdir(os.path.join(directory, dir))
+    ]
     print(dirs)
     for dir in dirs:
         if is_diann(dir):
             report_file = find_file(dir, "diann_report.tsv")[0]
-            mzmlstatistics = os.path.join(dir, 'mzmlstatistics')
+            mzmlstatistics = os.path.join(dir, "mzmlstatistics")
             sdrf_file = find_file(dir, ".sdrf.tsv")[0]
             filename = os.path.basename(dir)
             output_folder = os.path.join(directory, output_root_folder, filename)
             check_dir(output_folder)
             command = [
-                "quantmsioc", "convert-diann",
-                "--report_path", report_file,
-                "--qvalue_threshold", "0.05",
-                "--mzml_info_folder", mzmlstatistics,
-                "--sdrf_path", sdrf_file,
-                "--output_folder", output_folder,
-                "--duckdb_max_memory", "64GB",
-                "--output_prefix_file", filename
+                "quantmsioc",
+                "convert-diann",
+                "--report_path",
+                report_file,
+                "--qvalue_threshold",
+                "0.05",
+                "--mzml_info_folder",
+                mzmlstatistics,
+                "--sdrf_path",
+                sdrf_file,
+                "--output_folder",
+                output_folder,
+                "--duckdb_max_memory",
+                "64GB",
+                "--output_prefix_file",
+                filename,
             ]
             run_task(command)
         else:
@@ -58,25 +74,38 @@ def quantmsio_workflow(directory, output_root_folder):
                 output_folder = os.path.join(directory, output_root_folder, filename)
                 check_dir(output_folder)
                 command_feature = [
-                    "quantmsioc", "convert-feature",
-                    "--sdrf_file", sdrf_file,
-                    "--msstats_file", msstatsin_file,
-                    "--mztab_file", mztab_file,
-                    "--file_num", "30",
-                    "--output_folder", output_folder,
-                    "--duckdb_max_memory", "64GB",
-                    "--output_prefix_file", filename
+                    "quantmsioc",
+                    "convert-feature",
+                    "--sdrf_file",
+                    sdrf_file,
+                    "--msstats_file",
+                    msstatsin_file,
+                    "--mztab_file",
+                    mztab_file,
+                    "--file_num",
+                    "30",
+                    "--output_folder",
+                    output_folder,
+                    "--duckdb_max_memory",
+                    "64GB",
+                    "--output_prefix_file",
+                    filename,
                 ]
                 run_task(command_feature)
                 command_psm = [
-                    "quantmsioc", "convert-psm",
-                    "--mztab_file", mztab_file,
-                    "--output_folder", output_folder,
-                    "--output_prefix_file", filename
+                    "quantmsioc",
+                    "convert-psm",
+                    "--mztab_file",
+                    mztab_file,
+                    "--output_folder",
+                    output_folder,
+                    "--output_prefix_file",
+                    filename,
                 ]
                 run_task(command_psm)
             else:
                 continue
+
 
 @click.command(
     "convert-quantms—project",
@@ -97,5 +126,5 @@ def convert_quantms_project(
     save_folder: str,
 ):
     if not save_folder:
-        save_folder = 'quantms_data'
+        save_folder = "quantms_data"
     quantmsio_workflow(base_folder, save_folder)
