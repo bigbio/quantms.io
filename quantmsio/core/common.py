@@ -6,7 +6,7 @@ This module provides mapping dictionaries, column lists, and schemas used across
 from quantmsio import __version__
 from quantmsio.core.format import PSM_FIELDS, FEATURE_FIELDS, IBAQ_FIELDS, PG_FIELDS
 import pyarrow as pa
-from typing import Dict, List, Set, Union
+from typing import Dict, List, Set
 
 # PSM mapping and columns
 PSM_MAP: Dict[str, str] = {
