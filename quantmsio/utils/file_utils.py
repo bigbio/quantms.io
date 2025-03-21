@@ -9,8 +9,7 @@ import pyarrow.parquet as pq
 import psutil
 import pandas as pd
 from pathlib import Path
-from typing import List, Tuple, Dict, Any, Optional, Iterator, Union
-import contextlib
+from typing import List, Tuple, Dict, Iterator
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

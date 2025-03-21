@@ -43,18 +43,6 @@ def convert_msstats_differential(
     output_prefix_file: str,
     delete_existing: bool = True,
 ):
-    """
-    Convert a MSstats differential file into a quantms.io file format. The file definition is available in the docs
-    https://github.com/bigbio/quantms.io/blob/main/docs/DE.md.
-    :param msstats_file: MSstats differential file
-    :param sdrf_file: the SDRF file needed to extract some of the metadata
-    :param project_file: quantms.io project file
-    :param output_folder: Folder to generate the df expression file.
-    :param output_prefix_file: Prefix of the df expression file
-    :param delete_existing: Delete existing files in the output folder
-    :param fdr_threshold: FDR threshold to use to filter the results
-    :return: none
-    """
 
     if msstats_file is None or sdrf_file is None or output_folder is None:
         raise click.UsageError("Please provide all the required parameters")

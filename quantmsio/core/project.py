@@ -4,6 +4,7 @@ import os
 import shutil
 import uuid
 from pathlib import Path
+from typing import Union
 
 import requests
 
@@ -119,10 +120,6 @@ class ProjectHandler:
             logger.info("A non-pride project is being created.")
 
     def add_quantms_version(self, quantmsio_version: str):
-        """
-        Add the quantms version to the project information
-        :param quantms_version: QuantMS version
-        """
         self.project.project_info["quantmsio_version"] = quantmsio_version
 
     def add_sdrf_project_properties(self, sdrf: SDRFHandler):
@@ -148,16 +145,6 @@ class ProjectHandler:
     def add_quantms_path(
         self, path_name: str, file_category: str, is_folder=False, partition_fields=None, replace_existing=None
     ):
-        """
-        Add a quantms file to the project information. The file name will be generated automatically. Read more about the
-        quantms file naming convention in the docs folder of this repository
-        (https://github.com/bigbio/quantms.io/blob/main/docs/PROJECT.md)
-        :param path_name: The name of the file or folder
-        :param file_category: quantms file category(e.g."protein_file","peptide_file","psm_file","differential_file",etc.)
-        :param is_folder: A boolean value that indicates if the file is a folder or not.
-        :partition_fields: The fields that are used to partition the data in the file. This is used to optimize the data retrieval and filtering of the data. This field is optional.
-        :param replace_existing: Whether to delete old files
-        """
         if "quantms_files" not in self.project.project_info:
             self.project.project_info["quantms_files"] = []
 
@@ -233,7 +220,7 @@ class ProjectHandler:
             json.dump(self.project.project_info, json_file, indent=4)
         logger.info(f"Updated project information saved to {output_file_name}")
 
-    def populate_from_sdrf(self, sdrf_file: str):
+    def populate_from_sdrf(self, sdrf_file: Union[Path, str]):
         """
         Populate the project information from an SDRF file using the SDRFHandler class.
         :param sdrf_file: SDRF file

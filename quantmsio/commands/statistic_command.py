@@ -1,9 +1,11 @@
 import sys
+from pathlib import Path
 
 import click
 
 from quantmsio.operate.statistics import IbaqStatistics
 from quantmsio.operate.statistics import ParquetStatistics
+from typing import Union
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -26,13 +28,9 @@ def statistics():
     help="file with the statistics (e.g. statistics.csv), if not provided," " will print to stdout",
 )
 @click.pass_context
-def feature_file_statistics(ctx, absolute_path: str, parquet_path: str, save_path: str):
-    """
-    Statistics of a feature file
-    :param parquet_path: feature parquet path
-    :param save_path: file with the statistics (e.g. statistics.csv), if not provided, will print to stdout
-    :return: none
-    """
+def feature_file_statistics(
+    ctx, absolute_path: Union[Path, str], parquet_path: Union[Path, str], save_path: Union[Path, str]
+):
     feature_statistics = ParquetStatistics(parquet_path)
     absolute_stats = IbaqStatistics(ibaq_path=absolute_path)
 

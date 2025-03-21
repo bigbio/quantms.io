@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -8,11 +10,12 @@ from quantmsio.core.psm import Psm
 from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.core.msstats_in import MsstatsIN
 from quantmsio.core.common import FEATURE_SCHEMA
+from typing import Union
 
 
 class Feature(MzTab):
-    def __init__(self, mzTab_path, sdrf_path, msstats_in_path):
-        super(Feature, self).__init__(mzTab_path)
+    def __init__(self, mztab_path: Union[Path, str], sdrf_path, msstats_in_path):
+        super(Feature, self).__init__(mztab_path)
         self._msstats_in = msstats_in_path
         self._sdrf_path = sdrf_path
         self._ms_runs = self.extract_ms_runs()
@@ -23,10 +26,10 @@ class Feature(MzTab):
         self._automaton = get_ahocorasick(self._mods_map)
 
     def extract_psm_msg(self, chunksize=2000000, protein_str=None):
-        P = Psm(self.mztab_path)
-        pep_dict = P.extract_from_pep(chunksize=100000)
+        psm = Psm(self.mztab_path)
+        pep_dict = psm.extract_from_pep(chunksize=100000)
         map_dict = {}
-        for psm in P.iter_psm_table(chunksize, protein_str):
+        for psm in psm.iter_psm_table(chunksize, protein_str):
             for key, df in psm.groupby(["reference_file_name", "peptidoform", "precursor_charge"]):
                 df.reset_index(drop=True, inplace=True)
                 temp_df = df.iloc[df["posterior_error_probability"].idxmin()]
@@ -44,12 +47,13 @@ class Feature(MzTab):
         return map_dict, pep_dict
 
     def transform_msstats_in(self, file_num=10, protein_str=None, duckdb_max_memory="16GB", duckdb_threads=4):
-        Msstats = MsstatsIN(self._msstats_in, self._sdrf_path, duckdb_max_memory, duckdb_threads)
-        for msstats in Msstats.generate_msstats_in(file_num, protein_str):
+        msstats = MsstatsIN(self._msstats_in, self._sdrf_path, duckdb_max_memory, duckdb_threads)
+        for msstats in msstats.generate_msstats_in(file_num, protein_str):
             yield msstats
-        Msstats.destroy_duckdb_database()
+        msstats.destroy_duckdb_database()
 
-    def merge_msstats_and_psm(self, msstats, map_dict):
+    @staticmethod
+    def merge_msstats_and_psm(msstats, map_dict):
         map_features = [
             "posterior_error_probability",
             "calculated_mz",
@@ -142,7 +146,8 @@ class Feature(MzTab):
             pqwriters = save_slice_file(feature, pqwriters, output_folder, key, filename)
         close_file(pqwriters)
 
-    def generate_best_scan(self, rows, pep_dict):
+    @staticmethod
+    def generate_best_scan(rows, pep_dict):
         key = (rows["peptidoform"], rows["precursor_charge"])
         if key in pep_dict:
             return [pep_dict[key][1], pep_dict[key][2]]

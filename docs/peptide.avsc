@@ -22,9 +22,9 @@
 		},
 		{"name": "sequence", "type": "string", "doc": "The peptide’s sequence corresponding to the PSM"},
 		{"name": "peptidoform", "type": "string", "doc": "Peptide sequence with modifications: Read the specification for more details"},
-		{"name": "modifications", "type": ["null", 
+		{"name": "modifications", "type": ["null",
 			{
-				"type": "array", 
+				"type": "array",
 				"items": {
 					"type": "struct",
 					"fields": [
@@ -37,14 +37,14 @@
 									"type": "struct",
 									"fields": [
 										{ "name": "position", "type": "int32" },
-										{ "name": "localization_probability", "type": "float32" },
+										{ "name": "localization_probability", "type": "float32" }
 									]
 								}
 							}
 						}
 					]
 				}
-			}], 
+			}],
 		"doc": "List of modifications as string array, easy for search and filter"
 		},
 		{"name": "best_id_score", "type": ["null", {
@@ -54,12 +54,12 @@
 				"fields": [
 					{"name": "score_name", "type": "string"},
 					{"name": "score_value", "type": "float32"}
-				],
+				]
 				}
 			}],
 		"doc": "A named score type and value representing an identification's measure of confidence or input feature"
 		},
 		{"name": "sample_accession", "type": "string", "doc": "The sample accession in the SDRF, which column is called source name"},
-		{"name": "abundance", "type": "float32", "doc": "The peptide abundance in the given sample accession"},
+		{"name": "abundance", "type": "float32", "doc": "The peptide abundance in the given sample accession"}
 	]
 }

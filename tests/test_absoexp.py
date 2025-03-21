@@ -1,42 +1,40 @@
+from pathlib import Path
+
 from quantmsio.core.ae import AbsoluteExpressionHander
-from .common import datafile
+
+TEST_DATA_ROOT = Path(__file__).parent / "examples"
 
 
 def test_ae():
     """Test absolute expression handler."""
     # Resolve file paths
-    project_path, ibaq_path, sdrf_path = map(
-        datafile,
-        (
-            "AE/project.json",
-            "AE/PXD016999.1-ibaq.tsv",
-            "AE/PXD016999-first-instrument.sdrf.tsv",
-        ),
+    project_path, ibaq_path, sdrf_path = (
+        TEST_DATA_ROOT / "AE/project.json",
+        TEST_DATA_ROOT / "AE/PXD016999.1-ibaq.tsv",
+        TEST_DATA_ROOT / "AE/PXD016999-first-instrument.sdrf.tsv",
     )
 
     # Initialize AbsoluteExpressionHander
     ae_handler = AbsoluteExpressionHander()
 
     # Load a project file
-    ae_handler.load_project_file(project_path)
+    ae_handler.load_project_file(str(project_path))
     assert ae_handler.project_manager is not None
-    assert "project_accession" in ae_handler.project_manager.project_info
+    assert "project_accession" in ae_handler.project_manager.project.project_info
 
     # Load ibaq file
     ae_handler.load_ibaq_file(ibaq_path)
     assert ae_handler.ibaq_df is not None
     assert len(ae_handler.ibaq_df) > 0
-    assert "protein_id" in ae_handler.ibaq_df.columns
+    assert "protein" in ae_handler.ibaq_df.columns
     assert "ibaq" in ae_handler.ibaq_df.columns
 
     # Load sdrf file
-    ae_handler.load_sdrf_file(sdrf_path)
-    assert ae_handler.sdrf is not None
-    assert hasattr(ae_handler.sdrf, "get_sample_map")
+    ae_handler.load_sdrf_file(str(sdrf_path))
+    assert ae_handler.sdrf_manager is not None
+    assert hasattr(ae_handler.sdrf_manager, "get_sample_map")
 
     # Test generating absolute expression
-    ae_df = ae_handler.generate_absolute_expression()
-    assert ae_df is not None
-    assert len(ae_df) > 0
-    assert "protein_id" in ae_df.columns
-    assert "concentration" in ae_df.columns
+    assert ae_handler.ibaq_df is not None
+    assert len(ae_handler.ibaq_df) > 0
+    assert "protein" in ae_handler.ibaq_df

@@ -2,6 +2,8 @@ import os
 import re
 
 from collections import defaultdict
+from pathlib import Path
+from typing import Union
 
 import ahocorasick
 import duckdb
@@ -59,7 +61,7 @@ def fill_start_and_end(row, protein_dict):
 
 class Query:
 
-    def __init__(self, parquet_path: str):
+    def __init__(self, parquet_path: Union[Path, str]):
         if os.path.exists(parquet_path):
             self._path = parquet_path
             self.parquet_db = duckdb.connect(config={"max_memory": "16GB", "worker_threads": 4})
@@ -70,11 +72,6 @@ class Query:
             raise FileNotFoundError(f"the file {parquet_path} does not exist.")
 
     def get_report_from_database(self, runs: list, columns: list = None):
-        """
-        This function loads the report from the duckdb database for a group of ms_runs.
-        :param runs: A list of ms_runs
-        :return: The report
-        """
         cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
         cols = cols.replace("unique", '"unique"')
         database = self.parquet_db.sql(
@@ -89,11 +86,7 @@ class Query:
         return report
 
     def get_samples_from_database(self, samples: list, columns: list = None):
-        """
-        This function loads the report from the duckdb database for a group of samples.
-        :param runs: A list of samples
-        :return: The report
-        """
+
         cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
         cols = cols.replace("unique", '"unique"')
         database = self.parquet_db.sql(
@@ -119,10 +112,6 @@ class Query:
             yield refs, batch_df
 
     def iter_chunk(self, batch_size: int = 500000, columns: list = None):
-        """_summary_
-        :param batch_size: _description_, defaults to 100000
-        :yield: _description_
-        """
         parquet_file = pq.ParquetFile(self._path)
         for batch in parquet_file.iter_batches(batch_size=batch_size, columns=columns):
             batch_df = batch.to_pandas()
@@ -139,7 +128,8 @@ class Query:
             batch_df = self.get_report_from_database(refs, columns)
             yield refs, batch_df
 
-    def get_spectrum_msg(self, reference: str, scan: str, mzml_directory: str):
+    @staticmethod
+    def get_spectrum_msg(reference: str, scan: str, mzml_directory: str):
         """
         :params reference: reference_file_name
         :params scan: scan
@@ -149,7 +139,8 @@ class Query:
         mzml_handler = {reference: OpenMSHandler()}
         return map_spectrum_mz(reference, scan, mzml_handler, mzml_directory)
 
-    def inject_position_msg(self, df: pd.DataFrame, protein_dict: dict):
+    @staticmethod
+    def inject_position_msg(df: pd.DataFrame, protein_dict: dict):
         """
         :params df: parquet file
         :params protein_dict: {protein_accession:seq}
@@ -183,7 +174,8 @@ class Query:
 
         return df
 
-    def get_protein_to_gene_map(self, fasta: str, map_parameter: str = "map_protein_accession"):
+    @staticmethod
+    def get_protein_to_gene_map(fasta: str, map_parameter: str = "map_protein_accession"):
         map_gene_names = generate_gene_name_map(fasta, map_parameter)
         return map_gene_names
 
@@ -309,7 +301,8 @@ class Query:
         else:
             raise KeyError("Illegal protein!")
 
-    def get_gene_accessions(self, gene_list: list, species: str = "human"):
+    @staticmethod
+    def get_gene_accessions(gene_list: list, species: str = "human"):
         """
         :params gene_list
         """

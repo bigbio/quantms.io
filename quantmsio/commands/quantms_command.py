@@ -5,7 +5,7 @@ import click
 
 
 def is_diann(directory):
-    dirs = [dir for dir in os.listdir(directory) if os.path.isdir(os.path.join(directory, dir))]
+    dirs = [diann_dir for diann_dir in os.listdir(directory) if os.path.isdir(os.path.join(directory, diann_dir))]
     if "diannsummary" in dirs:
         return True
     else:
@@ -34,15 +34,17 @@ def run_task(command):
 
 def quantmsio_workflow(directory, output_root_folder):
     dirs = [
-        os.path.join(directory, dir) for dir in os.listdir(directory) if os.path.isdir(os.path.join(directory, dir))
+        os.path.join(directory, diann_dir)
+        for diann_dir in os.listdir(directory)
+        if os.path.isdir(os.path.join(directory, diann_dir))
     ]
     print(dirs)
-    for dir in dirs:
-        if is_diann(dir):
-            report_file = find_file(dir, "diann_report.tsv")[0]
-            mzmlstatistics = os.path.join(dir, "mzmlstatistics")
-            sdrf_file = find_file(dir, ".sdrf.tsv")[0]
-            filename = os.path.basename(dir)
+    for diann_dir in dirs:
+        if is_diann(diann_dir):
+            report_file = find_file(diann_dir, "diann_report.tsv")[0]
+            mzmlstatistics = os.path.join(diann_dir, "mzmlstatistics")
+            sdrf_file = find_file(diann_dir, ".sdrf.tsv")[0]
+            filename = os.path.basename(diann_dir)
             output_folder = os.path.join(directory, output_root_folder, filename)
             check_dir(output_folder)
             command = [
@@ -65,12 +67,12 @@ def quantmsio_workflow(directory, output_root_folder):
             ]
             run_task(command)
         else:
-            mztab_file = find_file(dir, ".mzTab")
+            mztab_file = find_file(diann_dir, ".mzTab")
             if len(mztab_file) > 0:
                 mztab_file = mztab_file[0]
-                msstatsin_file = find_file(dir, "msstats_in.csv")[0]
-                sdrf_file = find_file(dir, ".sdrf.tsv")[0]
-                filename = os.path.basename(dir)
+                msstatsin_file = find_file(diann_dir, "msstats_in.csv")[0]
+                sdrf_file = find_file(diann_dir, ".sdrf.tsv")[0]
+                filename = os.path.basename(diann_dir)
                 output_folder = os.path.join(directory, output_root_folder, filename)
                 check_dir(output_folder)
                 command_feature = [

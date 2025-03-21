@@ -1,5 +1,8 @@
 import codecs
 import os
+from pathlib import Path
+from typing import Union
+
 import pandas as pd
 from quantmsio.utils.pride_utils import get_quantmsio_modifications
 from quantmsio.operate.tools import get_modification_details
@@ -70,8 +73,8 @@ def fetch_modifications_from_mztab_line(line: str, _modifications: dict) -> dict
 
 
 class MzTab:
-    def __init__(self, mzTab_path: str) -> None:
-        self.mztab_path = mzTab_path
+    def __init__(self, mztab_path: Union[Path, str]) -> None:
+        self.mztab_path = mztab_path
         # psm pos
         self._psm_pos = None
         # psm len
@@ -212,7 +215,8 @@ class MzTab:
         f.close()
         return score_names
 
-    def generate_positions(self, start, end) -> list:
+    @staticmethod
+    def generate_positions(start, end) -> list:
         start = start.split(",")
         end = end.split(",")
         return [start + ":" + end for start, end in zip(start, end)]

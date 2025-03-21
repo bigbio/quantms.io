@@ -40,18 +40,6 @@ def convert_ibaq_absolute(
     output_prefix_file: str,
     delete_existing: bool = True,
 ):
-    """
-    Convert a IBAQ absolute file into a quantms.io file format. The file definition is available in the docs
-    https://github.com/bigbio/quantms.io/blob/main/docs/AE.md.
-    :param ibaq_file: IBAQ file
-    :param sdrf_file: sdrf file
-    :param project_file: quantms.io project file
-    :param output_folder: Folder to generate the df expression file.
-    :protein_file: Filtered protein file.
-    :param output_prefix_file: Prefix of the df expression file
-    :param delete_existing: Delete existing files in the output folder
-    :return: none
-    """
     protein_list = extract_protein_list(protein_file) if protein_file else None
     protein_str = "|".join(protein_list) if protein_list else None
     ae_handler = AbsoluteExpressionHander()

@@ -7,6 +7,8 @@ This module contains the following classes:
 """
 
 import re
+from pathlib import Path
+from typing import Union, Optional
 
 import pandas as pd
 from pandas import DataFrame
@@ -102,12 +104,12 @@ class SDRFHandler:
         "ITRAQ8",
     ]
 
-    def __init__(self, sdrf_file: str):
+    def __init__(self, sdrf_file: Union[Path, str]):
         self.sdrf_file = sdrf_file
         self.sdrf_table = None
         self._load_sdrf_info(sdrf_file)
 
-    def _load_sdrf_info(self, sdrf_file: str):
+    def _load_sdrf_info(self, sdrf_file: Union[Path, str]):
         """
         Load the SDRF information from a file
         :param sdrf_file: SDRF file
@@ -168,7 +170,7 @@ class SDRFHandler:
         ]
         return acquisition_values
 
-    def get_factor_value(self) -> str:
+    def get_factor_value(self) -> Optional[str]:
         """
         Get the factor value
         """

@@ -17,6 +17,7 @@ import logging
 import os
 import uuid
 from pathlib import Path
+from typing import Union
 
 import pandas as pd
 
@@ -65,7 +66,7 @@ class DifferentialExpressionHandler:
         # SDRF file information
         self.fdr_threshold = 0.05  # FDR threshold to consider a protein as differentially expressed
         self.sdrf_manager = None
-        self.sdrf_file_path = None
+        self.sdrf_file_path: Union[Path, str] = None
 
         # Project file information
         self.project_file = None
@@ -73,14 +74,10 @@ class DifferentialExpressionHandler:
 
         # MSstats file information
         self.msstats_df = None
-        self.de_file_path = None
+        self.de_file_path: Union[Path, str] = None
 
-    def load_msstats_file(self, msstats_file_path: str, protein_str: str = None):
-        """
-        Load a MSstats differential file
-        :param msstats_file_path: MSstats differential file path
-        :return: none
-        """
+    def load_msstats_file(self, msstats_file_path: Union[Path, str], protein_str: str = None):
+
         self.de_file_path = msstats_file_path
 
         if not os.path.isfile(msstats_file_path):
@@ -92,7 +89,7 @@ class DifferentialExpressionHandler:
         if protein_str:
             self.msstats_df = self.msstats_df[self.msstats_df["protein"].str.contains(f"{protein_str}", na=False)]
 
-    def load_project_file(self, project_file: str):
+    def load_project_file(self, project_file: Union[Path, str]):
         """
         Load a project file that link the different files in the quamtms.io format
         https://github.com/bigbio/quantms.io/blob/main/docs/PROJECT.md
@@ -228,7 +225,7 @@ class DifferentialExpressionHandler:
             return None
         return self.sdrf_manager.get_factor_value()
 
-    def load_sdrf_file(self, sdrf_file: str):
+    def load_sdrf_file(self, sdrf_file: Union[Path, str]):
         self.sdrf_file_path = sdrf_file
 
         if not os.path.isfile(sdrf_file):

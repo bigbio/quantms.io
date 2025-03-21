@@ -1,23 +1,22 @@
-import pytest
-from .common import datafile
+from pathlib import Path
+
 from quantmsio.core.feature import Feature
+import pytest
 
-test_data = [
-    (
-        "DDA-lfq/PXD040438.mzTab",
-        "DDA-lfq/PXD040438_msstats_in.csv",
-        "DDA-lfq/PXD040438.sdrf.tsv",
-    ),
-]
+TEST_DATA_ROOT = Path(__file__).parent / "examples"
 
+test_data = (
+    TEST_DATA_ROOT / "DDA-lfq/PXD040438.mzTab",
+    TEST_DATA_ROOT / "DDA-lfq/PXD040438_msstats_in.csv",
+    TEST_DATA_ROOT / "DDA-lfq/PXD040438.sdrf.tsv",
+)
 
-@pytest.mark.parametrize("mztab_path,msstats_path,sdrf_path", test_data)
-def test_transform_msstats(mztab_path, msstats_path, sdrf_path):
+def test_transform_msstats():
     """Test transforming msstats data."""
     # Resolve file paths
-    mztab_file = datafile(mztab_path)
-    msstats_file = datafile(msstats_path)
-    sdrf_file = datafile(sdrf_path)
+    mztab_file = test_data[0]
+    msstats_file = test_data[1]
+    sdrf_file = test_data[2]
 
     # Initialize Feature
     feature = Feature(mztab_file, sdrf_file, msstats_file)
@@ -34,14 +33,12 @@ def test_transform_msstats(mztab_path, msstats_path, sdrf_path):
     # Ensure we got at least one result
     assert count > 0
 
-
-@pytest.mark.parametrize("mztab_path,msstats_path,sdrf_path", test_data)
-def test_extract_psm_msg(mztab_path, msstats_path, sdrf_path):
+def test_extract_psm_msg():
     """Test extracting PSM messages."""
     # Resolve file paths
-    mztab_file = datafile(mztab_path)
-    msstats_file = datafile(msstats_path)
-    sdrf_file = datafile(sdrf_path)
+    mztab_file = test_data[0]
+    msstats_file = test_data[1]
+    sdrf_file = test_data[2]
 
     # Initialize Feature
     feature = Feature(mztab_file, sdrf_file, msstats_file)
@@ -59,13 +56,12 @@ def test_extract_psm_msg(mztab_path, msstats_path, sdrf_path):
     assert len(pep_dict) > 0
 
 
-@pytest.mark.parametrize("mztab_path,msstats_path,sdrf_path", test_data)
-def test_generate_feature(mztab_path, msstats_path, sdrf_path):
+def test_generate_feature():
     """Test generating features."""
     # Resolve file paths
-    mztab_file = datafile(mztab_path)
-    msstats_file = datafile(msstats_path)
-    sdrf_file = datafile(sdrf_path)
+    mztab_file = test_data[0]
+    msstats_file = test_data[1]
+    sdrf_file = test_data[2]
 
     # Initialize Feature
     feature = Feature(mztab_file, sdrf_file, msstats_file)

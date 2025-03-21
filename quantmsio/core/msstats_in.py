@@ -1,13 +1,18 @@
+from pathlib import Path
+
 from quantmsio.core.duckdb import DuckDB
 from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.core.common import MSSTATS_USECOLS, MSSTATS_MAP
 from quantmsio.utils.constants import ITRAQ_CHANNEL, TMT_CHANNELS
 from quantmsio.utils.pride_utils import clean_peptidoform_sequence
 from quantmsio.operate.tools import get_protein_accession
+from typing import Union
 
 
 class MsstatsIN(DuckDB):
-    def __init__(self, report_path, sdrf_path, duckdb_max_memory="16GB", duckdb_threads=4):
+    def __init__(
+        self, report_path: Union[Path, str], sdrf_path: Union[Path, str], duckdb_max_memory="16GB", duckdb_threads=4
+    ):
         super(MsstatsIN, self).__init__(report_path, duckdb_max_memory, duckdb_threads)
         self._sdrf = SDRFHandler(sdrf_path)
         self.experiment_type = self._sdrf.get_experiment_type_from_sdrf()

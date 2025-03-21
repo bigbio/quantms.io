@@ -46,7 +46,7 @@
                           "type": "struct",
                           "fields": [
                             { "name": "position", "type": "int32" },
-                            { "name": "localization_probability", "type": "float32" },
+                            { "name": "localization_probability", "type": "float32" }
                           ]
                         }
                       }
@@ -68,7 +68,7 @@
                 "fields": [
                   {"name": "score_name", "type": "string"},
                   {"name": "score_value", "type": "float32"}
-                ],
+                ]
                 }
               }],
               "doc": "A named score type and value representing an identification's measure of confidence or input feature"
@@ -84,7 +84,7 @@
                 "fields": [
                   {"name": "cv_name", "type": "string"},
                   {"name": "cv_value", "type": "string"}
-                ],
+                ]
               }
               }],
               "doc": "Optional list of CV parameters for additional metadata"
@@ -94,7 +94,7 @@
 		        {"name": "ion_mobility", "type": ["null", "float32"], "doc": "Ion mobility value for the precursor ion"},
             {"name": "num_peaks", "type": ["null", "int"], "doc": "Number of peaks in the spectrum used for the peptide spectrum match"},
             {"name": "mz_array", "type": ["null", {"type": "array", "items": "float32"}], "doc": "Array of m/z values for the spectrum used for the peptide spectrum match"},
-            {"name": "intensity_array", "type": ["null", {"type": "array", "items": "float32"}], "doc": "Array of intensity values for the spectrum used for the peptide spectrum match"},
+            {"name": "intensity_array", "type": ["null", {"type": "array", "items": "float32"}], "doc": "Array of intensity values for the spectrum used for the peptide spectrum match"}
           ]
         }
       },

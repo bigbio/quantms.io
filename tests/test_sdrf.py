@@ -1,11 +1,14 @@
+from pathlib import Path
+
 from quantmsio.core.sdrf import SDRFHandler
-from .common import datafile
+
+TEST_DATA_ROOT = Path(__file__).parent / "examples"
 
 
 def test_load_sdrf_info():
     """Test loading SDRF information."""
     # Resolve file path
-    file = datafile("DDA-lfq/PXD040438.sdrf.tsv")
+    file = TEST_DATA_ROOT / "DDA-lfq/PXD040438.sdrf.tsv"
 
     # Initialize SDRF handler
     sdrf_handler = SDRFHandler(file)
@@ -33,13 +36,13 @@ def test_load_sdrf_info():
     # Get experiment type
     experiment_type = sdrf_handler.get_experiment_type_from_sdrf()
     assert experiment_type is not None
-    assert experiment_type in ["LFQ", "SILAC", "TMT", "iTRAQ"]
+    assert experiment_type in ["LFQ", "SILAC", "TMT", "iTRAQ4"]
 
 
 def test_get_labels():
     """Test getting labels from SDRF."""
     # Resolve file path
-    file = datafile("DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv")
+    file = TEST_DATA_ROOT / "DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv"
 
     # Initialize SDRF handler
     sdrf_handler = SDRFHandler(file)
@@ -52,14 +55,14 @@ def test_get_labels():
     # Get experiment type
     experiment_type = sdrf_handler.get_experiment_type_from_sdrf()
     assert experiment_type is not None
-    assert experiment_type in ["LFQ", "SILAC", "TMT", "iTRAQ"]
-    assert experiment_type == "iTRAQ"  # This should be iTRAQ based on the file name
+    assert experiment_type in ["LFQ", "SILAC", "TMT", "ITRAQ4"]
+    assert experiment_type == "ITRAQ4"  # This should be iTRAQ based on the file name
 
 
 def test_get_sample_map():
     """Test getting sample map from SDRF."""
     # Resolve file path
-    file = datafile("DDA-lfq/PXD040438.sdrf.tsv")
+    file = TEST_DATA_ROOT / "DDA-lfq/PXD040438.sdrf.tsv"
 
     # Initialize SDRF handler
     sdrf_handler = SDRFHandler(file)
@@ -80,7 +83,7 @@ def test_get_sample_map():
 def test_get_mods_dict():
     """Test getting modifications dictionary from SDRF."""
     # Resolve file path
-    file = datafile("DDA-lfq/PXD040438.sdrf.tsv")
+    file = TEST_DATA_ROOT / "DDA-lfq/PXD040438.sdrf.tsv"
 
     # Initialize SDRF handler
     sdrf_handler = SDRFHandler(file)

@@ -61,22 +61,9 @@ def convert_feature_file(
     duckdb_max_memory: str,
     duckdb_threads: int,
 ):
-    """
-    Convert a msstats/mztab file to a parquet file. The parquet file will contain the features and the metadata.
-    :param sdrf_file: the SDRF file needed to extract some of the metadata
-    :param msstats_file: the MSstats input file, this will be considered the main format to convert
-    :param mztab_file: the mzTab file, this will be used to extract the protein
-    :param file_num: Read batch size
-    :param output_folder: Folder where the Json file will be generated
-    :param partitions: The field used for splitting files, multiple fields are separated by ,
-    :param output_prefix_file: Prefix of the Json file needed to generate the file name
-    :param duckdb_max_memory: The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)
-    :param duckdb_threads: The number of threads for the DuckDB engine (e.g 4)
-    """
-
     if sdrf_file is None or msstats_file is None or mztab_file is None or output_folder is None:
         raise click.UsageError("Please provide all the required parameters")
-    feature_manager = Feature(mzTab_path=mztab_file, sdrf_path=sdrf_file, msstats_in_path=msstats_file)
+    feature_manager = Feature(mztab_path=mztab_file, sdrf_path=sdrf_file, msstats_in_path=msstats_file)
     if not output_prefix_file:
         output_prefix_file = "feature"
     filename = create_uuid_filename(output_prefix_file, ".feature.parquet")

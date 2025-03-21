@@ -1,25 +1,21 @@
-import pytest
+from pathlib import Path
 from quantmsio.core.feature import Feature
 from quantmsio.core.maxquant import MaxQuant
 from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.core.psm import Psm
-from .common import datafile
+
+TEST_DATA_ROOT = Path(__file__).parent / "examples"
+test_data = (
+    TEST_DATA_ROOT / "maxquant/msms.txt",
+    TEST_DATA_ROOT / "maxquant/evidence.txt",
+    TEST_DATA_ROOT / "maxquant/sdrf.tsv",
+)
 
 
-test_data = [
-    (
-        "maxquant/msms.txt",
-        "maxquant/evidence.txt",
-        "maxquant/sdrf.tsv",
-    ),
-]
-
-
-@pytest.mark.parametrize("msms_path,evidence_path,sdrf_path", test_data)
-def test_transform_psm(msms_path, evidence_path, sdrf_path):
+def test_transform_psm():
     """Test transforming MaxQuant PSM data."""
     # Resolve file path
-    msms_file = datafile(msms_path)
+    msms_file = test_data[0]
 
     # Initialize MaxQuant
     maxquant = MaxQuant()
@@ -42,12 +38,11 @@ def test_transform_psm(msms_path, evidence_path, sdrf_path):
     assert count > 0
 
 
-@pytest.mark.parametrize("msms_path,evidence_path,sdrf_path", test_data)
-def test_transform_feature(msms_path, evidence_path, sdrf_path):
+def test_transform_feature():
     """Test transforming MaxQuant feature data."""
     # Resolve file paths
-    evidence_file = datafile(evidence_path)
-    sdrf_file = datafile(sdrf_path)
+    evidence_file = test_data[1]
+    sdrf_file = test_data[2]
 
     # Initialize SDRF handler and MaxQuant
     sdrf = SDRFHandler(sdrf_file)
@@ -73,12 +68,11 @@ def test_transform_feature(msms_path, evidence_path, sdrf_path):
     assert count > 0
 
 
-@pytest.mark.parametrize("msms_path,evidence_path,sdrf_path", test_data)
-def test_transform_features(msms_path, evidence_path, sdrf_path):
+def test_transform_features():
     """Test transforming MaxQuant features with slicing."""
     # Resolve file paths
-    evidence_file = datafile(evidence_path)
-    sdrf_file = datafile(sdrf_path)
+    evidence_file = test_data[1]
+    sdrf_file = test_data[2]
 
     # Initialize SDRF handler and MaxQuant
     sdrf = SDRFHandler(sdrf_file)

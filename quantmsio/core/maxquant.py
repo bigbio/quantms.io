@@ -3,10 +3,8 @@ import re
 import zipfile
 import numpy as np
 import pandas as pd
-import codecs
-import os
 import pyarrow.parquet as pq
-from typing import List
+from typing import List, Union
 from pathlib import Path
 from pyopenms import ModificationsDB
 from pyopenms import AASequence
@@ -71,7 +69,9 @@ class MaxQuant:
                 use_cols.append(col)
         return use_map, use_cols
 
-    def iter_batch(self, file_path: str, label: str = "feature", chunksize: int = 100000, protein_str: str = None):
+    def iter_batch(
+        self, file_path: Union[Path, str], label: str = "feature", chunksize: int = 100000, protein_str: str = None
+    ):
         col_df = pd.read_csv(file_path, sep="\t", nrows=0)
         use_map, use_cols = self.extract_col_msg(col_df, label=label)
         for df in pd.read_csv(
@@ -87,7 +87,8 @@ class MaxQuant:
             df = self.main_operate(df)
             yield df
 
-    def open_from_zip_archive(self, zip_file, file_name, **kwargs):
+    @staticmethod
+    def open_from_zip_archive(zip_file, file_name, **kwargs):
         """Open file from zip archive."""
         with zipfile.ZipFile(zip_file) as z:
             with z.open(file_name) as f:
@@ -114,7 +115,8 @@ class MaxQuant:
             df = self.main_operate(df)
             yield df
 
-    def generete_calculated_mz(self, df):
+    @staticmethod
+    def generete_calculated_mz(df):
         uniq_p = df["peptidoform"].unique()
         masses_map = {k: AASequence.fromString(k).getMonoWeight() for k in uniq_p}
         mass_vector = df["peptidoform"].map(masses_map)
@@ -132,7 +134,8 @@ class MaxQuant:
             else:
                 return None
 
-    def get_mods_map(self, line):
+    @staticmethod
+    def get_mods_map(line):
         pattern = r"sequence\s+(.*?)\s+(Missed|Proteins)"
         match = re.search(pattern, line, re.DOTALL)
         mod_seq = match.group(1)
@@ -142,8 +145,8 @@ class MaxQuant:
             for mod in mod_seq.split("\t"):
                 if "Probabilities" not in mod and "diffs" not in mod and "Diffs" not in mod:
                     name = re.search(r"([^ ]+)\s?", mod)
-                    Mod = modifications_db.getModification(name.group(1))
-                    unimod = Mod.getUniModAccession()
+                    mod = modifications_db.getModification(name.group(1))
+                    unimod = mod.getUniModAccession()
                     match = re.search(MOD_PARTTEN, mod)
                     if match:
                         site = match.group(1)
@@ -321,10 +324,10 @@ class MaxQuant:
             pqwriter.write_table(parquet)
         close_file(pqwriter=pqwriter)
 
-    def _init_sdrf(self, sdrf_path: str):
-        Sdrf = SDRFHandler(sdrf_path)
-        self.experiment_type = Sdrf.get_experiment_type_from_sdrf()
-        self._sample_map = Sdrf.get_sample_map_run()
+    def _init_sdrf(self, sdrf_path: Union[Path, str]):
+        sdrf = SDRFHandler(sdrf_path)
+        self.experiment_type = sdrf.get_experiment_type_from_sdrf()
+        self._sample_map = sdrf.get_sample_map_run()
 
     def write_feature_to_file(
         self,

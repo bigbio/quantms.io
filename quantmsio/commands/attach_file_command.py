@@ -26,14 +26,6 @@ from quantmsio.core.project import ProjectHandler
 )
 @click.option("--replace_existing", help="Whether to delete old files", is_flag=True)
 def attach_file_to_json(project_file, attach_file, category, is_folder, partitions, replace_existing):
-    """
-    Register the file with project.json
-    :param path_name: The name of the file or folder
-    :param file_category: quantms file category(e.g."protein_file","peptide_file","psm_file","differential_file",etc.)
-    :param is_folder: A boolean value that indicates if the file is a folder or not.
-    :partitions: The fields that are used to partition the data in the file. This is used to optimize the data retrieval and filtering of the data. This field is optional.
-    :param replace_existing: Whether to delete old files
-    """
     if partitions:
         partitions = partitions.split(",")
     register = ProjectHandler(project_json_file=project_file)

@@ -1,6 +1,9 @@
 import os
 import re
 from collections import defaultdict
+from pathlib import Path
+from typing import Union
+
 import pandas as pd
 import numpy as np
 import pyarrow as pa
@@ -55,9 +58,11 @@ def generate_psms_of_spectrum(
 
 
 def save_parquet_file(
-    partitions, table, output_folder, filename, pqwriters={}, pqwriter_no_part=None, schema=FEATURE_SCHEMA
+    partitions, table, output_folder, filename, pqwriters=None, pqwriter_no_part=None, schema=FEATURE_SCHEMA
 ):
 
+    if pqwriters is None:
+        pqwriters = {}
     if partitions and len(partitions) > 0:
         for key, df in table.groupby(partitions):
             parquet_table = pa.Table.from_pandas(df, schema=schema)
@@ -228,10 +233,10 @@ def transform_ibaq(df):
     return df
 
 
-def genereate_ibaq_feature(sdrf_path, parquet_path):
-    Sdrf = SDRFHandler(sdrf_path)
-    sdrf = Sdrf.transform_sdrf()
-    experiment_type = Sdrf.get_experiment_type_from_sdrf()
+def genereate_ibaq_feature(sdrf_path: Union[Path, str], parquet_path: Union[Path, str]):
+    sdrf = SDRFHandler(sdrf_path)
+    sdrf = sdrf.transform_sdrf()
+    experiment_type = sdrf.get_experiment_type_from_sdrf()
     p = Query(parquet_path)
     for _, df in p.iter_file(file_num=10, columns=IBAQ_USECOLS):
         df = transform_ibaq(df)
@@ -264,7 +269,7 @@ def genereate_ibaq_feature(sdrf_path, parquet_path):
         yield feature
 
 
-def write_ibaq_feature(sdrf_path, parquet_path, output_path):
+def write_ibaq_feature(sdrf_path: Union[Path, str], parquet_path: Union[Path, str], output_path: Union[Path, str]):
     pqwriter = None
     for feature in genereate_ibaq_feature(sdrf_path, parquet_path):
         if not pqwriter:

@@ -2,7 +2,7 @@ import logging
 import uuid
 from datetime import date
 
-from typing import Iterator, List, Optional, Any
+from typing import Iterator, List, Optional, Any, Tuple
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from array import array
@@ -316,23 +316,21 @@ class Identification:
 
     @classmethod
     def to_arrow(cls, batch: List["Identification"]) -> pa.Table:
-        data_arrays = {}
-
-        data_arrays["global_qvalue"] = pa.array([i.global_qvalue for i in batch], type=pa.float64())
-        data_arrays["posterior_error_probability"] = pa.array(
-            [i.posterior_error_probability for i in batch], type=pa.float32()
-        )
-        data_arrays["calculated_mz"] = pa.array([i.calculated_mz for i in batch], type=pa.float32())
-        data_arrays["additional_scores"] = pa.array(
-            [[asdict(s) for s in i.additional_scores] for i in batch],
-            type=pa.list_(Score.arrow_type()),
-        )
-        data_arrays["rank"] = pa.array([i.rank for i in batch], type=pa.int32())
-        data_arrays["predicted_rt"] = pa.array(
-            [i.predicted_retention_time for i in batch],
-            type=pa.float32(),
-            from_pandas=True,
-        )
+        data_arrays = {
+            "global_qvalue": pa.array([i.global_qvalue for i in batch], type=pa.float64()),
+            "posterior_error_probability": pa.array([i.posterior_error_probability for i in batch], type=pa.float32()),
+            "calculated_mz": pa.array([i.calculated_mz for i in batch], type=pa.float32()),
+            "additional_scores": pa.array(
+                [[asdict(s) for s in i.additional_scores] for i in batch],
+                type=pa.list_(Score.arrow_type()),
+            ),
+            "rank": pa.array([i.rank for i in batch], type=pa.int32()),
+            "predicted_rt": pa.array(
+                [i.predicted_retention_time for i in batch],
+                type=pa.float32(),
+                from_pandas=True,
+            ),
+        }
 
         data_arrays.update(Peptide.to_arrow(i.peptide for i in batch))
 
@@ -397,8 +395,8 @@ class FragPipe:
                 logger.warning("No PSMs found. Not writing PSM parquet file")
         return file_metadata
 
+    @staticmethod
     def convert_psms(
-        self,
         file_path: Path,
         batch_size: int = 10000,
     ) -> Iterator[pa.RecordBatch]:
@@ -409,11 +407,11 @@ class FragPipe:
             yield from table.to_batches(batch_size)
 
 
-def parse_spectrum_id(identifier: str):
+def parse_spectrum_id(identifier: str) -> Tuple[str, str]:
     tokens = identifier.split(".")
     source_file_name = tokens[0]
     scan_number = tokens[1].lstrip("0")
-    return (source_file_name, scan_number)
+    return source_file_name, scan_number
 
 
 def spectrum_from_row(row: pd.Series) -> Spectrum:

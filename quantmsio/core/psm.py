@@ -1,5 +1,8 @@
 import re
 import os
+from pathlib import Path
+from typing import Union
+
 import pyarrow as pa
 import pyarrow.parquet as pq
 from quantmsio.utils.file_utils import extract_protein_list
@@ -14,8 +17,8 @@ import pandas as pd
 
 
 class Psm(MzTab):
-    def __init__(self, mzTab_path):
-        super(Psm, self).__init__(mzTab_path)
+    def __init__(self, mztab_path: Union[Path, str]):
+        super(Psm, self).__init__(mztab_path)
         self._ms_runs = self.extract_ms_runs()
         self._protein_global_qvalue_map = self.get_protein_map()
         self._score_names = self.get_score_names()
@@ -134,7 +137,8 @@ class Psm(MzTab):
             df = self.transform_parquet(df)
             yield df
 
-    def _generate_cv_params(self, rows):
+    @staticmethod
+    def _generate_cv_params(rows):
         cv_list = []
         if rows["consensus_support"]:
             struct = {"cv_name": "consesus_support", "cv_value": str(rows["consensus_support"])}
@@ -172,7 +176,8 @@ class Psm(MzTab):
             struct_list.append(struct)
         return struct_list
 
-    def add_addition_msg(self, df):
+    @staticmethod
+    def add_addition_msg(df):
         df.loc[:, "predicted_rt"] = None
         df.loc[:, "ion_mobility"] = None
         df.loc[:, "number_peaks"] = None

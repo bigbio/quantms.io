@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Union, Optional
+
 import pandas as pd
 import anndata as ad
 
@@ -73,7 +76,7 @@ def get_condition_map(df: pd.DataFrame) -> dict:
 
 class Combiner:
     def __init__(self):
-        self.combined_adata: ad.AnnData = None
+        self.combined_adata: Optional[ad.AnnData] = None
 
     @staticmethod
     def transform_to_adata(df: pd.DataFrame) -> ad.AnnData:
@@ -96,17 +99,17 @@ class Combiner:
             self.combined_adata = ad.concat([self.combined_adata, adata], axis=axis, join=join)
         return self.combined_adata
 
-    def save_adata(self, output_path: str) -> None:
+    def save_adata(self, output_path: Union[Path, str]) -> None:
         if self.combined_adata is not None:
             self.combined_adata.write(output_path)
 
-    def filter_contion(self, condition: str) -> ad.AnnData:
+    def filter_contion(self, condition: str) -> Optional[ad.AnnData]:
         if self.combined_adata is None:
             return None
         else:
             return self.combined_adata[self.combined_adata.obs.condition == condition]
 
-    def to_df(self, layer=None) -> pd.DataFrame:
+    def to_df(self, layer=None) -> Optional[pd.DataFrame]:
         if self.combined_adata is None:
             return None
         else:

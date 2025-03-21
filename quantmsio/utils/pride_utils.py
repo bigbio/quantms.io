@@ -70,8 +70,8 @@ def get_gene_accessions(gene_list, map_dict):
 
 
 def generate_scan_number(spectra_ref: str):
-    isScan = re.findall(r"controllerType=0 controllerNumber=1", spectra_ref)
-    if len(isScan) != 0:
+    is_scan = re.findall(r"controllerType=0 controllerNumber=1", spectra_ref)
+    if len(is_scan) != 0:
         return re.findall(r"scan=(\d+)", spectra_ref)[0]
     else:
         return ",".join(re.findall(r"=(\d+)", spectra_ref))
@@ -167,16 +167,16 @@ def compare_protein_lists(protein_list_1: list, protein_list_2: list) -> bool:
     return protein_list_1 == protein_list_2
 
 
-def standardize_protein_string_accession(protein_string: str, sorted: bool = False) -> str:
+def standardize_protein_string_accession(protein_string: str, is_sorted: bool = False) -> str:
     """
     standardize the protein string accession, in some cases the protein string accession is decided by commas
     instead of semicolons.
     :param protein_string: protein string
-    :param sorted: sort the protein string
+    :param is_sorted: sort the protein string
     :return: standardized protein string
     """
     protein_string = protein_string.replace(",", ";").strip()
-    if sorted:
+    if is_sorted:
         accessions = protein_string.split(";")
         accessions.sort()
         return ";".join(accessions)

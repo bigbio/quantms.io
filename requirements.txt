@@ -17,3 +17,4 @@ pyahocorasick
 ddt
 mygene
 anndata
+pyteomics

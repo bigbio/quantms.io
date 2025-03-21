@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Union
+
 import duckdb
 import time
 import logging
@@ -7,18 +10,13 @@ from quantmsio.core.project import create_uuid_filename
 
 class DuckDB:
 
-    def __init__(self, report_path, duckdb_max_memory="16GB", duckdb_threads=4):
+    def __init__(self, report_path: Union[Path, str], duckdb_max_memory="16GB", duckdb_threads=4):
+        self.parquet_db = None
         self._report_path = report_path
         self._duckdb_name = create_uuid_filename("report-duckdb", ".db")
         self._duckdb = self.create_duckdb_from_diann_report(duckdb_max_memory, duckdb_threads)
 
     def create_duckdb_from_diann_report(self, max_memory, worker_threads):
-        """
-        This function creates a duckdb database from a diann report for fast performance queries. The database
-        is created from the tab delimited format of diann and can handle really large datasets.
-        :param report_path: The path to the diann report
-        :return: A duckdb database
-        """
         s = time.time()
 
         database = duckdb.connect(self._duckdb_name)

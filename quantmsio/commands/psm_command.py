@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Union
+
 import click
 from quantmsio.core.project import create_uuid_filename
 from quantmsio.core.psm import Psm
@@ -34,19 +37,12 @@ from quantmsio.operate.plots import plot_peptidoform_charge_venn, plot_sequence_
     required=False,
 )
 def convert_psm_file(
-    mztab_file: str,
+    mztab_file: Union[Path, str],
     output_folder: str,
     chunksize: int,
     protein_file: str,
     output_prefix_file: str,
 ):
-    """
-    convert mztab psm section to a parquet file. The parquet file will contain the features and the metadata.
-    :param mztab_file: the mzTab file, this will be used to extract the protein information
-    :param output_folder: Folder where the Json file will be generated
-    :param chunksize: Read batch size
-    :param output_prefix_file: Prefix of the Json file needed to generate the file name
-    """
 
     if mztab_file is None or output_folder is None:
         raise click.UsageError("Please provide all the required parameters")
@@ -54,7 +50,7 @@ def convert_psm_file(
     if not output_prefix_file:
         output_prefix_file = "psm"
 
-    psm_manager = Psm(mzTab_path=mztab_file)
+    psm_manager = Psm(mztab_path=mztab_file)
     output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
     psm_manager.write_psm_to_file(output_path=output_path, chunksize=chunksize, protein_file=protein_file)
 

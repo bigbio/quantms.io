@@ -1,23 +1,25 @@
-import time
+import concurrent.futures
 import logging
-import numpy as np
-import pandas as pd
 import os
+import time
+from collections import defaultdict
+from pathlib import Path
+from typing import Union
+
+import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-import concurrent.futures
-from pathlib import Path
-from collections import defaultdict
 from pyopenms import AASequence
 from pyopenms.Constants import PROTON_MASS_U
+
+from quantmsio.core.common import DIANN_MAP, DIANN_USECOLS, DIANN_PG_MAP, DIANN_PG_USECOLS, PG_SCHEMA
+from quantmsio.core.duckdb import DuckDB
+from quantmsio.core.feature import Feature
+from quantmsio.core.mztab import MzTab
+from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.operate.tools import get_ahocorasick
 from quantmsio.utils.file_utils import close_file, extract_protein_list, save_slice_file
-from quantmsio.core.sdrf import SDRFHandler
-from quantmsio.core.mztab import MzTab
-from quantmsio.core.feature import Feature
-from quantmsio.core.duckdb import DuckDB
 from quantmsio.utils.pride_utils import generate_scan_number
-from quantmsio.core.common import DIANN_MAP, DIANN_USECOLS, DIANN_PG_MAP, DIANN_PG_USECOLS, PG_SCHEMA
 
 DIANN_SQL = ", ".join([f'"{name}"' for name in DIANN_USECOLS])
 DIANN_PG_SQL = ", ".join([f'"{name}"' for name in DIANN_PG_USECOLS])
@@ -34,11 +36,7 @@ class DiaNNConvert(DuckDB):
             self._sample_map = self._sdrf.get_sample_map_run()
 
     def get_report_from_database(self, runs: list, sql: str = DIANN_SQL) -> pd.DataFrame:
-        """
-        This function loads the report from the duckdb database for a group of ms_runs.
-        :param runs: A list of ms_runs
-        :return: The report
-        """
+
         s = time.time()
         database = self._duckdb.query(
             """
@@ -88,7 +86,8 @@ class DiaNNConvert(DuckDB):
         logging.info("Time to load peptide map {} seconds".format(et))
         return best_ref_map
 
-    def get_peptide_count(self, df):
+    @staticmethod
+    def get_peptide_count(df):
         peptide_count = defaultdict(int)
         for proteins in df["pg_accessions"]:
             for protein in proteins.split(";"):
@@ -121,7 +120,9 @@ class DiaNNConvert(DuckDB):
         report.loc[:, "anchor_protein"] = None
         return report
 
-    def main_report_df(self, qvalue_threshold: float, mzml_info_folder: str, file_num: int, protein_str: str = None):
+    def main_report_df(
+        self, qvalue_threshold: float, mzml_info_folder: Union[Path, str], file_num: int, protein_str: str = None
+    ):
         """
         Process DIA-NN report data and integrate with MS info.
         Optimized for better performance with large datasets.

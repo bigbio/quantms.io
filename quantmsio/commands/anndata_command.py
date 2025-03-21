@@ -23,12 +23,12 @@ def merge_ae_files(
 ):
     ae_files = find_ae_files(directory)
     output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".h5ad")
-    AECombiner = Combiner()
+    ae_combiner = Combiner()
     if len(ae_files) == 0:
         raise click.UsageError("No AE files were found.")
     else:
         for file in ae_files:
             df = pd.read_csv(file, comment="#", sep="\t")
-            adata = AECombiner.transform_to_adata(df)
-            AECombiner.combine_adata(adata)
-        AECombiner.save_adata(output_path)
+            adata = ae_combiner.transform_to_adata(df)
+            ae_combiner.combine_adata(adata)
+        ae_combiner.save_adata(output_path)
