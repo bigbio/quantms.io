@@ -39,6 +39,7 @@ class AbsoluteExpressionHander:
     ABSOLUTE_EXPRESSION_EXTENSION = ".absolute.tsv"
 
     def __init__(self):
+        self.project_file = None
         self.ibaq_df = None
         self.ae_file_path = None
         self.project_manager = None

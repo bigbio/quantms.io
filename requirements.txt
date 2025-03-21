@@ -16,3 +16,4 @@ psutil>=5.9.5
 pyahocorasick
 ddt
 mygene
+anndata

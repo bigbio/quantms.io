@@ -28,7 +28,7 @@ def test_df():
     for col in df.columns:
         mask = np.random.choice([True, False], 1000, p=[0.05, 0.95])
         df.loc[mask, col] = np.nan
-    
+
     return df
 
 

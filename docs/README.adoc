@@ -73,12 +73,14 @@ We are not trying to do the following:
 - Replace all the software tools file formats and intermediate files, but to provide a new format that enables easy integration of the main output results with other tools.
 ====
 
+include::./images/file-relation.png
+
 [[general-data-model]]
 == General data model and structure
 
 The `quantms.io` (.qms) could be seen as a **multiple view** representation of a proteomics data analysis results. Similar to other tools that produce multiple output files for their analysis, like https://www.maxquant.org/[MaxQuant], https://github.com/vdemichev/DiaNN[DIA-NN], https://fragpipe.nesvilab.org/[FragPipe] or https://biognosys.com/software/spectronaut/[spectronaut]. Each view of the format can be serialized in different formats depending on the use case. The **data model** defines two main things, the **view** and how the view is **serialized**. Both views and serialization can be extended, and new views can be added on each <<version>> of the specification.
 
-image::images/formats-relation.svg[width=80%]
+image::images/file-relation.png[width=80%]
 
 - The **data model view** defines the structure, the fields and properties that will be included in a view for each peptide, psms, feature or protein.
 - The **data serialization** defines the format in which the view will be serialized and what features of serialization will be supported, for example, compression, indexing, or slicing.
@@ -231,10 +233,10 @@ A Parquet table can be distributed across multiple compute nodes, and its key ad
 
 [cols="6*", options="header"]
 |===========================================================================================
-| Project   | Type     | Original file size(GB) | Converted parquet size(MB) | Writing psm time(s) | Writing feature time(s)   
-| PXD046440 | maxquant | 48            | 337/343          | 985.2671835 | 678.474133        
+| Project   | Type     | Original file size(GB) | Converted parquet size(MB) | Writing psm time(s) | Writing feature time(s)
+| PXD046440 | maxquant | 48            | 337/343          | 985.2671835 | 678.474133
 | PXD016999 | mzTab    | 160           | 155/228          | 539.0019641 | 3554.52738
-| PXD019909 | diaNN    | 1.9           | 195              |             | 229.482332       
+| PXD019909 | diaNN    | 1.9           | 195              |             | 229.482332
 |===========================================================================================
 
 [[parquet-features]]
@@ -577,7 +579,7 @@ Please check also the differential expression example for more information: <<di
 [[anndata]]
 == AnnData view
 
-The AnnData view is a collection of multiple AE files. Its obs represents the samples, var represents the proteins, and the conditions are stored in obs. 
+The AnnData view is a collection of multiple AE files. Its obs represents the samples, var represents the proteins, and the conditions are stored in obs.
 
 - Retrieve all the proteins for a given sample.
 - Obtain all samples under the same condition.
