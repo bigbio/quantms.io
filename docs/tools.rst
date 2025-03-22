@@ -1,6 +1,6 @@
 ==== quantms.io tools
 
-quantms.io tools provides a standardized set of commands to generate different files for your project. It is mainly used to consolidate the data of each file and generate a standardized file representation. 
+quantms.io tools provides a standardized set of commands to generate different files for your project. It is mainly used to consolidate the data of each file and generate a standardized file representation.
 
 image::map.png[width=80%]
    :width: 80%
@@ -10,8 +10,8 @@ You can generate separate files or complete project files depending on your need
 
 Project converter tool
 -------------------------
-If your project comes from the PRIDE database, 
-you can use the pride accession to generate a `project.json` that contains 
+If your project comes from the PRIDE database,
+you can use the pride accession to generate a `project.json` that contains
 descriptive information about the entire project.
 Or, customize a Project Accession to generate an entirely new project.
 You can create a `protein.txt` to generate specific project of the protein information in it.
@@ -43,16 +43,16 @@ It's like this:
 
 DE converter tool
 --------------------
-Differential expression file 
-Store the differential express proteins between two contrasts, 
-with the corresponding fold changes and p-values.It can be easily visualized using tools such as 
-`Volcano Plot <https://en.wikipedia.org/wiki/Volcano_plot_(statistics)>`__ and 
+Differential expression file
+Store the differential express proteins between two contrasts,
+with the corresponding fold changes and p-values.It can be easily visualized using tools such as
+`Volcano Plot <https://en.wikipedia.org/wiki/Volcano_plot_(statistics)>`__ and
 easily integrated with other omics data resources.
 
 * If you have generated project.json, you can use this parameter `--project_file` to add project information for DE files.
 * If you want to know more, please read :doc:`de`.
 
-Example: 
+Example:
 
 .. code:: shell
 
@@ -80,7 +80,7 @@ iBAQ values and store the AE results of each protein on each sample.
 * If you want to know ibaq, please read `ibaqpy <https://github.com/bigbio/ibaqpy>`__
 * If you want to know more, please read :doc:`ae`.
 
-Example: 
+Example:
 
 .. code:: shell
 
@@ -101,8 +101,8 @@ Example:
 
 Feature converter tool
 -------------------------
-The Peptide table aims to cover detail on peptide level including peptide intensity. 
-The most of content are from peptide part of mzTab. 
+The Peptide table aims to cover detail on peptide level including peptide intensity.
+The most of content are from peptide part of mzTab.
 It store peptide intensity to perform down-stream analysis and integration.
 
 * If you want to know more, please read :doc:`feature`.
@@ -110,7 +110,7 @@ It store peptide intensity to perform down-stream analysis and integration.
 Mztab
 >>>>>>>
 
-Example: 
+Example:
 
 .. code:: shell
 
@@ -134,7 +134,7 @@ Example:
 Maxquant
 >>>>>>>>>
 
-Example: 
+Example:
 
 .. code:: shell
 
@@ -155,7 +155,7 @@ Example:
 DiaNN
 >>>>>>>
 
-Example: 
+Example:
 
 .. code:: shell
 
@@ -188,8 +188,8 @@ It store details on PSM level including spectrum mz/intensity for specific use-c
 Mztab
 >>>>>>>
 
-Example: 
-    
+Example:
+
 .. code:: shell
 
    quantmsioc convert-psm
@@ -207,8 +207,8 @@ Example:
 Maxquant
 >>>>>>>>>
 
-Example: 
-    
+Example:
+
 .. code:: shell
 
    quantmsioc convert-maxquant-psm
@@ -228,7 +228,7 @@ This tool is used to compare peptide information in result files obtained by dif
 
 * `--tags` or `-t` are used to specify the tags of the PSM table.
 
-Example: 
+Example:
 
 .. code:: shell
 
@@ -247,7 +247,7 @@ generate_spectra_message support psm. It can be used directly for spectral clust
 
 Since the result file is too large, you can specify `–-partitions` to split the result file.
 
-Example: 
+Example:
 
 .. code:: shell
 
@@ -265,13 +265,13 @@ Example:
 
 Generate gene message
 -------------------------
-generate_gene_message support feature. 
+generate_gene_message support feature.
 
-Example: 
+Example:
 
 .. code:: shell
 
-   quantmsioc map-gene-msg-to-parquet 
+   quantmsioc map-gene-msg-to-parquet
    --parquet_path PXD000672-0beee055-ae78-4d97-b6ac-1f191e91bdd4.featrue.parquet
    --fasta_path Homo-sapiens-uniprot-reviewed-contaminants-decoy-202210.fasta
    --output_folder result
@@ -285,7 +285,7 @@ Example:
    --species species type(default human)
 
 * `species`
-  
+
 +-------------+-------------------------+
 | Common name |       Genus name        |
 +=============+=========================+
@@ -310,7 +310,7 @@ Example:
 
 
 
-Register file 
+Register file
 --------------------------
 This tool is used to register the file to `project.json`.
 If your project comes from the PRIDE database, You can use this command to add file information for `project.json`.
@@ -318,10 +318,10 @@ If your project comes from the PRIDE database, You can use this command to add f
 * The parameter `--category` has three options: `sdrf_file`, `feature_file`, `psm_file`, `differential_file`, `absolute_file`.You can add the above file types.
 * The parameter `--replace_existing` is enable then we remove the old file and add this one. If not then we can have a list of files for a category.
 
-Example: 
+Example:
 
 .. code:: shell
-   
+
    quantmsioc attach-file
       --project_file PXD014414/project.json
       --attach_file PXD014414-943a8f02-0527-4528-b1a3-b96de99ebe75.featrue.parquet
@@ -330,7 +330,7 @@ Example:
 
 * Optional parameter
 
-.. code:: shell 
+.. code:: shell
    --is_folder A boolean value that indicates if the file is a folder or not
    --replace_existing Whether to delete old files
    --partitions The fields that are used to partition the data in the file. This is used to optimize the data retrieval and filtering of the data. This field is optional.
@@ -338,7 +338,7 @@ Example:
 Statistics
 -----------
 This tool is used for statistics.
-Example: 
+Example:
 
 .. code:: shell
 
@@ -357,7 +357,7 @@ Plots
 -------
 This tool is used for visualization.
 * plot-psm-peptides
-  
+
 .. code:: shell
 
    quantmsioc plot plot-psm-peptides
@@ -366,7 +366,7 @@ This tool is used for visualization.
       --save_path PXD014414_psm_peptides.svg
 
 * plot-ibaq-distribution
-  
+
 .. code:: shell
 
    quantmsioc plot plot-ibaq-distribution
