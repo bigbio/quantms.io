@@ -5,20 +5,24 @@ from quantmsio.operate.query import Query
 feature_path = datafile("parquet/feature.parquet")
 fasta = datafile("fasta/Homo-sapiens.fasta")
 
+
 def test_iter_samples():
     q = Query(feature_path)
     for _ in q.iter_samples():
         print("ok")
+
 
 def test_iter_chunk():
     q = Query(feature_path)
     for _ in q.iter_chunk():
         print("ok")
 
+
 def test_iter_file():
     q = Query(feature_path)
     for _ in q.iter_file():
         print("ok")
+
 
 def test_inject_position_msg():
     q = Query(feature_path)

@@ -1,6 +1,7 @@
 from quantmsio.core.sdrf import SDRFHandler
 from .common import datafile
 
+
 def test_load_sdrf_info():
     """Test loading SDRF information."""
     # Resolve file path
@@ -33,6 +34,7 @@ def test_load_sdrf_info():
     experiment_type = sdrf_handler.get_experiment_type_from_sdrf()
     assert experiment_type is not None
     assert experiment_type in ["LFQ", "SILAC", "TMT", "iTRAQ4"]
+
 
 def test_get_labels():
     """Test getting labels from SDRF."""

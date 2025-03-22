@@ -22,13 +22,13 @@ class TestProjectHandler(TestCase):
         mock_response = requests.models.Response()
         mock_response.status_code = 200
         mock_response.json = lambda: {
-        "title": "Test Project",
-        "projectDescription": "Test description",
-        "sampleProcessingProtocol": "Test sample processing protocol",
-        "dataProcessingProtocol": "Test data processing protocol",
-        "references": [{"pubmedId": "12345678"}],
-        "keywords": ["keyword1", "keyword2"],
-        "projectTags": ["tag1", "tag2"],
+            "title": "Test Project",
+            "projectDescription": "Test description",
+            "sampleProcessingProtocol": "Test sample processing protocol",
+            "dataProcessingProtocol": "Test data processing protocol",
+            "references": [{"pubmedId": "12345678"}],
+            "keywords": ["keyword1", "keyword2"],
+            "projectTags": ["tag1", "tag2"],
             # Add other mock data as needed
         }
         mock_get.return_value = mock_response
@@ -40,8 +40,8 @@ class TestProjectHandler(TestCase):
         # Assert that the project_info has been updated
         self.assertEqual(project_manager.project.project_info["project_title"], "Test Project")
         self.assertEqual(
-        project_manager.project.project_info["project_description"],
-        "Test description",
+            project_manager.project.project_info["project_description"],
+            "Test description",
         )
 
     def test_populate_from_pride_archive_api(self):
@@ -51,8 +51,8 @@ class TestProjectHandler(TestCase):
 
         # Assert that the project_info has been updated
         self.assertEqual(
-             project_manager.project.project_info["project_title"],
-             "Structural insights into Cullin4-RING ubiquitin ligase remodelling by Vpr from simian immunodeficiency viruses",
+            project_manager.project.project_info["project_title"],
+            "Structural insights into Cullin4-RING ubiquitin ligase remodelling by Vpr from simian immunodeficiency viruses",
         )
         print(project_manager.project.project_info)
 
