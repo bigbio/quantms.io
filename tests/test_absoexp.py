@@ -1,5 +1,5 @@
 from quantmsio.core.ae import AbsoluteExpressionHander
-from .common import datafile
+from tests.common import datafile
 
 
 def test_ae():
