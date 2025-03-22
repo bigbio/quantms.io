@@ -1,4 +1,10 @@
-==== quantms.io tools
+= quantms.io tools
+:sectnums:
+:toc: left
+:doctype: book
+:xrefstyle: short
+:figure-caption: Figure
+:pdf-page-size: A4
 
 quantms.io tools provides a standardized set of commands to generate
 different files for your project. It is mainly used to consolidate the
