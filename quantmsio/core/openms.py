@@ -15,7 +15,7 @@ class OpenMSHandler:
 
     def get_spectrum_from_scan(
         self, mzml_path: str, scan_number: int
-    ) -> tuple[list[Any], list[Any]] | tuple[int, Any, Any]:
+    ):
         """
         Get a spectrum from a mzML file using the scan number
         :param mzml_path: path to the mzML file
