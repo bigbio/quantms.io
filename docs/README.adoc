@@ -18,6 +18,42 @@ ifdef::env-github[]
 :warning-caption: :warning:
 endif::[]
 
+[[executive-summary]]
+== Executive Summary
+
+The quantms.io format is a modern, scalable data format designed specifically for proteomics data analysis. It addresses the limitations of existing formats like XML-based HUPO-PSI standards (mzML, mzIdentML) and tab-delimited formats like mzTab, which struggle with large-scale datasets and advanced analytical use cases.
+
+=== Key Benefits
+
+* **Performance**: Leverages columnar storage (Apache Parquet) to achieve significant improvements in storage efficiency (up to 70% reduction) and query performance.
+* **Scalability**: Designed to handle large-scale proteomics datasets with efficient slicing and partitioning capabilities.
+* **Flexibility**: Supports multiple "views" of proteomics data (PSMs, features, proteins) that can be serialized in different formats.
+* **AI/ML Ready**: Structured to facilitate machine learning applications with standardized representation of spectra, identifications, and quantifications.
+* **Integration**: Enables seamless integration with sample metadata and other omics data types.
+
+=== Core Components
+
+The format consists of several interconnected views:
+
+* **Identification Views**: PSM (Peptide Spectrum Matches), peptide features, and protein groups
+* **Quantification Views**: Absolute and differential expression matrices
+* **Metadata Views**: Project information and sample metadata (SDRF)
+* **Spectra View**: Mass spectra data optimized for efficient storage and retrieval
+
+Each view can be serialized in appropriate formats (Parquet for complex data, TSV for matrices, JSON for metadata), creating a comprehensive ecosystem for proteomics data representation.
+
+=== Current Status
+
+The quantms.io format is currently at version 1.0 and is primarily implemented in the quantms workflow. It has been successfully applied to various proteomics datasets, demonstrating significant improvements in storage efficiency and analysis capabilities compared to traditional formats.
+
+[NOTE]
+====
+We are not trying to do the following:
+
+- Replace the mzTab format, but to provide a new format that enables AI-related use cases.
+- Replace all the software tools file formats and intermediate files, but to provide a new format that enables easy integration of the main output results with other tools.
+====
+
 [[introduction]]
 == Introduction
 
@@ -37,12 +73,14 @@ We are not trying to do the following:
 - Replace all the software tools file formats and intermediate files, but to provide a new format that enables easy integration of the main output results with other tools.
 ====
 
+include::./images/file-relation.png
+
 [[general-data-model]]
 == General data model and structure
 
 The `quantms.io` (.qms) could be seen as a **multiple view** representation of a proteomics data analysis results. Similar to other tools that produce multiple output files for their analysis, like https://www.maxquant.org/[MaxQuant], https://github.com/vdemichev/DiaNN[DIA-NN], https://fragpipe.nesvilab.org/[FragPipe] or https://biognosys.com/software/spectronaut/[spectronaut]. Each view of the format can be serialized in different formats depending on the use case. The **data model** defines two main things, the **view** and how the view is **serialized**. Both views and serialization can be extended, and new views can be added on each <<version>> of the specification.
 
-image::images/formats-relation.svg[width=80%]
+image::images/file-relation.png[width=80%]
 
 - The **data model view** defines the structure, the fields and properties that will be included in a view for each peptide, psms, feature or protein.
 - The **data serialization** defines the format in which the view will be serialized and what features of serialization will be supported, for example, compression, indexing, or slicing.
@@ -195,10 +233,10 @@ A Parquet table can be distributed across multiple compute nodes, and its key ad
 
 [cols="6*", options="header"]
 |===========================================================================================
-| Project   | Type     | Original file size(GB) | Converted parquet size(MB) | Writing psm time(s) | Writing feature time(s)   
-| PXD046440 | maxquant | 48            | 337/343          | 985.2671835 | 678.474133        
+| Project   | Type     | Original file size(GB) | Converted parquet size(MB) | Writing psm time(s) | Writing feature time(s)
+| PXD046440 | maxquant | 48            | 337/343          | 985.2671835 | 678.474133
 | PXD016999 | mzTab    | 160           | 155/228          | 539.0019641 | 3554.52738
-| PXD019909 | diaNN    | 1.9           | 195              |             | 229.482332       
+| PXD019909 | diaNN    | 1.9           | 195              |             | 229.482332
 |===========================================================================================
 
 [[parquet-features]]
@@ -537,6 +575,20 @@ We _RECOMMEND_ including the following properties in the header:
 
 Please check also the differential expression example for more information: <<differential>>
 
+
+[[anndata]]
+== AnnData view
+
+The AnnData view is a collection of multiple AE files. Its obs represents the samples, var represents the proteins, and the conditions are stored in obs.
+
+- Retrieve all the proteins for a given sample.
+- Obtain all samples under the same condition.
+
+image::images/anndata.png[]
+
+
+
+
 [[differential]]
 == Differential expression view
 
@@ -622,15 +674,16 @@ Peptide spectrum matches (psms) are the results of the **identification** of pep
 - Fast and easy visualization of PSM information.
 
 [[psm-fields]]
-==== Psm fields
+==== PSM fields
 
-The following table presents all the fields and attributes for each PSM entry in the psm_file. Some fields are shared between the <<psm>>, <<feature>> and <<peptide>> views.
+The following table presents all the fields and attributes for each PSM (Peptide Spectrum Match) entry in the psm_file. Some fields are shared between the <<psm>>, <<feature>> and <<peptide>> views.
 
-We added to the following table the corresponding fields in different tools and mzTab for each field. For each tool, we use the following output tables:
+For reference, we've included the corresponding field names in common proteomics tools:
 
-- MQ       - msms.txt
-- FragPipe - psm.tsv
-- mzTab - PSM section
+- **MaxQuant**: Fields from msms.txt
+- **FragPipe**: Fields from psm.tsv
+- **DIA-NN**: Fields from report.tsv
+- **mzTab**: Fields from PSM section
 
 [cols="1,2,1,1,1,1,1", options="header"]
 |===
@@ -642,9 +695,9 @@ We added to the following table the corresponding fields in different tools and 
 | **MaxQuant**
 | **mzTab**
 
-7+^| These fields are shared with features (<<feature>>) and peptides (<<peptide>>)
+7+^| *Core Identification Fields* (shared with features and peptides)
 | `sequence`
-| The peptide's sequence (with no modifications)
+| Unmodified peptide sequence (amino acid sequence only)
 | string
 | Stripped.Sequence
 | Peptide
@@ -652,7 +705,7 @@ We added to the following table the corresponding fields in different tools and 
 | sequence
 
 | `peptidoform`
-| Peptide sequence with modifications, see more <<peptidoform>>
+| Complete peptide sequence with modifications in ProForma notation (see <<peptidoform>>)
 | string
 | Modified.Sequence
 | Modified Peptide
@@ -660,7 +713,7 @@ We added to the following table the corresponding fields in different tools and 
 | opt_global_cv_MS:1000889_peptidoform_sequence
 
 | `modifications`
-| Modifications details: modification name, positions and localization probabilities: read <<modifications>>
+| Structured representation of modifications including name, position, and localization probability (see <<modifications>>)
 | array[struct], null
 | -
 | -
@@ -668,7 +721,7 @@ We added to the following table the corresponding fields in different tools and 
 | -
 
 | `precursor_charge`
-| Precursor charge
+| Charge state of the precursor ion
 | int32
 | Precursor.Charge
 | -
@@ -755,7 +808,7 @@ We added to the following table the corresponding fields in different tools and 
 | -
 | -
 
-7+^| Protein fields shared by <<feature>> <<psm>>
+7+^| *Protein Mapping Fields*
 | `mp_accessions`
 | Protein accessions of all the proteins that the peptide maps to
 | array[string], null
@@ -764,7 +817,7 @@ We added to the following table the corresponding fields in different tools and 
 | Proteins
 | accession
 
-7+^|These fields are optional and part of the MS/MS information <<mz>>
+7+^| *Spectral Data Fields* (optional)
 | `ion_mobility`
 | Ion mobility value for the precursor ion
 | float, null

@@ -1,12 +1,12 @@
-from .common import datafile
-from unittest import TestCase
+from pathlib import Path
+
 from quantmsio.core.psm import Psm
 
+TEST_DATA_ROOT = Path(__file__).parent / "examples"
 
-class TestPSMHandler(TestCase):
 
-    def test_convert_mztab_to_feature(self):
-        mztab_path = datafile("DDA-lfq/PXD040438.mzTab")
-        psm = Psm(mztab_path)
-        for _ in psm.generate_report():
-            print("ok")
+def test_convert_mztab_to_feature():
+    mztab_path = TEST_DATA_ROOT / "DDA-lfq/PXD040438.mzTab"
+    psm = Psm(mztab_path)
+    for _ in psm.generate_report():
+        print("ok")

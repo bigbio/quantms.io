@@ -47,9 +47,13 @@ def convert_maxquant_psm(
     if not output_prefix_file:
         output_prefix_file = "psm"
 
-    MQ = MaxQuant()
-    output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
-    MQ.write_psm_to_file(msms_path=msms_file, output_path=output_path, chunksize=chunksize)
+    mq = MaxQuant()
+    output_path = (
+        output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
+    )
+    mq.write_psm_to_file(
+        msms_path=msms_file, output_path=output_path, chunksize=chunksize
+    )
 
 
 @click.command(
@@ -100,15 +104,6 @@ def convert_maxquant_feature(
     chunksize: int,
     output_prefix_file: str,
 ):
-    """
-    convert mztab psm section to a parquet file. The parquet file will contain the features and the metadata.
-    :param evidence_file: the msms.txt file, this will be used to extract the peptide information
-    :param sdrf_file: the SDRF file needed to extract some of the metadata
-    :param output_folder: Folder where the Json file will be generated
-    :param partitions: The field used for splitting files, multiple fields are separated by ,
-    :param chunksize: Read batch size
-    :param output_prefix_file: Prefix of the Json file needed to generate the file name
-    """
 
     if evidence_file is None or sdrf_file is None or output_folder is None:
         raise click.UsageError("Please provide all the required parameters")
@@ -116,11 +111,11 @@ def convert_maxquant_feature(
     if not output_prefix_file:
         output_prefix_file = "feature"
 
-    MQ = MaxQuant()
+    mq = MaxQuant()
     filename = create_uuid_filename(output_prefix_file, ".feature.parquet")
     output_path = output_folder + "/" + filename
     if not partitions:
-        MQ.write_feature_to_file(
+        mq.write_feature_to_file(
             evidence_path=evidence_file,
             sdrf_path=sdrf_file,
             output_path=output_path,
@@ -129,7 +124,7 @@ def convert_maxquant_feature(
         )
     else:
         partitions = partitions.split(",")
-        MQ.write_features_to_file(
+        mq.write_features_to_file(
             evidence_path=evidence_file,
             sdrf_path=sdrf_file,
             output_folder=output_folder,

@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Union
+
 import duckdb
 import time
 import logging
@@ -7,18 +10,17 @@ from quantmsio.core.project import create_uuid_filename
 
 class DuckDB:
 
-    def __init__(self, report_path, duckdb_max_memory="16GB", duckdb_threads=4):
+    def __init__(
+        self, report_path: Union[Path, str], duckdb_max_memory="16GB", duckdb_threads=4
+    ):
+        self.parquet_db = None
         self._report_path = report_path
         self._duckdb_name = create_uuid_filename("report-duckdb", ".db")
-        self._duckdb = self.create_duckdb_from_diann_report(duckdb_max_memory, duckdb_threads)
+        self._duckdb = self.create_duckdb_from_diann_report(
+            duckdb_max_memory, duckdb_threads
+        )
 
     def create_duckdb_from_diann_report(self, max_memory, worker_threads):
-        """
-        This function creates a duckdb database from a diann report for fast performance queries. The database
-        is created from the tab delimited format of diann and can handle really large datasets.
-        :param report_path: The path to the diann report
-        :return: A duckdb database
-        """
         s = time.time()
 
         database = duckdb.connect(self._duckdb_name)
@@ -29,11 +31,15 @@ class DuckDB:
         if worker_threads is not None:
             database.execute("SET worker_threads='{}'".format(worker_threads))
 
-        msg = database.execute("SELECT * FROM duckdb_settings() where name in ('worker_threads', 'max_memory')").df()
+        msg = database.execute(
+            "SELECT * FROM duckdb_settings() where name in ('worker_threads', 'max_memory')"
+        ).df()
         logging.info("duckdb uses {} threads.".format(str(msg["value"][0])))
         logging.info("duckdb uses {} of memory.".format(str(msg["value"][1])))
 
-        database.execute("CREATE TABLE report AS SELECT * FROM '{}'".format(self._report_path))
+        database.execute(
+            "CREATE TABLE report AS SELECT * FROM '{}'".format(self._report_path)
+        )
         et = time.time() - s
         logging.info("Time to create duckdb database {} seconds".format(et))
         return database
@@ -41,7 +47,9 @@ class DuckDB:
     def iter_file(self, filed: str, file_num: int = 10, columns: list = None):
 
         references = self.get_unique_references(filed)
-        ref_list = [references[i : i + file_num] for i in range(0, len(references), file_num)]
+        ref_list = [
+            references[i : i + file_num] for i in range(0, len(references), file_num)
+        ]
         for refs in ref_list:
             batch_df = self.get_report(filed, refs, columns)
             yield refs, batch_df

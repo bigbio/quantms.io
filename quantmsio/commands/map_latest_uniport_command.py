@@ -33,12 +33,6 @@ def map_latest_uniport(
     output_folder: str,
     output_prefix_file: str,
 ):
-    """
-    :param feature_file: feature file
-    :param sdrf_file: the SDRF file needed to extract some of the metadata
-    :param output_folder: Folder where the Json file will be generated
-    :param output_prefix_file: Prefix of the Json file needed to generate the file name
-    """
 
     if feature_file is None or fasta is None or output_folder is None:
         raise click.UsageError("Please provide all the required parameters")

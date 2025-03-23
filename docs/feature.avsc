@@ -1,12 +1,30 @@
 {
 	"name": "feature",
 	"type": "record",
+	"doc": "Schema for a file containing peptide features and associated metadata",
 	"fields": [
+		{
+			"name": "file_metadata",
+			"type": {
+				"type": "record",
+				"name": "file_metadata",
+				"doc": "Metadata for the feature file",
+				"fields": [
+					{"name": "quantmsio_version", "type": "string", "doc": "Version of the quantms.io format"},
+					{"name": "creator", "type": "string", "doc": "Name of the tool or person who created the file"},
+					{"name": "file_type", "type": "string", "doc": "Type of the file (feature_file)"},
+					{"name": "creation_date", "type": "string", "doc": "Date when the file was created"},
+					{"name": "uuid", "type": "string", "doc": "Unique identifier for the file"},
+					{"name": "software_provider", "type": "string", "doc": "Name of the software provider that generated the file"}
+				]
+			},
+			"doc": "File-level metadata information"
+		},
 		{"name": "sequence", "type": "string", "doc": "The peptide’s sequence corresponding to the PSM"},
 		{"name": "peptidoform", "type": "string", "doc": "Peptide sequence with modifications: Read the specification for more details"},
-		{"name": "modifications", "type": ["null", 
+		{"name": "modifications", "type": ["null",
 			{
-				"type": "array", 
+				"type": "array",
 				"items": {
 					"type": "struct",
 					"fields": [
@@ -19,14 +37,14 @@
 									"type": "struct",
 									"fields": [
 										{ "name": "position", "type": "int32" },
-										{ "name": "localization_probability", "type": "float32" },
+										{ "name": "localization_probability", "type": "float32" }
 									]
 								}
 							}
 						}
 					]
 				}
-			}], 
+			}],
 		"doc": "List of modifications as string array, easy for search and filter"
 		},
 		{"name": "precursor_charge", "type": "int", "doc": "Precursor charge"},
@@ -41,7 +59,7 @@
 				"fields": [
 					{"name": "score_name", "type": "string"},
 					{"name": "score_value", "type": "float32"}
-				],
+				]
 				}
 			}],
 			"doc": "A named score type and value representing an identification's measure of confidence or input feature"
@@ -56,7 +74,7 @@
 				"fields": [
 					{"name": "cv_name", "type": "string"},
 					{"name": "cv_value", "type": "string"}
-				],
+				]
 			}
 			}],
 			"doc": "Optional list of CV parameters for additional metadata"
@@ -72,9 +90,9 @@
 					{"name": "sample_accession", "type": "string"},
 					{"name": "channel", "type": "string"},
 					{"name": "intensity", "type": "float32"}
-				],
+				]
 			}
-			}], 
+			}],
 			"doc": "The intensity-based abundance of the peptide in the sample"
 		},
 		{"name": "additional_intensities", "type":  ["null",{
@@ -86,58 +104,30 @@
 					{"name": "channel", "type": "string"},
 					{"name": "additional_intensity", "type": {
 						"type": "array",
-						"items: {
+						"items": {
 							"type": "struct",
 							"fields": [
 								{"name": "intensity_name", "type": "string"},
 								{"name": "intensity_value", "type": "float32"}
-							],
+							]
 						}
 					}
 					}
-				],
+				]
 			}
-			}], 
+			}],
 			"doc": "Apart from the raw intensity, multiple intensity values can be provided as key-values pairs, for example, normalized intensity."
 		},
-		{
-              "name": "cv_params",
-              "type": [
-                "null",
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "record",
-                    "name": "cv_param",
-                    "doc": "Controlled vocabulary (CV) parameters providing additional metadata for the scan.",
-                    "fields": [
-                      {
-                        "name": "cv_name",
-                        "type": "string",
-                        "doc": "Name of the CV term (e.g., from PSI-MS or other ontologies)."
-                      },
-                      {
-                        "name": "cv_value",
-                        "type": "string",
-                        "doc": "Value associated with the CV term."
-                      }
-                    ]
-                  }
-                }
-              ],
-              "default": null,
-              "doc": "Optional list of CV parameters for additional metadata."
-            },
 		{"name": "pg_accessions", "type": ["null", {"type": "array","items": "string"}], "doc": "Protein group accessions of all the proteins that the peptide maps to"},
 		{"name": "anchor_protein", "type": "string", "doc": "One protein accession that represents the protein group"},
 		{"name": "unique", "type": ["null", "int"], "doc": "Unique peptide indicator, if the peptide maps to a single protein, the value is 1, otherwise 0"},
 		{"name": "protein_global_qvalue", "type": ["null", "float32"], "doc": "Global q-value of the protein group at the experiment level"},
 		{"name": "start_ion_mobility", "type": ["null", "float32"], "doc": "start ion mobility value for the precursor ion"},
-		{"name": "stop_ion_mobility", "type": ["null", "float32"], "doc": "stop ion mobility value for the precursor ion"},		
+		{"name": "stop_ion_mobility", "type": ["null", "float32"], "doc": "stop ion mobility value for the precursor ion"},
 		{"name": "gg_accessions", "type": ["null", {"type": "array", "items": "string"}], "doc": "Gene accessions, as string array"},
 		{"name": "gg_names", "type": ["null", {"type": "array", "items": "string"}], "doc": "Gene names, as string array"},
 		{"name": "scan_reference_file_name", "type": ["null","string"], "doc": "The reference file containing the best psm that identified the feature. Note: This file can be different from the file that contains the feature ().ReferenceFile"},
 		{"name": "rt_start", "type": ["null", "float32"], "doc": "Start of the retention time window for feature"},
-		{"name": "rt_stop", "type": ["null", "float32"], "doc": "End of the retention time window for feature"},
+		{"name": "rt_stop", "type": ["null", "float32"], "doc": "End of the retention time window for feature"}
 	]
 }

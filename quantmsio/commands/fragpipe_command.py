@@ -38,4 +38,6 @@ def convert_fragpipe_psm(
     if not output_folder.exists():
         output_folder.mkdir(parents=True, exist_ok=True)
     converter = FragPipe(output_directory=output_folder)
-    converter.write_psms_to_parquet(msms_file, batch_size=chunksize, output_prefix_file=output_prefix_file)
+    converter.write_psms_to_parquet(
+        msms_file, batch_size=chunksize, output_prefix_file=output_prefix_file
+    )

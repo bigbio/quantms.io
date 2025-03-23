@@ -1,20 +1,22 @@
+from pathlib import Path
 from unittest import TestCase
 from unittest.mock import patch
 
 import requests
-from ddt import data
+
 from ddt import ddt
 
 from quantmsio.core.project import ProjectHandler
 
-from .common import datafile
+TEST_DATA_ROOT = Path(__file__).parent / "examples"
+test_dataset = (
+    "MSV000079033",
+    TEST_DATA_ROOT / "DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv",
+)
 
 
 @ddt
 class TestProjectHandler(TestCase):
-    test_datas = [
-        ("MSV000079033", datafile("/examples/DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv")),
-    ]
 
     @patch("requests.get")
     def test_populate_from_pride_archive_successful(self, mock_get):
@@ -38,7 +40,9 @@ class TestProjectHandler(TestCase):
         project_manager.populate_from_pride_archive()
 
         # Assert that the project_info has been updated
-        self.assertEqual(project_manager.project.project_info["project_title"], "Test Project")
+        self.assertEqual(
+            project_manager.project.project_info["project_title"], "Test Project"
+        )
         self.assertEqual(
             project_manager.project.project_info["project_description"],
             "Test description",
@@ -56,10 +60,9 @@ class TestProjectHandler(TestCase):
         )
         print(project_manager.project.project_info)
 
-    @data(*test_datas)
-    def test_save_project_info(self, test_data):
-        project_accession = test_data[0]
-        sdrf_file = test_data[1]
+    def test_save_project_info(self):
+        project_accession = test_dataset[0]
+        sdrf_file = test_dataset[1]
 
         project_manager = ProjectHandler(project_accession)
         project_manager.populate_from_pride_archive()

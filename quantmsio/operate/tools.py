@@ -1,6 +1,9 @@
 import os
 import re
 from collections import defaultdict
+from pathlib import Path
+from typing import Union
+
 import pandas as pd
 import numpy as np
 import pyarrow as pa
@@ -13,7 +16,12 @@ from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.operate.query import Query, map_spectrum_mz
 from quantmsio.core.openms import OpenMSHandler
 from quantmsio.utils.pride_utils import get_unanimous_name
-from quantmsio.utils.file_utils import load_de_or_ae, save_slice_file, save_file, close_file
+from quantmsio.utils.file_utils import (
+    load_de_or_ae,
+    save_slice_file,
+    save_file,
+    close_file,
+)
 
 
 def init_save_info(parquet_path: str):
@@ -38,7 +46,9 @@ def generate_psms_of_spectrum(
     p = Query(parquet_path)
     for refs, table in p.iter_file(file_num=file_num):
         mzml_handlers = {ref: OpenMSHandler() for ref in refs}
-        table[["number_peaks", "mz_array", "intensity_array"]] = table[["reference_file_name", "scan"]].apply(
+        table[["number_peaks", "mz_array", "intensity_array"]] = table[
+            ["reference_file_name", "scan"]
+        ].apply(
             lambda x: map_spectrum_mz(
                 x["reference_file_name"],
                 x["scan"],
@@ -49,28 +59,51 @@ def generate_psms_of_spectrum(
             result_type="expand",
         )
         pqwriters, pqwriter_no_part = save_parquet_file(
-            partitions, table, output_folder, filename, pqwriters, pqwriter_no_part, PSM_SCHEMA
+            partitions,
+            table,
+            output_folder,
+            filename,
+            pqwriters,
+            pqwriter_no_part,
+            PSM_SCHEMA,
         )
     close_file(pqwriters, pqwriter_no_part)
 
 
 def save_parquet_file(
-    partitions, table, output_folder, filename, pqwriters={}, pqwriter_no_part=None, schema=FEATURE_SCHEMA
+    partitions,
+    table,
+    output_folder,
+    filename,
+    pqwriters=None,
+    pqwriter_no_part=None,
+    schema=FEATURE_SCHEMA,
 ):
 
+    if pqwriters is None:
+        pqwriters = {}
     if partitions and len(partitions) > 0:
         for key, df in table.groupby(partitions):
             parquet_table = pa.Table.from_pandas(df, schema=schema)
-            pqwriters = save_slice_file(parquet_table, pqwriters, output_folder, key, filename)
+            pqwriters = save_slice_file(
+                parquet_table, pqwriters, output_folder, key, filename
+            )
         return pqwriters, pqwriter_no_part
     else:
         parquet_table = pa.Table.from_pandas(table, schema=schema)
-        pqwriter_no_part = save_file(parquet_table, pqwriter_no_part, output_folder, filename)
+        pqwriter_no_part = save_file(
+            parquet_table, pqwriter_no_part, output_folder, filename
+        )
         return pqwriters, pqwriter_no_part
 
 
 def generate_feature_of_gene(
-    parquet_path: str, fasta: str, output_folder: str, file_num: int, partitions: list = None, species: str = "human"
+    parquet_path: str,
+    fasta: str,
+    output_folder: str,
+    file_num: int,
+    partitions: list = None,
+    species: str = "human",
 ):
     pqwriters, pqwriter_no_part, filename = init_save_info(parquet_path)
     p = Query(parquet_path)
@@ -106,18 +139,21 @@ def map_protein_for_tsv(path: str, fasta: str, output_path: str, map_parameter: 
             map_protein_names[accession].add(accession)
             map_protein_names[name].add(accession)
     df, content = load_de_or_ae(path)
-    df["protein"] = df["protein"].apply(lambda x: get_unanimous_name(x, map_protein_names))
+    df["protein"] = df["protein"].apply(
+        lambda x: get_unanimous_name(x, map_protein_names)
+    )
     content += df.columns.str.cat(sep="\t") + "\n"
     for _, row in df.iterrows():
         content += "\t".join(map(str, row)).strip() + "\n"
     with open(output_path, "w", encoding="utf8") as f:
         f.write(content)
 
+
 def get_peptide_map(unique_peptides, fasta):
     peptide_map = defaultdict(list)
     automaton = ahocorasick.Automaton()
     for sequence in unique_peptides:
-        automaton.add_word(sequence,sequence)
+        automaton.add_word(sequence, sequence)
     automaton.make_automaton()
 
     fasta_proteins = list()
@@ -131,15 +167,22 @@ def get_peptide_map(unique_peptides, fasta):
                 peptide_map[peptide].append(accession)
     return peptide_map
 
-def map_peptide_to_protein(parquet_file: str, fasta: str, output_folder: str, filename: str, label="feature"):
+
+def map_peptide_to_protein(
+    parquet_file: str, fasta: str, output_folder: str, filename: str, label="feature"
+):
     p = Query(parquet_file)
     unique_peptides = p.get_unique_peptides()
     peptide_map = get_peptide_map(unique_peptides, fasta)
     pqwriter = None
     for table in p.iter_chunk(batch_size=2000000):
         table["pg_accessions"] = table["sequence"].map(peptide_map)
-        table = table[table['pg_accessions'].apply(lambda x: len(x) > 0)]
-        table.loc[:,"unique"] = table['pg_accessions'].apply(lambda x: 0 if len(x) > 1 else 1).astype(np.int32)
+        table = table[table["pg_accessions"].apply(lambda x: len(x) > 0)]
+        table.loc[:, "unique"] = (
+            table["pg_accessions"]
+            .apply(lambda x: 0 if len(x) > 1 else 1)
+            .astype(np.int32)
+        )
         if label == "feature":
             parquet_table = pa.Table.from_pandas(table, schema=FEATURE_SCHEMA)
             pqwriter = save_file(parquet_table, pqwriter, output_folder, filename)
@@ -147,7 +190,11 @@ def map_peptide_to_protein(parquet_file: str, fasta: str, output_folder: str, fi
             parquet_table = pa.Table.from_pandas(table, schema=IBAQ_SCHEMA)
             pqwriter = save_file(parquet_table, pqwriter, output_folder, filename)
     close_file(None, pqwriter)
-def get_modification_details(seq: str, mods_dict: dict, automaton: any, select_mods: list = None):
+
+
+def get_modification_details(
+    seq: str, mods_dict: dict, automaton: any, select_mods: list = None
+):
     if "(" not in seq:
         return (seq, [])
     total = 0
@@ -172,7 +219,9 @@ def get_modification_details(seq: str, mods_dict: dict, automaton: any, select_m
         pre = item[0] + 1
         if modification in modifications:
             index = modifications.index(modification)
-            modification_details[index]["fields"].append({"position": position, "localization_probability": 1.0})
+            modification_details[index]["fields"].append(
+                {"position": position, "localization_probability": 1.0}
+            )
         elif modification in select_mods:
             modifications.append(modification)
             modification_details.append(
@@ -224,10 +273,10 @@ def transform_ibaq(df):
     return df
 
 
-def genereate_ibaq_feature(sdrf_path, parquet_path):
-    Sdrf = SDRFHandler(sdrf_path)
-    sdrf = Sdrf.transform_sdrf()
-    experiment_type = Sdrf.get_experiment_type_from_sdrf()
+def genereate_ibaq_feature(sdrf_path: Union[Path, str], parquet_path: Union[Path, str]):
+    sdrf = SDRFHandler(sdrf_path)
+    sdrf = sdrf.transform_sdrf()
+    experiment_type = sdrf.get_experiment_type_from_sdrf()
     p = Query(parquet_path)
     for _, df in p.iter_file(file_num=10, columns=IBAQ_USECOLS):
         df = transform_ibaq(df)
@@ -260,7 +309,11 @@ def genereate_ibaq_feature(sdrf_path, parquet_path):
         yield feature
 
 
-def write_ibaq_feature(sdrf_path, parquet_path, output_path):
+def write_ibaq_feature(
+    sdrf_path: Union[Path, str],
+    parquet_path: Union[Path, str],
+    output_path: Union[Path, str],
+):
     pqwriter = None
     for feature in genereate_ibaq_feature(sdrf_path, parquet_path):
         if not pqwriter:

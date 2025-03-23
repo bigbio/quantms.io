@@ -1,8 +1,25 @@
 {
 	"name": "protein",
 	"type": "record",
+	"doc": "Schema for a file containing protein summary data and associated metadata",
 	"fields": [
-		{"name": "quantmsio_version", "type": "string", "doc": "The version of the quantms.io specification"},
+		{
+			"name": "file_metadata",
+			"type": {
+				"type": "record",
+				"name": "file_metadata",
+				"doc": "Metadata for the protein file",
+				"fields": [
+					{"name": "quantmsio_version", "type": "string", "doc": "Version of the quantms.io format"},
+					{"name": "creator", "type": "string", "doc": "Name of the tool or person who created the file"},
+					{"name": "file_type", "type": "string", "doc": "Type of the file (protein_file)"},
+					{"name": "creation_date", "type": "string", "doc": "Date when the file was created"},
+					{"name": "uuid", "type": "string", "doc": "Unique identifier for the file"},
+					{"name": "software_provider", "type": "string", "doc": "Name of the software provider that generated the file"}
+				]
+			},
+			"doc": "File-level metadata information"
+		},
 		{"name": "protein_accessions", "type": {"type": "array","items": "string"}},
 		{"name": "abundance","type": ["null", "float32"]},
 		{"name": "sample_accession", "type":  "string", "doc": "The sample accession in the SDRF, which column is called source name"},
@@ -37,7 +54,6 @@
 		{"name": "gg_names", "type": ["null", {"type": "array","items": "string"}], "doc": "The gene names corresponding to every protein"},
 		{"name": "number_peptides","type": ["null", "int"], "doc": "The total number of peptides for a give protein"},
 		{"name": "number_psms","type": ["null", "int"], "doc": "The total number of peptide spectrum matches"},
-		{"name": "number_unique_peptides","type": ["null", "int"], "doc": "The total number of unique peptides"},
-		{"name": "quantmsio_version", "type": "string", "doc": "The version of quantms.io"}
+		{"name": "number_unique_peptides","type": ["null", "int"], "doc": "The total number of unique peptides"}
 	]
 }

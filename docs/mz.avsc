@@ -4,6 +4,23 @@
   "doc": "Schema for mass spectrometry data including scan details, precursors, mz, intensity, and CV parameters.",
   "fields": [
     {
+      "name": "file_metadata",
+      "type": {
+        "type": "record",
+        "name": "file_metadata",
+        "doc": "Metadata for the mass spectra file",
+        "fields": [
+          {"name": "quantmsio_version", "type": "string", "doc": "Version of the quantms.io format"},
+          {"name": "creator", "type": "string", "doc": "Name of the tool or person who created the file"},
+          {"name": "file_type", "type": "string", "doc": "Type of the file (mz_file)"},
+          {"name": "creation_date", "type": "string", "doc": "Date when the file was created"},
+          {"name": "uuid", "type": "string", "doc": "Unique identifier for the file"},
+          {"name": "software_provider", "type": "string", "doc": "Name of the software provider that generated the file"}
+        ]
+      },
+      "doc": "File-level metadata information"
+    },
+    {
       "name": "id",
       "type": "string",
       "doc": "Unique identifier for the scan or spectrum."

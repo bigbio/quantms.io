@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -8,11 +10,12 @@ from quantmsio.core.psm import Psm
 from quantmsio.core.sdrf import SDRFHandler
 from quantmsio.core.msstats_in import MsstatsIN
 from quantmsio.core.common import FEATURE_SCHEMA
+from typing import Union
 
 
 class Feature(MzTab):
-    def __init__(self, mzTab_path, sdrf_path, msstats_in_path):
-        super(Feature, self).__init__(mzTab_path)
+    def __init__(self, mztab_path: Union[Path, str], sdrf_path, msstats_in_path):
+        super(Feature, self).__init__(mztab_path)
         self._msstats_in = msstats_in_path
         self._sdrf_path = sdrf_path
         self._ms_runs = self.extract_ms_runs()
@@ -23,17 +26,21 @@ class Feature(MzTab):
         self._automaton = get_ahocorasick(self._mods_map)
 
     def extract_psm_msg(self, chunksize=2000000, protein_str=None):
-        P = Psm(self.mztab_path)
-        pep_dict = P.extract_from_pep(chunksize=100000)
+        psm = Psm(self.mztab_path)
+        pep_dict = psm.extract_from_pep(chunksize=100000)
         map_dict = {}
-        for psm in P.iter_psm_table(chunksize, protein_str):
-            for key, df in psm.groupby(["reference_file_name", "peptidoform", "precursor_charge"]):
+        for psm_chunk in psm.iter_psm_table(chunksize, protein_str):
+            for key, df in psm_chunk.groupby(
+                ["reference_file_name", "peptidoform", "precursor_charge"]
+            ):
                 df.reset_index(drop=True, inplace=True)
                 temp_df = df.iloc[df["posterior_error_probability"].idxmin()]
                 if key not in map_dict:
                     map_dict[key] = [None for _ in range(7)]
                 pep_value = temp_df["posterior_error_probability"]
-                if map_dict[key][0] is None or float(map_dict[key][0]) > float(pep_value):
+                if map_dict[key][0] is None or float(map_dict[key][0]) > float(
+                    pep_value
+                ):
                     map_dict[key][0] = pep_value
                     map_dict[key][1] = temp_df["calculated_mz"]
                     map_dict[key][2] = temp_df["observed_mz"]
@@ -43,13 +50,18 @@ class Feature(MzTab):
                     map_dict[key][6] = temp_df["cv_params"]
         return map_dict, pep_dict
 
-    def transform_msstats_in(self, file_num=10, protein_str=None, duckdb_max_memory="16GB", duckdb_threads=4):
-        Msstats = MsstatsIN(self._msstats_in, self._sdrf_path, duckdb_max_memory, duckdb_threads)
-        for msstats in Msstats.generate_msstats_in(file_num, protein_str):
+    def transform_msstats_in(
+        self, file_num=10, protein_str=None, duckdb_max_memory="16GB", duckdb_threads=4
+    ):
+        msstats_in = MsstatsIN(
+            self._msstats_in, self._sdrf_path, duckdb_max_memory, duckdb_threads
+        )
+        for msstats in msstats_in.generate_msstats_in(file_num, protein_str):
             yield msstats
-        Msstats.destroy_duckdb_database()
+        msstats_in.destroy_duckdb_database()
 
-    def merge_msstats_and_psm(self, msstats, map_dict):
+    @staticmethod
+    def merge_msstats_and_psm(msstats, map_dict):
         map_features = [
             "posterior_error_probability",
             "calculated_mz",
@@ -61,26 +73,40 @@ class Feature(MzTab):
         ]
 
         def merge_psm(rows, index):
-            key = (rows["reference_file_name"], rows["peptidoform"], rows["precursor_charge"])
+            key = (
+                rows["reference_file_name"],
+                rows["peptidoform"],
+                rows["precursor_charge"],
+            )
             if key in map_dict:
                 return map_dict[key][index]
             else:
                 return None
 
         for i, feature in enumerate(map_features):
-            msstats.loc[:, feature] = msstats[["reference_file_name", "peptidoform", "precursor_charge"]].apply(
+            msstats.loc[:, feature] = msstats[
+                ["reference_file_name", "peptidoform", "precursor_charge"]
+            ].apply(
                 lambda rows: merge_psm(rows, i),
                 axis=1,
             )
 
-    def generate_feature(self, file_num=10, protein_str=None, duckdb_max_memory="16GB", duckdb_threads=4):
-        for msstats in self.generate_feature_report(file_num, protein_str, duckdb_max_memory, duckdb_threads):
+    def generate_feature(
+        self, file_num=10, protein_str=None, duckdb_max_memory="16GB", duckdb_threads=4
+    ):
+        for msstats in self.generate_feature_report(
+            file_num, protein_str, duckdb_max_memory, duckdb_threads
+        ):
             feature = self.transform_feature(msstats)
             yield feature
 
-    def generate_feature_report(self, file_num=10, protein_str=None, duckdb_max_memory="16GB", duckdb_threads=4):
+    def generate_feature_report(
+        self, file_num=10, protein_str=None, duckdb_max_memory="16GB", duckdb_threads=4
+    ):
         map_dict, pep_dict = self.extract_psm_msg(2000000, protein_str)
-        for msstats in self.transform_msstats_in(file_num, protein_str, duckdb_max_memory, duckdb_threads):
+        for msstats in self.transform_msstats_in(
+            file_num, protein_str, duckdb_max_memory, duckdb_threads
+        ):
             self.merge_msstats_and_psm(msstats, map_dict)
             self.add_additional_msg(msstats, pep_dict)
             self.convert_to_parquet_format(msstats)
@@ -100,9 +126,16 @@ class Feature(MzTab):
             yield key, df
 
     def generate_slice_feature(
-        self, partitions, file_num=10, protein_str=None, duckdb_max_memory="16GB", duckdb_threads=4
+        self,
+        partitions,
+        file_num=10,
+        protein_str=None,
+        duckdb_max_memory="16GB",
+        duckdb_threads=4,
     ):
-        for msstats in self.generate_feature_report(file_num, protein_str, duckdb_max_memory, duckdb_threads):
+        for msstats in self.generate_feature_report(
+            file_num, protein_str, duckdb_max_memory, duckdb_threads
+        ):
             for key, df in self.slice(msstats, partitions):
                 feature = self.transform_feature(df)
                 yield key, feature
@@ -112,12 +145,19 @@ class Feature(MzTab):
         return pa.Table.from_pandas(df, schema=FEATURE_SCHEMA)
 
     def write_feature_to_file(
-        self, output_path, file_num=10, protein_file=None, duckdb_max_memory="16GB", duckdb_threads=4
+        self,
+        output_path,
+        file_num=10,
+        protein_file=None,
+        duckdb_max_memory="16GB",
+        duckdb_threads=4,
     ):
         protein_list = extract_protein_list(protein_file) if protein_file else None
         protein_str = "|".join(protein_list) if protein_list else None
         pqwriter = None
-        for feature in self.generate_feature(file_num, protein_str, duckdb_max_memory, duckdb_threads):
+        for feature in self.generate_feature(
+            file_num, protein_str, duckdb_max_memory, duckdb_threads
+        ):
             if not pqwriter:
                 pqwriter = pq.ParquetWriter(output_path, feature.schema)
             pqwriter.write_table(feature)
@@ -139,10 +179,13 @@ class Feature(MzTab):
         for key, feature in self.generate_slice_feature(
             partitions, file_num, protein_str, duckdb_max_memory, duckdb_threads
         ):
-            pqwriters = save_slice_file(feature, pqwriters, output_folder, key, filename)
+            pqwriters = save_slice_file(
+                feature, pqwriters, output_folder, key, filename
+            )
         close_file(pqwriters)
 
-    def generate_best_scan(self, rows, pep_dict):
+    @staticmethod
+    def generate_best_scan(rows, pep_dict):
         key = (rows["peptidoform"], rows["precursor_charge"])
         if key in pep_dict:
             return [pep_dict[key][1], pep_dict[key][2]]
@@ -151,9 +194,15 @@ class Feature(MzTab):
 
     def add_additional_msg(self, msstats, pep_dict):
         select_mods = list(self._mods_map.keys())
-        msstats.loc[:, "pg_global_qvalue"] = msstats["mp_accessions"].map(self._protein_global_qvalue_map)
-        msstats[["scan_reference_file_name", "scan"]] = msstats[["peptidoform", "precursor_charge"]].apply(
-            lambda rows: self.generate_best_scan(rows, pep_dict), axis=1, result_type="expand"
+        msstats.loc[:, "pg_global_qvalue"] = msstats["mp_accessions"].map(
+            self._protein_global_qvalue_map
+        )
+        msstats[["scan_reference_file_name", "scan"]] = msstats[
+            ["peptidoform", "precursor_charge"]
+        ].apply(
+            lambda rows: self.generate_best_scan(rows, pep_dict),
+            axis=1,
+            result_type="expand",
         )
         msstats[["peptidoform", "modifications"]] = msstats[["peptidoform"]].apply(
             lambda row: self.generate_modifications_details(
@@ -175,16 +224,51 @@ class Feature(MzTab):
 
     @staticmethod
     def convert_to_parquet_format(res):
-        res["pg_global_qvalue"] = res["pg_global_qvalue"].astype(float)
-        res["unique"] = res["unique"].astype("Int32")
-        res["precursor_charge"] = res["precursor_charge"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
-        res["calculated_mz"] = res["calculated_mz"].astype(float)
-        res["observed_mz"] = res["observed_mz"].astype(float)
-        res["posterior_error_probability"] = res["posterior_error_probability"].astype(float)
-        res["is_decoy"] = res["is_decoy"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
+        """
+        Convert DataFrame columns to appropriate types for Parquet format.
+        This is optimized to handle NaN values and use vectorized operations.
+
+        Parameters:
+        -----------
+        res : pandas.DataFrame
+            DataFrame to convert
+
+        Returns:
+        --------
+        None (modifies DataFrame in-place)
+        """
+        # Convert float columns in a single pass
+        float_columns = [
+            "pg_global_qvalue",
+            "calculated_mz",
+            "observed_mz",
+            "posterior_error_probability",
+        ]
+        for col in float_columns:
+            if col in res.columns:
+                res[col] = pd.to_numeric(res[col], errors="coerce")
+
+        # Convert integer columns with proper handling of NaN values
+        res["unique"] = pd.to_numeric(res["unique"], errors="coerce").astype("Int32")
+
+        # Use numpy for faster conversion of precursor_charge
+        if "precursor_charge" in res.columns:
+            res["precursor_charge"] = pd.to_numeric(
+                res["precursor_charge"], errors="coerce"
+            ).astype("Int32")
+
+        # Convert is_decoy more efficiently
+        if "is_decoy" in res.columns:
+            res["is_decoy"] = pd.to_numeric(res["is_decoy"], errors="coerce").astype(
+                "Int32"
+            )
+
+        # Convert string columns
         res["scan"] = res["scan"].astype(str)
         res["scan_reference_file_name"] = res["scan_reference_file_name"].astype(str)
+
+        # Handle rt column
         if "rt" in res.columns:
-            res["rt"] = res["rt"].astype(float)
+            res["rt"] = pd.to_numeric(res["rt"], errors="coerce")
         else:
             res.loc[:, "rt"] = None

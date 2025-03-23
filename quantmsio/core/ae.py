@@ -39,6 +39,7 @@ class AbsoluteExpressionHander:
     ABSOLUTE_EXPRESSION_EXTENSION = ".absolute.tsv"
 
     def __init__(self):
+        self.project_file = None
         self.ibaq_df = None
         self.ae_file_path = None
         self.project_manager = None
@@ -90,14 +91,24 @@ class AbsoluteExpressionHander:
         output_lines = ""
         if self.project_manager:
             output_lines += (
-                "#project_accession: " + self.project_manager.project.project_info["project_accession"] + "\n"
-            )
-            output_lines += "#project_title: " + self.project_manager.project.project_info["project_title"] + "\n"
-            output_lines += (
-                "#project_description: " + self.project_manager.project.project_info["project_description"] + "\n"
+                "#project_accession: "
+                + self.project_manager.project.project_info["project_accession"]
+                + "\n"
             )
             output_lines += (
-                "#quantmsio_version: " + self.project_manager.project.project_info["quantmsio_version"] + "\n"
+                "#project_title: "
+                + self.project_manager.project.project_info["project_title"]
+                + "\n"
+            )
+            output_lines += (
+                "#project_description: "
+                + self.project_manager.project.project_info["project_description"]
+                + "\n"
+            )
+            output_lines += (
+                "#quantmsio_version: "
+                + self.project_manager.project.project_info["quantmsio_version"]
+                + "\n"
             )
         else:
             output_lines += "#quantmsio_version: " + QUANTMSIO_VERSION + "\n"
@@ -136,8 +147,12 @@ class AbsoluteExpressionHander:
             f.write(output_lines)
 
         if self.project_manager:
-            self.project_manager.add_quantms_file(file_category="absolute_file", file_name=output_filename)
-        logger.info(f"Absolute expression file copied to {output_filename} and added to the project information")
+            self.project_manager.add_quantms_file(
+                file_category="absolute_file", file_name=output_filename
+            )
+        logger.info(
+            f"Absolute expression file copied to {output_filename} and added to the project information"
+        )
 
     def get_factor_value(self):
         """

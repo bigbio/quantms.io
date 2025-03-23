@@ -1,5 +1,8 @@
 import codecs
 import os
+from pathlib import Path
+from typing import Union
+
 import pandas as pd
 from quantmsio.utils.pride_utils import get_quantmsio_modifications
 from quantmsio.operate.tools import get_modification_details
@@ -13,7 +16,9 @@ def generate_modification_list(modification_str: str, modifications):
     modifications_string = ""
     for _, value in modifications.items():
         modifications_string += "|".join(map(str, value["position"]))
-        modifications_string = modifications_string + "-" + value["unimod_accession"] + ","
+        modifications_string = (
+            modifications_string + "-" + value["unimod_accession"] + ","
+        )
     modifications_string = modifications_string[:-1]  # Remove last comma
     modification_list = modifications_string.split(",")
 
@@ -51,7 +56,9 @@ def fetch_modifications_from_mztab_line(line: str, _modifications: dict) -> dict
             for (
                 key,
                 value,
-            ) in _modifications.items():  # for name, age in dictionary.iteritems():  (for Python 2.x)
+            ) in (
+                _modifications.items()
+            ):  # for name, age in dictionary.iteritems():  (for Python 2.x)
                 if value[1] == index:
                     accession = key
             if accession is None:
@@ -70,8 +77,8 @@ def fetch_modifications_from_mztab_line(line: str, _modifications: dict) -> dict
 
 
 class MzTab:
-    def __init__(self, mzTab_path: str) -> None:
-        self.mztab_path = mzTab_path
+    def __init__(self, mztab_path: Union[Path, str]) -> None:
+        self.mztab_path = mztab_path
         # psm pos
         self._psm_pos = None
         # psm len
@@ -130,13 +137,19 @@ class MzTab:
         f = open(self.mztab_path)
         if header == "PSH":
             f.seek(self._psm_pos)
-            return pd.read_csv(f, sep="\t", nrows=self._psm_len, low_memory=False, **kwargs)
+            return pd.read_csv(
+                f, sep="\t", nrows=self._psm_len, low_memory=False, **kwargs
+            )
         elif header == "PEH":
             f.seek(self._pep_pos)
-            return pd.read_csv(f, sep="\t", nrows=self._pep_len, low_memory=False, **kwargs)
+            return pd.read_csv(
+                f, sep="\t", nrows=self._pep_len, low_memory=False, **kwargs
+            )
         else:
             f.seek(self._prt_pos)
-            return pd.read_csv(f, sep="\t", nrows=self._prt_len, low_memory=False, **kwargs)
+            return pd.read_csv(
+                f, sep="\t", nrows=self._prt_len, low_memory=False, **kwargs
+            )
 
     def __set_table_config(self, header, length, pos, end_pos):
         if header == "PSH":
@@ -175,7 +188,9 @@ class MzTab:
         ms_runs = {}
         while line.split("\t")[0] == "MTD":
             if line.split("\t")[1].split("-")[-1] == "location":
-                ms_runs[line.split("\t")[1].split("-")[0]] = line.split("\t")[2].split("//")[-1].split(".")[0]
+                ms_runs[line.split("\t")[1].split("-")[0]] = (
+                    line.split("\t")[2].split("//")[-1].split(".")[0]
+                )
             line = f.readline()
         f.close()
         return ms_runs
@@ -212,7 +227,8 @@ class MzTab:
         f.close()
         return score_names
 
-    def generate_positions(self, start, end) -> list:
+    @staticmethod
+    def generate_positions(start, end) -> list:
         start = start.split(",")
         end = end.split(",")
         return [start + ":" + end for start, end in zip(start, end)]
@@ -254,7 +270,9 @@ class MzTab:
     @staticmethod
     def generate_modifications_details(seq, mods_map, automaton, select_mods):
         seq = seq.replace(".", "")
-        peptidoform, modification_details = get_modification_details(seq, mods_map, automaton, select_mods)
+        peptidoform, modification_details = get_modification_details(
+            seq, mods_map, automaton, select_mods
+        )
         if len(modification_details) == 0:
             return [peptidoform, None]
         else:
