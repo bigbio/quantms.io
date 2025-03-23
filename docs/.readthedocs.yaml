@@ -13,14 +13,6 @@ python:
   install:
     - requirements: requirements.txt
 
-# Commands to run before building the docs
-commands:
-  before_build:
-    - gem install asciidoctor
-    - gem install asciidoctor-diagram   # Optional: for diagram support
-    - gem install rouge                 # Optional: for syntax highlighting
-    - pip install sphinx-asciidoc
-
 # Sphinx configuration
 sphinx:
   configuration: conf.py
