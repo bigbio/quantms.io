@@ -22,7 +22,7 @@ def test_transform_psm():
 
     # Process PSM data
     count = 0
-    for df in maxquant.iter_batch(msms_file, "psm", chunksize=500000):
+    for df in maxquant.iter_batch(str(msms_file), "psm", chunksize=500000):
         # Transform PSM data
         maxquant.transform_psm(df)
         Psm.convert_to_parquet_format(df)
