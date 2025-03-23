@@ -11,6 +11,7 @@ test_data = (
     TEST_DATA_ROOT / "DDA-lfq/PXD040438.sdrf.tsv",
 )
 
+
 def test_transform_msstats():
     """Test transforming msstats data."""
     # Resolve file paths
@@ -32,6 +33,7 @@ def test_transform_msstats():
 
     # Ensure we got at least one result
     assert count > 0
+
 
 def test_extract_psm_msg():
     """Test extracting PSM messages."""

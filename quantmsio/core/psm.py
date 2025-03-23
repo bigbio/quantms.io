@@ -39,11 +39,15 @@ class Psm(MzTab):
                     psm_map[key] = "posterior_error_probability"
                     break
             df.rename(columns=psm_map, inplace=True)
-            df.loc[:, "additional_scores"] = df[list(self._score_names.values()) + ["global_qvalue"]].apply(
-                self._genarate_additional_scores, axis=1
+            df.loc[:, "additional_scores"] = df[
+                list(self._score_names.values()) + ["global_qvalue"]
+            ].apply(self._genarate_additional_scores, axis=1)
+            df.loc[:, "cv_params"] = df[["consensus_support"]].apply(
+                self._generate_cv_params, axis=1
             )
-            df.loc[:, "cv_params"] = df[["consensus_support"]].apply(self._generate_cv_params, axis=1)
-            df.loc[:, "reference_file_name"] = df["spectra_ref"].apply(lambda x: self._ms_runs[x[: x.index(":")]])
+            df.loc[:, "reference_file_name"] = df["spectra_ref"].apply(
+                lambda x: self._ms_runs[x[: x.index(":")]]
+            )
             yield df
 
     def _extract_pep_columns(self):
@@ -72,15 +76,21 @@ class Psm(MzTab):
                 live_cols.append("sequence")
                 live_cols.append("modifications")
             else:
-                raise Exception("The peptide table don't have opt_global_cv_MS:1000889_peptidoform_sequence columns")
+                raise Exception(
+                    "The peptide table don't have opt_global_cv_MS:1000889_peptidoform_sequence columns"
+                )
         if "charge" in not_cols or "best_search_engine_score[1]" in not_cols:
-            raise Exception("The peptide table don't have best_search_engine_score[1] or charge columns")
+            raise Exception(
+                "The peptide table don't have best_search_engine_score[1] or charge columns"
+            )
         pep_map = {}
         indexs = [self._pep_columns.index(col) for col in live_cols]
         for pep in self.skip_and_load_csv("PEH", usecols=indexs, chunksize=chunksize):
             pep.reset_index(drop=True, inplace=True)
             if "opt_global_cv_MS:1000889_peptidoform_sequence" not in pep.columns:
-                pep.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = pep[["modifications", "sequence"]].apply(
+                pep.loc[:, "opt_global_cv_MS:1000889_peptidoform_sequence"] = pep[
+                    ["modifications", "sequence"]
+                ].apply(
                     lambda row: get_petidoform_msstats_notation(
                         row["sequence"], row["modifications"], self._modifications
                     ),
@@ -91,16 +101,24 @@ class Psm(MzTab):
                 pep.loc[:, "scan_number"] = None
                 pep.loc[:, "spectra_ref"] = None
             else:
-                pep.loc[:, "scan_number"] = pep["spectra_ref"].apply(generate_scan_number)
-                pep["spectra_ref"] = pep["spectra_ref"].apply(lambda x: self._ms_runs[x.split(":")[0]])
-            pep_msg = pep.iloc[
-                pep.groupby(["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"]).apply(
-                    lambda row: row["best_search_engine_score[1]"].idxmin()
+                pep.loc[:, "scan_number"] = pep["spectra_ref"].apply(
+                    generate_scan_number
                 )
+                pep["spectra_ref"] = pep["spectra_ref"].apply(
+                    lambda x: self._ms_runs[x.split(":")[0]]
+                )
+            pep_msg = pep.iloc[
+                pep.groupby(
+                    ["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"]
+                ).apply(lambda row: row["best_search_engine_score[1]"].idxmin())
             ]
-            pep_msg = pep_msg.set_index(["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"])
+            pep_msg = pep_msg.set_index(
+                ["opt_global_cv_MS:1000889_peptidoform_sequence", "charge"]
+            )
 
-            pep_msg.loc[:, "pep_msg"] = pep_msg[["best_search_engine_score[1]", "spectra_ref", "scan_number"]].apply(
+            pep_msg.loc[:, "pep_msg"] = pep_msg[
+                ["best_search_engine_score[1]", "spectra_ref", "scan_number"]
+            ].apply(
                 lambda row: [
                     row["best_search_engine_score[1]"],
                     row["spectra_ref"],
@@ -141,7 +159,10 @@ class Psm(MzTab):
     def _generate_cv_params(rows):
         cv_list = []
         if rows["consensus_support"]:
-            struct = {"cv_name": "consesus_support", "cv_value": str(rows["consensus_support"])}
+            struct = {
+                "cv_name": "consesus_support",
+                "cv_value": str(rows["consensus_support"]),
+            }
             cv_list.append(struct)
         if len(cv_list) > 0:
             return cv_list
@@ -158,7 +179,11 @@ class Psm(MzTab):
             result_type="expand",
         )
         df.loc[:, "scan"] = df["spectra_ref"].apply(generate_scan_number)
-        df.drop(["spectra_ref", "search_engine", "search_engine_score[1]"], inplace=True, axis=1)
+        df.drop(
+            ["spectra_ref", "search_engine", "search_engine_score[1]"],
+            inplace=True,
+            axis=1,
+        )
 
     @staticmethod
     def transform_parquet(df):
@@ -172,7 +197,10 @@ class Psm(MzTab):
             struct = {"score_name": f"{software}_score", "score_value": cols[score]}
             struct_list.append(struct)
         if cols["global_qvalue"]:
-            struct = {"score_name": "global_qvalue", "score_value": cols["global_qvalue"]}
+            struct = {
+                "score_name": "global_qvalue",
+                "score_value": cols["global_qvalue"],
+            }
             struct_list.append(struct)
         return struct_list
 
@@ -198,11 +226,21 @@ class Psm(MzTab):
     @staticmethod
     def convert_to_parquet_format(res):
         res["mp_accessions"] = res["mp_accessions"].apply(get_protein_accession)
-        res["precursor_charge"] = res["precursor_charge"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
+        res["precursor_charge"] = (
+            res["precursor_charge"]
+            .map(lambda x: None if pd.isna(x) else int(x))
+            .astype("Int32")
+        )
         res["calculated_mz"] = res["calculated_mz"].astype(float)
         res["observed_mz"] = res["observed_mz"].astype(float)
-        res["posterior_error_probability"] = res["posterior_error_probability"].astype(float)
-        res["is_decoy"] = res["is_decoy"].map(lambda x: None if pd.isna(x) else int(x)).astype("Int32")
+        res["posterior_error_probability"] = res["posterior_error_probability"].astype(
+            float
+        )
+        res["is_decoy"] = (
+            res["is_decoy"]
+            .map(lambda x: None if pd.isna(x) else int(x))
+            .astype("Int32")
+        )
         res["scan"] = res["scan"].astype(str)
         if "rt" in res.columns:
             res["rt"] = res["rt"].astype(float)

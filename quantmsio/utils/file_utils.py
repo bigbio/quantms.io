@@ -130,7 +130,9 @@ def load_de_or_ae(path: str) -> Tuple[pd.DataFrame, str]:
     return df, "".join(content)
 
 
-def read_large_parquet(parquet_path: str, batch_size: int = 500000) -> Iterator[pd.DataFrame]:
+def read_large_parquet(
+    parquet_path: str, batch_size: int = 500000
+) -> Iterator[pd.DataFrame]:
     """
     Read a large parquet file in batches to reduce memory usage.
 
@@ -167,7 +169,9 @@ def calculate_buffer_size(file_path: str) -> int:
     return min(int(total_memory * fraction_of_memory), max_buffer_size, file_size)
 
 
-def save_slice_file(parquet_table, pqwriters: Dict, output_folder: str, partitions, filename: str) -> Dict:
+def save_slice_file(
+    parquet_table, pqwriters: Dict, output_folder: str, partitions, filename: str
+) -> Dict:
     """
     Save a parquet table to a file with partitioning.
 

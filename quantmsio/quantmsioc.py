@@ -10,15 +10,23 @@ from quantmsio import __version__ as __version__
 from quantmsio.commands.project_command import generate_pride_project_json
 from quantmsio.commands.feature_command import convert_feature_file
 from quantmsio.commands.psm_command import convert_psm_file, compare_set_of_psms
-from quantmsio.commands.diann_command import diann_convert_to_parquet, diann_pg_convert_to_parquet
+from quantmsio.commands.diann_command import (
+    diann_convert_to_parquet,
+    diann_pg_convert_to_parquet,
+)
 from quantmsio.commands.ae_command import convert_ibaq_absolute
 from quantmsio.commands.de_command import convert_msstats_differential
 from quantmsio.commands.attach_file_command import attach_file_to_json
-from quantmsio.commands.generate_spectra_message_command import map_spectrum_message_to_parquet
+from quantmsio.commands.generate_spectra_message_command import (
+    map_spectrum_message_to_parquet,
+)
 from quantmsio.commands.generate_gene_message_command import map_gene_message_to_parquet
 from quantmsio.commands.plot_command import plot
 from quantmsio.commands.statistic_command import statistics
-from quantmsio.commands.maxquant_command import convert_maxquant_psm, convert_maxquant_feature
+from quantmsio.commands.maxquant_command import (
+    convert_maxquant_psm,
+    convert_maxquant_feature,
+)
 from quantmsio.commands.ibaq_command import convert_ibaq_file
 from quantmsio.commands.fragpipe_command import convert_fragpipe_psm
 from quantmsio.commands.map_latest_uniport_command import map_latest_uniport
@@ -27,7 +35,9 @@ from quantmsio.commands.anndata_command import merge_ae_files
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
-@click.version_option(version=__version__, package_name="quantmsio", message="%(package)s %(version)s")
+@click.version_option(
+    version=__version__, package_name="quantmsio", message="%(package)s %(version)s"
+)
 @click.group(context_settings=CONTEXT_SETTINGS)
 def cli():
     """

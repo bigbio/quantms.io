@@ -8,7 +8,9 @@ import seaborn as sns
 from quantmsio.operate.tools import transform_ibaq
 
 
-def plot_distribution_of_ibaq(ibaq_path: str, save_path: str = None, selected_column: str = None) -> None:
+def plot_distribution_of_ibaq(
+    ibaq_path: str, save_path: str = None, selected_column: str = None
+) -> None:
     """
     This function plots the distribution of the protein IBAQ values.
     :param ibaq_path: ibaq file path
@@ -24,7 +26,9 @@ def plot_distribution_of_ibaq(ibaq_path: str, save_path: str = None, selected_co
         elif "IbaqLog" in columns:
             selected_column = "IbaqLog"
     if selected_column is not None:
-        fig = sns.histplot(data=df[selected_column], stat="frequency", kde=True, color="#209D73")
+        fig = sns.histplot(
+            data=df[selected_column], stat="frequency", kde=True, color="#209D73"
+        )
         fig.set(xlabel=selected_column, ylabel="Frequency")
         fig.set_title("Distribution of IBAQ values using {}".format(selected_column))
         sns.despine(ax=fig, top=True, right=True)
@@ -35,7 +39,9 @@ def plot_distribution_of_ibaq(ibaq_path: str, save_path: str = None, selected_co
         raise ValueError("No IBAQ column found in the ibaq file")
 
 
-def plot_peptides_of_lfq_condition(psm_parquet_path: str, sdrf_path: str, save_path: str = None) -> None:
+def plot_peptides_of_lfq_condition(
+    psm_parquet_path: str, sdrf_path: str, save_path: str = None
+) -> None:
     """
     this function plots the number of peptides for each condition in a LFQ (Label-Free Quantification) experiment.
 
@@ -55,7 +61,9 @@ def plot_peptides_of_lfq_condition(psm_parquet_path: str, sdrf_path: str, save_p
     use_cols = [col for col in sdrf.columns if col.startswith("factor value")]
     use_cols.append("comment[data file]")
     sdrf = sdrf[use_cols]
-    sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(lambda x: x.split(".")[0])
+    sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(
+        lambda x: x.split(".")[0]
+    )
     sdrf.rename(columns={"comment[data file]": "reference_file_name"}, inplace=True)
     df = df.merge(sdrf, on="reference_file_name", how="left")
     df.columns = ["reference", "condition"]
@@ -83,14 +91,18 @@ def plot_peptides_of_lfq_condition(psm_parquet_path: str, sdrf_path: str, save_p
         df = pd.DataFrame([list(f_count.values)], columns=f_count.index)
         num_subplots = math.ceil(len(f_count) / 20)
         columns_per_subplot = 20
-        fig, axes = plt.subplots(nrows=num_subplots, ncols=1, figsize=(12, 4 * num_subplots))
+        fig, axes = plt.subplots(
+            nrows=num_subplots, ncols=1, figsize=(12, 4 * num_subplots)
+        )
         for i in range(num_subplots):
             start_col = i * columns_per_subplot
             end_col = (i + 1) * columns_per_subplot
             subset_data = df.iloc[:, start_col:end_col]
 
             sns.barplot(data=subset_data, ax=axes[i])
-            axes[i].set_title("Condition vs Number of Peptides {}-{}".format(start_col + 1, end_col))
+            axes[i].set_title(
+                "Condition vs Number of Peptides {}-{}".format(start_col + 1, end_col)
+            )
             axes[i].set(xlabel=None)
             for tick in axes[i].get_xticklabels():
                 tick.set_rotation(30)
@@ -101,7 +113,9 @@ def plot_peptides_of_lfq_condition(psm_parquet_path: str, sdrf_path: str, save_p
         return fig
 
 
-def plot_intensity_distribution_of_samples(feature_path: str, save_path: str = None, num_samples: int = 10) -> None:
+def plot_intensity_distribution_of_samples(
+    feature_path: str, save_path: str = None, num_samples: int = 10
+) -> None:
     """
     Plot the distribution of intensities for different samples.
     :param feature_path: path to the feature file
@@ -120,7 +134,9 @@ def plot_intensity_distribution_of_samples(feature_path: str, save_path: str = N
     df["intensity"] = np.log(df["intensity"])
 
     plt.figure(dpi=500, figsize=(12, 8))
-    fig = sns.kdeplot(data=df, x="intensity", hue="sample_accession", palette="Paired", linewidth=2)
+    fig = sns.kdeplot(
+        data=df, x="intensity", hue="sample_accession", palette="Paired", linewidth=2
+    )
     sns.despine(ax=fig, top=True, right=True)
     fig.set(ylabel=None)
     if save_path:
@@ -128,7 +144,9 @@ def plot_intensity_distribution_of_samples(feature_path: str, save_path: str = N
     return fig
 
 
-def plot_peptide_distribution_of_protein(feature_path: str, save_path: str = None, num_samples: int = 20) -> None:
+def plot_peptide_distribution_of_protein(
+    feature_path: str, save_path: str = None, num_samples: int = 20
+) -> None:
     """
     Bar graphs of peptide counts for different samples.
     :param feature_path: path to the feature file
@@ -145,7 +163,9 @@ def plot_peptide_distribution_of_protein(feature_path: str, save_path: str = Non
 
     max_p = max(df["peptides"]) + 1 / 3 * max(df["peptides"])
     plt.figure(dpi=500, figsize=(12, 8))
-    fig = sns.barplot(data=df, x="sample", y="peptides", color="#82C3A3", legend=False, width=0.7)
+    fig = sns.barplot(
+        data=df, x="sample", y="peptides", color="#82C3A3", legend=False, width=0.7
+    )
     fig.set_ylim(0, max_p)
     fig.set(xlabel=None)
     sns.despine(ax=fig, top=True, right=True)
@@ -156,7 +176,9 @@ def plot_peptide_distribution_of_protein(feature_path: str, save_path: str = Non
     return fig
 
 
-def plot_intensity_box_of_samples(feature_path: str, save_path: str = None, num_samples: int = 10) -> None:
+def plot_intensity_box_of_samples(
+    feature_path: str, save_path: str = None, num_samples: int = 10
+) -> None:
     """
     Boxplot of peptide intensity distribution for different samples.
     :param feature_path: path to the feature file
@@ -202,7 +224,12 @@ def plot_peptidoform_charge_venn(parquet_path_list, labels):
         psm_message = "Total number of PSM for " + label + ": " + str(len(df))
         print(psm_message)
         unique_pep_forms = set((df["peptidoform"] + df["charge"].astype(str)).to_list())
-        pep_form_message = "Total number of Peptidoform for " + label + ": " + str(len(unique_pep_forms))
+        pep_form_message = (
+            "Total number of Peptidoform for "
+            + label
+            + ": "
+            + str(len(unique_pep_forms))
+        )
         print(pep_form_message)
         data_map[label] = unique_pep_forms
     plt.figure(figsize=(16, 12), dpi=500)
@@ -220,7 +247,9 @@ def plot_sequence_venn(parquet_path_list, labels):
     for parquet_path, label in zip(parquet_path_list, labels):
         sequence = pd.read_parquet(parquet_path, columns=["sequence"])
         unique_seqs = set(sequence["sequence"].to_list())
-        pep_message = "Total number of peptide for " + label + ": " + str(len(unique_seqs))
+        pep_message = (
+            "Total number of peptide for " + label + ": " + str(len(unique_seqs))
+        )
         print(pep_message)
         data_map[label] = unique_seqs
     plt.figure(figsize=(16, 12), dpi=500)

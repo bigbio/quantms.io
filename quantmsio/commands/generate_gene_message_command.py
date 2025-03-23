@@ -44,4 +44,6 @@ def map_gene_message_to_parquet(
     """
     if partitions:
         partitions = partitions.split(",")
-    generate_feature_of_gene(parquet_path, fasta, output_folder, file_num, partitions, species)
+    generate_feature_of_gene(
+        parquet_path, fasta, output_folder, file_num, partitions, species
+    )

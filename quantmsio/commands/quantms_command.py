@@ -5,7 +5,11 @@ import click
 
 
 def is_diann(directory):
-    dirs = [diann_dir for diann_dir in os.listdir(directory) if os.path.isdir(os.path.join(directory, diann_dir))]
+    dirs = [
+        diann_dir
+        for diann_dir in os.listdir(directory)
+        if os.path.isdir(os.path.join(directory, diann_dir))
+    ]
     if "diannsummary" in dirs:
         return True
     else:

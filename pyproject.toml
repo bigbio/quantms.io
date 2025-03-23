@@ -1,12 +1,58 @@
+[tool.poetry]
+name = "quantmsio"
+# The version will be dynamically read from __init__.py
+dynamic = "0.0.4"
+description = "Convert multiple files into quantms.io format"
+authors = ["BigBio Team <ypriverol@gmail.com>"]
+license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/bigbio/quantms.io"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+keywords = ["python", "multiomics", "proteomics", "quantms", "reanalysis"]
+include = [
+    "LICENSE",
+    "**/*.xml",
+]
+
+[tool.poetry.dependencies]
+python = ">=3.6"
+click = "*"
+pandas = "*"
+requests = "*"
+pyyaml = "*"
+pyarrow = "*"
+diskcache = "*"
+pyopenms = "*"
+scipy = "*"
+biopython = "*"
+seaborn = "*"
+numpy = "*"
+matplotlib = "*"
+duckdb = "*"
+mygene = "*"
+pyahocorasick = "*"
+swifter = "*"
+ddt = "*"
+psutil = "*"
+pyteomics = "*"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
+
+[tool.poetry.scripts]
+quantmsioc = "quantmsio.quantmsioc:quantms_io_main"
+
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"
 
-[tool.black]
-line-length = 120
-target_version = ["py36","py37","py38","py39","py310"]
-
-[tool.isort]
-profile = "black"
-known_first_party = ["sdrf_pipelines"]
-force_single_line = true
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
+style = "pep440"
+pattern = "^(?P<base>\\d+\\.\\d+\\.\\d+)$"

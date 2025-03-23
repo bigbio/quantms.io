@@ -36,7 +36,9 @@ def map_spectrum_mz(mz_path: str, scan: str, mzml: dict, mzml_directory: str):
     """
     reference = mz_path
     mz_path = os.path.join(mzml_directory, mz_path + ".mzML")
-    number_peaks, mz_array, intensity_array = mzml[reference].get_spectrum_from_scan(mz_path, int(scan))
+    number_peaks, mz_array, intensity_array = mzml[reference].get_spectrum_from_scan(
+        mz_path, int(scan)
+    )
     return number_peaks, mz_array, intensity_array
 
 
@@ -64,9 +66,13 @@ class Query:
     def __init__(self, parquet_path: Union[Path, str]):
         if os.path.exists(parquet_path):
             self._path = parquet_path
-            self.parquet_db = duckdb.connect(config={"max_memory": "16GB", "worker_threads": 4})
+            self.parquet_db = duckdb.connect(
+                config={"max_memory": "16GB", "worker_threads": 4}
+            )
             self.parquet_db = self.parquet_db.execute(
-                "CREATE VIEW parquet_db AS SELECT * FROM parquet_scan('{}')".format(parquet_path)
+                "CREATE VIEW parquet_db AS SELECT * FROM parquet_scan('{}')".format(
+                    parquet_path
+                )
             )
         else:
             raise FileNotFoundError(f"the file {parquet_path} does not exist.")
@@ -123,7 +129,9 @@ class Query:
         :yield: _description_
         """
         references = self.get_unique_references()
-        ref_list = [references[i : i + file_num] for i in range(0, len(references), file_num)]
+        ref_list = [
+            references[i : i + file_num] for i in range(0, len(references), file_num)
+        ]
         for refs in ref_list:
             batch_df = self.get_report_from_database(refs, columns)
             yield refs, batch_df
@@ -165,17 +173,34 @@ class Query:
         :return df
         """
         if "pg_accessions" in df.columns:
-            df["gg_names"] = df["pg_accessions"].apply(lambda x: get_unanimous_name(x, map_gene_names))
+            df["gg_names"] = df["pg_accessions"].apply(
+                lambda x: get_unanimous_name(x, map_gene_names)
+            )
         else:
-            df["gg_names"] = df["mp_accessions"].apply(lambda x: get_unanimous_name(x, map_gene_names))
-        gene_list = list(set([gene for gene_names in df["gg_names"] if gene_names is not None for gene in gene_names]))
+            df["gg_names"] = df["mp_accessions"].apply(
+                lambda x: get_unanimous_name(x, map_gene_names)
+            )
+        gene_list = list(
+            set(
+                [
+                    gene
+                    for gene_names in df["gg_names"]
+                    if gene_names is not None
+                    for gene in gene_names
+                ]
+            )
+        )
         gene_accessions = self.get_gene_accessions(gene_list, species)
-        df["gg_accessions"] = df["gg_names"].apply(lambda x: get_gene_accessions(x, gene_accessions))
+        df["gg_accessions"] = df["gg_names"].apply(
+            lambda x: get_gene_accessions(x, gene_accessions)
+        )
 
         return df
 
     @staticmethod
-    def get_protein_to_gene_map(fasta: str, map_parameter: str = "map_protein_accession"):
+    def get_protein_to_gene_map(
+        fasta: str, map_parameter: str = "map_protein_accession"
+    ):
         map_gene_names = generate_gene_name_map(fasta, map_parameter)
         return map_gene_names
 
@@ -212,7 +237,9 @@ class Query:
         """
         return: A list of deduplicated reference
         """
-        unique_reference = self.parquet_db.sql("SELECT DISTINCT reference_file_name FROM parquet_db").df()
+        unique_reference = self.parquet_db.sql(
+            "SELECT DISTINCT reference_file_name FROM parquet_db"
+        ).df()
 
         return unique_reference["reference_file_name"].tolist()
 
@@ -220,7 +247,9 @@ class Query:
         """
         return: A list of deduplicated peptides.
         """
-        unique_peps = self.parquet_db.sql("SELECT DISTINCT sequence FROM parquet_db").df()
+        unique_peps = self.parquet_db.sql(
+            "SELECT DISTINCT sequence FROM parquet_db"
+        ).df()
 
         return unique_peps["sequence"].tolist()
 
@@ -241,7 +270,9 @@ class Query:
         return: A list of deduplicated genes.
         """
 
-        unique_prts = self.parquet_db.sql("SELECT DISTINCT gg_names FROM parquet_db").df()
+        unique_prts = self.parquet_db.sql(
+            "SELECT DISTINCT gg_names FROM parquet_db"
+        ).df()
 
         return unique_prts["gg_names"].tolist()
 
@@ -249,7 +280,9 @@ class Query:
         """
         return: A list of deduplicated sampless.
         """
-        unique_peps = self.parquet_db.sql("SELECT DISTINCT sample_accession FROM parquet_db").df()
+        unique_peps = self.parquet_db.sql(
+            "SELECT DISTINCT sample_accession FROM parquet_db"
+        ).df()
         return unique_peps["sample_accession"].tolist()
 
     def query_peptide(self, peptide: str, columns: list = None):
@@ -260,7 +293,9 @@ class Query:
 
         if check_string("^[A-Z]+$", peptide):
             cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
-            return self.parquet_db.sql(f"SELECT {cols} FROM parquet_db WHERE sequence ='{peptide}'").df()
+            return self.parquet_db.sql(
+                f"SELECT {cols} FROM parquet_db WHERE sequence ='{peptide}'"
+            ).df()
         else:
             raise KeyError("Illegal peptide!")
 
@@ -273,7 +308,9 @@ class Query:
             if not check_string("^[A-Z]+$", p):
                 raise KeyError("Illegal peptide!")
         cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
-        database = self.parquet_db.sql(f"select {cols} from parquet_db where sequence IN {tuple(peptides)}")
+        database = self.parquet_db.sql(
+            f"select {cols} from parquet_db where sequence IN {tuple(peptides)}"
+        )
         return database.df()
 
     def query_proteins(self, proteins: list, columns: list = None):
@@ -287,7 +324,9 @@ class Query:
         proteins_key = [f"pg_accessions LIKE '%{p}%'" for p in proteins]
         query_key = " OR ".join(proteins_key)
         cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
-        database = self.parquet_db.sql(f"SELECT {cols} FROM parquet_db WHERE {query_key}")
+        database = self.parquet_db.sql(
+            f"SELECT {cols} FROM parquet_db WHERE {query_key}"
+        )
         return database.df()
 
     def query_protein(self, protein: str, columns: list = None):
@@ -297,7 +336,9 @@ class Query:
         """
         cols = ", ".join(columns) if columns and isinstance(columns, list) else "*"
         if check_string("^[A-Z]+", protein):
-            return self.parquet_db.sql(f"SELECT {cols} FROM parquet_db WHERE pg_accessions LIKE '%{protein}%'").df()
+            return self.parquet_db.sql(
+                f"SELECT {cols} FROM parquet_db WHERE pg_accessions LIKE '%{protein}%'"
+            ).df()
         else:
             raise KeyError("Illegal protein!")
 
@@ -307,9 +348,13 @@ class Query:
         :params gene_list
         """
         mg = mygene.MyGeneInfo()
-        gene_accessions = mg.querymany(gene_list, scopes="symbol", species=species, fields="accession")
+        gene_accessions = mg.querymany(
+            gene_list, scopes="symbol", species=species, fields="accession"
+        )
         gene_accessions_maps = defaultdict(list)
         for obj in gene_accessions:
             if "accession" in obj and "genomic" in obj["accession"]:
-                gene_accessions_maps[obj["query"]] = ",".join(obj["accession"]["genomic"])
+                gene_accessions_maps[obj["query"]] = ",".join(
+                    obj["accession"]["genomic"]
+                )
         return gene_accessions_maps

@@ -48,8 +48,12 @@ def convert_maxquant_psm(
         output_prefix_file = "psm"
 
     mq = MaxQuant()
-    output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
-    mq.write_psm_to_file(msms_path=msms_file, output_path=output_path, chunksize=chunksize)
+    output_path = (
+        output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
+    )
+    mq.write_psm_to_file(
+        msms_path=msms_file, output_path=output_path, chunksize=chunksize
+    )
 
 
 @click.command(

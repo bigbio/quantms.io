@@ -46,9 +46,15 @@ from quantmsio.core.project import create_uuid_filename
     required=False,
 )
 @click.option(
-    "--duckdb_max_memory", help="The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)", required=False
+    "--duckdb_max_memory",
+    help="The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)",
+    required=False,
 )
-@click.option("--duckdb_threads", help="The number of threads for the DuckDB engine (e.g 4)", required=False)
+@click.option(
+    "--duckdb_threads",
+    help="The number of threads for the DuckDB engine (e.g 4)",
+    required=False,
+)
 def convert_feature_file(
     sdrf_file: str,
     msstats_file: str,
@@ -61,9 +67,16 @@ def convert_feature_file(
     duckdb_max_memory: str,
     duckdb_threads: int,
 ):
-    if sdrf_file is None or msstats_file is None or mztab_file is None or output_folder is None:
+    if (
+        sdrf_file is None
+        or msstats_file is None
+        or mztab_file is None
+        or output_folder is None
+    ):
         raise click.UsageError("Please provide all the required parameters")
-    feature_manager = Feature(mztab_path=mztab_file, sdrf_path=sdrf_file, msstats_in_path=msstats_file)
+    feature_manager = Feature(
+        mztab_path=mztab_file, sdrf_path=sdrf_file, msstats_in_path=msstats_file
+    )
     if not output_prefix_file:
         output_prefix_file = "feature"
     filename = create_uuid_filename(output_prefix_file, ".feature.parquet")

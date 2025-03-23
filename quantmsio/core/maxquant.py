@@ -9,10 +9,19 @@ from pathlib import Path
 from pyopenms import ModificationsDB
 from pyopenms import AASequence
 from quantmsio.core.sdrf import SDRFHandler
-from quantmsio.operate.tools import get_ahocorasick, get_modification_details, get_protein_accession
+from quantmsio.operate.tools import (
+    get_ahocorasick,
+    get_modification_details,
+    get_protein_accession,
+)
 from pyopenms.Constants import PROTON_MASS_U
 from quantmsio.utils.constants import ITRAQ_CHANNEL, TMT_CHANNELS
-from quantmsio.core.common import MAXQUANT_PSM_MAP, MAXQUANT_PSM_USECOLS, MAXQUANT_FEATURE_MAP, MAXQUANT_FEATURE_USECOLS
+from quantmsio.core.common import (
+    MAXQUANT_PSM_MAP,
+    MAXQUANT_PSM_USECOLS,
+    MAXQUANT_FEATURE_MAP,
+    MAXQUANT_FEATURE_USECOLS,
+)
 from quantmsio.core.feature import Feature
 from quantmsio.core.psm import Psm
 from quantmsio.utils.file_utils import close_file, extract_protein_list, save_slice_file
@@ -70,7 +79,11 @@ class MaxQuant:
         return use_map, use_cols
 
     def iter_batch(
-        self, file_path: Union[Path, str], label: str = "feature", chunksize: int = 100000, protein_str: str = None
+        self,
+        file_path: Union[Path, str],
+        label: str = "feature",
+        chunksize: int = 100000,
+        protein_str: str = None,
     ):
         col_df = pd.read_csv(file_path, sep="\t", nrows=0)
         use_map, use_cols = self.extract_col_msg(col_df, label=label)
@@ -97,10 +110,14 @@ class MaxQuant:
 
     def read_zip_file(self, zip_path: str, **kwargs):
         filepath = Path(zip_path)
-        df = self.open_from_zip_archive(zip_path, f"{filepath.stem}/evidence.txt", **kwargs)
+        df = self.open_from_zip_archive(
+            zip_path, f"{filepath.stem}/evidence.txt", **kwargs
+        )
         return df
 
-    def iter_zip_batch(self, zip_list: List[str], label: str = "feature", protein_str: str = None):
+    def iter_zip_batch(
+        self, zip_list: List[str], label: str = "feature", protein_str: str = None
+    ):
         for zip_file in zip_list:
             col_df = self.read_zip_file(zip_file, nrows=0)
             use_map, use_cols = self.extract_col_msg(col_df, label=label)
@@ -120,9 +137,9 @@ class MaxQuant:
         uniq_p = df["peptidoform"].unique()
         masses_map = {k: AASequence.fromString(k).getMonoWeight() for k in uniq_p}
         mass_vector = df["peptidoform"].map(masses_map)
-        df.loc[:, "calculated_mz"] = (mass_vector + (PROTON_MASS_U * df["precursor_charge"].values)) / df[
-            "precursor_charge"
-        ].values
+        df.loc[:, "calculated_mz"] = (
+            mass_vector + (PROTON_MASS_U * df["precursor_charge"].values)
+        ) / df["precursor_charge"].values
 
     def _transform_mod(self, match):
         if not match:
@@ -143,7 +160,11 @@ class MaxQuant:
         modifications_db = ModificationsDB()
         if mod_seq:
             for mod in mod_seq.split("\t"):
-                if "Probabilities" not in mod and "diffs" not in mod and "Diffs" not in mod:
+                if (
+                    "Probabilities" not in mod
+                    and "diffs" not in mod
+                    and "Diffs" not in mod
+                ):
                     name = re.search(r"([^ ]+)\s?", mod)
                     mod = modifications_db.getModification(name.group(1))
                     unimod = mod.getUniModAccession()
@@ -177,7 +198,10 @@ class MaxQuant:
                 match_obj = re.search(pattern, seq)
                 while match_obj:
                     details.append(
-                        {"position": match_obj.start(0), "localization_probability": float(match_obj.group(1))}
+                        {
+                            "position": match_obj.start(0),
+                            "localization_probability": float(match_obj.group(1)),
+                        }
                     )
                     seq = seq.replace(match_obj.group(0), "", 1)
                     match_obj = re.search(pattern, seq)
@@ -193,9 +217,9 @@ class MaxQuant:
             else:
                 return [peptidoform, modification_details]
 
-        df[["peptidoform", "modifications"]] = df[list(keys.values()) + ["peptidoform"]].apply(
-            get_details, axis=1, result_type="expand"
-        )
+        df[["peptidoform", "modifications"]] = df[
+            list(keys.values()) + ["peptidoform"]
+        ].apply(get_details, axis=1, result_type="expand")
 
     def generete_peptidoform(self, df):
         isacronym = check_acronym(df)
@@ -232,7 +256,10 @@ class MaxQuant:
                         "sample_accession": self._sample_map[sample_key],
                         "channel": channel,
                         "additional_intensity": [
-                            {"intensity_name": "normalize_intensity", "intensity_value": rows[col]}
+                            {
+                                "intensity_name": "normalize_intensity",
+                                "intensity_value": rows[col],
+                            }
                         ],
                     }
                 )
@@ -265,7 +292,9 @@ class MaxQuant:
             df.loc[:, "intensities"] = df[["reference_file_name", "Intensity"]].apply(
                 lambda rows: [
                     {
-                        "sample_accession": self._sample_map[rows["reference_file_name"] + "-" + "LFQ"],
+                        "sample_accession": self._sample_map[
+                            rows["reference_file_name"] + "-" + "LFQ"
+                        ],
                         "channel": "LFQ",
                         "intensity": rows["Intensity"],
                     }
@@ -280,10 +309,18 @@ class MaxQuant:
         self.generate_modification_details(df)
         df = df[df["posterior_error_probability"] < 0.05].copy()
         df["is_decoy"] = df["is_decoy"].map({None: "0", np.nan: "0", "+": "1"})
-        df["additional_scores"] = df[["andromeda_score", "andromeda_delta_score"]].apply(
+        df["additional_scores"] = df[
+            ["andromeda_score", "andromeda_delta_score"]
+        ].apply(
             lambda row: [
-                {"score_name": "andromeda_score", "score_value": row["andromeda_score"]},
-                {"score_name": "andromeda_delta_score", "score_value": row["andromeda_delta_score"]},
+                {
+                    "score_name": "andromeda_score",
+                    "score_value": row["andromeda_score"],
+                },
+                {
+                    "score_name": "andromeda_delta_score",
+                    "score_value": row["andromeda_delta_score"],
+                },
             ],
             axis=1,
         )
@@ -301,8 +338,12 @@ class MaxQuant:
         df.loc[:, "number_peaks"] = None
 
     def transform_feature(self, df: pd.DataFrame):
-        self.generate_intensity_msg(df, self._intensity_names, self._intensity_normalize_names)
-        df.loc[:, "unique"] = df["pg_accessions"].apply(lambda x: 0 if ";" in x or "," in x else 1)
+        self.generate_intensity_msg(
+            df, self._intensity_names, self._intensity_normalize_names
+        )
+        df.loc[:, "unique"] = df["pg_accessions"].apply(
+            lambda x: 0 if ";" in x or "," in x else 1
+        )
         df["pg_accessions"] = df["pg_accessions"].apply(get_protein_accession)
         df["mp_accessions"] = df["mp_accessions"].apply(get_protein_accession)
         df["gg_names"] = df["gg_names"].str.split(";")
@@ -313,7 +354,9 @@ class MaxQuant:
         df.loc[:, "start_ion_mobility"] = None
         df.loc[:, "stop_ion_mobility"] = None
 
-    def write_psm_to_file(self, msms_path: str, output_path: str, chunksize: int = 1000000):
+    def write_psm_to_file(
+        self, msms_path: str, output_path: str, chunksize: int = 1000000
+    ):
         pqwriter = None
         for df in self.iter_batch(msms_path, "psm", chunksize=chunksize):
             self.transform_psm(df)
@@ -339,7 +382,9 @@ class MaxQuant:
     ):
         self._init_sdrf(sdrf_path)
         pqwriter = None
-        for df in self.iter_batch(evidence_path, chunksize=chunksize, protein_str=protein_file):
+        for df in self.iter_batch(
+            evidence_path, chunksize=chunksize, protein_str=protein_file
+        ):
             self.transform_feature(df)
             Feature.convert_to_parquet_format(df)
             parquet = Feature.transform_feature(df)
@@ -380,10 +425,14 @@ class MaxQuant:
         protein_list = extract_protein_list(protein_file) if protein_file else None
         protein_str = "|".join(protein_list) if protein_list else None
         self._init_sdrf(sdrf_path)
-        for report in self.iter_batch(evidence_path, chunksize=chunksize, protein_str=protein_str):
+        for report in self.iter_batch(
+            evidence_path, chunksize=chunksize, protein_str=protein_str
+        ):
             self.transform_feature(report)
             Feature.convert_to_parquet_format(report)
             for key, df in Feature.slice(report, partitions):
                 feature = Feature.transform_feature(df)
-                pqwriters = save_slice_file(feature, pqwriters, output_folder, key, filename)
+                pqwriters = save_slice_file(
+                    feature, pqwriters, output_folder, key, filename
+                )
         close_file(pqwriters=pqwriters)

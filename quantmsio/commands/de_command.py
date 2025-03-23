@@ -30,9 +30,15 @@ from quantmsio.utils.file_utils import extract_protein_list
     help="Protein file that meets specific requirements",
     required=False,
 )
-@click.option("--output_folder", help="Folder to generate the df expression file.", required=True)
-@click.option("--output_prefix_file", help="Prefix of the df expression file", required=False)
-@click.option("--delete_existing", help="Delete existing files in the output folder", is_flag=True)
+@click.option(
+    "--output_folder", help="Folder to generate the df expression file.", required=True
+)
+@click.option(
+    "--output_prefix_file", help="Prefix of the df expression file", required=False
+)
+@click.option(
+    "--delete_existing", help="Delete existing files in the output folder", is_flag=True
+)
 def convert_msstats_differential(
     msstats_file: str,
     sdrf_file: str,

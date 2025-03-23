@@ -13,7 +13,9 @@ from quantmsio.core.project import create_uuid_filename
     help="the diann report file path",
     required=True,
 )
-@click.option("--qvalue_threshold", help="qvalue_threshold", required=True, default=0.05)
+@click.option(
+    "--qvalue_threshold", help="qvalue_threshold", required=True, default=0.05
+)
 @click.option(
     "--mzml_info_folder",
     help="the foldef of mzml_info tsv file",
@@ -45,9 +47,15 @@ from quantmsio.core.project import create_uuid_filename
     required=False,
 )
 @click.option(
-    "--duckdb_max_memory", help="The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)", required=False
+    "--duckdb_max_memory",
+    help="The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)",
+    required=False,
 )
-@click.option("--duckdb_threads", help="The number of threads for the DuckDB engine (e.g 4)", required=False)
+@click.option(
+    "--duckdb_threads",
+    help="The number of threads for the DuckDB engine (e.g 4)",
+    required=False,
+)
 @click.option(
     "--file_num",
     help="The number of files being processed at the same time",
@@ -78,7 +86,12 @@ def diann_convert_to_parquet(
     duckdb_threads: The number of threads for the DuckDB engine (e.g 4)
     file_num: The number of files being processed at the same time
     """
-    if report_path is None or mzml_info_folder is None or output_folder is None or sdrf_path is None:
+    if (
+        report_path is None
+        or mzml_info_folder is None
+        or output_folder is None
+        or sdrf_path is None
+    ):
         raise click.UsageError("Please provide all the required parameters")
 
     if not os.path.exists(output_folder):
@@ -136,9 +149,15 @@ def diann_convert_to_parquet(
     required=False,
 )
 @click.option(
-    "--duckdb_max_memory", help="The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)", required=False
+    "--duckdb_max_memory",
+    help="The maximum amount of memory allocated by the DuckDB engine (e.g 4GB)",
+    required=False,
 )
-@click.option("--duckdb_threads", help="The number of threads for the DuckDB engine (e.g 4)", required=False)
+@click.option(
+    "--duckdb_threads",
+    help="The number of threads for the DuckDB engine (e.g 4)",
+    required=False,
+)
 @click.option(
     "--file_num",
     help="The number of files being processed at the same time",

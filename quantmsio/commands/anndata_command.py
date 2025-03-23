@@ -14,15 +14,21 @@ from quantmsio.core.project import create_uuid_filename
     help="The directory for storing AE files.",
     required=True,
 )
-@click.option("--output_folder", help="Folder to generate the adata file.", required=True)
-@click.option("--output_prefix_file", help="Prefix of the df expression file", required=False)
+@click.option(
+    "--output_folder", help="Folder to generate the adata file.", required=True
+)
+@click.option(
+    "--output_prefix_file", help="Prefix of the df expression file", required=False
+)
 def merge_ae_files(
     directory: str,
     output_folder: str,
     output_prefix_file: str,
 ):
     ae_files = find_ae_files(directory)
-    output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".h5ad")
+    output_path = (
+        output_folder + "/" + create_uuid_filename(output_prefix_file, ".h5ad")
+    )
     ae_combiner = Combiner()
     if len(ae_files) == 0:
         raise click.UsageError("No AE files were found.")

@@ -9,7 +9,11 @@ from ddt import ddt
 from quantmsio.core.project import ProjectHandler
 
 TEST_DATA_ROOT = Path(__file__).parent / "examples"
-test_dataset = ("MSV000079033", TEST_DATA_ROOT / "DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv")
+test_dataset = (
+    "MSV000079033",
+    TEST_DATA_ROOT / "DDA-plex/MSV000079033-Blood-Plasma-iTRAQ.sdrf.tsv",
+)
+
 
 @ddt
 class TestProjectHandler(TestCase):
@@ -36,7 +40,9 @@ class TestProjectHandler(TestCase):
         project_manager.populate_from_pride_archive()
 
         # Assert that the project_info has been updated
-        self.assertEqual(project_manager.project.project_info["project_title"], "Test Project")
+        self.assertEqual(
+            project_manager.project.project_info["project_title"], "Test Project"
+        )
         self.assertEqual(
             project_manager.project.project_info["project_description"],
             "Test description",

@@ -41,4 +41,6 @@ def map_spectrum_message_to_parquet(
     """
     if partitions:
         partitions = partitions.split(",")
-    generate_psms_of_spectrum(parquet_path, mzml_directory, output_folder, file_num, partitions)
+    generate_psms_of_spectrum(
+        parquet_path, mzml_directory, output_folder, file_num, partitions
+    )

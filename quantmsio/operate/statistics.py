@@ -52,21 +52,29 @@ class ParquetStatistics(Statistics):
         if os.path.exists(parquet_path):
             self.parquet_db = duckdb.connect()
             self.parquet_db = self.parquet_db.execute(
-                "CREATE VIEW parquet_db AS SELECT * FROM parquet_scan('{}')".format(parquet_path)
+                "CREATE VIEW parquet_db AS SELECT * FROM parquet_scan('{}')".format(
+                    parquet_path
+                )
             )
         else:
             raise FileNotFoundError(f"the file {parquet_path} does not exist.")
 
     def get_number_of_peptides(self) -> int:
-        count = self.parquet_db.sql("SELECT COUNT(DISTINCT sequence) FROM parquet_db").fetchone()[0]
+        count = self.parquet_db.sql(
+            "SELECT COUNT(DISTINCT sequence) FROM parquet_db"
+        ).fetchone()[0]
         return count
 
     def get_number_of_peptidoforms(self) -> int:
-        count = self.parquet_db.sql("SELECT COUNT(DISTINCT peptidoform) FROM parquet_db").fetchone()[0]
+        count = self.parquet_db.sql(
+            "SELECT COUNT(DISTINCT peptidoform) FROM parquet_db"
+        ).fetchone()[0]
         return count
 
     def get_number_of_samples(self) -> int:
-        count = self.parquet_db.sql("SELECT COUNT(DISTINCT sample_accession) FROM parquet_db").fetchone()[0]
+        count = self.parquet_db.sql(
+            "SELECT COUNT(DISTINCT sample_accession) FROM parquet_db"
+        ).fetchone()[0]
         return count
 
     def get_number_of_proteins(self) -> int:
@@ -75,14 +83,18 @@ class ParquetStatistics(Statistics):
         This method is not accurate. It needs to be refined.
         :return: number of unique proteins
         """
-        protein_ids = self.parquet_db.sql("SELECT DISTINCT pg_accessions FROM parquet_db").fetchall()
+        protein_ids = self.parquet_db.sql(
+            "SELECT DISTINCT pg_accessions FROM parquet_db"
+        ).fetchall()
         # This probalby needs to be refined.
         protein_ids = [item for sublist in protein_ids for item in sublist[0]]
         protein_ids = set(protein_ids)
         return len(protein_ids)
 
     def get_number_msruns(self) -> int:
-        count = self.parquet_db.sql("SELECT COUNT(DISTINCT reference_file_name) FROM parquet_db").fetchone()[0]
+        count = self.parquet_db.sql(
+            "SELECT COUNT(DISTINCT reference_file_name) FROM parquet_db"
+        ).fetchone()[0]
         return count
 
     def get_number_of_psms(self) -> int:

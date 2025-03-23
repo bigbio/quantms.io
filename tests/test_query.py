@@ -26,6 +26,8 @@ def test_iter_file():
 
 def test_inject_position_msg():
     q = Query(feature_path)
-    df = q.get_report_from_database(["20180914_QE8_nLC0_BDA_SA_DIA_Keratinocytes_NN002"])
+    df = q.get_report_from_database(
+        ["20180914_QE8_nLC0_BDA_SA_DIA_Keratinocytes_NN002"]
+    )
     protein_dict = q.get_protein_dict(fasta)
     q.inject_position_msg(df, protein_dict)

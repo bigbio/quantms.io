@@ -56,7 +56,9 @@ def pivot_wider(
         )
 
     # Use pivot_table to create the matrix
-    matrix = df.pivot_table(index=row_name, columns=col_name, values=values, aggfunc="first")
+    matrix = df.pivot_table(
+        index=row_name, columns=col_name, values=values, aggfunc="first"
+    )
 
     # Simplified NaN handling
     if fillna is True:  # Fill with 0 if True
@@ -80,8 +82,15 @@ class Combiner:
 
     @staticmethod
     def transform_to_adata(df: pd.DataFrame) -> ad.AnnData:
-        express_matrix = pivot_wider(df, row_name="sample_accession", col_name="protein", values="ibaq")
-        express2_matrix = pivot_wider(df, row_name="sample_accession", col_name="protein", values="ibaq_normalized")
+        express_matrix = pivot_wider(
+            df, row_name="sample_accession", col_name="protein", values="ibaq"
+        )
+        express2_matrix = pivot_wider(
+            df,
+            row_name="sample_accession",
+            col_name="protein",
+            values="ibaq_normalized",
+        )
         adata = ad.AnnData(
             X=express_matrix.to_numpy(),
             obs=express_matrix.index.to_frame(),
@@ -96,7 +105,9 @@ class Combiner:
         if self.combined_adata is None:
             self.combined_adata = adata
         else:
-            self.combined_adata = ad.concat([self.combined_adata, adata], axis=axis, join=join)
+            self.combined_adata = ad.concat(
+                [self.combined_adata, adata], axis=axis, join=join
+            )
         return self.combined_adata
 
     def save_adata(self, output_path: Union[Path, str]) -> None:

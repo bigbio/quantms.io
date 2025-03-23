@@ -51,12 +51,18 @@ def convert_psm_file(
         output_prefix_file = "psm"
 
     psm_manager = Psm(mztab_path=mztab_file)
-    output_path = output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
-    psm_manager.write_psm_to_file(output_path=output_path, chunksize=chunksize, protein_file=protein_file)
+    output_path = (
+        output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
+    )
+    psm_manager.write_psm_to_file(
+        output_path=output_path, chunksize=chunksize, protein_file=protein_file
+    )
 
 
 @click.command("compare-set-psms", short_help="plot venn for a set of Psms parquet")
-@click.option("-p", "--parquets", type=str, help="List of psm parquet path", multiple=True)
+@click.option(
+    "-p", "--parquets", type=str, help="List of psm parquet path", multiple=True
+)
 @click.option("-t", "--tags", type=str, help="List of parquet label", multiple=True)
 def compare_set_of_psms(parquets, tags):
     """
@@ -65,7 +71,9 @@ def compare_set_of_psms(parquets, tags):
     :param tags: a set of psm label
     """
     if len(parquets) != len(tags):
-        raise click.UsageError("Please provide same length of parquet_list and label_list")
+        raise click.UsageError(
+            "Please provide same length of parquet_list and label_list"
+        )
 
     plot_peptidoform_charge_venn(parquets, tags)
     plot_sequence_venn(parquets, tags)
