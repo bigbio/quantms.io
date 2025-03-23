@@ -37,6 +37,7 @@ def run_task(command):
         print(e.stderr)
         return False
 
+
 def quantmsio_workflow(directory, output_root_folder):
     dirs = [
         os.path.join(directory, diann_dir)
