@@ -31,10 +31,11 @@ def run_task(command):
     try:
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         print(result.returncode)
+        return True
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.stderr)
-
+        return False
 
 def quantmsio_workflow(directory, output_root_folder):
     dirs = [
