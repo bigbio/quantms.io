@@ -18,7 +18,7 @@ jobs:
       - name: Build docs
         run: |
           asciidoctor docs/*.adoc
-          mv docs/README.html docs/specification.html
+          mv docs/README.html docs/index.html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
