@@ -15,7 +15,7 @@ python:
 
 # Sphinx configuration
 sphinx:
-  configuration: conf.py
+  configuration: docs/conf.py
   fail_on_warning: false
 
 # Build formats
