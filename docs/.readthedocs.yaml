@@ -11,7 +11,7 @@ build:
 # Install dependencies for building documentation
 python:
   install:
-    - requirements: requirements.txt
+    - requirements: docs/requirements.txt
 
 # Sphinx configuration
 sphinx:
