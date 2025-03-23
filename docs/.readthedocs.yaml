@@ -6,7 +6,7 @@ build:
   tools:
     python: "3.10"
     # Ruby is needed for asciidoctor
-    ruby: "3.1"
+    ruby: 3.3
 
 # Install dependencies for building documentation
 python:
