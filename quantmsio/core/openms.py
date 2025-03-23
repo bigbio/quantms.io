@@ -13,9 +13,7 @@ class OpenMSHandler:
         self._consensus_xml_path = None
         self._spec_lookup = None
 
-    def get_spectrum_from_scan(
-        self, mzml_path: str, scan_number: int
-    ):
+    def get_spectrum_from_scan(self, mzml_path: str, scan_number: int):
         """
         Get a spectrum from a mzML file using the scan number
         :param mzml_path: path to the mzML file
