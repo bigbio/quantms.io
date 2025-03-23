@@ -29,8 +29,8 @@ class Feature(MzTab):
         psm = Psm(self.mztab_path)
         pep_dict = psm.extract_from_pep(chunksize=100000)
         map_dict = {}
-        for psm in psm.iter_psm_table(chunksize, protein_str):
-            for key, df in psm.groupby(
+        for psm_chunk in psm.iter_psm_table(chunksize, protein_str):
+            for key, df in psm_chunk.groupby(
                 ["reference_file_name", "peptidoform", "precursor_charge"]
             ):
                 df.reset_index(drop=True, inplace=True)
