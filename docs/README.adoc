@@ -73,8 +73,6 @@ We are not trying to do the following:
 - Replace all the software tools file formats and intermediate files, but to provide a new format that enables easy integration of the main output results with other tools.
 ====
 
-include::./images/file-relation.png
-
 [[general-data-model]]
 == General data model and structure
 
