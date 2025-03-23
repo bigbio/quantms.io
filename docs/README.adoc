@@ -1,4 +1,4 @@
-= The quantms.io format
+= The quantms.io format specification
 :sectnums:
 :toc: left
 :doctype: book
