@@ -30,7 +30,7 @@ logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
 intensity_normalize_pattern = r"Reporter intensity corrected \d+"
 intensity_pattern = r"Reporter intensity \d+"
-MOD_PARTTEN = r"\((.*?)\)"
+MOD_PATTERN = r"\((.*?)\)"
 
 
 def check_acronym(df):
@@ -38,7 +38,7 @@ def check_acronym(df):
     for index in s.index:
         seq = s[index]
         if "(" in seq:
-            match = re.search(MOD_PARTTEN, seq)
+            match = re.search(MOD_PATTERN, seq)
             if len(match.group(1)) == 2:
                 return True
             else:
@@ -159,23 +159,23 @@ class MaxQuant:
         mods_map = {}
         modifications_db = ModificationsDB()
         if mod_seq:
-            for mod in mod_seq.split("\t"):
+            for current_mod in mod_seq.split("\t"):
                 if (
-                    "Probabilities" not in mod
-                    and "diffs" not in mod
-                    and "Diffs" not in mod
+                    "Probabilities" not in current_mod
+                    and "diffs" not in current_mod
+                    and "Diffs" not in current_mod
                 ):
-                    name = re.search(r"([^ ]+)\s?", mod)
+                    name = re.search(r"([^ ]+)\s?", current_mod)
                     mod = modifications_db.getModification(name.group(1))
                     unimod = mod.getUniModAccession()
-                    match = re.search(MOD_PARTTEN, mod)
+                    match = re.search(MOD_PATTERN, current_mod)
                     if match:
                         site = match.group(1)
                     else:
                         site = "X"
-                    mods_map[mod] = [unimod.upper(), site]
-                    mods_map[mod[:2].lower()] = mod
-                    mods_map[unimod.upper()] = [mod, site]
+                    mods_map[current_mod] = [unimod.upper(), site]
+                    mods_map[current_mod[:2].lower()] = current_mod
+                    mods_map[unimod.upper()] = [current_mod, site]
         return mods_map
 
     def generate_modification_details(self, df):
@@ -227,7 +227,7 @@ class MaxQuant:
         def trasform_peptidoform(row):
             row = row.replace("_", "")
             if isacronym:
-                return re.sub(MOD_PARTTEN, self._transform_mod, row)
+                return re.sub(MOD_PATTERN, self._transform_mod, row)
             else:
                 return row
 
