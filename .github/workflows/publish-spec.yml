@@ -14,10 +14,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install dependencies
         run: |
-          sudo apt-get install -y asciidoctor
+          sudo apt-get install -y asciidoctor pandoc
       - name: Build docs
         run: |
-          asciidoctor docs/*.adoc
+          pandoc -f asciidoc -t rst -o index.rst README.adoc
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
