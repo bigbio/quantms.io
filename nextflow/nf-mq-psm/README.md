@@ -91,5 +91,4 @@ This project is licensed under the [MIT License](LICENSE).
 
 ## Credits
 
-*   [Your Name]
-*   [Other Contributors]
+*   [Yasset Perez-Riverol](ypriverol)
