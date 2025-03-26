@@ -2,7 +2,7 @@ import os
 import re
 from collections import defaultdict
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional, List, Generator
 
 import pandas as pd
 import numpy as np
@@ -24,8 +24,8 @@ from quantmsio.utils.file_utils import (
 )
 
 
-def init_save_info(parquet_path: str):
-    pqwriters = {}
+def init_save_info(parquet_path: str) -> tuple[dict, None, str]:
+    pqwriters: dict = {}
     pqwriter_no_part = None
     filename = os.path.basename(parquet_path)
     return pqwriters, pqwriter_no_part, filename
@@ -36,7 +36,7 @@ def generate_psms_of_spectrum(
     mzml_directory: str,
     output_folder: str,
     file_num: int,
-    partitions: list = None,
+    partitions: Optional[List[str]] = None,
 ):
     """
     parquet_path: parquet file path
@@ -67,21 +67,21 @@ def generate_psms_of_spectrum(
             pqwriter_no_part,
             PSM_SCHEMA,
         )
-    close_file(pqwriters, pqwriter_no_part)
+    close_file(pqwriters=pqwriters, pqwriter=pqwriter_no_part)
 
 
 def save_parquet_file(
-    partitions,
-    table,
-    output_folder,
-    filename,
-    pqwriters=None,
-    pqwriter_no_part=None,
-    schema=FEATURE_SCHEMA,
+    partitions: list,
+    table: pd.DataFrame,
+    output_folder: str,
+    filename: str,
+    pqwriters: dict | None = None,
+    pqwriter_no_part: pq.ParquetWriter | None = None,
+    schema: pa.Schema = FEATURE_SCHEMA,
 ):
 
     if pqwriters is None:
-        pqwriters = {}
+        pqwriters: dict = {}
     if partitions and len(partitions) > 0:
         for key, df in table.groupby(partitions):
             parquet_table = pa.Table.from_pandas(df, schema=schema)
@@ -92,7 +92,10 @@ def save_parquet_file(
     else:
         parquet_table = pa.Table.from_pandas(table, schema=schema)
         pqwriter_no_part = save_file(
-            parquet_table, pqwriter_no_part, output_folder, filename
+            parquet_table=parquet_table,
+            pqwriter=pqwriter_no_part,
+            output_folder=output_folder,
+            filename=filename,
         )
         return pqwriters, pqwriter_no_part
 
@@ -102,7 +105,7 @@ def generate_feature_of_gene(
     fasta: str,
     output_folder: str,
     file_num: int,
-    partitions: list = None,
+    partitions: list | None = None,
     species: str = "human",
 ):
     pqwriters, pqwriter_no_part, filename = init_save_info(parquet_path)
@@ -116,7 +119,9 @@ def generate_feature_of_gene(
     close_file(pqwriters, pqwriter_no_part)
 
 
-def map_protein_for_tsv(path: str, fasta: str, output_path: str, map_parameter: str):
+def map_protein_for_tsv(
+    path: str, fasta: str, output_path: str, map_parameter: str
+) -> None:
     """
     according fasta database to map the proteins accessions to uniprot names.
     :param path: de_path or ae_path
@@ -149,14 +154,14 @@ def map_protein_for_tsv(path: str, fasta: str, output_path: str, map_parameter: 
         f.write(content)
 
 
-def get_peptide_map(unique_peptides, fasta):
-    peptide_map = defaultdict(list)
+def get_peptide_map(unique_peptides: list, fasta: str) -> defaultdict:
+    peptide_map: defaultdict = defaultdict(list)
     automaton = ahocorasick.Automaton()
     for sequence in unique_peptides:
         automaton.add_word(sequence, sequence)
     automaton.make_automaton()
 
-    fasta_proteins = list()
+    fasta_proteins: list = list()
     FASTAFile().load(fasta, fasta_proteins)
 
     for entry in fasta_proteins:
@@ -169,8 +174,12 @@ def get_peptide_map(unique_peptides, fasta):
 
 
 def map_peptide_to_protein(
-    parquet_file: str, fasta: str, output_folder: str, filename: str, label="feature"
-):
+    parquet_file: str,
+    fasta: str,
+    output_folder: str,
+    filename: str,
+    label: str = "feature",
+) -> None:
     p = Query(parquet_file)
     unique_peptides = p.get_unique_peptides()
     peptide_map = get_peptide_map(unique_peptides, fasta)
@@ -193,15 +202,18 @@ def map_peptide_to_protein(
 
 
 def get_modification_details(
-    seq: str, mods_dict: dict, automaton: any, select_mods: list = None
-):
+    seq: str,
+    mods_dict: dict,
+    automaton: ahocorasick.Automaton,
+    select_mods: list | None = None,
+) -> tuple[str, list]:
     if "(" not in seq:
-        return (seq, [])
-    total = 0
-    modifications = []
-    modification_details = []
-    peptidoform = ""
-    pre = 0
+        return seq, []
+    total: int = 0
+    modifications: list = []
+    modification_details: list = []
+    peptidoform: str = ""
+    pre: int = 0
     for item in automaton.iter(seq):
         total += len(item[1])
         modification = item[1][1:-1]
@@ -234,7 +246,7 @@ def get_modification_details(
     return (peptidoform, modification_details)
 
 
-def get_ahocorasick(mods_dict: dict):
+def get_ahocorasick(mods_dict: dict) -> ahocorasick.Automaton:
     automaton = ahocorasick.Automaton()
     for key in mods_dict.keys():
         key = "(" + key + ")"
@@ -243,7 +255,7 @@ def get_ahocorasick(mods_dict: dict):
     return automaton
 
 
-def get_field_schema(parquet_path):
+def get_field_schema(parquet_path: str) -> pa.Schema:
     schema = pq.read_schema(parquet_path)
     return schema
 
@@ -251,7 +263,7 @@ def get_field_schema(parquet_path):
 PROTEIN_ACCESSION = r"\|([^|]*)\|"
 
 
-def get_protein_accession(proteins: str = None):
+def get_protein_accession(proteins: Optional[str] = None) -> list:
     proteins = str(proteins)
     if "|" in proteins:
         return re.findall(PROTEIN_ACCESSION, proteins)
@@ -259,8 +271,8 @@ def get_protein_accession(proteins: str = None):
         return re.split(r"[;,]", proteins)
 
 
-def transform_ibaq(df):
-    def transform(row):
+def transform_ibaq(df: pd.DataFrame) -> pd.DataFrame:
+    def transform(row: pd.Series) -> tuple:
         map_dict = row["intensities"]
         return map_dict["sample_accession"], map_dict["channel"], map_dict["intensity"]
 
@@ -273,7 +285,9 @@ def transform_ibaq(df):
     return df
 
 
-def genereate_ibaq_feature(sdrf_path: Union[Path, str], parquet_path: Union[Path, str]):
+def genereate_ibaq_feature(
+    sdrf_path: Union[Path, str], parquet_path: Union[Path, str]
+) -> Generator[pa.Table, None, None]:
     sdrf = SDRFHandler(sdrf_path)
     sdrf = sdrf.transform_sdrf()
     experiment_type = sdrf.get_experiment_type_from_sdrf()
@@ -313,7 +327,7 @@ def write_ibaq_feature(
     sdrf_path: Union[Path, str],
     parquet_path: Union[Path, str],
     output_path: Union[Path, str],
-):
+) -> None:
     pqwriter = None
     for feature in genereate_ibaq_feature(sdrf_path, parquet_path):
         if not pqwriter:

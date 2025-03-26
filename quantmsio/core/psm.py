@@ -1,7 +1,7 @@
 import re
 import os
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -26,7 +26,7 @@ class Psm(MzTab):
         self._mods_map = self.get_mods_map()
         self._automaton = get_ahocorasick(self._mods_map)
 
-    def iter_psm_table(self, chunksize=1000000, protein_str=None):
+    def iter_psm_table(self, chunksize: int = 1000000, protein_str: Optional[str] = None):
         for df in self.skip_and_load_csv("PSH", chunksize=chunksize):
             if protein_str:
                 df = df[df["accession"].str.contains(f"{protein_str}", na=False)]
@@ -50,7 +50,7 @@ class Psm(MzTab):
             )
             yield df
 
-    def _extract_pep_columns(self):
+    def _extract_pep_columns(self) -> None:
         if os.stat(self.mztab_path).st_size == 0:
             raise ValueError("File is empty")
         f = open(self.mztab_path)
@@ -61,16 +61,16 @@ class Psm(MzTab):
             line = f.readline()
         self._pep_columns = line.split("\n")[0].split("\t")
 
-    def extract_from_pep(self, chunksize=2000000):
+    def extract_from_pep(self, chunksize: int = 2000000) -> dict:
         self._extract_pep_columns()
-        pep_usecols = [
+        pep_usecols: list = [
             "opt_global_cv_MS:1000889_peptidoform_sequence",
             "charge",
             "best_search_engine_score[1]",
             "spectra_ref",
         ]
-        live_cols = [col for col in pep_usecols if col in self._pep_columns]
-        not_cols = [col for col in pep_usecols if col not in live_cols]
+        live_cols: list = [col for col in pep_usecols if col in self._pep_columns]
+        not_cols: list = [col for col in pep_usecols if col not in live_cols]
         if "opt_global_cv_MS:1000889_peptidoform_sequence" in not_cols:
             if "sequence" in self._pep_columns and "modifications" in self._pep_columns:
                 live_cols.append("sequence")
@@ -83,8 +83,8 @@ class Psm(MzTab):
             raise Exception(
                 "The peptide table don't have best_search_engine_score[1] or charge columns"
             )
-        pep_map = {}
-        indexs = [self._pep_columns.index(col) for col in live_cols]
+        pep_map: dict = {}
+        indexs: list = [self._pep_columns.index(col) for col in live_cols]
         for pep in self.skip_and_load_csv("PEH", usecols=indexs, chunksize=chunksize):
             pep.reset_index(drop=True, inplace=True)
             if "opt_global_cv_MS:1000889_peptidoform_sequence" not in pep.columns:
@@ -135,7 +135,7 @@ class Psm(MzTab):
         return pep_map
 
     @staticmethod
-    def slice(df, partitions):
+    def slice(df: pd.DataFrame, partitions: list):
         cols = df.columns
         if not isinstance(partitions, list):
             raise Exception(f"{partitions} is not a list")
@@ -147,7 +147,7 @@ class Psm(MzTab):
         for key, df in df.groupby(partitions):
             yield key, df
 
-    def generate_report(self, chunksize=1000000, protein_str=None):
+    def generate_report(self, chunksize: int = 1000000, protein_str: Optional[str] = None):
         for df in self.iter_psm_table(chunksize=chunksize, protein_str=protein_str):
             self.transform_psm(df)
             self.add_addition_msg(df)
@@ -156,8 +156,8 @@ class Psm(MzTab):
             yield df
 
     @staticmethod
-    def _generate_cv_params(rows):
-        cv_list = []
+    def _generate_cv_params(rows: pd.Series) -> list | None:
+        cv_list: list = []
         if rows["consensus_support"]:
             struct = {
                 "cv_name": "consesus_support",
@@ -169,8 +169,8 @@ class Psm(MzTab):
         else:
             return None
 
-    def transform_psm(self, df):
-        select_mods = list(self._mods_map.keys())
+    def transform_psm(self, df: pd.DataFrame) -> None:
+        select_mods: list = list(self._mods_map.keys())
         df[["peptidoform", "modifications"]] = df[["peptidoform"]].apply(
             lambda row: self.generate_modifications_details(
                 row["peptidoform"], self._mods_map, self._automaton, select_mods
@@ -186,11 +186,11 @@ class Psm(MzTab):
         )
 
     @staticmethod
-    def transform_parquet(df):
+    def transform_parquet(df: pd.DataFrame) -> pa.Table:
         return pa.Table.from_pandas(df, schema=PSM_SCHEMA)
 
-    def _genarate_additional_scores(self, cols):
-        struct_list = []
+    def _genarate_additional_scores(self, cols: pd.Series) -> list:
+        struct_list: list = []
         for software, score in self._score_names.items():
             software = re.sub(r"[^a-zA-Z0-9\s]", "", software)
             software = software.lower()
@@ -205,17 +205,24 @@ class Psm(MzTab):
         return struct_list
 
     @staticmethod
-    def add_addition_msg(df):
+    def add_addition_msg(df: pd.DataFrame) -> None:
         df.loc[:, "predicted_rt"] = None
         df.loc[:, "ion_mobility"] = None
         df.loc[:, "number_peaks"] = None
         df.loc[:, "mz_array"] = None
         df.loc[:, "intensity_array"] = None
 
-    def write_psm_to_file(self, output_path, chunksize=1000000, protein_file=None):
-        protein_list = extract_protein_list(protein_file) if protein_file else None
-        protein_str = "|".join(protein_list) if protein_list else None
-        pqwriter = None
+    def write_psm_to_file(
+        self,
+        output_path: str,
+        chunksize: int = 1000000,
+        protein_file: Optional[str] = None,
+    ) -> None:
+        protein_list: list = (
+            extract_protein_list(protein_file) if protein_file else None
+        )
+        protein_str: Optional[str] = "|".join(protein_list) if protein_list else None
+        pqwriter: pq.ParquetWriter | None = None
         for p in self.generate_report(chunksize=chunksize, protein_str=protein_str):
             if not pqwriter:
                 pqwriter = pq.ParquetWriter(output_path, p.schema)
@@ -224,7 +231,7 @@ class Psm(MzTab):
             pqwriter.close()
 
     @staticmethod
-    def convert_to_parquet_format(res):
+    def convert_to_parquet_format(res: pd.DataFrame) -> None:
         res["mp_accessions"] = res["mp_accessions"].apply(get_protein_accession)
         res["precursor_charge"] = (
             res["precursor_charge"]

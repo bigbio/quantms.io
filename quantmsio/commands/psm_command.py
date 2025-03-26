@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional
 
 import click
 from quantmsio.core.project import create_uuid_filename
@@ -40,9 +40,9 @@ def convert_psm_file(
     mztab_file: Union[Path, str],
     output_folder: str,
     chunksize: int,
-    protein_file: str,
-    output_prefix_file: str,
-):
+    protein_file: Optional[str],
+    output_prefix_file: Optional[str],
+) -> None:
 
     if mztab_file is None or output_folder is None:
         raise click.UsageError("Please provide all the required parameters")
@@ -52,7 +52,7 @@ def convert_psm_file(
 
     psm_manager = Psm(mztab_path=mztab_file)
     output_path = (
-        output_folder + "/" + create_uuid_filename(output_prefix_file, ".psm.parquet")
+        f"{output_folder}/{create_uuid_filename(output_prefix_file, '.psm.parquet')}"
     )
     psm_manager.write_psm_to_file(
         output_path=output_path, chunksize=chunksize, protein_file=protein_file
@@ -64,7 +64,7 @@ def convert_psm_file(
     "-p", "--parquets", type=str, help="List of psm parquet path", multiple=True
 )
 @click.option("-t", "--tags", type=str, help="List of parquet label", multiple=True)
-def compare_set_of_psms(parquets, tags):
+def compare_set_of_psms(parquets: tuple, tags: tuple):
     """
     Compare a set of psm parquet files
     :param parquets: a set of psm parquet path
