@@ -26,7 +26,9 @@ class Psm(MzTab):
         self._mods_map = self.get_mods_map()
         self._automaton = get_ahocorasick(self._mods_map)
 
-    def iter_psm_table(self, chunksize: int = 1000000, protein_str: Optional[str] = None):
+    def iter_psm_table(
+        self, chunksize: int = 1000000, protein_str: Optional[str] = None
+    ):
         for df in self.skip_and_load_csv("PSH", chunksize=chunksize):
             if protein_str:
                 df = df[df["accession"].str.contains(f"{protein_str}", na=False)]
@@ -147,7 +149,9 @@ class Psm(MzTab):
         for key, df in df.groupby(partitions):
             yield key, df
 
-    def generate_report(self, chunksize: int = 1000000, protein_str: Optional[str] = None):
+    def generate_report(
+        self, chunksize: int = 1000000, protein_str: Optional[str] = None
+    ):
         for df in self.iter_psm_table(chunksize=chunksize, protein_str=protein_str):
             self.transform_psm(df)
             self.add_addition_msg(df)

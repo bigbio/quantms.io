@@ -11,7 +11,9 @@ from quantmsio.operate.tools import transform_ibaq
 
 
 def plot_distribution_of_ibaq(
-    ibaq_path: str, save_path: Optional[str] = None, selected_column: Optional[str] = None
+    ibaq_path: str,
+    save_path: Optional[str] = None,
+    selected_column: Optional[str] = None,
 ):
     """
     This function plots the distribution of the protein IBAQ values.

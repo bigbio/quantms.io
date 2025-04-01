@@ -79,7 +79,9 @@ class ProjectHandler:
     PROJECT_EXTENSION = ".project.json"
 
     def __init__(
-        self, project_accession: Optional[str] = None, project_json_file: Optional[str] = None
+        self,
+        project_accession: Optional[str] = None,
+        project_json_file: Optional[str] = None,
     ):
         """
         ProjectHandler class can be created using the PRIDE accession or a JSON file with the project information
