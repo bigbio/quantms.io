@@ -39,7 +39,7 @@ CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
     version=__version__, package_name="quantmsio", message="%(package)s %(version)s"
 )
 @click.group(context_settings=CONTEXT_SETTINGS)
-def cli():
+def cli() -> None:
     """
     This is the main tool that gives access to all commands to convert SDRF files into pipeline-specific configuration files
     """
@@ -71,7 +71,7 @@ cli.add_command(convert_fragpipe_psm)
 cli.add_command(merge_ae_files)
 
 
-def quantms_io_main():
+def quantms_io_main() -> None:
     """
     Main function to run the quantmsio command line interface
     :return: none

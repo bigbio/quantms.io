@@ -1,6 +1,4 @@
 import warnings
-from typing import Any
-from typing import Tuple
 
 import numpy as np
 import pyopenms as oms

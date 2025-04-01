@@ -7,25 +7,25 @@ import pandas as pd
 
 class Statistics(ABC):
 
-    def get_number_of_proteins(self):
-        pass
+    def get_number_of_proteins(self) -> int | None:
+        return None
 
-    def get_number_of_peptides(self):
-        pass
+    def get_number_of_peptides(self) -> int | None:
+        return None
 
-    def get_number_of_samples(self):
-        pass
+    def get_number_of_samples(self) -> int | None:
+        return None
 
-    def get_number_of_peptidoforms(self):
-        pass
+    def get_number_of_peptidoforms(self) -> int | None:
+        return None
 
-    def get_number_msruns(self):
-        pass
+    def get_number_msruns(self) -> int | None:
+        return None
 
 
 class IbaqStatistics(Statistics):
 
-    def __init__(self, ibaq_path: str) -> None:
+    def __init__(self, ibaq_path: str):
         self.ibaq_path = ibaq_path
         self.ibaq_db = pd.read_csv(ibaq_path, sep=None, comment="#", engine="python")
 
@@ -48,7 +48,7 @@ class IbaqStatistics(Statistics):
 
 class ParquetStatistics(Statistics):
 
-    def __init__(self, parquet_path: str) -> None:
+    def __init__(self, parquet_path: str):
         if os.path.exists(parquet_path):
             self.parquet_db = duckdb.connect()
             self.parquet_db = self.parquet_db.execute(

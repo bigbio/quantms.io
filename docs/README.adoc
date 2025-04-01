@@ -1,4 +1,4 @@
-= The quantms.io format
+= The quantms.io format specification
 :sectnums:
 :toc: left
 :doctype: book
@@ -8,15 +8,12 @@
 :xrefstyle: short
 :figure-caption: Figure
 :pdf-page-size: A4
-
-//GitHub specific settings
-ifdef::env-github[]
-:tip-caption: :bulb:
-:note-caption: :information_source:
-:important-caption: :heavy_exclamation_mark:
-:caution-caption: :fire:
-:warning-caption: :warning:
-endif::[]
+:source-highlighter: coderay
+:tip-caption: 💡
+:note-caption: ℹ️
+:important-caption: ❗
+:caution-caption: 🔥
+:warning-caption: ⚠️
 
 [[executive-summary]]
 == Executive Summary
@@ -72,8 +69,6 @@ We are not trying to do the following:
 - Replace the mzTab format, but to provide a new format that enables AI-related use cases.
 - Replace all the software tools file formats and intermediate files, but to provide a new format that enables easy integration of the main output results with other tools.
 ====
-
-include::./images/file-relation.png
 
 [[general-data-model]]
 == General data model and structure
@@ -269,6 +264,7 @@ PXD004683/
 ----
 
 When registering parquet files to project.json <<project>>, it will be in such a format.
+[source,json]
 ----
   "quantms_files": [
     {
@@ -597,7 +593,7 @@ The differential expression view is a tab-delimited file format that contains th
 === Differential expression use cases
 
 -  Store the differential express proteins between two contrasts, with the corresponding fold changes and p-values.
--  Enable easy visualization using tools like `Volcano Plot <https://en.wikipedia.org/wiki/Volcano_plot_(statistics)>`__.
+-  Enable easy visualization using tools like https://en.wikipedia.org/wiki/Volcano_plot_(statistics)[Volcano Plots].
 -  Enable easy integration with other omics data resources.
 -  Store metadata information about the project, the workflow and the columns in the file.
 

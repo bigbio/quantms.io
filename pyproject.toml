@@ -40,6 +40,7 @@ swifter = "*"
 ddt = "*"
 psutil = "*"
 pyteomics = "*"
+anndata = "*"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"

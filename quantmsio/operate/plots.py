@@ -1,3 +1,5 @@
+from typing import Optional
+
 import math
 import random
 from venn import venn
@@ -9,8 +11,10 @@ from quantmsio.operate.tools import transform_ibaq
 
 
 def plot_distribution_of_ibaq(
-    ibaq_path: str, save_path: str = None, selected_column: str = None
-) -> None:
+    ibaq_path: str,
+    save_path: Optional[str] = None,
+    selected_column: Optional[str] = None,
+):
     """
     This function plots the distribution of the protein IBAQ values.
     :param ibaq_path: ibaq file path
@@ -19,7 +23,7 @@ def plot_distribution_of_ibaq(
     """
     df = pd.read_csv(ibaq_path, sep=None, comment="#", engine="python")
     plt.figure(dpi=500, figsize=(12, 8))
-    columns = df.columns
+    columns = list(df.columns)
     if selected_column is None:
         if "ribaq" in columns:
             selected_column = "ribaq"
@@ -35,13 +39,12 @@ def plot_distribution_of_ibaq(
         if save_path:
             fig.figure.savefig(save_path, dpi=500)
         return fig
-    else:
-        raise ValueError("No IBAQ column found in the ibaq file")
+    raise ValueError("No IBAQ column found in the ibaq file")
 
 
 def plot_peptides_of_lfq_condition(
-    psm_parquet_path: str, sdrf_path: str, save_path: str = None
-) -> None:
+    psm_parquet_path: str, sdrf_path: str, save_path: Optional[str] = None
+) -> plt.Axes | plt.Figure:
     """
     this function plots the number of peptides for each condition in a LFQ (Label-Free Quantification) experiment.
 
@@ -58,7 +61,7 @@ def plot_peptides_of_lfq_condition(
 
     df = pd.read_parquet(psm_parquet_path, columns=["reference_file_name"])
     sdrf = pd.read_csv(sdrf_path, sep="\t")
-    use_cols = [col for col in sdrf.columns if col.startswith("factor value")]
+    use_cols: list = [col for col in sdrf.columns if col.startswith("factor value")]
     use_cols.append("comment[data file]")
     sdrf = sdrf[use_cols]
     sdrf["comment[data file]"] = sdrf["comment[data file]"].apply(
@@ -68,11 +71,11 @@ def plot_peptides_of_lfq_condition(
     df = df.merge(sdrf, on="reference_file_name", how="left")
     df.columns = ["reference", "condition"]
     df = df[["condition"]]
-    f_count = df["condition"].value_counts()
+    f_count = df["condition"].value_counts(sort=False)
     f_count.sort_values(ascending=False)
     if len(f_count) < 20:
         i = math.ceil(len(f_count) / 5)
-        plt.figure(dpi=500, igsize=(6 * i, 4 * i))
+        plt.figure(dpi=500, figsize=(6 * i, 4 * i))
         img = sns.barplot(
             y=f_count.values,
             x=f_count.index,
@@ -87,35 +90,32 @@ def plot_peptides_of_lfq_condition(
         if save_path:
             img.figure.savefig(save_path, dpi=500)
         return img
-    else:
-        df = pd.DataFrame([list(f_count.values)], columns=f_count.index)
-        num_subplots = math.ceil(len(f_count) / 20)
-        columns_per_subplot = 20
-        fig, axes = plt.subplots(
-            nrows=num_subplots, ncols=1, figsize=(12, 4 * num_subplots)
-        )
-        for i in range(num_subplots):
-            start_col = i * columns_per_subplot
-            end_col = (i + 1) * columns_per_subplot
-            subset_data = df.iloc[:, start_col:end_col]
+    num_subplots: int = math.ceil(len(f_count) / 20)
+    columns_per_subplot: int = 20
+    fig, axes = plt.subplots(
+        nrows=num_subplots, ncols=1, figsize=(12, 4 * num_subplots)
+    )
+    df = pd.DataFrame([list(f_count.values)], columns=f_count.index)
+    for i in range(num_subplots):
+        start_col = i * columns_per_subplot
+        end_col = (i + 1) * columns_per_subplot
+        subset_data = df.iloc[:, start_col:end_col]
 
-            sns.barplot(data=subset_data, ax=axes[i])
-            axes[i].set_title(
-                "Condition vs Number of Peptides {}-{}".format(start_col + 1, end_col)
-            )
-            axes[i].set(xlabel=None)
-            for tick in axes[i].get_xticklabels():
-                tick.set_rotation(30)
-            sns.despine(ax=axes[i], top=True, right=True)
-        plt.tight_layout()
-        if save_path:
-            fig.figure.savefig(save_path, dpi=500)
-        return fig
+        sns.barplot(data=subset_data, ax=axes[i])
+        axes[i].set_title(f"Condition vs Number of Peptides {start_col + 1}-{end_col}")
+        axes[i].set(xlabel=None)
+        for tick in axes[i].get_xticklabels():
+            tick.set_rotation(30)
+        sns.despine(ax=axes[i], top=True, right=True)
+    plt.tight_layout()
+    if save_path:
+        fig.savefig(save_path, dpi=500)
+    return fig
 
 
 def plot_intensity_distribution_of_samples(
-    feature_path: str, save_path: str = None, num_samples: int = 10
-) -> None:
+    feature_path: str, save_path: Optional[str] = None, num_samples: int = 10
+) -> plt.Axes:
     """
     Plot the distribution of intensities for different samples.
     :param feature_path: path to the feature file
@@ -124,7 +124,7 @@ def plot_intensity_distribution_of_samples(
     """
     df = pd.read_parquet(feature_path, columns=["intensities"])
     df = transform_ibaq(df)
-    sample_accessions = df["sample_accession"].unique().tolist()
+    sample_accessions: list = df["sample_accession"].unique().tolist()
     random.shuffle(sample_accessions)
     if len(sample_accessions) > num_samples:
         sample_accessions = sample_accessions[:num_samples]
@@ -145,8 +145,8 @@ def plot_intensity_distribution_of_samples(
 
 
 def plot_peptide_distribution_of_protein(
-    feature_path: str, save_path: str = None, num_samples: int = 20
-) -> None:
+    feature_path: str, save_path: Optional[str] = None, num_samples: int = 20
+) -> plt.Axes:
     """
     Bar graphs of peptide counts for different samples.
     :param feature_path: path to the feature file
@@ -177,8 +177,8 @@ def plot_peptide_distribution_of_protein(
 
 
 def plot_intensity_box_of_samples(
-    feature_path: str, save_path: str = None, num_samples: int = 10
-) -> None:
+    feature_path: str, save_path: Optional[str] = None, num_samples: int = 10
+) -> plt.Axes:
     """
     Boxplot of peptide intensity distribution for different samples.
     :param feature_path: path to the feature file
@@ -217,18 +217,17 @@ def plot_intensity_box_of_samples(
 
 
 # plot venn
-def plot_peptidoform_charge_venn(parquet_path_list, labels):
-    data_map = {}
+def plot_peptidoform_charge_venn(parquet_path_list: list, labels: list):
+    data_map: dict = {}
     for parquet_path, label in zip(parquet_path_list, labels):
         df = pd.read_parquet(parquet_path, columns=["peptidoform", "charge"])
-        psm_message = "Total number of PSM for " + label + ": " + str(len(df))
+        psm_message = f"Total number of PSM for {label}: {len(df)}"
         print(psm_message)
-        unique_pep_forms = set((df["peptidoform"] + df["charge"].astype(str)).to_list())
+        unique_pep_forms: set = set(
+            (df["peptidoform"] + df["charge"].astype(str)).to_list()
+        )
         pep_form_message = (
-            "Total number of Peptidoform for "
-            + label
-            + ": "
-            + str(len(unique_pep_forms))
+            f"Total number of Peptidoform for {label}: {len(unique_pep_forms)}"
         )
         print(pep_form_message)
         data_map[label] = unique_pep_forms
@@ -242,14 +241,12 @@ def plot_peptidoform_charge_venn(parquet_path_list, labels):
     plt.savefig("pep_form_compare_venn.png")
 
 
-def plot_sequence_venn(parquet_path_list, labels):
-    data_map = {}
+def plot_sequence_venn(parquet_path_list: list, labels: list):
+    data_map: dict = {}
     for parquet_path, label in zip(parquet_path_list, labels):
-        sequence = pd.read_parquet(parquet_path, columns=["sequence"])
-        unique_seqs = set(sequence["sequence"].to_list())
-        pep_message = (
-            "Total number of peptide for " + label + ": " + str(len(unique_seqs))
-        )
+        df = pd.read_parquet(parquet_path, columns=["sequence"])
+        unique_seqs: set = set(df["sequence"].to_list())
+        pep_message = f"Total number of peptide for {label}: {len(unique_seqs)}"
         print(pep_message)
         data_map[label] = unique_seqs
     plt.figure(figsize=(16, 12), dpi=500)

@@ -1,3 +1,5 @@
+from typing import Optional
+
 import click
 
 from quantmsio.operate.plots import plot_distribution_of_ibaq
@@ -11,7 +13,7 @@ CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 # Command Group
 @click.group(name="plot", context_settings=CONTEXT_SETTINGS)
-def plot():
+def plot() -> None:
     """Tool related commands"""
     pass
 
@@ -24,7 +26,9 @@ def plot():
 @click.option("--sdrf_path", help="sdrf path", required=True)
 @click.option("--save_path", help="img save path [xxx.svg]", required=True)
 @click.pass_context
-def plot_peptides(ctx, psm_parquet_path: str, sdrf_path: str, save_path: str):
+def plot_peptides(
+    ctx: click.Context, psm_parquet_path: str, sdrf_path: str, save_path: str
+) -> None:
     """
     convert mztab psm section to a parquet file. The parquet file will contain the features and the metadata.
     :param psm_parquet_path: psm parquet path in lfq
@@ -45,7 +49,7 @@ def plot_peptides(ctx, psm_parquet_path: str, sdrf_path: str, save_path: str):
 @click.option("--select_column", help="Selected column in Ibaq File", required=False)
 @click.pass_context
 def plot_ibaq_distribution(
-    ctx, ibaq_path: str, save_path: str, select_column: str
+    ctx: click.Context, ibaq_path: str, save_path: str, select_column: Optional[str]
 ) -> None:
     """
     plot ibaq distribution of expression
@@ -67,7 +71,7 @@ def plot_ibaq_distribution(
 @click.pass_context
 def plot_kde_intensity_distribution(
     feature_path: str, save_path: str, num_samples: int
-):
+) -> None:
     """
     plot ibaq distribution of expression
     :param feature_path: feature file path
@@ -87,7 +91,9 @@ def plot_kde_intensity_distribution(
 @click.option("--save_path", help="img save path [xxx.svg]", required=True)
 @click.option("--num_samples", help="The number of samples plotted", default=20)
 @click.pass_context
-def plot_bar_peptide_distribution(feature_path: str, save_path: str, num_samples: int):
+def plot_bar_peptide_distribution(
+    feature_path: str, save_path: str, num_samples: int
+) -> None:
     """
     plot ibaq distribution of expression
     :param feature_path: feature file path
@@ -109,7 +115,7 @@ def plot_bar_peptide_distribution(feature_path: str, save_path: str, num_samples
 @click.pass_context
 def plot_box_intensity_distribution(
     feature_path: str, save_path: str, num_samples: int
-):
+) -> None:
     """
     plot ibaq distribution of expression
     :param feature_path: feature file path

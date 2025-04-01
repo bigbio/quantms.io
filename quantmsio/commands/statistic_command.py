@@ -5,14 +5,14 @@ import click
 
 from quantmsio.operate.statistics import IbaqStatistics
 from quantmsio.operate.statistics import ParquetStatistics
-from typing import Union
+from typing import Union, TextIO, Optional
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
 # Command Group
 @click.group(name="statistics", context_settings=CONTEXT_SETTINGS)
-def statistics():
+def statistics() -> None:
     """Tool related commands"""
     pass
 
@@ -30,15 +30,15 @@ def statistics():
 )
 @click.pass_context
 def feature_file_statistics(
-    ctx,
+    ctx: click.Context,
     absolute_path: Union[Path, str],
     parquet_path: Union[Path, str],
-    save_path: Union[Path, str],
+    save_path: Union[Path, str] | None,
 ):
     feature_statistics = ParquetStatistics(parquet_path)
     absolute_stats = IbaqStatistics(ibaq_path=absolute_path)
 
-    def write_stats(file, stats: ParquetStatistics):
+    def write_stats(file: TextIO, stats: ParquetStatistics):
         file.write("Number of proteins: {}\n".format(stats.get_number_of_proteins()))
         file.write("Number of peptides: {}\n".format(stats.get_number_of_peptides()))
         file.write("Number of samples: {}\n".format(stats.get_number_of_samples()))
@@ -47,7 +47,7 @@ def feature_file_statistics(
         )
         file.write("Number of msruns: {}\n".format(stats.get_number_msruns()))
 
-    def write_absolute_stats(file, stats: IbaqStatistics):
+    def write_absolute_stats(file: TextIO, stats: IbaqStatistics):
         file.write(
             "Ibaq Number of proteins: {}\n".format(stats.get_number_of_proteins())
         )
@@ -75,7 +75,9 @@ def feature_file_statistics(
     " will print to stdout",
 )
 @click.pass_context
-def parquet_psm_statistics(ctx, parquet_path: str, save_path: str):
+def parquet_psm_statistics(
+    ctx: click.Context, parquet_path: str, save_path: Optional[str]
+):
     """
     Statistics of a psm parquet file
     :param parquet_path: psm parquet path
@@ -83,7 +85,7 @@ def parquet_psm_statistics(ctx, parquet_path: str, save_path: str):
     :return: none
     """
 
-    def write_stats(file, stats: ParquetStatistics):
+    def write_stats(file: TextIO, stats: ParquetStatistics):
         file.write("Number of proteins: {}\n".format(stats.get_number_of_proteins()))
         file.write("Number of peptides: {}\n".format(stats.get_number_of_peptides()))
         file.write(

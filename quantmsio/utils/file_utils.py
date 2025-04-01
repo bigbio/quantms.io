@@ -10,6 +10,7 @@ import psutil
 import pandas as pd
 from pathlib import Path
 from typing import List, Tuple, Dict, Iterator
+import pyarrow as pa
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -170,7 +171,11 @@ def calculate_buffer_size(file_path: str) -> int:
 
 
 def save_slice_file(
-    parquet_table, pqwriters: Dict, output_folder: str, partitions, filename: str
+    parquet_table: pa.Table,
+    pqwriters: Dict,
+    output_folder: str,
+    partitions: tuple,
+    filename: str,
 ) -> Dict:
     """
     Save a parquet table to a file with partitioning.
@@ -214,7 +219,12 @@ def save_slice_file(
     return pqwriters
 
 
-def save_file(parquet_table, pqwriter, output_folder: str, filename: str):
+def save_file(
+    parquet_table: pa.Table,
+    pqwriter: pq.ParquetWriter | None,
+    output_folder: str,
+    filename: str,
+) -> pq.ParquetWriter:
     """
     Save a parquet table to a file.
 
@@ -251,7 +261,9 @@ def save_file(parquet_table, pqwriter, output_folder: str, filename: str):
     return pqwriter
 
 
-def close_file(pqwriters: Dict = None, pqwriter=None) -> None:
+def close_file(
+    pqwriters: Dict | None = None, pqwriter: pq.ParquetWriter | None = None
+) -> None:
     """
     Close parquet writers.
 

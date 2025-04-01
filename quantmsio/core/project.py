@@ -4,7 +4,7 @@ import os
 import shutil
 import uuid
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional
 
 import requests
 
@@ -17,29 +17,31 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def check_directory(output_folder: str, project_accession: str = None):
+def check_directory(
+    output_folder: str, project_accession: Optional[str] = None
+) -> "ProjectHandler":
     """
     Check if the project file is present in the output folder, if not create it.
     :param output_folder: Folder where the Json file will be generated
     :param project_accession: Prefix of the Json file needed to generate the file name
     """
     if project_accession is None:
-        project_json = [
+        project_json: list = [
             f for f in os.listdir(output_folder) if f.endswith("project.json")
         ]
         if len(project_json) == 1:
-            json_path = output_folder + "/" + project_json[0]
+            json_path = f"{output_folder}/{project_json[0]}"
             project = ProjectHandler(project_json_file=json_path)
             return project
         else:
             raise Exception(f"More than one project json file found in {output_folder}")
     else:
         if os.path.exists(output_folder):
-            project_json = [
+            project_json: list = [
                 f for f in os.listdir(output_folder) if f.endswith("project.json")
             ]
             for json_file in project_json:
-                json_path = output_folder + "/" + json_file
+                json_path = f"{output_folder}/{json_file}"
                 project = ProjectHandler(project_json_file=json_path)
                 if project.project_accession == project_accession:
                     return project
@@ -52,13 +54,13 @@ def check_directory(output_folder: str, project_accession: str = None):
             return project
 
 
-def create_uuid_filename(project_accession, extension):
+def create_uuid_filename(project_accession: str, extension: str) -> str:
 
     output_filename_path = f"{project_accession}-{str(uuid.uuid4())}{extension}"
     return output_filename_path
 
 
-def get_project_accession(sdrf_path):
+def get_project_accession(sdrf_path: str) -> str:
     f = open(sdrf_path)
     keys = f.readline().split("\t")
     values = f.readline().split("\t")
@@ -68,7 +70,7 @@ def get_project_accession(sdrf_path):
     return project_accession
 
 
-def cut_path(path, output_folder):
+def cut_path(path: str, output_folder: str) -> str:
     path = path.replace(output_folder + "/", "")
     return path
 
@@ -76,7 +78,11 @@ def cut_path(path, output_folder):
 class ProjectHandler:
     PROJECT_EXTENSION = ".project.json"
 
-    def __init__(self, project_accession: str = None, project_json_file: str = None):
+    def __init__(
+        self,
+        project_accession: Optional[str] = None,
+        project_json_file: Optional[str] = None,
+    ):
         """
         ProjectHandler class can be created using the PRIDE accession or a JSON file with the project information
         :param project_accession: PRIDE accession of the project
@@ -84,14 +90,14 @@ class ProjectHandler:
         """
         if project_accession is None and project_json_file is None:
             self.project_accession = None
-            self.project = None
+            self.project: ProjectDefinition | None = None
         elif project_accession is not None and project_json_file is None:
             self.project_accession = project_accession
             self.project = ProjectDefinition(project_accession)
         else:
             self.load_project_info(project_json_file)
             self.project_accession = self.project.project_info["project_accession"]
-        self.extensions = [
+        self.extensions: list = [
             "sdrf_file",
             "psm_file",
             "feature_file",
@@ -99,7 +105,7 @@ class ProjectHandler:
             "absolute_file",
         ]
 
-    def load_project_info(self, project_json_file: str = None):
+    def load_project_info(self, project_json_file: Optional[str] = None) -> None:
         """
         Load the project information from a JSON file
         :param project_json_file: JSON file with the project information
@@ -112,7 +118,7 @@ class ProjectHandler:
         except FileNotFoundError:
             raise FileNotFoundError(f"File {project_json_file} not found")
 
-    def populate_from_pride_archive(self):
+    def populate_from_pride_archive(self) -> None:
         # Simulate API request to PRIDE Archive
         api_url = f"https://www.ebi.ac.uk/pride/ws/archive/v2/projects/{self.project_accession}"
         response = requests.get(api_url, timeout=1000)
@@ -139,10 +145,10 @@ class ProjectHandler:
         else:
             logger.info("A non-pride project is being created.")
 
-    def add_quantms_version(self, quantmsio_version: str):
+    def add_quantms_version(self, quantmsio_version: str) -> None:
         self.project.project_info["quantmsio_version"] = quantmsio_version
 
-    def add_sdrf_project_properties(self, sdrf: SDRFHandler):
+    def add_sdrf_project_properties(self, sdrf: SDRFHandler) -> None:
         """
         Add the project properties from the SDRF file to the project information.
         :param sdrf: SDRFHandler object
@@ -157,7 +163,9 @@ class ProjectHandler:
             sdrf.get_acquisition_properties()
         )
 
-    def add_software_provider(self, sortware_name="", sortware_version=""):
+    def add_software_provider(
+        self, sortware_name: str = "", sortware_version: str = ""
+    ) -> None:
         """
         Add the sortware info to the project information
         """
@@ -168,21 +176,21 @@ class ProjectHandler:
         self,
         path_name: str,
         file_category: str,
-        is_folder=False,
-        partition_fields=None,
-        replace_existing=None,
-    ):
+        is_folder: bool = False,
+        partition_fields: list | None = None,
+        replace_existing: bool | None = None,
+    ) -> None:
         if "quantms_files" not in self.project.project_info:
             self.project.project_info["quantms_files"] = []
 
-        obj_index = None
+        obj_index: int | None = None
         for index, obj in enumerate(self.project.project_info["quantms_files"]):
             if file_category in obj:
                 obj_index = index
         if obj_index is not None and replace_existing:
             self.project.project_info["quantms_files"][obj_index][file_category] = []
         path_name = path_name.replace("\\", "/")
-        record = {
+        record: dict = {
             "path_name": path_name,
             "is_folder": is_folder,
         }
@@ -198,12 +206,12 @@ class ProjectHandler:
 
     def register_file(
         self,
-        path_name,
-        file_category,
-        is_folder=False,
-        partition_fields=None,
-        replace_existing=None,
-    ):
+        path_name: str,
+        file_category: str,
+        is_folder: bool = False,
+        partition_fields: list | None = None,
+        replace_existing: bool | None = None,
+    ) -> None:
         if file_category not in self.extensions:
             raise Exception(f"The {file_category} not in {self.extensions}")
         self.add_quantms_path(
@@ -216,10 +224,10 @@ class ProjectHandler:
 
     def save_project_info(
         self,
-        output_prefix_file: str = None,
-        output_folder: str = None,
+        output_prefix_file: Optional[str] = None,
+        output_folder: Optional[str] = None,
         delete_existing: bool = False,
-    ):
+    ) -> None:
         """
         Save the updated project information to a JSON file. The file name will be generated automatically.
         """
@@ -244,7 +252,7 @@ class ProjectHandler:
             json.dump(self.project.project_info, json_file, indent=4)
         logger.info(f"Updated project information saved to {output_filename}")
 
-    def save_updated_project_info(self, output_file_name: str):
+    def save_updated_project_info(self, output_file_name: str) -> None:
         """
         Save the updated project information to a JSON file. The filename should be provided, no uui is generated
         the function for uui and json generation is save_project_info.
@@ -254,7 +262,7 @@ class ProjectHandler:
             json.dump(self.project.project_info, json_file, indent=4)
         logger.info(f"Updated project information saved to {output_file_name}")
 
-    def populate_from_sdrf(self, sdrf_file: Union[Path, str]):
+    def populate_from_sdrf(self, sdrf_file: Union[Path, str]) -> None:
         """
         Populate the project information from an SDRF file using the SDRFHandler class.
         :param sdrf_file: SDRF file
@@ -263,7 +271,10 @@ class ProjectHandler:
         self.add_sdrf_project_properties(sdrf)
 
     def add_sdrf_file(
-        self, sdrf_file_path: str, output_folder: str, delete_existing: bool = True
+        self,
+        sdrf_file_path: str,
+        output_folder: Optional[str],
+        delete_existing: bool = True,
     ) -> None:
         """
         Copy the given file to the project folder and add the file name to the project information.
@@ -305,8 +316,8 @@ class ProjectDefinition:
     (https://github.com/bigbio/quantms.io/blob/main/docs/PROJECT.md).
     """
 
-    def __init__(self, project_accession: str = None):
-        self.project_info = {
+    def __init__(self, project_accession: Optional[str] = None):
+        self.project_info: dict = {
             "project_accession": "",
             "project_title": "",
             "project_description": "",
@@ -329,13 +340,13 @@ class ProjectDefinition:
         if project_accession:
             self.set_basic_info(project_accession)
 
-    def set_basic_info(self, project_accession: str):
+    def set_basic_info(self, project_accession: str) -> None:
         self.project_info["project_accession"] = project_accession
 
     # Define additional methods to set specific fields as needed
 
-    def get_project_info(self):
+    def get_project_info(self) -> dict:
         return self.project_info
 
-    def set_project_info(self, project_info: dict):
+    def set_project_info(self, project_info: dict) -> None:
         self.project_info = project_info

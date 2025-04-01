@@ -1,7 +1,5 @@
 from pathlib import Path
-
 from quantmsio.core.feature import Feature
-import pytest
 
 TEST_DATA_ROOT = Path(__file__).parent / "examples"
 
