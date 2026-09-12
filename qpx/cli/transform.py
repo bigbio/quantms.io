@@ -49,31 +49,25 @@ def transform():
     required=True,
     type=click.Path(file_okay=False, path_type=Path),
 )
-@click.option(
-    "--species",
-    help="Species name for gene mapping",
-    default="human",
-)
 @click.option("--verbose", help="Enable verbose logging", is_flag=True)
 def transform_gene_map_cmd(
     parquet_path: Path,
     fasta: Path,
     output_folder: Path,
-    species: str,
     verbose: bool,
 ):
     """Map gene names from a FASTA file to QPX parquet data.
 
     Enriches protein identifications in QPX PSM or feature files with
-    gene-level metadata extracted from FASTA database headers.
+    gene names read from the ``GN=`` field of the FASTA headers. The FASTA is
+    the only source: nothing is fetched over the network.
 
     \b
     Example:
         qpxc transform gene-map \\
             --parquet-path ./output/psm.parquet \\
             --fasta proteins.fasta \\
-            --output-folder ./output \\
-            --species human
+            --output-folder ./output
     """
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
@@ -85,7 +79,7 @@ def transform_gene_map_cmd(
 
     from qpx.transforms.gene_mapping import GeneMappingTransform
 
-    mapping = GeneMappingTransform(fasta_path=str(fasta), species=species)
+    mapping = GeneMappingTransform(fasta_path=str(fasta))
     df = pd.read_parquet(str(parquet_path))
     protein_col = "pg_accessions" if "pg_accessions" in df.columns else "protein_accessions"
     annotated = mapping.annotate_dataframe(df, protein_col=protein_col)

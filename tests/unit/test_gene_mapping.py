@@ -3,7 +3,11 @@
 import pyarrow.parquet as pq
 
 from qpx import Dataset
-from qpx.transforms.gene_mapping import GeneMappingTransform
+from qpx.transforms.gene_mapping import (
+    GeneMappingTransform,
+    _parse_fasta_header,
+    _parse_gene_names_from_fasta,
+)
 from qpx.writers.feature import FeatureWriter
 from tests.conftest import make_feature_record
 
@@ -32,7 +36,7 @@ def test_write_annotated_features_preserves_source_identity(tmp_path, monkeypatc
     dataset = Dataset(source_dir, structures=["feature"])
     fasta = tmp_path / "empty.fasta"
     fasta.touch()
-    transform = GeneMappingTransform(fasta, fetch_accessions=False)
+    transform = GeneMappingTransform(fasta)
     source_frame = dataset.feature.to_df()
     monkeypatch.setattr(transform, "annotate_dataset_features", lambda *_args, **_kwargs: source_frame)
 
@@ -43,3 +47,62 @@ def test_write_annotated_features_preserves_source_identity(tmp_path, monkeypatc
     output = pq.read_table(output_path)
     assert output.column("feature_id").to_pylist() == source.column("feature_id").to_pylist()
     assert output.schema.metadata[b"identity_composite"] == b",".join(field.encode() for field in composite)
+
+
+def test_parse_gene_names_reads_headers_without_biopython(tmp_path):
+    """Gene names come from the FASTA headers alone — no optional dependency."""
+    fasta = tmp_path / "db.fasta"
+    fasta.write_text(
+        ">sp|P12345|BRCA1_HUMAN Breast cancer type 1 OS=Homo sapiens GN=BRCA1 PE=1 SV=2\n"
+        "MKVLAA\nGGWSTR\n"
+        ">tr|Q99999|Q99999_HUMAN Uncharacterized protein OS=Homo sapiens PE=4 SV=1\n"
+        "MKV\n"
+        ">CONTAM_TRYP_PIG Trypsin\n"
+        "MKV\n"
+    )
+
+    gene_map = _parse_gene_names_from_fasta(str(fasta))
+
+    assert gene_map["P12345"] == {"BRCA1"}
+    assert gene_map["Q99999"] == {None}
+    assert gene_map["CONTAM_TRYP_PIG"] == {None}
+
+
+def test_parse_gene_names_reads_gzipped_fasta(tmp_path):
+    """A gzip-compressed FASTA is opened transparently."""
+    import gzip
+
+    fasta = tmp_path / "db.fasta.gz"
+    with gzip.open(fasta, "wt") as handle:
+        handle.write(">sp|P12345|PROT_HUMAN Some protein OS=Homo sapiens GN=TP53 PE=1 SV=2\nMKV\n")
+
+    assert _parse_gene_names_from_fasta(str(fasta))["P12345"] == {"TP53"}
+
+
+def test_parse_fasta_header_handles_each_identifier_shape():
+    """UniProt three-field, two-field and bare identifiers all resolve."""
+    assert _parse_fasta_header(">sp|P12345|PROT_HUMAN d GN=BRCA1 PE=1") == ("P12345", "PROT_HUMAN", "BRCA1")
+    assert _parse_fasta_header(">sp|P12345 description") == ("P12345", "P12345", None)
+    assert _parse_fasta_header(">CONTAM_ALBU Albumin GN=ALB") == ("CONTAM_ALBU", "CONTAM_ALBU", "ALB")
+
+
+def test_annotate_dataframe_maps_genes_and_keeps_existing_accessions(tmp_path):
+    """gg_names is filled from the FASTA; gg_accessions written by a converter survives."""
+    import pandas as pd
+
+    fasta = tmp_path / "db.fasta"
+    fasta.write_text(
+        ">sp|P12345|A_HUMAN a OS=Homo sapiens GN=BRCA1 PE=1 SV=2\nMKV\n"
+        ">sp|P12346|B_HUMAN b OS=Homo sapiens GN=TP53 PE=1 SV=2\nMKV\n"
+    )
+    df = pd.DataFrame(
+        {
+            "pg_accessions": [["P12345", "P12346"], ["P00000"]],
+            "gg_accessions": [["NC_000017.11"], None],
+        }
+    )
+
+    annotated = GeneMappingTransform(fasta).annotate_dataframe(df)
+
+    assert annotated["gg_names"].tolist() == [["BRCA1", "TP53"], None]
+    assert annotated["gg_accessions"].tolist() == [["NC_000017.11"], None]

@@ -139,14 +139,13 @@ from qpx.cli.transform import transform_gene_map_cmd
 print(generate_example(transform_gene_map_cmd, "Map gene information to parquet file:"))
 ```
 
-#### With Species Parameter {#gene-map-example-species}
+#### Annotating a Feature File {#gene-map-example-feature}
 
 ```bash
 qpxc transform gene-map \
     --parquet-path ./output/feature.parquet \
     --fasta tests/examples/fasta/Homo-sapiens.fasta \
-    --output-folder ./output \
-    --species human
+    --output-folder ./output
 ```
 
 ### Output Files {#gene-map-output}
@@ -157,7 +156,8 @@ qpxc transform gene-map \
 
 ### Best Practices {#gene-map-best-practices}
 
-- Use species-specific FASTA files for accurate gene annotation
+- Use the same FASTA the search used, so every identified protein can be mapped
+- Gene names come from the `GN=` field of the FASTA headers; entries without it stay unmapped
 - Enable verbose mode for debugging
 
 ---

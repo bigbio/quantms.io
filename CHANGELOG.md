@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - **`[mudata]` optional extra** — MuData export is included in the default install.
+- **`[transforms]` optional extra, with its `biopython` and `mygene` dependencies** — gene mapping now parses FASTA headers directly, so `qpxc transform gene-map` works in a bare install (and in the published container, which never carried the extra).
+- **MyGene.info lookup and the `--species` option of `qpxc transform gene-map`** — the transform no longer queries a network service. `gg_names` comes from the FASTA `GN=` field; `gg_accessions` is left as the converter wrote it instead of being overwritten from the API.
 
 ### Fixed
 
