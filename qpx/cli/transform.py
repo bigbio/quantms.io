@@ -101,6 +101,9 @@ def transform_gene_map_cmd(
     Given ``--dataset``, every quantification view that carries protein
     accessions (pg and feature) is annotated, and the dataset's MuData view is
     rebuilt when one is present, so the ``.h5mu`` never describes stale genes.
+    Dataset mode requires flat Parquet views sharing one file prefix;
+    partitioned pg/feature views are rejected before any files are changed.
+    An output folder must be empty and outside the source dataset.
 
     \b
     Examples:
@@ -144,18 +147,25 @@ def transform_gene_map_cmd(
 
 
 def _copy_dataset_files(dataset: Path, out_dir: Path) -> None:
-    """Copy a dataset's files to ``out_dir`` so annotation never mutates the source."""
+    """Copy the complete dataset, including directory-backed views."""
     import shutil
 
-    out_dir.mkdir(parents=True, exist_ok=True)
-    for path in dataset.iterdir():
-        target = out_dir / path.name
-        if path.is_dir():
-            # Sharded / partitioned datasets keep views in subdirectories; copying
-            # only the top-level files would hand back an incomplete dataset.
-            shutil.copytree(path, target, dirs_exist_ok=True)
-        else:
-            shutil.copy2(path, target)
+    if out_dir.exists() and any(out_dir.iterdir()):
+        raise click.ClickException("--output-folder must be empty")
+    shutil.copytree(dataset, out_dir, dirs_exist_ok=True)
+
+
+def _gene_map_dataset_prefix(dataset: Path) -> str:
+    """Reject unsupported quantification layouts before copying or annotation."""
+    from qpx.transforms.utils import discover_qpx_file_prefix
+
+    for view in ("pg", "feature"):
+        if any((dataset / view).rglob("*.parquet")):
+            raise click.ClickException(f"Partitioned {view} data is not supported by gene-map; use flat Parquet views")
+    try:
+        return discover_qpx_file_prefix(dataset)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 def _annotate_dataset_views(
@@ -183,6 +193,33 @@ def _annotate_dataset_views(
     return written
 
 
+def _stage_dataset_integrity(qpx_dataset, prefix: str, staging: Path, out_dir: Path) -> tuple[Path, Path] | None:
+    """Update existing integrity records for the staged quantification files."""
+    from qpx.dataset import Dataset
+    from qpx.writers import DatasetWriter
+
+    if qpx_dataset.dataset_meta is None:
+        return None
+    metadata = qpx_dataset.dataset_meta.to_df()
+    if metadata.empty:
+        return None
+    record = metadata.iloc[0].to_dict()
+    fields = ("file_checksums", "file_row_counts", "file_sizes_bytes")
+    if not any(isinstance(record.get(field), dict) for field in fields):
+        return None
+
+    with Dataset(str(staging), file_prefix=prefix) as staged_dataset:
+        integrity = staged_dataset.compute_integrity()
+    for field in fields:
+        if isinstance(record.get(field), dict):
+            record[field].update(integrity[field])
+    record["packaged_at"] = integrity["packaged_at"]
+    name = f"{prefix}.dataset.parquet"
+    with DatasetWriter(staging / name) as writer:
+        writer.write_batch([record])
+    return staging / name, out_dir / name
+
+
 def _refresh_dataset_mudata(out_dir: Path, prefix: str) -> None:
     """Rebuild the dataset's MuData view, so a stale h5mu never outlives the parquet."""
     from qpx.mudata import write_dataset_mudata
@@ -208,38 +245,28 @@ def _gene_map_dataset(
     Views are written to a temporary directory first, so an in-place run never
     truncates a parquet that is still being read.
     """
-    import shutil
+    from tempfile import TemporaryDirectory
 
     from qpx.dataset import Dataset
-    from qpx.transforms.utils import discover_qpx_file_prefix
 
-    try:
-        prefix = discover_qpx_file_prefix(dataset)
-    except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
-
-    out_dir = dataset if in_place else Path(output_folder)
-    if out_dir != dataset:
+    dataset = dataset.resolve()
+    prefix = _gene_map_dataset_prefix(dataset)
+    out_dir = dataset if in_place else Path(output_folder).resolve()
+    if not in_place:
         _copy_dataset_files(dataset, out_dir)
 
-    staging = out_dir / ".gene_map_tmp"
-    staging.mkdir(parents=True, exist_ok=True)
-
-    qpx_dataset = Dataset(str(dataset), file_prefix=prefix)
-    try:
-        written = _annotate_dataset_views(mapping, qpx_dataset, prefix, staging, out_dir)
-    finally:
-        qpx_dataset.close()
-
-    try:
+    with TemporaryDirectory(prefix=".gene_map_tmp-", dir=out_dir) as temporary:
+        staging = Path(temporary)
+        with Dataset(str(dataset), file_prefix=prefix) as qpx_dataset:
+            written = _annotate_dataset_views(mapping, qpx_dataset, prefix, staging, out_dir)
+            if not written:
+                raise click.ClickException(f"No pg or feature Parquet file found in {dataset}")
+            metadata = _stage_dataset_integrity(qpx_dataset, prefix, staging, out_dir)
+            if metadata is not None:
+                written.append(metadata)
         for source, target in written:
             source.replace(target)
-            click.echo(f"  {target.name}: gene names annotated")
-    finally:
-        shutil.rmtree(staging, ignore_errors=True)
-
-    if not written:
-        raise click.ClickException(f"No pg or feature Parquet file found in {dataset}")
+            click.echo(f"  {target.name}: updated")
 
     _refresh_dataset_mudata(out_dir, prefix)
 

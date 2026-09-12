@@ -86,7 +86,7 @@ pip install .
 uv pip install "qpx @ git+https://github.com/bigbio/qpx.git"
 
 # With optional extras
-uv pip install "qpx[quantify,transforms,plotting] @ git+https://github.com/bigbio/qpx.git"
+uv pip install "qpx[quantify,plotting] @ git+https://github.com/bigbio/qpx.git"
 ```
 
 **From a local clone:**
