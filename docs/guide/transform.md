@@ -139,25 +139,40 @@ from qpx.cli.transform import transform_gene_map_cmd
 print(generate_example(transform_gene_map_cmd, "Map gene information to parquet file:"))
 ```
 
-#### With Species Parameter {#gene-map-example-species}
+#### Annotating a Feature File {#gene-map-example-feature}
 
 ```bash
 qpxc transform gene-map \
     --parquet-path ./output/feature.parquet \
     --fasta tests/examples/fasta/Homo-sapiens.fasta \
-    --output-folder ./output \
-    --species human
+    --output-folder ./output
 ```
+
+#### Annotating a Whole Dataset {#gene-map-example-dataset}
+
+```bash
+qpxc transform gene-map \
+    --dataset ./qpx_output \
+    --fasta tests/examples/fasta/Homo-sapiens.fasta \
+    --in-place
+```
+
+Every quantification view that carries protein accessions (`pg` and `feature`) is
+annotated, and the dataset's MuData view is rebuilt when one is present, so the
+`.h5mu` never describes stale genes. Pass `--output-folder` instead of `--in-place`
+to write an annotated copy and leave the source dataset untouched.
 
 ### Output Files {#gene-map-output}
 
 - **Output**: Enhanced parquet file(s) with gene information
 - **Format**: Parquet file in output folder
 - **Added Fields**: Gene names and metadata from FASTA headers
+- **Dataset mode**: annotated `pg` + `feature` views, plus a rebuilt `.h5mu` when the dataset has one
 
 ### Best Practices {#gene-map-best-practices}
 
-- Use species-specific FASTA files for accurate gene annotation
+- Use the same FASTA the search used, so every identified protein can be mapped
+- Gene names come from the `GN=` field of the FASTA headers; entries without it stay unmapped
 - Enable verbose mode for debugging
 
 ---

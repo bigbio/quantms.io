@@ -682,3 +682,44 @@ class TestArrowPivotEquivalence:
         assert list(arrow_index) == list(pandas_index)
         assert list(arrow_keys["run_file_name"]) == list(pandas_keys["run_file_name"])
         assert list(arrow_keys["intensity_label"]) == list(pandas_keys["intensity_label"])
+
+
+def test_protein_var_gene_names_serialise_when_every_gene_is_null(tmp_path):
+    """All-NULL gg_names must still write to h5mu.
+
+    TMT datasets whose consensusXML carries no GN= descriptions come back with
+    gg_names NULL on every row, so the gene_name column is inferred as float64
+    (all NaN) and h5py refuses it: "Can't implicitly convert non-string objects
+    to strings" (seen on MSV000085836, 4.89M protein rows).
+    """
+    with FeatureWriter(tmp_path / "g.feature.parquet") as writer:
+        writer.write_batch([make_feature_record(intensities=[{"label": "TMT126", "intensity": 10.0}])])
+
+    pg = make_pg_record(intensities=[{"label": "TMT126", "intensity": 100.0}])
+    pg["gg_names"] = None
+    with PgWriter(tmp_path / "g.pg.parquet") as writer:
+        writer.write_batch([pg])
+
+    run = make_run_record()
+    run["samples"] = [
+        {
+            "sample_accession": "g_TMT126",
+            "label": "TMT126",
+            "biological_replicate": 1,
+            "technical_replicate": 1,
+        }
+    ]
+    with RunWriter(tmp_path / "g.run.parquet") as writer:
+        writer.write_batch([run])
+
+    dataset = Dataset(tmp_path, file_prefix="g")
+    try:
+        mdata = build_mudata(dataset, intensity_label="TMT126", modalities=["proteins"])
+        gene_names = mdata.mod["proteins"].var["gene_name"]
+        assert list(gene_names) == [""]
+        assert all(isinstance(value, str) for value in gene_names)
+        mdata.write(str(tmp_path / "g.h5mu"))
+    finally:
+        dataset.close()
+
+    assert (tmp_path / "g.h5mu").exists()

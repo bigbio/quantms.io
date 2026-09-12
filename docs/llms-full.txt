@@ -11,7 +11,6 @@ qpx defines a standardized Parquet-based format (QPX) for quantitative proteomic
 pip install qpx                    # Core (includes mudata, anndata, scipy)
 pip install qpx[all]               # All optional extras
 pip install qpx[mzidentml]         # mzIdentML (lxml)
-pip install qpx[transforms]        # Gene mapping (biopython, mygene)
 pip install qpx[plotting]          # Visualization
 pip install qpx[quantify]          # mokume[directlfq]>=0.1.0
 pip install qpx[pdc]               # PDC/CPTAC download (pridepy)

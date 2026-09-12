@@ -15,14 +15,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - **`[mudata]` optional extra** — MuData export is included in the default install.
+- **`[transforms]` optional extra, with its `biopython` and `mygene` dependencies** — gene mapping now parses FASTA headers directly, so `qpxc transform gene-map` works in a bare install (and in the published container, which never carried the extra).
+- **MyGene.info lookup and the `--species` option of `qpxc transform gene-map`** — the transform no longer queries a network service. `gg_names` comes from the FASTA `GN=` field; `gg_accessions` is left as the converter wrote it instead of being overwritten from the API.
 
 ### Fixed
+
+- **`gene-map --dataset` copied only top-level files** — sharded / partitioned datasets kept their views in subdirectories, so an annotated copy came back incomplete. Subdirectories are now copied too, and a `--output-folder` that is the dataset itself or nested inside it is rejected instead of copying into its own destination.
+- **`gene-map` accepted `--in-place` together with `--output-folder`** — the destination silently won; it is now a usage error.
+- **`annotate_dataframe` divided by zero on an empty view** — the mapped-share log now reports 0.0%.
 
 - **Ontology PK uniqueness**: ontology writes collapse to one row per `(field_name, view)` (first-wins) when a field is both a discovered score and a mapped field.
 - **DIA-NN blank `anchor_protein`**: empty/whitespace first accession from `Protein.Group` is written as NULL; validators treat blank anchors as unset.
 
 ### Added
 
+- **`qpxc transform gene-map --dataset`**: annotate a whole QPX dataset instead of one file. Both quantification views that carry protein accessions (pg and feature) are annotated, identity recipes are preserved so `pg_id`/`feature_id` do not change, and the dataset's MuData view is rebuilt when one is present — so a `.h5mu` never describes stale genes. Writes go through a staging directory, so `--in-place` never truncates a parquet that is still being read.
+- **`qpx.mudata.write_dataset_mudata()`**: the converters' best-effort `.h5mu` writer, extracted so transforms that rewrite parquet can refresh the view the same way.
 - **QuantMS MSstats converter**: `qpxc convert quantms-msstats` converts a QuantMS-generated `*_msstats_in.csv` plus its authoritative SDRF into QPX Feature, Sample, Run, Dataset, Ontology, and Provenance views. LFQ/TMT/iTRAQ labels are canonicalized, channel rows are collapsed per measured Feature, and unsupported PSM/PG views are not fabricated.
 - **Spectronaut converter**: `qpxc convert spectronaut` — full support for Spectronaut report TSV files, producing feature.parquet and pg.parquet with DuckDB-accelerated batch processing
 - **CPTAC CDAP converter**: `qpxc convert cdap` — convert CPTAC CDAP `.psm` study directories to QPX psm/feature/pg/dataset/ontology/provenance views

@@ -52,7 +52,6 @@ pip install qpx                # includes MuData export (mudata, anndata, scipy)
 
 # Optional extras
 pip install "qpx[quantify]"    # protein quantification via mokume[directlfq]
-pip install "qpx[transforms]"  # gene mapping / BioPython helpers
 pip install "qpx[plotting]"    # plotting dependencies
 pip install "qpx[mzidentml]"   # mzIdentML conversion (lxml)
 pip install "qpx[pdc]"         # PDC/CPTAC download (pridepy)
@@ -87,7 +86,7 @@ pip install .
 uv pip install "qpx @ git+https://github.com/bigbio/qpx.git"
 
 # With optional extras
-uv pip install "qpx[quantify,transforms,plotting] @ git+https://github.com/bigbio/qpx.git"
+uv pip install "qpx[quantify,plotting] @ git+https://github.com/bigbio/qpx.git"
 ```
 
 **From a local clone:**

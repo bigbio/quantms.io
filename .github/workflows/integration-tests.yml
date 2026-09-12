@@ -45,8 +45,8 @@ jobs:
             --pg-matrix-path tests/examples/diann/small/diann_report.pg_matrix.tsv \
             --output-folder examples/output \
             --output-prefix diann \
-            --duckdb-max-memory 4GB \
-            --duckdb-threads 4 \
+            --max-memory 4GB \
+            --max-cpus 4 \
             --verbose
 
           echo "=== MaxQuant Examples ==="

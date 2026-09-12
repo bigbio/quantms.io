@@ -19,6 +19,4 @@ dependencies:
   # Dev / test
   - scikit-learn
   # Optional (uncomment as needed)
-  # - biopython     # transforms: gene mapping
-  # - mygene        # transforms: gene mapping via MyGene.info API
   # - plotly        # plotting: interactive charts
