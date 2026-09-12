@@ -100,7 +100,7 @@ def _parse_gene_names_from_fasta(
                 gene_map[accession].add(gene_name)
                 gene_map[name].add(gene_name)
 
-    logger.info(f"Parsed gene names for {len(gene_map)} protein identifiers from {fasta_path}")
+    logger.info("Parsed gene names for %d protein identifiers from %s", len(gene_map), fasta_path)
     return gene_map
 
 
@@ -274,7 +274,12 @@ class GeneMappingTransform:
             result["gg_accessions"] = None
 
         n_mapped = result["gg_names"].notna().sum()
-        logger.info(f"Mapped gene names for {n_mapped}/{len(result)} rows ({n_mapped / len(result) * 100:.1f}%)")
+        logger.info(
+            "Mapped gene names for %d/%d rows (%.1f%%)",
+            n_mapped,
+            len(result),
+            n_mapped / len(result) * 100,
+        )
         return result
 
     def annotate_dataset_features(
@@ -335,7 +340,7 @@ class GeneMappingTransform:
         ) as writer:
             writer.write_dataframe(annotated_df)
 
-        logger.info(f"Wrote gene-annotated features to {output_path}")
+        logger.info("Wrote gene-annotated features to %s", output_path)
         return output_path
 
     def annotate_dataset_pg(
@@ -394,5 +399,5 @@ class GeneMappingTransform:
         ) as writer:
             writer.write_dataframe(annotated_df)
 
-        logger.info(f"Wrote gene-annotated protein groups to {output_path}")
+        logger.info("Wrote gene-annotated protein groups to %s", output_path)
         return output_path

@@ -30,6 +30,21 @@ def transform():
 # ---------------------------------------------------------------------------
 
 
+def _validate_gene_map_inputs(
+    parquet_path: Optional[Path],
+    dataset: Optional[Path],
+    in_place: bool,
+    output_folder: Optional[Path],
+) -> None:
+    """Reject input/destination combinations gene-map cannot act on."""
+    if (parquet_path is None) == (dataset is None):
+        raise click.UsageError("Specify exactly one of --parquet-path or --dataset")
+    if dataset is None and output_folder is None:
+        raise click.UsageError("--output-folder is required with --parquet-path")
+    if dataset is not None and not in_place and output_folder is None:
+        raise click.UsageError("Specify --in-place or --output-folder with --dataset")
+
+
 @transform.command("gene-map")
 @click.option(
     "--parquet-path",
@@ -96,12 +111,7 @@ def transform_gene_map_cmd(
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    if (parquet_path is None) == (dataset is None):
-        raise click.UsageError("Specify exactly one of --parquet-path or --dataset")
-    if dataset is None and output_folder is None:
-        raise click.UsageError("--output-folder is required with --parquet-path")
-    if dataset is not None and not in_place and output_folder is None:
-        raise click.UsageError("Specify --in-place or --output-folder with --dataset")
+    _validate_gene_map_inputs(parquet_path, dataset, in_place, output_folder)
 
     from qpx.transforms.gene_mapping import GeneMappingTransform
 
@@ -125,6 +135,55 @@ def transform_gene_map_cmd(
     click.echo(f"Gene mapping complete. Output: {output_path}")
 
 
+def _copy_dataset_files(dataset: Path, out_dir: Path) -> None:
+    """Copy a dataset's files to ``out_dir`` so annotation never mutates the source."""
+    import shutil
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for path in dataset.iterdir():
+        if path.is_file():
+            shutil.copy2(path, out_dir / path.name)
+
+
+def _annotate_dataset_views(
+    mapping,
+    qpx_dataset,
+    prefix: str,
+    staging: Path,
+    out_dir: Path,
+) -> list[tuple[Path, Path]]:
+    """Write gene-annotated pg + feature views into ``staging``.
+
+    Returns the ``(staged, destination)`` pairs to move into place.
+    """
+    written: list[tuple[Path, Path]] = []
+    views = (
+        ("pg", qpx_dataset.pg, mapping.write_annotated_pg),
+        ("feature", qpx_dataset.feature, mapping.write_annotated_features),
+    )
+    for view, structure, write_view in views:
+        if structure is None:
+            continue
+        name = f"{prefix}.{view}.parquet"
+        write_view(qpx_dataset, staging / name)
+        written.append((staging / name, out_dir / name))
+    return written
+
+
+def _refresh_dataset_mudata(out_dir: Path, prefix: str) -> None:
+    """Rebuild the dataset's MuData view, so a stale h5mu never outlives the parquet."""
+    from qpx.mudata import write_dataset_mudata
+
+    if not (out_dir / f"{prefix}.h5mu").is_file():
+        return
+
+    refreshed = write_dataset_mudata(out_dir, prefix)
+    if refreshed is None:
+        click.echo("  h5mu: could not be rebuilt (see log); parquet views are annotated")
+    else:
+        click.echo(f"  {refreshed.name}: MuData view rebuilt")
+
+
 def _gene_map_dataset(
     mapping,
     dataset: Path,
@@ -139,7 +198,6 @@ def _gene_map_dataset(
     import shutil
 
     from qpx.dataset import Dataset
-    from qpx.mudata import write_dataset_mudata
     from qpx.transforms.utils import discover_qpx_file_prefix
 
     try:
@@ -149,27 +207,14 @@ def _gene_map_dataset(
 
     out_dir = dataset if in_place else Path(output_folder)
     if out_dir != dataset:
-        out_dir.mkdir(parents=True, exist_ok=True)
-        for path in dataset.iterdir():
-            if path.is_file():
-                shutil.copy2(path, out_dir / path.name)
+        _copy_dataset_files(dataset, out_dir)
 
     staging = out_dir / ".gene_map_tmp"
     staging.mkdir(parents=True, exist_ok=True)
-    written: list[tuple[Path, Path]] = []
 
     qpx_dataset = Dataset(str(dataset), file_prefix=prefix)
     try:
-        views = (
-            ("pg", qpx_dataset.pg, mapping.write_annotated_pg),
-            ("feature", qpx_dataset.feature, mapping.write_annotated_features),
-        )
-        for view, structure, write_view in views:
-            if structure is None:
-                continue
-            name = f"{prefix}.{view}.parquet"
-            write_view(qpx_dataset, staging / name)
-            written.append((staging / name, out_dir / name))
+        written = _annotate_dataset_views(mapping, qpx_dataset, prefix, staging, out_dir)
     finally:
         qpx_dataset.close()
 
@@ -183,12 +228,7 @@ def _gene_map_dataset(
     if not written:
         raise click.ClickException(f"No pg or feature Parquet file found in {dataset}")
 
-    if (out_dir / f"{prefix}.h5mu").is_file():
-        refreshed = write_dataset_mudata(out_dir, prefix)
-        if refreshed is None:
-            click.echo("  h5mu: could not be rebuilt (see log); parquet views are annotated")
-        else:
-            click.echo(f"  {refreshed.name}: MuData view rebuilt")
+    _refresh_dataset_mudata(out_dir, prefix)
 
     click.echo(f"\nGene mapping complete. Output: {out_dir}")
 
