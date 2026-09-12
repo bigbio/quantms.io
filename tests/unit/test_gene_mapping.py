@@ -106,3 +106,100 @@ def test_annotate_dataframe_maps_genes_and_keeps_existing_accessions(tmp_path):
 
     assert annotated["gg_names"].tolist() == [["BRCA1", "TP53"], None]
     assert annotated["gg_accessions"].tolist() == [["NC_000017.11"], None]
+
+
+def _write_gene_bundle(directory, prefix, label="TMT126"):
+    """Write a minimal pg/feature/run dataset whose genes come from the converter."""
+    from qpx.writers import PgWriter, RunWriter
+    from tests.conftest import make_pg_record, make_run_record
+
+    intensities = [{"label": label, "intensity": 100.0}]
+    with FeatureWriter(directory / f"{prefix}.feature.parquet") as writer:
+        writer.write_batch([make_feature_record(intensities=intensities)])
+    with PgWriter(directory / f"{prefix}.pg.parquet") as writer:
+        writer.write_batch([make_pg_record(intensities=intensities)])
+
+    run = make_run_record()
+    run["samples"] = [
+        {
+            "sample_accession": f"{prefix}_{label}",
+            "label": label,
+            "biological_replicate": 1,
+            "technical_replicate": 1,
+        }
+    ]
+    with RunWriter(directory / f"{prefix}.run.parquet") as writer:
+        writer.write_batch([run])
+
+
+def test_gene_map_dataset_annotates_pg_and_refreshes_mudata(tmp_path):
+    """--dataset rewrites the quantification views and rebuilds a stale h5mu."""
+    import mudata as mu
+    from click.testing import CliRunner
+
+    from qpx.cli.main import qpx_main
+    from qpx.mudata import write_dataset_mudata
+
+    dataset_dir = tmp_path / "qpx_output"
+    dataset_dir.mkdir()
+    _write_gene_bundle(dataset_dir, "openms")
+
+    # The converter's own view: genes as the converter wrote them.
+    assert write_dataset_mudata(dataset_dir, "openms") is not None
+    before = mu.read_h5mu(str(dataset_dir / "openms.h5mu"))
+    assert list(before.mod["proteins"].var["gene_name"]) == ["GENE1"]
+    pg_ids_before = pq.read_table(dataset_dir / "openms.pg.parquet").column("pg_id").to_pylist()
+
+    fasta = tmp_path / "db.fasta"
+    fasta.write_text(
+        ">sp|P12345|A_HUMAN a OS=Homo sapiens GN=BRCA1 PE=1 SV=2\nMKV\n"
+        ">sp|P12346|B_HUMAN b OS=Homo sapiens GN=TP53 PE=1 SV=2\nMKV\n"
+    )
+
+    result = CliRunner().invoke(
+        qpx_main,
+        ["transform", "gene-map", "--dataset", str(dataset_dir), "--fasta", str(fasta), "--in-place"],
+    )
+
+    assert result.exit_code == 0, result.output
+    pg_table = pq.read_table(dataset_dir / "openms.pg.parquet")
+    assert pg_table.column("gg_names").to_pylist()[0] == ["BRCA1", "TP53"]
+    assert pg_table.column("pg_id").to_pylist() == pg_ids_before
+    assert not (dataset_dir / ".gene_map_tmp").exists()
+
+    after = mu.read_h5mu(str(dataset_dir / "openms.h5mu"))
+    assert list(after.mod["proteins"].var["gene_name"]) == ["BRCA1"]
+
+
+def test_gene_map_dataset_to_output_folder_leaves_source_untouched(tmp_path):
+    """Without --in-place the source dataset is copied, not modified."""
+    from click.testing import CliRunner
+
+    from qpx.cli.main import qpx_main
+
+    dataset_dir = tmp_path / "qpx_output"
+    dataset_dir.mkdir()
+    _write_gene_bundle(dataset_dir, "openms")
+
+    fasta = tmp_path / "db.fasta"
+    fasta.write_text(">sp|P12345|A_HUMAN a OS=Homo sapiens GN=BRCA1 PE=1 SV=2\nMKV\n")
+    out_dir = tmp_path / "annotated"
+
+    result = CliRunner().invoke(
+        qpx_main,
+        [
+            "transform",
+            "gene-map",
+            "--dataset",
+            str(dataset_dir),
+            "--fasta",
+            str(fasta),
+            "--output-folder",
+            str(out_dir),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert pq.read_table(out_dir / "openms.pg.parquet").column("gg_names").to_pylist()[0] == ["BRCA1"]
+    assert pq.read_table(dataset_dir / "openms.pg.parquet").column("gg_names").to_pylist()[0] == ["GENE1"]
+    assert (out_dir / "openms.run.parquet").is_file()

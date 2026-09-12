@@ -337,3 +337,62 @@ class GeneMappingTransform:
 
         logger.info(f"Wrote gene-annotated features to {output_path}")
         return output_path
+
+    def annotate_dataset_pg(
+        self,
+        dataset,
+    ) -> pd.DataFrame:
+        """
+        Annotate a Dataset's protein-group data with gene names.
+
+        Args:
+            dataset: A qpx.Dataset with pg data.
+
+        Returns:
+            Annotated PG DataFrame with gg_names.
+        """
+        if dataset.pg is None:
+            raise ValueError("Dataset does not contain protein group data.")
+
+        pg_df = dataset.pg.to_df()
+        return self.annotate_dataframe(
+            pg_df,
+            protein_col="pg_accessions",
+        )
+
+    def write_annotated_pg(
+        self,
+        dataset,
+        output_path: Union[str, Path],
+    ) -> Path:
+        """
+        Write gene-annotated protein-group data to a new Parquet file.
+
+        Uses the PgWriter to produce a schema-validated output file, preserving
+        the source file's identity recipe so pg_id values do not change.
+
+        Args:
+            dataset: A qpx.Dataset with pg data.
+            output_path: Path for the output .pg.parquet file.
+
+        Returns:
+            Path to the written file.
+        """
+        from qpx.writers.pg import PgWriter
+
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        annotated_df = self.annotate_dataset_pg(dataset)
+
+        source_composite = dataset.pg.file_metadata.get("identity_composite")
+        identity_composite = tuple(source_composite.split(",")) if source_composite else None
+        with PgWriter(
+            output_path,
+            override_provided_ids=False,
+            identity_composite=identity_composite,
+        ) as writer:
+            writer.write_dataframe(annotated_df)
+
+        logger.info(f"Wrote gene-annotated protein groups to {output_path}")
+        return output_path

@@ -33,9 +33,20 @@ def transform():
 @transform.command("gene-map")
 @click.option(
     "--parquet-path",
-    help="QPX PSM or feature parquet file path",
-    required=True,
+    help="QPX PSM, feature or pg parquet file path (single-file mode)",
+    default=None,
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
+)
+@click.option(
+    "--dataset",
+    help="Path to a QPX dataset directory (annotates pg + feature, refreshes the h5mu)",
+    default=None,
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
+)
+@click.option(
+    "--in-place",
+    help="Dataset mode: overwrite the dataset's files instead of writing to --output-folder",
+    is_flag=True,
 )
 @click.option(
     "--fasta",
@@ -46,40 +57,65 @@ def transform():
 @click.option(
     "--output-folder",
     help="Output directory for generated files",
-    required=True,
+    default=None,
     type=click.Path(file_okay=False, path_type=Path),
 )
 @click.option("--verbose", help="Enable verbose logging", is_flag=True)
 def transform_gene_map_cmd(
-    parquet_path: Path,
+    parquet_path: Optional[Path],
+    dataset: Optional[Path],
+    in_place: bool,
     fasta: Path,
-    output_folder: Path,
+    output_folder: Optional[Path],
     verbose: bool,
 ):
     """Map gene names from a FASTA file to QPX parquet data.
 
-    Enriches protein identifications in QPX PSM or feature files with
-    gene names read from the ``GN=`` field of the FASTA headers. The FASTA is
-    the only source: nothing is fetched over the network.
+    Enriches protein identifications with gene names read from the ``GN=`` field
+    of the FASTA headers. The FASTA is the only source: nothing is fetched over
+    the network.
+
+    Given ``--dataset``, every quantification view that carries protein
+    accessions (pg and feature) is annotated, and the dataset's MuData view is
+    rebuilt when one is present, so the ``.h5mu`` never describes stale genes.
 
     \b
-    Example:
+    Examples:
+        # A single parquet file
         qpxc transform gene-map \\
             --parquet-path ./output/psm.parquet \\
             --fasta proteins.fasta \\
             --output-folder ./output
+
+        # A whole QPX dataset, refreshing its h5mu in place
+        qpxc transform gene-map \\
+            --dataset ./qpx_output \\
+            --fasta proteins.fasta \\
+            --in-place
     """
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    output_folder = Path(output_folder)
-    output_folder.mkdir(parents=True, exist_ok=True)
-
-    import pandas as pd
+    if (parquet_path is None) == (dataset is None):
+        raise click.UsageError("Specify exactly one of --parquet-path or --dataset")
+    if dataset is None and output_folder is None:
+        raise click.UsageError("--output-folder is required with --parquet-path")
+    if dataset is not None and not in_place and output_folder is None:
+        raise click.UsageError("Specify --in-place or --output-folder with --dataset")
 
     from qpx.transforms.gene_mapping import GeneMappingTransform
 
     mapping = GeneMappingTransform(fasta_path=str(fasta))
+
+    if dataset is not None:
+        _gene_map_dataset(mapping, dataset, in_place, output_folder)
+        return
+
+    import pandas as pd
+
+    output_folder = Path(output_folder)
+    output_folder.mkdir(parents=True, exist_ok=True)
+
     df = pd.read_parquet(str(parquet_path))
     protein_col = "pg_accessions" if "pg_accessions" in df.columns else "protein_accessions"
     annotated = mapping.annotate_dataframe(df, protein_col=protein_col)
@@ -87,6 +123,74 @@ def transform_gene_map_cmd(
     annotated.to_parquet(str(output_path), index=False)
 
     click.echo(f"Gene mapping complete. Output: {output_path}")
+
+
+def _gene_map_dataset(
+    mapping,
+    dataset: Path,
+    in_place: bool,
+    output_folder: Optional[Path],
+) -> None:
+    """Annotate a QPX dataset's pg + feature views and refresh its MuData view.
+
+    Views are written to a temporary directory first, so an in-place run never
+    truncates a parquet that is still being read.
+    """
+    import shutil
+
+    from qpx.dataset import Dataset
+    from qpx.mudata import write_dataset_mudata
+    from qpx.transforms.utils import discover_qpx_file_prefix
+
+    try:
+        prefix = discover_qpx_file_prefix(dataset)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    out_dir = dataset if in_place else Path(output_folder)
+    if out_dir != dataset:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        for path in dataset.iterdir():
+            if path.is_file():
+                shutil.copy2(path, out_dir / path.name)
+
+    staging = out_dir / ".gene_map_tmp"
+    staging.mkdir(parents=True, exist_ok=True)
+    written: list[tuple[Path, Path]] = []
+
+    qpx_dataset = Dataset(str(dataset), file_prefix=prefix)
+    try:
+        views = (
+            ("pg", qpx_dataset.pg, mapping.write_annotated_pg),
+            ("feature", qpx_dataset.feature, mapping.write_annotated_features),
+        )
+        for view, structure, write_view in views:
+            if structure is None:
+                continue
+            name = f"{prefix}.{view}.parquet"
+            write_view(qpx_dataset, staging / name)
+            written.append((staging / name, out_dir / name))
+    finally:
+        qpx_dataset.close()
+
+    try:
+        for source, target in written:
+            source.replace(target)
+            click.echo(f"  {target.name}: gene names annotated")
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
+
+    if not written:
+        raise click.ClickException(f"No pg or feature Parquet file found in {dataset}")
+
+    if (out_dir / f"{prefix}.h5mu").is_file():
+        refreshed = write_dataset_mudata(out_dir, prefix)
+        if refreshed is None:
+            click.echo("  h5mu: could not be rebuilt (see log); parquet views are annotated")
+        else:
+            click.echo(f"  {refreshed.name}: MuData view rebuilt")
+
+    click.echo(f"\nGene mapping complete. Output: {out_dir}")
 
 
 # ---------------------------------------------------------------------------
