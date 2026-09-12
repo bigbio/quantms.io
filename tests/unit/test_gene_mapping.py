@@ -1,6 +1,8 @@
 """Regression tests for identity-preserving gene annotation writes."""
 
+import pandas as pd
 import pyarrow.parquet as pq
+import pytest
 
 from qpx import Dataset
 from qpx.transforms.gene_mapping import (
@@ -252,3 +254,69 @@ def test_annotate_dataframe_handles_an_empty_frame(tmp_path):
 
     assert len(annotated) == 0
     assert "gg_names" in annotated.columns
+
+
+def _write_fasta(tmp_path, text):
+    fasta = tmp_path / "db.fasta"
+    fasta.write_text(text)
+    return fasta
+
+
+def test_annotate_dataframe_keeps_existing_genes_the_fasta_cannot_resolve(tmp_path):
+    """A FASTA without GN= must not erase gene names a converter already wrote.
+
+    DIA-NN conversions carry gg_names from the DIA-NN report. Running gene-map
+    with a contaminants-only or GN-stripped FASTA used to overwrite every row
+    with None, which --in-place made unrecoverable.
+    """
+    fasta = _write_fasta(
+        tmp_path,
+        ">sp|P12345|PROT_HUMAN desc PE=1 SV=2\nMKV\n>sp|Q99999|OTHR_HUMAN desc\nMKV\n",
+    )
+    df = pd.DataFrame(
+        {
+            "pg_accessions": [["P12345"], ["Q99999"]],
+            "gg_names": [["BRCA1"], ["TP53"]],
+        }
+    )
+
+    annotated = GeneMappingTransform(fasta).annotate_dataframe(df)
+
+    assert annotated["gg_names"].tolist() == [["BRCA1"], ["TP53"]]
+
+
+def test_annotate_dataframe_overwrites_existing_genes_the_fasta_does_resolve(tmp_path):
+    """Preserving unresolved rows must not stop the FASTA from correcting resolved ones."""
+    fasta = _write_fasta(tmp_path, ">sp|P12345|PROT_HUMAN desc GN=NEWGENE PE=1\nMKV\n")
+    df = pd.DataFrame({"pg_accessions": [["P12345"]], "gg_names": [["STALE"]]})
+
+    annotated = GeneMappingTransform(fasta).annotate_dataframe(df)
+
+    assert annotated["gg_names"].tolist() == [["NEWGENE"]]
+
+
+def test_annotate_dataframe_reports_zero_share_for_a_fasta_without_genes(tmp_path):
+    fasta = _write_fasta(tmp_path, ">sp|P12345|PROT_HUMAN desc PE=1\nMKV\n")
+    transform = GeneMappingTransform(fasta)
+
+    transform.annotate_dataframe(pd.DataFrame({"pg_accessions": [["P12345"]]}))
+
+    assert transform.last_mapped_share == 0.0
+
+
+def test_parse_gene_names_log_counts_only_identifiers_carrying_a_gene(tmp_path, caplog):
+    fasta = _write_fasta(
+        tmp_path,
+        ">sp|P12345|A_HUMAN desc GN=BRCA1\nMKV\n>sp|Q99999|B_HUMAN desc\nMKV\n",
+    )
+    with caplog.at_level("INFO"):
+        GeneMappingTransform(fasta).gene_map
+
+    assert "Parsed gene names for 1/2 protein identifiers" in caplog.text
+
+
+def test_unrecognised_map_by_is_rejected(tmp_path):
+    fasta = _write_fasta(tmp_path, ">sp|P12345|A_HUMAN desc GN=BRCA1\nMKV\n")
+
+    with pytest.raises(ValueError, match="map_by must be one of"):
+        GeneMappingTransform(fasta, map_by="Accession")
