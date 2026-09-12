@@ -534,7 +534,14 @@ def _build_protein_adata(
     gene_df = gene_df.drop_duplicates(subset="anchor_protein", keep="first")
     gene_df = gene_df.set_index("anchor_protein").reindex(proteins)
 
-    var = pd.DataFrame({"gene_name": gene_df["gene_name"].values}, index=proteins)
+    # A missing gene must still serialise as a string. When every protein lacks a
+    # gene the column comes back float64 (all NaN) and h5py refuses to write var
+    # ("Can't implicitly convert non-string objects to strings"). That is the norm
+    # for TMT datasets whose consensusXML carries no GN= descriptions, so gg_names
+    # is NULL on every row. Same reason _load_run_obs fills its string columns.
+    gene_names = gene_df["gene_name"].fillna("").astype(str)
+
+    var = pd.DataFrame({"gene_name": gene_names.values}, index=proteins)
 
     return ad.AnnData(X=intensity_matrix, obs=obs, var=var)
 
