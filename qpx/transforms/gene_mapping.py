@@ -274,11 +274,12 @@ class GeneMappingTransform:
             result["gg_accessions"] = None
 
         n_mapped = result["gg_names"].notna().sum()
+        mapped_share = n_mapped / len(result) * 100 if len(result) else 0.0
         logger.info(
             "Mapped gene names for %d/%d rows (%.1f%%)",
             n_mapped,
             len(result),
-            n_mapped / len(result) * 100,
+            mapped_share,
         )
         return result
 

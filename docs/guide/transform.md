@@ -148,11 +148,26 @@ qpxc transform gene-map \
     --output-folder ./output
 ```
 
+#### Annotating a Whole Dataset {#gene-map-example-dataset}
+
+```bash
+qpxc transform gene-map \
+    --dataset ./qpx_output \
+    --fasta tests/examples/fasta/Homo-sapiens.fasta \
+    --in-place
+```
+
+Every quantification view that carries protein accessions (`pg` and `feature`) is
+annotated, and the dataset's MuData view is rebuilt when one is present, so the
+`.h5mu` never describes stale genes. Pass `--output-folder` instead of `--in-place`
+to write an annotated copy and leave the source dataset untouched.
+
 ### Output Files {#gene-map-output}
 
 - **Output**: Enhanced parquet file(s) with gene information
 - **Format**: Parquet file in output folder
 - **Added Fields**: Gene names and metadata from FASTA headers
+- **Dataset mode**: annotated `pg` + `feature` views, plus a rebuilt `.h5mu` when the dataset has one
 
 ### Best Practices {#gene-map-best-practices}
 

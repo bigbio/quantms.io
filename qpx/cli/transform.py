@@ -44,7 +44,13 @@ def _validate_gene_map_inputs(
     if dataset is not None and not in_place and output_folder is None:
         raise click.UsageError("Specify --in-place or --output-folder with --dataset")
     if dataset is not None and in_place and output_folder is not None:
-        raise click.UsageError("--in-place and --output-folder are mutually exclusive")
+        raise click.UsageError("Specify either --in-place or --output-folder with --dataset, not both")
+    if dataset is not None and output_folder is not None:
+        source, destination = dataset.resolve(), output_folder.resolve()
+        if destination == source:
+            raise click.UsageError("--output-folder is the dataset itself; use --in-place")
+        if source in destination.parents:
+            raise click.UsageError("--output-folder must not be inside the dataset directory")
 
 
 @transform.command("gene-map")
@@ -144,8 +150,6 @@ def _copy_dataset_files(dataset: Path, out_dir: Path) -> None:
     """Copy the complete dataset, including directory-backed views."""
     import shutil
 
-    if out_dir == dataset or dataset in out_dir.parents:
-        raise click.ClickException("--output-folder must be outside the source dataset; use --in-place to update it")
     if out_dir.exists() and any(out_dir.iterdir()):
         raise click.ClickException("--output-folder must be empty")
     shutil.copytree(dataset, out_dir, dirs_exist_ok=True)

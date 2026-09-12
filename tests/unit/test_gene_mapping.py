@@ -203,3 +203,52 @@ def test_gene_map_dataset_to_output_folder_leaves_source_untouched(tmp_path):
     assert pq.read_table(out_dir / "openms.pg.parquet").column("gg_names").to_pylist()[0] == ["BRCA1"]
     assert pq.read_table(dataset_dir / "openms.pg.parquet").column("gg_names").to_pylist()[0] == ["GENE1"]
     assert (out_dir / "openms.run.parquet").is_file()
+
+
+def test_gene_map_dataset_copy_preserves_subdirectories(tmp_path):
+    """Sharded / partitioned datasets keep views in subdirectories; the copy must keep them."""
+    from click.testing import CliRunner
+
+    from qpx.cli.main import qpx_main
+
+    dataset_dir = tmp_path / "qpx_output"
+    dataset_dir.mkdir()
+    _write_gene_bundle(dataset_dir, "openms")
+    shard = dataset_dir / "psm_shards"
+    shard.mkdir()
+    (shard / "part-0.parquet").write_bytes(b"shard-payload")
+
+    fasta = tmp_path / "db.fasta"
+    fasta.write_text(">sp|P12345|A_HUMAN a OS=Homo sapiens GN=BRCA1 PE=1 SV=2\nMKV\n")
+    out_dir = tmp_path / "annotated"
+
+    result = CliRunner().invoke(
+        qpx_main,
+        [
+            "transform",
+            "gene-map",
+            "--dataset",
+            str(dataset_dir),
+            "--fasta",
+            str(fasta),
+            "--output-folder",
+            str(out_dir),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert (out_dir / "psm_shards" / "part-0.parquet").read_bytes() == b"shard-payload"
+
+
+def test_annotate_dataframe_handles_an_empty_frame(tmp_path):
+    """An empty view must not divide by zero when logging the mapped share."""
+    import pandas as pd
+
+    fasta = tmp_path / "db.fasta"
+    fasta.write_text(">sp|P12345|A_HUMAN a OS=Homo sapiens GN=BRCA1 PE=1 SV=2\nMKV\n")
+    empty = pd.DataFrame({"pg_accessions": []})
+
+    annotated = GeneMappingTransform(fasta).annotate_dataframe(empty)
+
+    assert len(annotated) == 0
+    assert "gg_names" in annotated.columns
