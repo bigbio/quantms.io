@@ -112,6 +112,29 @@ class TestTransformGeneMapCLI:
         assert both.exit_code != 0
         assert "exactly one of --parquet-path or --dataset" in both.output
 
+    def test_gene_map_dataset_rejects_conflicting_destinations(self, tmp_path):
+        """--in-place and --output-folder together, or a destination inside the source."""
+        fasta = tmp_path / "db.fasta"
+        fasta.write_text(">sp|P12345|A_HUMAN a GN=BRCA1\nMKV\n")
+        data = tmp_path / "qpx_output"
+        data.mkdir()
+        (data / "openms.pg.parquet").touch()
+        runner = CliRunner()
+
+        base = ["transform", "gene-map", "--fasta", str(fasta), "--dataset", str(data)]
+
+        both = runner.invoke(qpx_main, base + ["--in-place", "--output-folder", str(tmp_path / "out")])
+        assert both.exit_code != 0
+        assert "not both" in both.output
+
+        same = runner.invoke(qpx_main, base + ["--output-folder", str(data)])
+        assert same.exit_code != 0
+        assert "use --in-place" in same.output
+
+        nested = runner.invoke(qpx_main, base + ["--output-folder", str(data / "annotated")])
+        assert nested.exit_code != 0
+        assert "must not be inside the dataset" in nested.output
+
     def test_gene_map_dataset_requires_a_destination(self, tmp_path):
         fasta = tmp_path / "db.fasta"
         fasta.write_text(">sp|P12345|A_HUMAN a GN=BRCA1\nMKV\n")

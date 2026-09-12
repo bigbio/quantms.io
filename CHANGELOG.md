@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`gene-map --dataset` copied only top-level files** — sharded / partitioned datasets kept their views in subdirectories, so an annotated copy came back incomplete. Subdirectories are now copied too, and a `--output-folder` that is the dataset itself or nested inside it is rejected instead of copying into its own destination.
+- **`gene-map` accepted `--in-place` together with `--output-folder`** — the destination silently won; it is now a usage error.
+- **`annotate_dataframe` divided by zero on an empty view** — the mapped-share log now reports 0.0%.
+
 - **Ontology PK uniqueness**: ontology writes collapse to one row per `(field_name, view)` (first-wins) when a field is both a discovered score and a mapped field.
 - **DIA-NN blank `anchor_protein`**: empty/whitespace first accession from `Protein.Group` is written as NULL; validators treat blank anchors as unset.
 
