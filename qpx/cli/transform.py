@@ -189,6 +189,11 @@ def _annotate_dataset_views(
             continue
         name = f"{prefix}.{view}.parquet"
         write_view(qpx_dataset, staging / name)
+        share = mapping.last_mapped_share
+        if share is not None:
+            click.echo(f"  {name}: {share:.1f}% of rows matched a gene in the FASTA")
+            if share == 0.0:
+                click.echo(f"  WARNING: the FASTA resolved no genes for {view}; existing gene names were kept unchanged")
         written.append((staging / name, out_dir / name))
     return written
 

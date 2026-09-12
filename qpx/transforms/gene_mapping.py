@@ -37,6 +37,10 @@ logger = logging.getLogger(__name__)
 
 _GENE_NAME_RE = re.compile(r"\bGN=(\S+)")
 
+# "both" keys the map by accession AND entry name; it was previously reachable
+# only by passing an unrecognised value, which made a typo silently change mode.
+_MAP_BY_CHOICES = frozenset({"accession", "name", "both"})
+
 
 def _parse_fasta_header(header: str) -> tuple[str, str, Optional[str]]:
     """Split one FASTA header line into (accession, entry name, gene name).
@@ -92,15 +96,26 @@ def _parse_gene_names_from_fasta(
             accession, name, gene_name = _parse_fasta_header(line)
 
             if map_by == "accession":
-                gene_map[accession].add(gene_name)
+                keys = (accession,)
             elif map_by == "name":
-                gene_map[name].add(gene_name)
+                keys = (name,)
             else:
                 # Map by both accession and name for maximum matching
-                gene_map[accession].add(gene_name)
-                gene_map[name].add(gene_name)
+                keys = (accession, name)
+            for key in keys:
+                gene_map[key].add(gene_name)
 
-    logger.info("Parsed gene names for %d protein identifiers from %s", len(gene_map), fasta_path)
+    # Count identifiers that actually carry a gene, not every header parsed. The
+    # old count included GN-less entries, so a FASTA yielding no genes at all
+    # still reported "Parsed gene names for N" — the opposite of the truth, on
+    # the one line a caller would check before overwriting annotations.
+    with_gene = sum(1 for names in gene_map.values() if any(n is not None for n in names))
+    logger.info(
+        "Parsed gene names for %d/%d protein identifiers from %s",
+        with_gene,
+        len(gene_map),
+        fasta_path,
+    )
     return gene_map
 
 
@@ -219,10 +234,20 @@ class GeneMappingTransform:
         if not self._fasta_path.exists():
             raise FileNotFoundError(f"FASTA file not found: {fasta_path}")
 
+        if map_by not in _MAP_BY_CHOICES:
+            raise ValueError(f"map_by must be one of {sorted(_MAP_BY_CHOICES)}, got {map_by!r}")
         self._map_by = map_by
 
         # Lazily computed
         self._gene_map: Optional[dict[str, set[str]]] = None
+        # Share of rows the last annotate_dataframe call resolved from the FASTA,
+        # so callers can surface a zero-yield run instead of silently writing one.
+        self._last_mapped_share: Optional[float] = None
+
+    @property
+    def last_mapped_share(self) -> Optional[float]:
+        """Percentage of rows the most recent annotation resolved from the FASTA."""
+        return self._last_mapped_share
 
     @property
     def gene_map(self) -> dict[str, set[str]]:
@@ -263,24 +288,38 @@ class GeneMappingTransform:
         gene_map = self.gene_map
 
         # Map protein accessions to gene names
-        result["gg_names"] = result[protein_col].apply(
+        mapped = result[protein_col].apply(
             lambda accessions: _resolve_gene_names(
                 _normalize_protein_list(accessions),
                 gene_map,
             )
         )
 
+        # A FASTA the accession is absent from says nothing about that protein's
+        # gene — it is not evidence the gene is unknown. Overwriting regardless
+        # wiped every gg_names a converter had already written (DIA-NN reports
+        # carry them) whenever the FASTA lacked GN= fields, and --in-place made
+        # that unrecoverable. Only rows that actually resolved are replaced.
+        if "gg_names" in result.columns:
+            existing = result["gg_names"]
+            result["gg_names"] = [
+                new_names if new_names is not None else old_names for new_names, old_names in zip(mapped, existing, strict=True)
+            ]
+        else:
+            result["gg_names"] = mapped
+
         if "gg_accessions" not in result.columns:
             result["gg_accessions"] = None
 
-        n_mapped = result["gg_names"].notna().sum()
+        n_mapped = int(mapped.notna().sum())
         mapped_share = n_mapped / len(result) * 100 if len(result) else 0.0
         logger.info(
-            "Mapped gene names for %d/%d rows (%.1f%%)",
+            "Mapped gene names from FASTA for %d/%d rows (%.1f%%)",
             n_mapped,
             len(result),
             mapped_share,
         )
+        self._last_mapped_share = mapped_share
         return result
 
     def annotate_dataset_features(
