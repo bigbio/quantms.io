@@ -83,7 +83,48 @@ class TestTransformGeneMapCLI:
     def test_genemap_help_renders(self):
         runner = CliRunner()
         result = runner.invoke(qpx_main, ["transform", "gene-map", "--help"])
-        _assert_help(result, "--fasta")
+        _assert_help(result, "--parquet-path", "--dataset", "--in-place", "--fasta")
+
+    def test_gene_map_requires_exactly_one_input_mode(self, tmp_path):
+        fasta = tmp_path / "db.fasta"
+        fasta.write_text(">sp|P12345|A_HUMAN a GN=BRCA1\nMKV\n")
+        runner = CliRunner()
+
+        neither = runner.invoke(qpx_main, ["transform", "gene-map", "--fasta", str(fasta)])
+        assert neither.exit_code != 0
+        assert "exactly one of --parquet-path or --dataset" in neither.output
+
+        parquet = tmp_path / "openms.pg.parquet"
+        parquet.touch()
+        both = runner.invoke(
+            qpx_main,
+            [
+                "transform",
+                "gene-map",
+                "--fasta",
+                str(fasta),
+                "--parquet-path",
+                str(parquet),
+                "--dataset",
+                str(tmp_path),
+            ],
+        )
+        assert both.exit_code != 0
+        assert "exactly one of --parquet-path or --dataset" in both.output
+
+    def test_gene_map_dataset_requires_a_destination(self, tmp_path):
+        fasta = tmp_path / "db.fasta"
+        fasta.write_text(">sp|P12345|A_HUMAN a GN=BRCA1\nMKV\n")
+        (tmp_path / "openms.pg.parquet").touch()
+
+        runner = CliRunner()
+        result = runner.invoke(
+            qpx_main,
+            ["transform", "gene-map", "--fasta", str(fasta), "--dataset", str(tmp_path)],
+        )
+
+        assert result.exit_code != 0
+        assert "--in-place or --output-folder" in result.output
 
 
 class TestTransformQuantifyCLI:

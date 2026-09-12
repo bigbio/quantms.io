@@ -844,3 +844,68 @@ def build_mudata(
                 frame[str_cols] = frame[str_cols].fillna("")
 
     return mdata
+
+
+def write_dataset_mudata(
+    output_folder: Path | str,
+    prefix: str,
+    *,
+    all_intensity_labels: bool = True,
+) -> Path | None:
+    """Assemble and write the MuData (.h5mu) view of a QPX dataset on disk.
+
+    Shared by the converters (which refresh the view right after writing the
+    parquet) and by ``qpxc transform`` commands that rewrite those parquet, so a
+    stale h5mu never outlives the data it describes.
+
+    Best-effort: expected dependency, database, validation, and I/O failures are
+    logged and skipped rather than raised, because the parquet views — not the
+    h5mu — are the dataset's source of truth.
+    """
+    output_folder = Path(output_folder)
+    h5mu_path = output_folder / f"{prefix}.h5mu"
+    h5mu_tmp = h5mu_path.with_name(f"{h5mu_path.stem}.tmp{h5mu_path.suffix}")
+    try:
+        # Core parquet files have already been refreshed, so an older MuData
+        # view would be stale if this build fails.
+        h5mu_path.unlink(missing_ok=True)
+
+        from qpx.dataset import Dataset
+
+        dataset = Dataset(str(output_folder), file_prefix=prefix)
+        try:
+            required_modalities = {
+                name
+                for name, structure in (
+                    ("precursors", dataset.feature),
+                    ("proteins", dataset.pg),
+                )
+                if structure is not None
+            }
+            if not required_modalities:
+                logger.info("Skipping muData for %s: no feature or pg quantification data", prefix)
+                return None
+
+            modalities = required_modalities | {"expression", "differential"}
+            mdata = build_mudata(
+                dataset,
+                modalities=sorted(modalities),
+                all_intensity_labels=all_intensity_labels,
+            )
+            missing = required_modalities - set(mdata.mod)
+            if missing:
+                raise ValueError(f"Missing required quantification modalities: {', '.join(sorted(missing))}")
+            mdata.write(str(h5mu_tmp))
+            h5mu_tmp.replace(h5mu_path)
+        finally:
+            dataset.close()
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError, duckdb.Error) as exc:
+        logger.warning("Could not build muData for %s: %s", prefix, exc)
+        return None
+    finally:
+        try:
+            h5mu_tmp.unlink(missing_ok=True)
+        except OSError as exc:
+            logger.warning("Could not remove temporary muData file %s: %s", h5mu_tmp, exc)
+    logger.info("Wrote muData to %s", h5mu_path)
+    return h5mu_path

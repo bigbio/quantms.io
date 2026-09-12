@@ -34,10 +34,10 @@ dependencies = [
 [project.optional-dependencies]
 mzidentml = ["lxml>=4.9.0"]
 pdc = ["pridepy>=0.0.15"]
-transforms = ["biopython", "mygene>=1.0.0"]
+# Gene mapping reads FASTA headers directly, so it needs no extra dependency.
 plotting = ["plotly>=5.0.0", "scikit-learn>=1.5.0"]
 quantify = ["mokume[directlfq]>=0.1.0"]
-all = ["lxml>=4.9.0", "biopython", "mygene>=1.0.0", "plotly>=5.0.0", "scikit-learn>=1.5.0", "mokume[directlfq]>=0.1.0"]
+all = ["lxml>=4.9.0", "plotly>=5.0.0", "scikit-learn>=1.5.0", "mokume[directlfq]>=0.1.0"]
 dev = [
     "pytest",
     "pytest-timeout",
