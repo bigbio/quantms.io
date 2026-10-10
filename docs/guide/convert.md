@@ -100,6 +100,8 @@ def generate_example(command, default_text=""):
 
 The `convert` command group provides converters for multiple proteomics software outputs, enabling standardization of data formats for downstream analysis. All commands generate parquet-format output files following the QPX specification.
 
+**Shared metadata options.** The commands `diann`, `maxquant`, `fragpipe`, `mzidentml`, `openms-consensus`, `quantms-msstats`, `spectronaut` and `cdap` accept five options: `--software-name`, `--software-version`, `--software-config`, `--enrich-pride` and `--compute-integrity`. `--software-version` and `--software-config` require `--software-name`. `--enrich-pride` requires `--project-accession` and is best-effort. `--compute-integrity` covers the Parquet and h5ad files, not the `.h5mu` file. The steps run in this order: conversion, protein properties (`--fasta`), software, PRIDE, MuData, integrity.
+
 ## Available Commands
 
 - [openms](#openms) - Enrich native OpenMS `-out_qpx` output into a full QPX dataset
@@ -908,6 +910,21 @@ qpxc convert openms-consensus \
   --structures feature,psm,run,sample \
   --output-folder ./qpx_output \
   --output-prefix PXD011628
+```
+
+Record the workflow, its parameters and PRIDE metadata:
+
+```bash
+qpxc convert openms-consensus \
+  --consensusxml results.consensusXML \
+  --sdrf-file experiment.sdrf.tsv \
+  --output-folder ./qpx_output \
+  --output-prefix PXD001819 \
+  --project-accession PXD001819 \
+  --software-name nf-core/mhcquant \
+  --software-version 3.1.0 \
+  --software-config params.json \
+  --enrich-pride
 ```
 
 ### Output Files {#openms-consensus-output}
