@@ -32,6 +32,7 @@ _DIANN_SMALL = Path(__file__).resolve().parents[1] / "examples" / "diann" / "sma
 
 
 def _run(base, *extra, prefix="t"):
+    """Run ``convert openms-consensus`` on a one-file consensusXML and return the result and output folder."""
     base.mkdir(parents=True, exist_ok=True)
     cx = base / "input.consensusXML"
     cx.write_text(_TMT_CONSENSUSXML)
@@ -55,6 +56,7 @@ def _run(base, *extra, prefix="t"):
 
 
 def test_software_options_record_workflow_in_dataset_and_provenance(tmp_path):
+    """--software-name and related options set dataset software fields and add a workflow provenance step."""
     params = tmp_path / "params.json"
     params.write_text(json.dumps({"b": 1, "a": [1, 2]}))
     baseline, baseline_folder = _run(tmp_path / "baseline")
@@ -88,6 +90,7 @@ def test_software_options_record_workflow_in_dataset_and_provenance(tmp_path):
 
 
 def test_software_version_without_name_is_usage_error(tmp_path):
+    """--software-version without --software-name is a usage error that writes no output."""
     result, folder = _run(tmp_path, "--software-version", "1.0")
 
     assert result.exit_code == 2
@@ -96,6 +99,7 @@ def test_software_version_without_name_is_usage_error(tmp_path):
 
 
 def test_software_config_must_be_valid_json(tmp_path):
+    """--software-config must point to a readable JSON file."""
     bad = tmp_path / "bad.json"
     bad.write_text("{not json")
 
@@ -106,6 +110,7 @@ def test_software_config_must_be_valid_json(tmp_path):
 
 
 def test_compute_integrity_records_files_and_verifies(tmp_path):
+    """--compute-integrity records file checksums, row counts and sizes that verify clean."""
     result, folder = _run(tmp_path, "--compute-integrity")
 
     assert result.exit_code == 0, result.output
@@ -115,10 +120,12 @@ def test_compute_integrity_records_files_and_verifies(tmp_path):
     assert "t.feature.parquet" in dict(record["file_sizes_bytes"])
     assert record["total_structures"] == len(dict(record["file_checksums"]))
     assert record["packaged_at"]
-    assert Dataset(str(folder)).verify_integrity()["errors"] == []
+    with Dataset(str(folder)) as ds:
+        assert ds.verify_integrity()["errors"] == []
 
 
 def test_enrich_pride_sets_project_title(tmp_path, monkeypatch):
+    """--enrich-pride writes the PRIDE project title into the dataset."""
     monkeypatch.setattr(
         "qpx.core.pride.fetch_pride_metadata",
         lambda acc: {"project_title": "T", "project_description": "D", "pubmed_id": "1"},
@@ -131,7 +138,10 @@ def test_enrich_pride_sets_project_title(tmp_path, monkeypatch):
 
 
 def test_enrich_pride_failure_is_a_warning(tmp_path, monkeypatch):
+    """A PRIDE lookup failure prints a warning and the conversion still succeeds."""
+
     def _unavailable(acc):
+        """Simulate a PRIDE API outage."""
         raise RuntimeError("PRIDE unavailable")
 
     monkeypatch.setattr("qpx.core.pride.fetch_pride_metadata", _unavailable)
@@ -177,6 +187,7 @@ def test_metadata_file_without_prefix_requires_one_match(tmp_path, files, expect
 
 
 def test_apply_software_without_metadata_files_warns(tmp_path, capsys):
+    """_apply_software warns and skips when the dataset or provenance file is missing."""
     _apply_software(tmp_path, "t", "nf-core/mhcquant", "3.1.0", None)
 
     assert "WARNING: no dataset/provenance metadata found; --software-name skipped" in capsys.readouterr().err
@@ -184,6 +195,7 @@ def test_apply_software_without_metadata_files_warns(tmp_path, capsys):
 
 @pytest.mark.parametrize("command", _METADATA_COMMANDS)
 def test_convert_command_lists_metadata_options(command):
+    """Each metadata-enabled convert command lists the shared metadata options in its help."""
     result = CliRunner().invoke(convert, [command, "--help"])
 
     assert result.exit_code == 0, result.output
@@ -193,6 +205,7 @@ def test_convert_command_lists_metadata_options(command):
 
 @pytest.mark.parametrize("command", ["sdrf", "mz"])
 def test_convert_command_without_metadata_options(command):
+    """The sdrf and mz convert commands do not offer the shared metadata options."""
     result = CliRunner().invoke(convert, [command, "--help"])
 
     assert result.exit_code == 0, result.output
@@ -200,6 +213,7 @@ def test_convert_command_without_metadata_options(command):
 
 
 def test_convert_diann_records_workflow_and_integrity(tmp_path):
+    """convert diann records workflow provenance and verifiable integrity, and reports its MuData view."""
     folder = tmp_path / "out"
     result = CliRunner().invoke(
         convert,
@@ -226,5 +240,6 @@ def test_convert_diann_records_workflow_and_integrity(tmp_path):
     assert steps[0]["step_category"] == "workflow"
     assert steps[0]["tool_name"] == "quantmsdiann"
     assert "DIA-NN" in [step["tool_name"] for step in steps]
-    assert Dataset(str(folder)).verify_integrity()["errors"] == []
+    with Dataset(str(folder)) as ds:
+        assert ds.verify_integrity()["errors"] == []
     assert (folder / "diann.h5mu").exists() == ("MuData view: diann.h5mu" in result.output)
