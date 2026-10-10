@@ -55,6 +55,14 @@ def _extract_nt(value: str) -> str:
     return str(value)
 
 
+def _extract_ac(value: str) -> str:
+    """Extract the ``AC=`` accession from a complex SDRF value ('' when absent)."""
+    if pd.isna(value):
+        return ""
+    m = re.search(r"AC=(.+?)(;|$)", str(value))
+    return m.group(1).strip() if m else ""
+
+
 def _collect_column_values(df: pd.DataFrame, substr: str) -> list[str]:
     """Collect unique values from all columns whose name contains *substr*."""
     cols = [c for c in df.columns if substr in c]
@@ -145,9 +153,9 @@ class SdrfConverter(BaseConverter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # Track unique run metadata values for ontology enrichment
-        self._run_instruments: set[str] = set()
-        self._run_enzymes: set[str] = set()
-        self._run_dissociation: set[str] = set()
+        self._run_instruments: set[tuple[str, str]] = set()
+        self._run_enzymes: set[tuple[str, str]] = set()
+        self._run_dissociation: set[tuple[str, str]] = set()
 
     def convert(
         self,
@@ -370,14 +378,15 @@ class SdrfConverter(BaseConverter):
             if inst_vals:
                 instrument = _extract_nt(str(inst_vals[0]))
                 if instrument:
-                    self._run_instruments.add(instrument)
+                    self._run_instruments.add((instrument, _extract_ac(str(inst_vals[0]))))
 
             # Enzymes (list of plain strings)
             enzymes = None
             enz_vals = _collect_column_values(group, _COL_ENZYME)
             if enz_vals:
-                enzymes = [_extract_nt(str(v)) for v in enz_vals if pd.notna(v)]
-                self._run_enzymes.update(e for e in enzymes if e)
+                enzyme_pairs = [(_extract_nt(str(v)), _extract_ac(str(v))) for v in enz_vals if pd.notna(v)]
+                enzymes = [name for name, _ in enzyme_pairs]
+                self._run_enzymes.update(pair for pair in enzyme_pairs if pair[0])
 
             # Dissociation method (plain string)
             dissoc = None
@@ -385,7 +394,7 @@ class SdrfConverter(BaseConverter):
             if dissoc_vals:
                 dissoc = _extract_nt(str(dissoc_vals[0]))
                 if dissoc:
-                    self._run_dissociation.add(dissoc)
+                    self._run_dissociation.add((dissoc, _extract_ac(str(dissoc_vals[0]))))
 
             # Acquisition method (plain string; e.g. DDA / DIA)
             acquisition_method = None
@@ -423,8 +432,9 @@ class SdrfConverter(BaseConverter):
     def run_ontology_entries(self) -> list[dict]:
         """Generate ontology.parquet entries for run metadata terms.
 
-        Resolves instrument, enzyme, and dissociation method names to
-        PSI-MS CV accessions using ``PublicOntology``.
+        Resolves instrument, enzyme, and dissociation method terms to
+        PSI-MS CV accessions using ``PublicOntology``. The SDRF ``AC=``
+        accession takes precedence over the ``NT=`` name.
         """
         try:
             from qpx.core.ontology import PublicOntology
@@ -437,14 +447,16 @@ class SdrfConverter(BaseConverter):
         entries: list[dict] = []
         seen: set[str] = set()
 
-        for name in self._run_instruments | self._run_enzymes | self._run_dissociation:
+        for name, accession in self._run_instruments | self._run_enzymes | self._run_dissociation:
             if not name or name in seen:
                 continue
-            seen.add(name)
 
-            term = ms.lookup_name(name)
+            term = ms.lookup(accession) if accession else None
+            if term is None:
+                term = ms.lookup_name(name)
             if term is None:
                 continue
+            seen.add(name)
 
             entries.append(
                 {
