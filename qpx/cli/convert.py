@@ -17,6 +17,7 @@ Subcommands:
 
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
 from typing import Optional
@@ -98,6 +99,157 @@ def _maybe_enrich_pride(output_folder, project_accession: str | None, enrich: bo
         click.echo(f"Enriched dataset with PRIDE metadata for {project_accession}")
     except Exception as exc:
         click.echo(f"Warning: Could not enrich from PRIDE: {exc}", err=True)
+
+
+def _dataset_metadata_options(func):
+    """Add the dataset-metadata options shared by the convert commands.
+
+    The options set the workflow name and version, enrich from PRIDE and record
+    file integrity. They are listed in the order declared here.
+    """
+    options = (
+        click.option(
+            "--software-name",
+            default=None,
+            help=(
+                "Workflow that produced the input (e.g. nf-core/mhcquant). "
+                "Sets dataset.software_name/software_version and adds a 'workflow' provenance step."
+            ),
+        ),
+        click.option("--software-version", default=None, help="Version of --software-name."),
+        click.option(
+            "--software-config",
+            default=None,
+            type=click.Path(exists=True, dir_okay=False, path_type=Path),
+            help=(
+                "JSON file with the workflow parameters (e.g. Nextflow params.json), "
+                "stored in the workflow provenance step's config."
+            ),
+        ),
+        click.option(
+            "--enrich-pride",
+            is_flag=True,
+            default=False,
+            help=(
+                "Fetch project title, description and PubMed ID from the PRIDE API after "
+                "conversion (needs --project-accession; best-effort)."
+            ),
+        ),
+        click.option(
+            "--compute-integrity",
+            is_flag=True,
+            default=False,
+            help="Write file checksums, row counts and sizes for the output folder into dataset.parquet, as the last step.",
+        ),
+    )
+    for option in reversed(options):
+        func = option(func)
+    return func
+
+
+def _software_config_json(software_name, software_version, software_config) -> str | None:
+    """Validate the workflow options and return the parameters as compact, sorted JSON.
+
+    Runs before the conversion, so an invalid option fails without writing output.
+    """
+    if (software_version is not None or software_config is not None) and not software_name:
+        raise click.UsageError("--software-version and --software-config require --software-name.")
+    if software_config is None:
+        return None
+    try:
+        with open(software_config, encoding="utf-8") as handle:
+            config = json.load(handle)
+    except (OSError, ValueError) as exc:
+        raise click.UsageError(f"--software-config {software_config} is not a readable JSON file: {exc}") from exc
+    return json.dumps(config, separators=(",", ":"), sort_keys=True)
+
+
+def _metadata_file(output_folder, prefix: str | None, view: str) -> Path | None:
+    """Return the ``<prefix>.<view>.parquet`` file, or None when it does not exist.
+
+    Without a prefix, the folder must hold exactly one ``*.<view>.parquet`` file.
+    """
+    folder = Path(output_folder)
+    if prefix:
+        path = folder / f"{prefix}.{view}.parquet"
+        return path if path.exists() else None
+    matches = sorted(folder.glob(f"*.{view}.parquet"))
+    return matches[0] if len(matches) == 1 else None
+
+
+def _apply_software(
+    output_folder,
+    prefix: str | None,
+    software_name: str | None,
+    software_version: str | None,
+    config_json: str | None,
+) -> None:
+    """Record the workflow that produced the dataset in dataset and provenance parquet.
+
+    Sets the software fields of dataset.parquet and prepends a 'workflow' step to
+    provenance.parquet. Skipped with a warning when either metadata file is missing.
+    """
+    if not software_name:
+        return
+    import pyarrow.parquet as pq
+
+    from qpx.writers import DatasetWriter, ProvenanceWriter
+
+    dataset_path = _metadata_file(output_folder, prefix, "dataset")
+    provenance_path = _metadata_file(output_folder, prefix, "provenance")
+    if dataset_path is None or provenance_path is None:
+        click.echo("WARNING: no dataset/provenance metadata found; --software-name skipped", err=True)
+        return
+
+    record = pq.read_table(dataset_path).to_pylist()[0]
+    record["software_name"] = software_name
+    record["software_version"] = software_version
+    with DatasetWriter(dataset_path) as writer:
+        writer.write_batch([record])
+
+    steps = pq.read_table(provenance_path).to_pylist()
+    steps.insert(
+        0,
+        {
+            "step_category": "workflow",
+            "step_name": "pipeline_execution",
+            "tool_name": software_name,
+            "tool_version": software_version,
+            "tool_uri": None,
+            "parameters": None,
+            "config": config_json,
+            "output_views": None,
+        },
+    )
+    for step_order, step in enumerate(steps, start=1):
+        step["step_order"] = step_order
+    with ProvenanceWriter(provenance_path) as writer:
+        writer.write_batch(steps)
+
+
+def _maybe_compute_integrity(output_folder, prefix: str | None, enabled: bool) -> None:
+    """Record checksums, row counts and sizes of the output folder in dataset parquet.
+
+    Call this after the last file write of a conversion, so the record covers every file.
+    """
+    if not enabled:
+        return
+    import pyarrow.parquet as pq
+
+    from qpx.dataset import Dataset
+    from qpx.writers import DatasetWriter
+
+    dataset_path = _metadata_file(output_folder, prefix, "dataset")
+    if dataset_path is None:
+        click.echo("WARNING: no dataset.parquet found; --compute-integrity skipped", err=True)
+        return
+    with Dataset(str(output_folder), file_prefix=prefix) as ds:
+        integrity = ds.compute_integrity()
+    record = pq.read_table(dataset_path).to_pylist()[0]
+    record.update(integrity)
+    with DatasetWriter(dataset_path) as writer:
+        writer.write_batch([record])
+    click.echo(f"Integrity recorded for {integrity['total_structures']} files")
 
 
 # ---------------------------------------------------------------------------
@@ -1000,6 +1152,7 @@ def _consensusxml_list(ctx, param, value) -> tuple[Path, ...]:
         "the build on very large datasets."
     ),
 )
+@_dataset_metadata_options
 def convert_openms_consensus_cmd(
     consensusxml_paths,
     sdrf_path,
@@ -1014,6 +1167,11 @@ def convert_openms_consensus_cmd(
     compression,
     fasta,
     mudata,
+    software_name,
+    software_version,
+    software_config,
+    enrich_pride,
+    compute_integrity,
 ):
     """Convert one or more OpenMS consensusXML files (+ SDRF) to one QPX dataset.
 
@@ -1023,6 +1181,7 @@ def convert_openms_consensus_cmd(
     with a quantification_method cv_param) until OpenMS provides the authoritative
     protein quant. Several comma-separated --consensusxml inputs are written into the same views.
     """
+    config_json = _software_config_json(software_name, software_version, software_config)
     if verbose:
         logging.basicConfig(level=logging.INFO)
     from qpx.converters.openms_consensus.converter import OpenMSConsensusConverter
@@ -1045,7 +1204,10 @@ def convert_openms_consensus_cmd(
         raise click.ClickException(str(exc)) from exc
     if written:
         _annotate_protein_properties(Path(output_folder), fasta, output_prefix)
+        _apply_software(Path(output_folder), output_prefix, software_name, software_version, config_json)
+        _maybe_enrich_pride(Path(output_folder), project_accession, enrich_pride)
     _write_mudata(Path(output_folder), output_prefix, mudata and bool(written))
+    _maybe_compute_integrity(Path(output_folder), output_prefix, compute_integrity)
     _log_summary(output_folder)
     click.echo(f"consensusXML conversion complete. Wrote: {sorted(written)}")
 
