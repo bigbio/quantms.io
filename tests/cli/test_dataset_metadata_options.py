@@ -7,7 +7,7 @@ import pyarrow.parquet as pq
 import pytest
 from click.testing import CliRunner
 
-from qpx.cli.convert import _apply_software, convert
+from qpx.cli.convert import _apply_software, _metadata_file, convert
 from qpx.dataset import Dataset
 from tests.converters.test_openms_consensus import _TMT_CONSENSUSXML
 
@@ -31,7 +31,7 @@ _METADATA_COMMANDS = (
 _DIANN_SMALL = Path(__file__).resolve().parents[1] / "examples" / "diann" / "small"
 
 
-def _run(base, *extra):
+def _run(base, *extra, prefix="t"):
     base.mkdir(parents=True, exist_ok=True)
     cx = base / "input.consensusXML"
     cx.write_text(_TMT_CONSENSUSXML)
@@ -45,7 +45,7 @@ def _run(base, *extra):
             "--output-folder",
             str(folder),
             "--output-prefix",
-            "t",
+            prefix,
             "--structures",
             "feature,pg,psm",
             *extra,
@@ -140,6 +140,40 @@ def test_enrich_pride_failure_is_a_warning(tmp_path, monkeypatch):
 
     assert result.exit_code == 0, result.output
     assert "Could not enrich from PRIDE" in result.output
+
+
+def test_enrich_pride_targets_the_converted_dataset_in_a_shared_folder(tmp_path, monkeypatch):
+    """--enrich-pride updates the dataset of its own prefix, not another dataset in the same folder."""
+    monkeypatch.setattr(
+        "qpx.core.pride.fetch_pride_metadata",
+        lambda acc: {"project_title": "T", "project_description": "D", "pubmed_id": "1"},
+    )
+    first, _ = _run(tmp_path, prefix="a")
+    assert first.exit_code == 0, first.output
+
+    result, folder = _run(tmp_path, "--enrich-pride", "--project-accession", "PXD000002")
+
+    assert result.exit_code == 0, result.output
+    assert pq.read_table(folder / "t.dataset.parquet").to_pylist()[0]["project_title"] == "T"
+    assert pq.read_table(folder / "a.dataset.parquet").to_pylist()[0]["project_title"] != "T"
+
+
+@pytest.mark.parametrize(
+    ("files", "expected"),
+    [
+        ([], None),
+        (["a.dataset.parquet"], "a.dataset.parquet"),
+        (["a.dataset.parquet", "b.dataset.parquet"], None),
+    ],
+)
+def test_metadata_file_without_prefix_requires_one_match(tmp_path, files, expected):
+    """Without a prefix, a view resolves only when the folder holds exactly one matching file."""
+    for name in files:
+        (tmp_path / name).write_bytes(b"")
+
+    found = _metadata_file(tmp_path, None, "dataset")
+
+    assert found == (None if expected is None else tmp_path / expected)
 
 
 def test_apply_software_without_metadata_files_warns(tmp_path, capsys):

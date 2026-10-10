@@ -80,7 +80,7 @@ def _annotate_protein_properties(output_folder: Path, fasta: Optional[Path], pre
         click.echo(f"WARNING: protein properties from FASTA skipped: {exc.format_message()}")
 
 
-def _maybe_enrich_pride(output_folder, project_accession: str | None, enrich: bool) -> None:
+def _maybe_enrich_pride(output_folder, project_accession: str | None, enrich: bool, prefix: str | None = None) -> None:
     """Optionally enrich a converted dataset with PRIDE metadata."""
     if not enrich:
         return
@@ -93,7 +93,7 @@ def _maybe_enrich_pride(output_folder, project_accession: str | None, enrich: bo
     try:
         from qpx.dataset import Dataset
 
-        ds = Dataset(output_folder)
+        ds = Dataset(output_folder, file_prefix=prefix)
         ds.enrich_from_pride(project_accession)
         ds.close()
         click.echo(f"Enriched dataset with PRIDE metadata for {project_accession}")
@@ -471,7 +471,7 @@ def convert_diann_cmd(
 
     _annotate_protein_properties(output_folder, fasta, prefix)
     _apply_software(output_folder, prefix, software_name, software_version, config_json)
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
+    _maybe_enrich_pride(output_folder, project_accession, enrich_pride, prefix)
     _write_mudata(output_folder, prefix, mudata)
     _maybe_compute_integrity(output_folder, prefix, compute_integrity)
 
@@ -658,9 +658,10 @@ def convert_maxquant_cmd(
         fixed_mod_only=fixed_mod_only,
     )
 
-    _apply_software(output_folder, output_prefix, software_name, software_version, config_json)
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
-    _maybe_compute_integrity(output_folder, output_prefix, compute_integrity)
+    prefix = output_prefix or "maxquant"
+    _apply_software(output_folder, prefix, software_name, software_version, config_json)
+    _maybe_enrich_pride(output_folder, project_accession, enrich_pride, prefix)
+    _maybe_compute_integrity(output_folder, prefix, compute_integrity)
 
     _log_summary(output_folder)
     click.echo(f"MaxQuant conversion complete. Output: {output_folder}")
@@ -800,9 +801,10 @@ def convert_fragpipe_cmd(
         project_accession=project_accession,
     )
 
-    _apply_software(output_folder, output_prefix, software_name, software_version, config_json)
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
-    _maybe_compute_integrity(output_folder, output_prefix, compute_integrity)
+    prefix = output_prefix or "fragpipe"
+    _apply_software(output_folder, prefix, software_name, software_version, config_json)
+    _maybe_enrich_pride(output_folder, project_accession, enrich_pride, prefix)
+    _maybe_compute_integrity(output_folder, prefix, compute_integrity)
 
     _log_summary(output_folder)
     click.echo(f"FragPipe conversion complete. Output: {output_folder}")
@@ -920,7 +922,7 @@ def convert_mzidentml_cmd(
     )
 
     _apply_software(output_folder, output_prefix, software_name, software_version, config_json)
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
+    _maybe_enrich_pride(output_folder, project_accession, enrich_pride, output_prefix)
     _maybe_compute_integrity(output_folder, output_prefix, compute_integrity)
 
     _log_summary(output_folder)
@@ -1213,7 +1215,7 @@ def convert_openms_consensus_cmd(
     if written:
         _annotate_protein_properties(Path(output_folder), fasta, output_prefix)
         _apply_software(Path(output_folder), output_prefix, software_name, software_version, config_json)
-        _maybe_enrich_pride(Path(output_folder), project_accession, enrich_pride)
+        _maybe_enrich_pride(Path(output_folder), project_accession, enrich_pride, output_prefix)
     _write_mudata(Path(output_folder), output_prefix, mudata and bool(written))
     _maybe_compute_integrity(Path(output_folder), output_prefix, compute_integrity)
     _log_summary(output_folder)
@@ -1395,7 +1397,7 @@ def convert_quantms_msstats_cmd(
     )
 
     _apply_software(output_folder, prefix, software_name, software_version, config_json)
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
+    _maybe_enrich_pride(output_folder, project_accession, enrich_pride, prefix)
     _maybe_compute_integrity(output_folder, prefix, compute_integrity)
 
     _log_summary(output_folder)
@@ -1526,7 +1528,7 @@ def convert_spectronaut_cmd(
     converter.write_dataset(output_folder, prefix=prefix, project_accession=project_accession)
 
     _apply_software(output_folder, prefix, software_name, software_version, config_json)
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
+    _maybe_enrich_pride(output_folder, project_accession, enrich_pride, prefix)
     _maybe_compute_integrity(output_folder, prefix, compute_integrity)
 
     click.echo(f"Spectronaut conversion complete. Output: {output_folder}")
@@ -1657,7 +1659,7 @@ def convert_cdap_cmd(
     )
 
     _apply_software(output_folder, output_prefix, software_name, software_version, config_json)
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
+    _maybe_enrich_pride(output_folder, project_accession, enrich_pride, output_prefix)
     _maybe_compute_integrity(output_folder, output_prefix, compute_integrity)
 
     _log_summary(output_folder)
