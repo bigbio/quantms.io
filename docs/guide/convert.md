@@ -100,7 +100,7 @@ def generate_example(command, default_text=""):
 
 The `convert` command group provides converters for multiple proteomics software outputs, enabling standardization of data formats for downstream analysis. All commands generate parquet-format output files following the QPX specification.
 
-**Shared metadata options.** The commands `diann`, `maxquant`, `fragpipe`, `mzidentml`, `openms-consensus`, `quantms-msstats`, `spectronaut` and `cdap` accept five options: `--software-name`, `--software-version`, `--software-config`, `--enrich-pride` and `--compute-integrity`. `--software-version` and `--software-config` require `--software-name`. `--enrich-pride` requires `--project-accession` and is best-effort. `--compute-integrity` covers the Parquet and h5ad files, not the `.h5mu` file. The steps run in this order: conversion, protein properties (`--fasta`), software, PRIDE, MuData, integrity.
+**Shared metadata options.** The commands `diann`, `maxquant`, `fragpipe`, `mzidentml`, `openms-consensus`, `quantms-msstats`, `spectronaut` and `cdap` accept five options: `--software-name`, `--software-version`, `--software-config`, `--enrich-pride` and `--compute-integrity`. `--software-version` and `--software-config` require `--software-name`. `--enrich-pride` needs `--project-accession`. Without it, or when PRIDE cannot be reached, the command prints a warning and continues. `--compute-integrity` covers the Parquet and h5ad files, not the `.h5mu` file. The steps run in this order: conversion, `--fasta`, `--software-name`, `--enrich-pride`, MuData, `--compute-integrity`. The `--fasta` option and MuData exist only on `diann` and `openms-consensus`.
 
 ## Available Commands
 
@@ -882,14 +882,11 @@ peptide assignments keep this field null.
 
 ### Parameters {#openms-consensus-parameters}
 
-| Option | Required | Description |
-| ------ | -------- | ----------- |
-| `--consensusxml` | yes | OpenMS `.consensusXML` file, or a comma-separated list of files to write into one dataset. |
-| `--sdrf-file` | no | SDRF metadata (run/sample views + `grouped_runs` fraction grouping). |
-| `--output-folder` | yes | Output directory for the QPX views. |
-| `--output-prefix` | no | Prefix for output file names (default `openms`). |
-| `--structures` | no | Comma-separated views (default `feature,psm,pg,run,sample`; `run`/`sample` require `--sdrf-file`). |
-| `--pg-top` | no | Peptides used for the interim pg intensity: `0` (default) sums all unique peptides; `3` mirrors the quantms ProteomicsLFQ/IsobaricWorkflow default. |
+```python exec="1" html="1" session="doc_utils"
+from qpx.cli.convert import convert_openms_consensus_cmd
+
+print(generate_params_table(convert_openms_consensus_cmd))
+```
 
 ### Usage Examples {#openms-consensus-examples}
 
