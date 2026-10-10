@@ -1,13 +1,34 @@
-"""Shared dataset-metadata options of ``convert openms-consensus``."""
+"""Shared dataset-metadata options of the convert commands."""
 
 import json
+from pathlib import Path
 
 import pyarrow.parquet as pq
+import pytest
 from click.testing import CliRunner
 
 from qpx.cli.convert import _apply_software, convert
 from qpx.dataset import Dataset
 from tests.converters.test_openms_consensus import _TMT_CONSENSUSXML
+
+_METADATA_OPTIONS = (
+    "--software-name",
+    "--software-version",
+    "--software-config",
+    "--enrich-pride",
+    "--compute-integrity",
+)
+_METADATA_COMMANDS = (
+    "diann",
+    "maxquant",
+    "fragpipe",
+    "mzidentml",
+    "openms-consensus",
+    "quantms-msstats",
+    "spectronaut",
+    "cdap",
+)
+_DIANN_SMALL = Path(__file__).resolve().parents[1] / "examples" / "diann" / "small"
 
 
 def _run(base, *extra):
@@ -125,3 +146,51 @@ def test_apply_software_without_metadata_files_warns(tmp_path, capsys):
     _apply_software(tmp_path, "t", "nf-core/mhcquant", "3.1.0", None)
 
     assert "WARNING: no dataset/provenance metadata found; --software-name skipped" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("command", _METADATA_COMMANDS)
+def test_convert_command_lists_metadata_options(command):
+    result = CliRunner().invoke(convert, [command, "--help"])
+
+    assert result.exit_code == 0, result.output
+    for option in _METADATA_OPTIONS:
+        assert option in result.output
+
+
+@pytest.mark.parametrize("command", ["sdrf", "mz"])
+def test_convert_command_without_metadata_options(command):
+    result = CliRunner().invoke(convert, [command, "--help"])
+
+    assert result.exit_code == 0, result.output
+    assert "--software-name" not in result.output
+
+
+def test_convert_diann_records_workflow_and_integrity(tmp_path):
+    folder = tmp_path / "out"
+    result = CliRunner().invoke(
+        convert,
+        [
+            "diann",
+            "--report-path",
+            str(_DIANN_SMALL / "diann_report.tsv"),
+            "--sdrf-file",
+            str(_DIANN_SMALL / "PXD019909-DIA.sdrf.tsv"),
+            "--output-folder",
+            str(folder),
+            "--software-name",
+            "quantmsdiann",
+            "--software-version",
+            "2.0.0",
+            "--compute-integrity",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    dataset = pq.read_table(folder / "diann.dataset.parquet").to_pylist()[0]
+    assert dataset["software_name"] == "quantmsdiann"
+    steps = pq.read_table(folder / "diann.provenance.parquet").to_pylist()
+    assert steps[0]["step_category"] == "workflow"
+    assert steps[0]["tool_name"] == "quantmsdiann"
+    assert "DIA-NN" in [step["tool_name"] for step in steps]
+    assert Dataset(str(folder)).verify_integrity()["errors"] == []
+    assert (folder / "diann.h5mu").exists() == ("MuData view: diann.h5mu" in result.output)

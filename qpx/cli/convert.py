@@ -345,12 +345,6 @@ def convert():
     help="PRIDE / ProteomeXchange accession (e.g. PXD020192)",
 )
 @click.option(
-    "--enrich-pride",
-    help="Fetch project metadata from PRIDE API after conversion",
-    is_flag=True,
-    default=False,
-)
-@click.option(
     "--compression",
     type=click.Choice(["zstd", "snappy", "gzip", "none"], case_sensitive=False),
     default="zstd",
@@ -383,6 +377,7 @@ def convert():
     ),
 )
 @click.option("--verbose", help="Enable verbose logging", is_flag=True)
+@_dataset_metadata_options
 def convert_diann_cmd(
     report_path: Path,
     sdrf_file: Path,
@@ -404,6 +399,10 @@ def convert_diann_cmd(
     fasta: Optional[Path],
     mudata: bool,
     verbose: bool,
+    software_name: Optional[str],
+    software_version: Optional[str],
+    software_config: Optional[Path],
+    compute_integrity: bool,
 ):
     """Convert DIA-NN report to QPX format.
 
@@ -429,6 +428,7 @@ def convert_diann_cmd(
             --output-folder ./qpx_output \\
             --standardized-intensities
     """
+    config_json = _software_config_json(software_name, software_version, software_config)
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
@@ -470,8 +470,10 @@ def convert_diann_cmd(
     converter.write_dataset(output_folder, prefix=prefix, project_accession=project_accession)
 
     _annotate_protein_properties(output_folder, fasta, prefix)
+    _apply_software(output_folder, prefix, software_name, software_version, config_json)
     _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
     _write_mudata(output_folder, prefix, mudata)
+    _maybe_compute_integrity(output_folder, prefix, compute_integrity)
 
     _log_summary(output_folder)
     click.echo(f"DIA-NN conversion complete. Output: {output_folder}")
@@ -554,12 +556,6 @@ def convert_diann_cmd(
     help="PRIDE / ProteomeXchange accession (e.g. PXD020192)",
 )
 @click.option(
-    "--enrich-pride",
-    help="Fetch project metadata from PRIDE API after conversion",
-    is_flag=True,
-    default=False,
-)
-@click.option(
     "--compression",
     type=click.Choice(["zstd", "snappy", "gzip", "none"], case_sensitive=False),
     default="zstd",
@@ -573,6 +569,7 @@ def convert_diann_cmd(
     is_flag=True,
     default=False,
 )
+@_dataset_metadata_options
 def convert_maxquant_cmd(
     msms_file: Optional[Path],
     evidence_file: Optional[Path],
@@ -592,6 +589,10 @@ def convert_maxquant_cmd(
     compression: str,
     verbose: bool,
     fixed_mod_only: bool,
+    software_name: Optional[str],
+    software_version: Optional[str],
+    software_config: Optional[Path],
+    compute_integrity: bool,
 ):
     """Convert MaxQuant output to QPX format.
 
@@ -614,6 +615,7 @@ def convert_maxquant_cmd(
             --output-folder ./qpx_output \\
             --structures psm
     """
+    config_json = _software_config_json(software_name, software_version, software_config)
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
@@ -656,7 +658,9 @@ def convert_maxquant_cmd(
         fixed_mod_only=fixed_mod_only,
     )
 
+    _apply_software(output_folder, output_prefix, software_name, software_version, config_json)
     _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
+    _maybe_compute_integrity(output_folder, output_prefix, compute_integrity)
 
     _log_summary(output_folder)
     click.echo(f"MaxQuant conversion complete. Output: {output_folder}")
@@ -723,12 +727,6 @@ def convert_maxquant_cmd(
     help="PRIDE / ProteomeXchange accession (e.g. PXD020192)",
 )
 @click.option(
-    "--enrich-pride",
-    help="Fetch project metadata from PRIDE API after conversion",
-    is_flag=True,
-    default=False,
-)
-@click.option(
     "--compression",
     type=click.Choice(["zstd", "snappy", "gzip", "none"], case_sensitive=False),
     default="zstd",
@@ -736,6 +734,7 @@ def convert_maxquant_cmd(
     help="Parquet compression codec.",
 )
 @click.option("--verbose", help="Enable verbose logging", is_flag=True)
+@_dataset_metadata_options
 def convert_fragpipe_cmd(
     psm_file: Optional[Path],
     ion_file: Optional[Path],
@@ -751,6 +750,10 @@ def convert_fragpipe_cmd(
     enrich_pride: bool,
     compression: str,
     verbose: bool,
+    software_name: Optional[str],
+    software_version: Optional[str],
+    software_config: Optional[Path],
+    compute_integrity: bool,
 ):
     """Convert FragPipe output to QPX format.
 
@@ -772,6 +775,7 @@ def convert_fragpipe_cmd(
             --experiment-annotation-file experiment_annotation.tsv \\
             --output-folder ./qpx_output
     """
+    config_json = _software_config_json(software_name, software_version, software_config)
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
@@ -796,7 +800,9 @@ def convert_fragpipe_cmd(
         project_accession=project_accession,
     )
 
+    _apply_software(output_folder, output_prefix, software_name, software_version, config_json)
     _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
+    _maybe_compute_integrity(output_folder, output_prefix, compute_integrity)
 
     _log_summary(output_folder)
     click.echo(f"FragPipe conversion complete. Output: {output_folder}")
@@ -841,12 +847,6 @@ def convert_fragpipe_cmd(
     help="PRIDE / ProteomeXchange accession (e.g. PXD054720)",
 )
 @click.option(
-    "--enrich-pride",
-    help="Fetch project metadata from PRIDE API after conversion",
-    is_flag=True,
-    default=False,
-)
-@click.option(
     "--compression",
     type=click.Choice(["zstd", "snappy", "gzip", "none"], case_sensitive=False),
     default="zstd",
@@ -854,6 +854,7 @@ def convert_fragpipe_cmd(
     help="Parquet compression codec.",
 )
 @click.option("--verbose", help="Enable verbose logging", is_flag=True)
+@_dataset_metadata_options
 def convert_mzidentml_cmd(
     mzid_path: Path,
     output_folder: Path,
@@ -864,6 +865,10 @@ def convert_mzidentml_cmd(
     enrich_pride: bool,
     compression: str,
     verbose: bool,
+    software_name: Optional[str],
+    software_version: Optional[str],
+    software_config: Optional[Path],
+    compute_integrity: bool,
 ):
     """Convert mzIdentML file to QPX dataset.
 
@@ -898,6 +903,7 @@ def convert_mzidentml_cmd(
             --output-folder ./qpx_output \\
             --project-accession PXD054720
     """
+    config_json = _software_config_json(software_name, software_version, software_config)
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
@@ -913,7 +919,9 @@ def convert_mzidentml_cmd(
         project_accession=project_accession,
     )
 
+    _apply_software(output_folder, output_prefix, software_name, software_version, config_json)
     _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
+    _maybe_compute_integrity(output_folder, output_prefix, compute_integrity)
 
     _log_summary(output_folder)
     click.echo(f"mzIdentML conversion complete. Output: {output_folder}")
@@ -1335,6 +1343,7 @@ def convert_sdrf_cmd(
     help="Parquet compression codec.",
 )
 @click.option("--verbose", help="Enable verbose logging", is_flag=True)
+@_dataset_metadata_options
 def convert_quantms_msstats_cmd(
     msstats_file: Path,
     sdrf_file: Path,
@@ -1346,6 +1355,11 @@ def convert_quantms_msstats_cmd(
     batch_size: int,
     compression: str,
     verbose: bool,
+    enrich_pride: bool,
+    software_name: Optional[str],
+    software_version: Optional[str],
+    software_config: Optional[Path],
+    compute_integrity: bool,
 ):
     """Convert QuantMS MSstats and SDRF inputs to QPX.
 
@@ -1360,6 +1374,7 @@ def convert_quantms_msstats_cmd(
             --sdrf-file PXD007683.sdrf.tsv \
             --output-folder ./qpx_output
     """
+    config_json = _software_config_json(software_name, software_version, software_config)
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
@@ -1378,6 +1393,11 @@ def convert_quantms_msstats_cmd(
         project_accession=project_accession,
         batch_size=batch_size,
     )
+
+    _apply_software(output_folder, prefix, software_name, software_version, config_json)
+    _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
+    _maybe_compute_integrity(output_folder, prefix, compute_integrity)
+
     _log_summary(output_folder)
     click.echo(f"QuantMS MSstats conversion complete. Output prefix: {prefix}")
 
@@ -1430,12 +1450,6 @@ def convert_quantms_msstats_cmd(
     help="PRIDE / ProteomeXchange accession (e.g. PXD020192)",
 )
 @click.option(
-    "--enrich-pride",
-    help="Fetch project metadata from PRIDE API after conversion",
-    is_flag=True,
-    default=False,
-)
-@click.option(
     "--compression",
     type=click.Choice(["zstd", "snappy", "gzip", "none"], case_sensitive=False),
     default="zstd",
@@ -1443,6 +1457,7 @@ def convert_quantms_msstats_cmd(
     help="Parquet compression codec.",
 )
 @click.option("--verbose", help="Enable verbose logging", is_flag=True)
+@_dataset_metadata_options
 def convert_spectronaut_cmd(
     report_path: Path,
     sdrf_file: Optional[Path],
@@ -1455,6 +1470,10 @@ def convert_spectronaut_cmd(
     enrich_pride: bool,
     compression: str,
     verbose: bool,
+    software_name: Optional[str],
+    software_version: Optional[str],
+    software_config: Optional[Path],
+    compute_integrity: bool,
 ):
     r"""Convert Spectronaut report to QPX format.
 
@@ -1474,6 +1493,7 @@ def convert_spectronaut_cmd(
             --sdrf-file data.sdrf.tsv \
             --output-folder ./qpx_output
     """
+    config_json = _software_config_json(software_name, software_version, software_config)
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
@@ -1505,7 +1525,9 @@ def convert_spectronaut_cmd(
     converter.write_provenance(output_folder, prefix=prefix)
     converter.write_dataset(output_folder, prefix=prefix, project_accession=project_accession)
 
+    _apply_software(output_folder, prefix, software_name, software_version, config_json)
     _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
+    _maybe_compute_integrity(output_folder, prefix, compute_integrity)
 
     click.echo(f"Spectronaut conversion complete. Output: {output_folder}")
 
@@ -1571,6 +1593,7 @@ def convert_spectronaut_cmd(
     show_default=True,
 )
 @click.option("--verbose", help="Enable verbose logging", is_flag=True)
+@_dataset_metadata_options
 def convert_cdap_cmd(
     psm_dir: Path,
     output_folder: Path,
@@ -1582,6 +1605,11 @@ def convert_cdap_cmd(
     max_memory: str,
     max_cpus: int,
     verbose: bool,
+    enrich_pride: bool,
+    software_name: Optional[str],
+    software_version: Optional[str],
+    software_config: Optional[Path],
+    compute_integrity: bool,
 ):
     """Convert CPTAC CDAP .psm files to QPX format.
 
@@ -1602,6 +1630,7 @@ def convert_cdap_cmd(
             --output-folder ./qpx_output \\
             --structures psm,feature
     """
+    config_json = _software_config_json(software_name, software_version, software_config)
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
@@ -1626,6 +1655,10 @@ def convert_cdap_cmd(
         batch_size=batch_size,
         project_accession=project_accession,
     )
+
+    _apply_software(output_folder, output_prefix, software_name, software_version, config_json)
+    _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
+    _maybe_compute_integrity(output_folder, output_prefix, compute_integrity)
 
     _log_summary(output_folder)
     click.echo(f"CDAP conversion complete. Output: {output_folder}")
