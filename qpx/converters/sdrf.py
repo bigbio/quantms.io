@@ -485,6 +485,8 @@ class SdrfConverter(BaseConverter):
 
             accession = kv.get("AC", "")
             name = kv.get("NT", "")
+            if not accession and not name:
+                continue
             is_fixed = kv.get("MT", "").lower() in ("fixed", "fix")
             position = kv.get("PP", None)
             target_aa = kv.get("TA", None)
