@@ -12,6 +12,7 @@ from __future__ import annotations
 import logging
 import math
 import os
+import re
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Optional, Union
@@ -635,22 +636,54 @@ def _collect_score_names(table_path: Path) -> set[str]:
     return names
 
 
-def _consensus_is_isobaric(consensusxml_path: str) -> bool:
-    """Return whether a consensusXML's map labels indicate an isobaric (TMT/iTRAQ) run.
+def _read_consensus_header(consensusxml_path: str):
+    """Parse only the consensusXML header with the streaming reader; None when unreadable.
 
-    Reads only the small column-map header via the streaming reader, so it never
-    loads the whole ConsensusMap into memory — the full pyopenms load would defeat
-    the streaming path and can exhaust RAM on multi-GB files.
+    The full pyopenms load would defeat the streaming path and can exhaust RAM on multi-GB files.
     """
-    from qpx.converters.openms_consensus.feature_adapter import consensus_channels
     from qpx.converters.openms_consensus.streaming import StreamingConsensusMap
 
     try:
-        return bool(consensus_channels(StreamingConsensusMap(consensusxml_path)))
+        return StreamingConsensusMap(consensusxml_path)
     except (OSError, ValueError, KeyError, AttributeError, RuntimeError) as exc:
-        # Best-effort provenance hint: any read/parse failure -> assume label-free.
-        _log.warning("could not determine isobaric labeling from %s: %s", consensusxml_path, exc)
+        _log.warning("could not read the consensusXML header of %s: %s", consensusxml_path, exc)
+        return None
+
+
+def _consensus_is_isobaric(header) -> bool:
+    """Return whether a parsed header's map labels indicate an isobaric (TMT/iTRAQ) run."""
+    from qpx.converters.openms_consensus.feature_adapter import consensus_channels
+
+    try:
+        return bool(consensus_channels(header))
+    except (ValueError, KeyError, AttributeError) as exc:
+        _log.warning("could not determine isobaric labeling: %s", exc)
         return False
+
+
+def _unique(items) -> list:
+    """Return the distinct items in first-seen order."""
+    return list(dict.fromkeys(items))
+
+
+def _snake_case(text: str) -> str:
+    """Lowercase a processing action name and join its words with underscores."""
+    return re.sub(r"[^0-9a-z]+", "_", text.lower()).strip("_")
+
+
+def _tool_step(category: str, step_name: str, tool_name: str, tool_version: Optional[str], output_views) -> dict:
+    """Provenance record for one processing tool; ``step_order`` is numbered by the caller."""
+    return {
+        "step_order": 0,
+        "step_category": category,
+        "step_name": step_name,
+        "tool_name": tool_name,
+        "tool_version": tool_version or None,
+        "tool_uri": None,
+        "parameters": None,
+        "config": None,
+        "output_views": list(output_views),
+    }
 
 
 def _write_sdrf_metadata(
@@ -870,38 +903,56 @@ class OpenMSConsensusConverter(BaseOrchestrator):  # pylint: disable=too-few-pub
         self._write_ontology(out, output_prefix, ontology_entries)
 
         structures = sorted(requested.intersection(written, {PSM, FEATURE, PG, RUN, SAMPLE}))
-        provenance_records = self._build_provenance(structures, consensusxml_paths)
+        provenance_records, software_name, software_version = self._build_provenance(structures, consensusxml_paths)
         self._write_provenance(out, output_prefix, provenance_records)
-        if provenance_records:
-            self._write_dataset(
-                out,
-                output_prefix,
-                project_accession,
-                software_name=provenance_records[0]["tool_name"],
-                software_version=None,
-                provenance_records=provenance_records,
-            )
+        # No provenance_records here: a None version would take the first step's version (the search engine).
+        self._write_dataset(
+            out,
+            output_prefix,
+            project_accession,
+            software_name=software_name,
+            software_version=software_version,
+        )
 
     @staticmethod
-    def _build_provenance(structures: list[str], consensusxml_paths: list[str]) -> list[dict]:
-        """Provenance records: consensusXML parsing + QPX conversion (listing every input)."""
-        is_isobaric = any(_consensus_is_isobaric(path) for path in consensusxml_paths)
-        step_name = "isobaric_quantification" if is_isobaric else "label_free_quantification"
-        tool_name = "OpenMS/IsobaricWorkflow" if is_isobaric else "OpenMS/ProteomicsLFQ"
-        return [
+    def _build_provenance(structures: list[str], consensusxml_paths: list[str]) -> tuple[list[dict], str, Optional[str]]:
+        """Provenance records and dataset software (name, version) for the consensusXML -> QPX conversion.
+
+        Search engines and processing tools come from the consensusXML headers of every input.
+        The qpx conversion step is always last.
+        """
+        headers = [header for header in (_read_consensus_header(path) for path in consensusxml_paths) if header is not None]
+        psm_views = [PSM] if PSM in structures else []
+        core_views = [v for v in (FEATURE, PSM, PG) if v in structures]
+        original = _unique(engine for header in headers for engine in header.original_search_engines())
+        original_names = {name for name, _ in original}
+        all_engines = _unique(engine for header in headers for engine in header.search_engines())
+        engines = [engine for engine in all_engines if engine[0] not in original_names]
+        software: dict[tuple[str, str], str] = {}
+        for header in headers:
+            for name, version, action in header.data_processing():
+                software.setdefault((name, version), action)
+
+        steps = [_tool_step("database_search", "sequence_search", name, version, psm_views) for name, version in original]
+        category, step_name = ("rescoring", "psm_rescoring") if original else ("database_search", "sequence_search")
+        steps += [_tool_step(category, step_name, name, version, psm_views) for name, version in engines]
+        steps += [
+            _tool_step("quantification", _snake_case(action) or "quantification", name, version, core_views)
+            for (name, version), action in software.items()
+        ]
+        if software:
+            versions = {version for _, version in software}
+            software_name = "OpenMS"
+            software_version = next(iter(versions)) if len(versions) == 1 and "" not in versions else None
+        else:
+            is_isobaric = any(_consensus_is_isobaric(header) for header in headers)
+            software_name = "OpenMS/IsobaricWorkflow" if is_isobaric else "OpenMS/ProteomicsLFQ"
+            software_version = None
+            fallback_step = "isobaric_quantification" if is_isobaric else "label_free_quantification"
+            steps.append(_tool_step("quantification", fallback_step, software_name, None, core_views))
+        steps.append(
             {
-                "step_order": 1,
-                "step_category": "quantification",
-                "step_name": step_name,
-                "tool_name": tool_name,
-                "tool_version": None,
-                "tool_uri": None,
-                "parameters": None,
-                "config": None,
-                "output_views": [v for v in (FEATURE, PSM, PG) if v in structures],
-            },
-            {
-                "step_order": 2,
+                "step_order": 0,
                 "step_category": "format_conversion",
                 "step_name": "openms_consensus_qpx_conversion",
                 "tool_name": "qpx",
@@ -910,8 +961,11 @@ class OpenMSConsensusConverter(BaseOrchestrator):  # pylint: disable=too-few-pub
                 "parameters": [{"key": "consensusxml", "value": Path(path).name} for path in consensusxml_paths],
                 "config": None,
                 "output_views": [v for v in (SAMPLE, RUN) if v in structures] + [ONTOLOGY],
-            },
-        ]
+            }
+        )
+        for order, step in enumerate(steps, start=1):
+            step["step_order"] = order
+        return steps, software_name, software_version
 
     @staticmethod
     def _convert_in_memory(
