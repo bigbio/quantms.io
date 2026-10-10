@@ -78,6 +78,12 @@ def _run_ontology_by_field(tmp_path, instrument, dissociation):
         ("NT=HCD;AC=MS:1000422", "HCD", "MS:1000422", "beam-type collision-induced dissociation"),
         ("collision-induced dissociation", "collision-induced dissociation", "MS:1000133", "collision-induced dissociation"),
         ("NT=HCD;AC=MS:1000133", "HCD", "MS:1000133", "collision-induced dissociation"),
+        (
+            "NT=collision-induced dissociation;AC=MS:9999999",
+            "collision-induced dissociation",
+            "MS:1000133",
+            "collision-induced dissociation",
+        ),
     ],
 )
 def test_dissociation_resolves_by_accession_before_name(local_ms, tmp_path, dissociation, field_name, accession, ontology_name):
@@ -89,12 +95,29 @@ def test_dissociation_resolves_by_accession_before_name(local_ms, tmp_path, diss
     assert entries[field_name]["view"] == "run"
 
 
+def test_shared_name_resolves_to_the_sorted_first_accession(local_ms, tmp_path):
+    """One name with two resolvable accessions yields one entry, independent of set iteration order."""
+    sdrf = tmp_path / "input.sdrf.tsv"
+    sdrf.write_text(
+        "source name\tcomment[data file]\tcomment[label]\tcomment[dissociation method]\n"
+        "S1\trun_01.raw\tlabel free sample\tNT=HCD;AC=MS:1000422\n"
+        "S2\trun_02.raw\tlabel free sample\tNT=HCD;AC=MS:1000133\n",
+        encoding="utf-8",
+    )
+    with SdrfConverter() as converter:
+        converter.convert(str(sdrf), run_output=str(tmp_path / "run.parquet"))
+        entries = [entry for entry in converter.run_ontology_entries() if entry["field_name"] == "HCD"]
+
+    assert [entry["ontology_accession"] for entry in entries] == ["MS:1000133"]
+
+
 def test_instrument_resolves_by_accession(local_ms, tmp_path):
-    """An instrument ``AC=`` accession resolves its PSI-MS term."""
+    """An instrument ``AC=`` accession resolves its PSI-MS term when the name alone does not match a term."""
     entries = _run_ontology_by_field(
         tmp_path,
-        instrument="NT=Orbitrap Fusion Lumos;AC=MS:1002732",
+        instrument="NT=Lumos;AC=MS:1002732",
         dissociation="not applicable",
     )
 
-    assert entries["Orbitrap Fusion Lumos"]["ontology_accession"] == "MS:1002732"
+    assert entries["Lumos"]["ontology_accession"] == "MS:1002732"
+    assert entries["Lumos"]["ontology_name"] == "Orbitrap Fusion Lumos"

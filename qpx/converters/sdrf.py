@@ -447,7 +447,7 @@ class SdrfConverter(BaseConverter):
         entries: list[dict] = []
         seen: set[str] = set()
 
-        for name, accession in self._run_instruments | self._run_enzymes | self._run_dissociation:
+        for name, accession in sorted(self._run_instruments | self._run_enzymes | self._run_dissociation):
             if not name or name in seen:
                 continue
 
