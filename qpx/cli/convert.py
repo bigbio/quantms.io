@@ -17,8 +17,10 @@ Subcommands:
 
 from __future__ import annotations
 
+import functools
 import json
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -85,7 +87,7 @@ def _annotate_protein_properties(output_folder: Path, fasta: Optional[Path], pre
         _warn(f"protein properties from FASTA skipped: {exc.format_message()}")
 
 
-def _maybe_enrich_pride(output_folder, project_accession: str | None, enrich: bool, prefix: str | None = None) -> None:
+def _maybe_enrich_pride(output_folder, project_accession: str | None, enrich: bool, prefix: str) -> None:
     """Optionally enrich a converted dataset with PRIDE metadata."""
     if not enrich:
         return
@@ -102,11 +104,26 @@ def _maybe_enrich_pride(output_folder, project_accession: str | None, enrich: bo
         _warn(f"Could not enrich from PRIDE: {exc}")
 
 
+@dataclass(frozen=True)
+class _DatasetMetadata:
+    """Validated dataset-metadata options of one convert command.
+
+    ``config_json`` holds the workflow parameters as compact JSON, or None when no config file is given.
+    """
+
+    software_name: str | None
+    software_version: str | None
+    config_json: str | None
+    enrich_pride: bool
+    compute_integrity: bool
+
+
 def _dataset_metadata_options(func):
     """Add the dataset-metadata options shared by the convert commands.
 
     The options set the workflow name and version, enrich from PRIDE and record
-    file integrity. They are listed in the order declared here.
+    file integrity. They are listed in the order declared here. The command receives
+    them as one ``metadata`` argument.
     """
     options = (
         click.option(
@@ -143,9 +160,22 @@ def _dataset_metadata_options(func):
             help="Write file checksums, row counts and sizes for the output folder into dataset.parquet, as the last step.",
         ),
     )
+
+    @functools.wraps(func)
+    def wrapper(*, software_name, software_version, software_config, enrich_pride, compute_integrity, **kwargs):
+        """Validate the workflow options, then call the command with them as ``metadata``."""
+        metadata = _DatasetMetadata(
+            software_name=software_name,
+            software_version=software_version,
+            config_json=_software_config_json(software_name, software_version, software_config),
+            enrich_pride=enrich_pride,
+            compute_integrity=compute_integrity,
+        )
+        return func(metadata=metadata, **kwargs)
+
     for option in reversed(options):
-        func = option(func)
-    return func
+        wrapper = option(wrapper)
+    return wrapper
 
 
 def _software_config_json(software_name, software_version, software_config) -> str | None:
@@ -223,6 +253,32 @@ def _maybe_compute_integrity(output_folder, prefix: str, enabled: bool) -> None:
         record.update(integrity)
         ds.save_structure([record], "dataset", prefix=prefix)
     click.echo(f"Integrity recorded for {integrity['total_structures']} files")
+
+
+def _finish_conversion(
+    output_folder: Path,
+    prefix: str,
+    project_accession: str | None,
+    metadata: _DatasetMetadata,
+    *,
+    fasta: Optional[Path] = None,
+    mudata: bool | None = None,
+    written: bool = True,
+) -> None:
+    """Run the post-conversion steps shared by the convert commands, in order.
+
+    Dataset-changing steps run only when ``written`` is true. The MuData view is
+    refreshed when ``mudata`` is not None. The integrity record runs last, so it covers every file.
+    """
+    if written:
+        _annotate_protein_properties(output_folder, fasta, prefix)
+        _apply_software(output_folder, prefix, metadata.software_name, metadata.software_version, metadata.config_json)
+        _maybe_enrich_pride(output_folder, project_accession, metadata.enrich_pride, prefix)
+    if mudata is not None:
+        _write_mudata(output_folder, prefix, mudata and written)
+    if written:
+        _maybe_compute_integrity(output_folder, prefix, metadata.compute_integrity)
+    _log_summary(output_folder)
 
 
 # ---------------------------------------------------------------------------
@@ -366,16 +422,12 @@ def convert_diann_cmd(
     batch_size: int,
     standardized_intensities: bool,
     project_accession: Optional[str],
-    enrich_pride: bool,
     compression: str,
     diann_log: Optional[Path],
     fasta: Optional[Path],
     mudata: bool,
     verbose: bool,
-    software_name: Optional[str],
-    software_version: Optional[str],
-    software_config: Optional[Path],
-    compute_integrity: bool,
+    metadata: _DatasetMetadata,
 ):
     """Convert DIA-NN report to QPX format.
 
@@ -401,7 +453,6 @@ def convert_diann_cmd(
             --output-folder ./qpx_output \\
             --standardized-intensities
     """
-    config_json = _software_config_json(software_name, software_version, software_config)
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
@@ -442,13 +493,8 @@ def convert_diann_cmd(
     converter.write_provenance(output_folder, prefix=prefix)
     converter.write_dataset(output_folder, prefix=prefix, project_accession=project_accession)
 
-    _annotate_protein_properties(output_folder, fasta, prefix)
-    _apply_software(output_folder, prefix, software_name, software_version, config_json)
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride, prefix)
-    _write_mudata(output_folder, prefix, mudata)
-    _maybe_compute_integrity(output_folder, prefix, compute_integrity)
+    _finish_conversion(output_folder, prefix, project_accession, metadata, fasta=fasta, mudata=mudata)
 
-    _log_summary(output_folder)
     click.echo(f"DIA-NN conversion complete. Output: {output_folder}")
 
 
@@ -558,14 +604,10 @@ def convert_maxquant_cmd(
     spectral_data: bool,
     standardized_intensities: bool,
     project_accession: Optional[str],
-    enrich_pride: bool,
     compression: str,
     verbose: bool,
     fixed_mod_only: bool,
-    software_name: Optional[str],
-    software_version: Optional[str],
-    software_config: Optional[Path],
-    compute_integrity: bool,
+    metadata: _DatasetMetadata,
 ):
     """Convert MaxQuant output to QPX format.
 
@@ -588,7 +630,6 @@ def convert_maxquant_cmd(
             --output-folder ./qpx_output \\
             --structures psm
     """
-    config_json = _software_config_json(software_name, software_version, software_config)
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
@@ -632,11 +673,8 @@ def convert_maxquant_cmd(
     )
 
     prefix = output_prefix or "maxquant"
-    _apply_software(output_folder, prefix, software_name, software_version, config_json)
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride, prefix)
-    _maybe_compute_integrity(output_folder, prefix, compute_integrity)
+    _finish_conversion(output_folder, prefix, project_accession, metadata)
 
-    _log_summary(output_folder)
     click.echo(f"MaxQuant conversion complete. Output: {output_folder}")
 
 
@@ -721,13 +759,9 @@ def convert_fragpipe_cmd(
     max_memory: Optional[str],
     max_cpus: Optional[int],
     project_accession: Optional[str],
-    enrich_pride: bool,
     compression: str,
     verbose: bool,
-    software_name: Optional[str],
-    software_version: Optional[str],
-    software_config: Optional[Path],
-    compute_integrity: bool,
+    metadata: _DatasetMetadata,
 ):
     """Convert FragPipe output to QPX format.
 
@@ -749,7 +783,6 @@ def convert_fragpipe_cmd(
             --experiment-annotation-file experiment_annotation.tsv \\
             --output-folder ./qpx_output
     """
-    config_json = _software_config_json(software_name, software_version, software_config)
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
@@ -775,11 +808,8 @@ def convert_fragpipe_cmd(
     )
 
     prefix = output_prefix or "fragpipe"
-    _apply_software(output_folder, prefix, software_name, software_version, config_json)
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride, prefix)
-    _maybe_compute_integrity(output_folder, prefix, compute_integrity)
+    _finish_conversion(output_folder, prefix, project_accession, metadata)
 
-    _log_summary(output_folder)
     click.echo(f"FragPipe conversion complete. Output: {output_folder}")
 
 
@@ -837,13 +867,9 @@ def convert_mzidentml_cmd(
     mgf_path: Optional[Path],
     include_spectra: bool,
     project_accession: Optional[str],
-    enrich_pride: bool,
     compression: str,
     verbose: bool,
-    software_name: Optional[str],
-    software_version: Optional[str],
-    software_config: Optional[Path],
-    compute_integrity: bool,
+    metadata: _DatasetMetadata,
 ):
     """Convert mzIdentML file to QPX dataset.
 
@@ -878,7 +904,6 @@ def convert_mzidentml_cmd(
             --output-folder ./qpx_output \\
             --project-accession PXD054720
     """
-    config_json = _software_config_json(software_name, software_version, software_config)
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
@@ -894,11 +919,8 @@ def convert_mzidentml_cmd(
         project_accession=project_accession,
     )
 
-    _apply_software(output_folder, output_prefix, software_name, software_version, config_json)
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride, output_prefix)
-    _maybe_compute_integrity(output_folder, output_prefix, compute_integrity)
+    _finish_conversion(output_folder, output_prefix, project_accession, metadata)
 
-    _log_summary(output_folder)
     click.echo(f"mzIdentML conversion complete. Output: {output_folder}")
 
 
@@ -1150,11 +1172,7 @@ def convert_openms_consensus_cmd(
     compression,
     fasta,
     mudata,
-    software_name,
-    software_version,
-    software_config,
-    enrich_pride,
-    compute_integrity,
+    metadata: _DatasetMetadata,
 ):
     """Convert one or more OpenMS consensusXML files (+ SDRF) to one QPX dataset.
 
@@ -1164,7 +1182,6 @@ def convert_openms_consensus_cmd(
     with a quantification_method cv_param) until OpenMS provides the authoritative
     protein quant. Several comma-separated --consensusxml inputs are written into the same views.
     """
-    config_json = _software_config_json(software_name, software_version, software_config)
     if verbose:
         logging.basicConfig(level=logging.INFO)
     from qpx.converters.openms_consensus.converter import OpenMSConsensusConverter
@@ -1185,13 +1202,16 @@ def convert_openms_consensus_cmd(
         )
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
-    if written:
-        _annotate_protein_properties(Path(output_folder), fasta, output_prefix)
-        _apply_software(Path(output_folder), output_prefix, software_name, software_version, config_json)
-        _maybe_enrich_pride(Path(output_folder), project_accession, enrich_pride, output_prefix)
-    _write_mudata(Path(output_folder), output_prefix, mudata and bool(written))
-    _maybe_compute_integrity(Path(output_folder), output_prefix, compute_integrity)
-    _log_summary(output_folder)
+    _finish_conversion(
+        output_folder,
+        output_prefix,
+        project_accession,
+        metadata,
+        fasta=fasta,
+        mudata=mudata,
+        written=bool(written),
+    )
+
     click.echo(f"consensusXML conversion complete. Wrote: {sorted(written)}")
 
 
@@ -1330,11 +1350,7 @@ def convert_quantms_msstats_cmd(
     batch_size: int,
     compression: str,
     verbose: bool,
-    enrich_pride: bool,
-    software_name: Optional[str],
-    software_version: Optional[str],
-    software_config: Optional[Path],
-    compute_integrity: bool,
+    metadata: _DatasetMetadata,
 ):
     """Convert QuantMS MSstats and SDRF inputs to QPX.
 
@@ -1349,7 +1365,6 @@ def convert_quantms_msstats_cmd(
             --sdrf-file PXD007683.sdrf.tsv \
             --output-folder ./qpx_output
     """
-    config_json = _software_config_json(software_name, software_version, software_config)
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
@@ -1369,11 +1384,8 @@ def convert_quantms_msstats_cmd(
         batch_size=batch_size,
     )
 
-    _apply_software(output_folder, prefix, software_name, software_version, config_json)
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride, prefix)
-    _maybe_compute_integrity(output_folder, prefix, compute_integrity)
+    _finish_conversion(output_folder, prefix, project_accession, metadata)
 
-    _log_summary(output_folder)
     click.echo(f"QuantMS MSstats conversion complete. Output prefix: {prefix}")
 
 
@@ -1442,13 +1454,9 @@ def convert_spectronaut_cmd(
     max_memory: Optional[str],
     max_cpus: Optional[int],
     project_accession: Optional[str],
-    enrich_pride: bool,
     compression: str,
     verbose: bool,
-    software_name: Optional[str],
-    software_version: Optional[str],
-    software_config: Optional[Path],
-    compute_integrity: bool,
+    metadata: _DatasetMetadata,
 ):
     r"""Convert Spectronaut report to QPX format.
 
@@ -1468,7 +1476,6 @@ def convert_spectronaut_cmd(
             --sdrf-file data.sdrf.tsv \
             --output-folder ./qpx_output
     """
-    config_json = _software_config_json(software_name, software_version, software_config)
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
@@ -1500,9 +1507,7 @@ def convert_spectronaut_cmd(
     converter.write_provenance(output_folder, prefix=prefix)
     converter.write_dataset(output_folder, prefix=prefix, project_accession=project_accession)
 
-    _apply_software(output_folder, prefix, software_name, software_version, config_json)
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride, prefix)
-    _maybe_compute_integrity(output_folder, prefix, compute_integrity)
+    _finish_conversion(output_folder, prefix, project_accession, metadata)
 
     click.echo(f"Spectronaut conversion complete. Output: {output_folder}")
 
@@ -1580,11 +1585,7 @@ def convert_cdap_cmd(
     max_memory: str,
     max_cpus: int,
     verbose: bool,
-    enrich_pride: bool,
-    software_name: Optional[str],
-    software_version: Optional[str],
-    software_config: Optional[Path],
-    compute_integrity: bool,
+    metadata: _DatasetMetadata,
 ):
     """Convert CPTAC CDAP .psm files to QPX format.
 
@@ -1605,7 +1606,6 @@ def convert_cdap_cmd(
             --output-folder ./qpx_output \\
             --structures psm,feature
     """
-    config_json = _software_config_json(software_name, software_version, software_config)
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
@@ -1631,11 +1631,8 @@ def convert_cdap_cmd(
         project_accession=project_accession,
     )
 
-    _apply_software(output_folder, output_prefix, software_name, software_version, config_json)
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride, output_prefix)
-    _maybe_compute_integrity(output_folder, output_prefix, compute_integrity)
+    _finish_conversion(output_folder, output_prefix, project_accession, metadata)
 
-    _log_summary(output_folder)
     click.echo(f"CDAP conversion complete. Output: {output_folder}")
 
 

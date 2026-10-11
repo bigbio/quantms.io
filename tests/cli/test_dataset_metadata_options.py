@@ -7,9 +7,9 @@ import pyarrow.parquet as pq
 import pytest
 from click.testing import CliRunner
 
-from qpx.cli.convert import _apply_software, convert
+from qpx.cli.convert import _apply_software, _finish_conversion, convert
 from qpx.dataset import Dataset
-from tests.converters.test_openms_consensus import _TMT_CONSENSUSXML
+from tests.converters.test_openms_consensus import _invoke_consensus_convert
 
 _METADATA_OPTIONS = (
     "--software-name",
@@ -33,26 +33,25 @@ _DIANN_SMALL = Path(__file__).resolve().parents[1] / "examples" / "diann" / "sma
 
 def _run(base, *extra, prefix="t"):
     """Run ``convert openms-consensus`` on a one-file consensusXML and return the result and output folder."""
-    base.mkdir(parents=True, exist_ok=True)
-    cx = base / "input.consensusXML"
-    cx.write_text(_TMT_CONSENSUSXML)
     folder = base / "out"
-    result = CliRunner().invoke(
+    return _invoke_consensus_convert(base, folder, *extra, prefix=prefix), folder
+
+
+def _run_diann(folder, *extra):
+    """Run ``convert diann`` on the small DIA-NN example and return the CliRunner result."""
+    return CliRunner().invoke(
         convert,
         [
-            "openms-consensus",
-            "--consensusxml",
-            str(cx),
+            "diann",
+            "--report-path",
+            str(_DIANN_SMALL / "diann_report.tsv"),
+            "--sdrf-file",
+            str(_DIANN_SMALL / "PXD019909-DIA.sdrf.tsv"),
             "--output-folder",
             str(folder),
-            "--output-prefix",
-            prefix,
-            "--structures",
-            "feature,pg,psm",
             *extra,
         ],
     )
-    return result, folder
 
 
 def test_software_options_record_workflow_in_dataset_and_provenance(tmp_path):
@@ -237,22 +236,13 @@ def test_convert_command_without_metadata_options(command):
 def test_convert_diann_records_workflow_and_integrity(tmp_path):
     """convert diann records workflow provenance and verifiable integrity, and reports its MuData view."""
     folder = tmp_path / "out"
-    result = CliRunner().invoke(
-        convert,
-        [
-            "diann",
-            "--report-path",
-            str(_DIANN_SMALL / "diann_report.tsv"),
-            "--sdrf-file",
-            str(_DIANN_SMALL / "PXD019909-DIA.sdrf.tsv"),
-            "--output-folder",
-            str(folder),
-            "--software-name",
-            "quantmsdiann",
-            "--software-version",
-            "2.0.0",
-            "--compute-integrity",
-        ],
+    result = _run_diann(
+        folder,
+        "--software-name",
+        "quantmsdiann",
+        "--software-version",
+        "2.0.0",
+        "--compute-integrity",
     )
 
     assert result.exit_code == 0, result.output
@@ -265,3 +255,23 @@ def test_convert_diann_records_workflow_and_integrity(tmp_path):
     with Dataset(str(folder)) as ds:
         assert ds.verify_integrity()["errors"] == []
     assert (folder / "diann.h5mu").exists() == ("MuData view: diann.h5mu" in result.output)
+
+
+def test_openms_consensus_and_diann_finish_conversion_once_with_their_prefix(tmp_path, monkeypatch):
+    """convert openms-consensus and convert diann each run the shared post-conversion step once, with their prefix."""
+    calls = []
+
+    def spy(output_folder, prefix, *args, **kwargs):
+        """Record the prefix of each post-conversion call and run the real step."""
+        calls.append(prefix)
+        return _finish_conversion(output_folder, prefix, *args, **kwargs)
+
+    monkeypatch.setattr("qpx.cli.convert._finish_conversion", spy)
+
+    consensus, _ = _run(tmp_path / "consensus", prefix="t")
+    assert consensus.exit_code == 0, consensus.output
+    assert calls == ["t"]
+
+    diann = _run_diann(tmp_path / "diann")
+    assert diann.exit_code == 0, diann.output
+    assert calls == ["t", "diann"]

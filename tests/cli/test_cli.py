@@ -61,11 +61,6 @@ class TestMzIdentMLConvertCLI:
         result = runner.invoke(qpx_main, ["convert", "mzidentml", "--help"])
         _assert_help(result, "--mgf-path", "--include-spectra", "--project-accession")
 
-    def test_mzidentml_help_shows_enrich_pride(self):
-        runner = CliRunner()
-        result = runner.invoke(qpx_main, ["convert", "mzidentml", "--help"])
-        _assert_help(result, "--enrich-pride")
-
 
 class TestSdrfConvertCLI:
     def test_sdrf_help_renders(self):

@@ -83,6 +83,32 @@ def _write_tmt_consensusxml(path):
     path.write_text(_TMT_CONSENSUSXML)
 
 
+def _invoke_consensus_convert(tmp_path, folder, *extra, prefix="t"):
+    """Run ``convert openms-consensus`` on the TMT fixture and return the CliRunner result without asserting."""
+    from click.testing import CliRunner
+
+    from qpx.cli.convert import convert
+
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    cx = tmp_path / "input.consensusXML"
+    cx.write_text(_TMT_CONSENSUSXML)
+    return CliRunner().invoke(
+        convert,
+        [
+            "openms-consensus",
+            "--consensusxml",
+            str(cx),
+            "--output-folder",
+            str(folder),
+            "--output-prefix",
+            prefix,
+            "--structures",
+            "feature,pg,psm",
+            *extra,
+        ],
+    )
+
+
 def test_converter_rejects_invalid_structure_before_creating_output(tmp_path):
     out = tmp_path / "out"
     with pytest.raises(ValueError, match="Unknown.*bogus"):
@@ -1080,27 +1106,7 @@ def test_openms_consensus_fasta_uses_the_output_prefix_in_a_shared_folder(tmp_pa
 
 
 def _consensus_convert(tmp_path, folder, *extra):
-    from click.testing import CliRunner
-
-    from qpx.cli.convert import convert
-
-    cx = tmp_path / "mudata.consensusXML"
-    cx.write_text(_TMT_CONSENSUSXML)
-    result = CliRunner().invoke(
-        convert,
-        [
-            "openms-consensus",
-            "--consensusxml",
-            str(cx),
-            "--output-folder",
-            str(folder),
-            "--output-prefix",
-            "t",
-            "--structures",
-            "feature,pg,psm",
-            *extra,
-        ],
-    )
+    result = _invoke_consensus_convert(tmp_path, folder, *extra)
     assert result.exit_code == 0, result.output
     return result
 
