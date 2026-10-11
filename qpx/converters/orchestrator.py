@@ -49,6 +49,32 @@ def build_dataset_record(
     }
 
 
+def build_provenance_step(
+    *,
+    step_category: str,
+    step_name: str,
+    tool_name: str,
+    tool_version: str | None = None,
+    tool_uri: str | None = None,
+    parameters: list[dict] | None = None,
+    config: str | None = None,
+    output_views: list[str] | None = None,
+    step_order: int = 0,
+) -> dict:
+    """Build a provenance.parquet record with consistent field structure (``tool_version`` '' becomes None)."""
+    return {
+        "step_order": step_order,
+        "step_category": step_category,
+        "step_name": step_name,
+        "tool_name": tool_name,
+        "tool_version": tool_version or None,
+        "tool_uri": tool_uri,
+        "parameters": parameters,
+        "config": config,
+        "output_views": list(output_views) if output_views is not None else None,
+    }
+
+
 class BaseOrchestrator:
     """Base class for converter orchestrators.
 

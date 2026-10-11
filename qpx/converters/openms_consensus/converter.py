@@ -12,7 +12,6 @@ from __future__ import annotations
 import logging
 import math
 import os
-import re
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Optional, Union
@@ -36,9 +35,10 @@ from qpx.converters.openms_consensus.feature_dedup import (
     feature_ids as _feature_ids,
 )
 from qpx.converters.openms_consensus.pg_adapter import ProteinGroupAccumulator, protein_group_maps
-from qpx.converters.orchestrator import BaseOrchestrator
+from qpx.converters.orchestrator import BaseOrchestrator, build_provenance_step
 from qpx.core.constants import DATASET, FEATURE, ONTOLOGY, PG, PROVENANCE, PSM, RUN, SAMPLE
 from qpx.core.scan import scan_format_from_native_id
+from qpx.core.scores import normalize_score_name, score_ontology_entries
 from qpx.writers.base import parquet_write_options
 from qpx.writers.feature import FeatureWriter
 from qpx.writers.pg import PgWriter
@@ -661,31 +661,6 @@ def _consensus_is_isobaric(header) -> bool:
         return False
 
 
-def _unique(items) -> list:
-    """Return the distinct items in first-seen order."""
-    return list(dict.fromkeys(items))
-
-
-def _snake_case(text: str) -> str:
-    """Lowercase a processing action name and join its words with underscores."""
-    return re.sub(r"[^0-9a-z]+", "_", text.lower()).strip("_")
-
-
-def _tool_step(category: str, step_name: str, tool_name: str, tool_version: Optional[str], output_views) -> dict:
-    """Provenance record for one processing tool; ``step_order`` is numbered by the caller."""
-    return {
-        "step_order": 0,
-        "step_category": category,
-        "step_name": step_name,
-        "tool_name": tool_name,
-        "tool_version": tool_version or None,
-        "tool_uri": None,
-        "parameters": None,
-        "config": None,
-        "output_views": list(output_views),
-    }
-
-
 def _write_sdrf_metadata(
     output_folder: Path,
     output_prefix: str,
@@ -897,8 +872,6 @@ class OpenMSConsensusConverter(BaseOrchestrator):  # pylint: disable=too-few-pub
             except (KeyError, pa.ArrowInvalid):
                 continue
             if names:
-                from qpx.core.scores import score_ontology_entries
-
                 ontology_entries.extend(score_ontology_entries(names, view=view))  # noqa: PERF401
         self._write_ontology(out, output_prefix, ontology_entries)
 
@@ -924,20 +897,44 @@ class OpenMSConsensusConverter(BaseOrchestrator):  # pylint: disable=too-few-pub
         headers = [header for header in (_read_consensus_header(path) for path in consensusxml_paths) if header is not None]
         psm_views = [PSM] if PSM in structures else []
         core_views = [v for v in (FEATURE, PSM, PG) if v in structures]
-        original = _unique(engine for header in headers for engine in header.original_search_engines())
+        original = list(dict.fromkeys(engine for header in headers for engine in header.original_search_engines()))
         original_names = {name for name, _ in original}
-        all_engines = _unique(engine for header in headers for engine in header.search_engines())
+        all_engines = list(dict.fromkeys(engine for header in headers for engine in header.search_engines()))
         engines = [engine for engine in all_engines if engine[0] not in original_names]
         software: dict[tuple[str, str], str] = {}
         for header in headers:
             for name, version, action in header.data_processing():
                 software.setdefault((name, version), action)
 
-        steps = [_tool_step("database_search", "sequence_search", name, version, psm_views) for name, version in original]
+        steps = [
+            build_provenance_step(
+                step_category="database_search",
+                step_name="sequence_search",
+                tool_name=name,
+                tool_version=version,
+                output_views=psm_views,
+            )
+            for name, version in original
+        ]
         category, step_name = ("rescoring", "psm_rescoring") if original else ("database_search", "sequence_search")
-        steps += [_tool_step(category, step_name, name, version, psm_views) for name, version in engines]
         steps += [
-            _tool_step("quantification", _snake_case(action) or "quantification", name, version, core_views)
+            build_provenance_step(
+                step_category=category,
+                step_name=step_name,
+                tool_name=name,
+                tool_version=version,
+                output_views=psm_views,
+            )
+            for name, version in engines
+        ]
+        steps += [
+            build_provenance_step(
+                step_category="quantification",
+                step_name=normalize_score_name(action) or "quantification",
+                tool_name=name,
+                tool_version=version,
+                output_views=core_views,
+            )
             for (name, version), action in software.items()
         ]
         if software:
@@ -949,19 +946,23 @@ class OpenMSConsensusConverter(BaseOrchestrator):  # pylint: disable=too-few-pub
             software_name = "OpenMS/IsobaricWorkflow" if is_isobaric else "OpenMS/ProteomicsLFQ"
             software_version = None
             fallback_step = "isobaric_quantification" if is_isobaric else "label_free_quantification"
-            steps.append(_tool_step("quantification", fallback_step, software_name, None, core_views))
+            steps.append(
+                build_provenance_step(
+                    step_category="quantification",
+                    step_name=fallback_step,
+                    tool_name=software_name,
+                    output_views=core_views,
+                )
+            )
         steps.append(
-            {
-                "step_order": 0,
-                "step_category": "format_conversion",
-                "step_name": "openms_consensus_qpx_conversion",
-                "tool_name": "qpx",
-                "tool_version": __version__,
-                "tool_uri": None,
-                "parameters": [{"key": "consensusxml", "value": Path(path).name} for path in consensusxml_paths],
-                "config": None,
-                "output_views": [v for v in (SAMPLE, RUN) if v in structures] + [ONTOLOGY],
-            }
+            build_provenance_step(
+                step_category="format_conversion",
+                step_name="openms_consensus_qpx_conversion",
+                tool_name="qpx",
+                tool_version=__version__,
+                parameters=[{"key": "consensusxml", "value": Path(path).name} for path in consensusxml_paths],
+                output_views=[v for v in (SAMPLE, RUN) if v in structures] + [ONTOLOGY],
+            )
         )
         for order, step in enumerate(steps, start=1):
             step["step_order"] = order
