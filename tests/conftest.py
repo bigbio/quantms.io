@@ -4,11 +4,13 @@ Provides temp directories, minimal valid Parquet files for each structure type,
 and a complete dataset directory with feature, pg, sample, and run parquets.
 """
 
+from contextlib import ExitStack
 from pathlib import Path
 
 import pyarrow as pa
 import pytest
 
+from qpx.core.ontology import PublicOntology
 from qpx.writers import (
     DatasetWriter,
     FeatureWriter,
@@ -561,3 +563,21 @@ def dataset_dir(tmp_path):
         w.write_batch([make_dataset_record()])
 
     return ds_dir
+
+
+@pytest.fixture(name="local_ms_ontology")
+def _local_ms_ontology(tmp_path, monkeypatch):
+    """Provide ``install(terms, version=None)``, which serves a local PSI-MS ontology from ``PublicOntology``."""
+    with ExitStack() as stack:
+
+        def install(terms: dict[str, str], version: str | None = None) -> PublicOntology:
+            """Write an OBO file with one ``id: name`` term per entry and make it the PSI-MS ontology."""
+            header = f"data-version: {version}\n" if version else ""
+            body = "".join(f'\n[Term]\nid: {term_id}\nname: {name}\ndef: "{name}." []\n' for term_id, name in terms.items())
+            path = tmp_path / "psi-ms.obo"
+            path.write_text(header + body)
+            ontology = stack.enter_context(PublicOntology.from_obo(path))
+            monkeypatch.setattr("qpx.core.ontology.PublicOntology", lambda *_args, **_kwargs: ontology)
+            return ontology
+
+        yield install

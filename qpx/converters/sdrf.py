@@ -15,7 +15,7 @@ import pandas as pd
 from qpx.converters.base import BaseConverter
 from qpx.converters.channel_labels import normalize_label
 from qpx.core.files import run_file_stem
-from qpx.core.sdrf import validate_sdrf_data_files
+from qpx.core.sdrf import get_name_from_complex_sdrf_value, parse_sdrf_kv, validate_sdrf_data_files
 from qpx.writers.run import RunWriter
 from qpx.writers.sample import SampleWriter
 
@@ -49,18 +49,14 @@ def _extract_nt(value: str) -> str:
     """Extract the ``NT=`` name from a complex SDRF value."""
     if pd.isna(value):
         return ""
-    if "NT=" in str(value):
-        m = re.search(r"NT=(.+?)(;|$)", str(value))
-        return m.group(1) if m else str(value)
-    return str(value)
+    return get_name_from_complex_sdrf_value(str(value))
 
 
 def _extract_ac(value: str) -> str:
     """Extract the ``AC=`` accession from a complex SDRF value ('' when absent)."""
     if pd.isna(value):
         return ""
-    m = re.search(r"AC=(.+?)(;|$)", str(value))
-    return m.group(1).strip() if m else ""
+    return parse_sdrf_kv(value).get("AC", "")
 
 
 def _collect_column_values(df: pd.DataFrame, substr: str) -> list[str]:
@@ -488,12 +484,7 @@ class SdrfConverter(BaseConverter):
             raw = sdrf_df[col].dropna().iloc[0] if not sdrf_df[col].dropna().empty else None
             if not raw:
                 continue
-            parts = str(raw).split(";")
-            kv = {}
-            for p in parts:
-                if "=" in p:
-                    k, v = p.split("=", 1)
-                    kv[k.strip()] = v.strip()
+            kv = parse_sdrf_kv(raw)
 
             accession = kv.get("AC", "")
             name = kv.get("NT", "")
