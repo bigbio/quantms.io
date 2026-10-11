@@ -97,7 +97,7 @@ def _maybe_enrich_pride(output_folder, project_accession: str | None, enrich: bo
     try:
         from qpx.dataset import Dataset
 
-        with Dataset(output_folder, file_prefix=prefix) as ds:
+        with Dataset(str(output_folder), file_prefix=prefix) as ds:
             ds.enrich_from_pride(project_accession)
         click.echo(f"Enriched dataset with PRIDE metadata for {project_accession}")
     except Exception as exc:
@@ -261,7 +261,7 @@ def _finish_conversion(
     project_accession: str | None,
     metadata: _DatasetMetadata,
     *,
-    fasta: Optional[Path] = None,
+    fasta: Path | None = None,
     mudata: bool | None = None,
     written: bool = True,
 ) -> None:

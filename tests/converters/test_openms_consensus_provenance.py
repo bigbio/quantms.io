@@ -34,10 +34,6 @@ _FULL_HEADER_CONSENSUSXML = (
     </SearchParameters>""",
     )
 )
-_LABEL_FREE_CONSENSUSXML = _TMT_CONSENSUSXML.replace('label="tmt6plex_126"', 'label="label-free"').replace(
-    'label="tmt6plex_127"', 'label="label-free"'
-)
-
 _STRUCTURES = ("feature", "psm")
 _FEATURE_PSM = ["feature", "psm"]
 _QPX_STEP = ("format_conversion", "openms_consensus_qpx_conversion", "qpx", qpx.__version__, ["ontology"])
@@ -46,6 +42,14 @@ _QPX_STEP = ("format_conversion", "openms_consensus_qpx_conversion", "qpx", qpx.
 def _without_line(xml: str, fragment: str) -> str:
     """Return the XML text with every line that contains ``fragment`` removed."""
     return "".join(line for line in xml.splitlines(keepends=True) if fragment not in line)
+
+
+_LABEL_FREE_CONSENSUSXML = _without_line(
+    _TMT_CONSENSUSXML.replace('label="tmt6plex_126"', 'label=""')
+    .replace('    <map id="1" name="run_01.mzML" unique_id="2" label="tmt6plex_127" size="1">\n    </map>\n', "")
+    .replace('mapList count="2"', 'mapList count="1"'),
+    'element map="1"',
+)
 
 
 def _summary(steps: list[dict]) -> list[tuple]:
