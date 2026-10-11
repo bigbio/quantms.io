@@ -29,6 +29,11 @@ from qpx.converters.openms import OpenMSConverter
 logger = logging.getLogger("qpx.cli.convert")
 
 
+def _warn(message: str) -> None:
+    """Print a warning to stderr with the shared ``WARNING:`` prefix."""
+    click.echo(f"WARNING: {message}", err=True)
+
+
 def _log_summary(output_folder) -> None:
     """Log a conversion summary for a just-written output folder.
 
@@ -58,7 +63,7 @@ def _write_mudata(output_folder: Path, prefix: str, enabled: bool) -> None:
 
     written = write_dataset_mudata(Path(output_folder), prefix)
     if written is None:
-        click.echo("WARNING: no MuData view was written (see the log); the Parquet views are complete")
+        _warn("no MuData view was written (see the log); the Parquet views are complete")
     else:
         click.echo(f"MuData view: {written.name}")
 
@@ -77,7 +82,7 @@ def _annotate_protein_properties(output_folder: Path, fasta: Optional[Path], pre
     try:
         annotate_dataset_protein_properties(Path(output_folder), fasta, in_place=True, prefix=prefix)
     except click.ClickException as exc:
-        click.echo(f"WARNING: protein properties from FASTA skipped: {exc.format_message()}")
+        _warn(f"protein properties from FASTA skipped: {exc.format_message()}")
 
 
 def _maybe_enrich_pride(output_folder, project_accession: str | None, enrich: bool, prefix: str | None = None) -> None:
@@ -85,20 +90,16 @@ def _maybe_enrich_pride(output_folder, project_accession: str | None, enrich: bo
     if not enrich:
         return
     if not project_accession:
-        click.echo(
-            "Warning: --enrich-pride requires --project-accession; skipping enrichment.",
-            err=True,
-        )
+        _warn("--enrich-pride requires --project-accession; skipping enrichment.")
         return
     try:
         from qpx.dataset import Dataset
 
-        ds = Dataset(output_folder, file_prefix=prefix)
-        ds.enrich_from_pride(project_accession)
-        ds.close()
+        with Dataset(output_folder, file_prefix=prefix) as ds:
+            ds.enrich_from_pride(project_accession)
         click.echo(f"Enriched dataset with PRIDE metadata for {project_accession}")
     except Exception as exc:
-        click.echo(f"Warning: Could not enrich from PRIDE: {exc}", err=True)
+        _warn(f"Could not enrich from PRIDE: {exc}")
 
 
 def _dataset_metadata_options(func):
@@ -164,22 +165,9 @@ def _software_config_json(software_name, software_version, software_config) -> s
     return json.dumps(config, separators=(",", ":"), sort_keys=True)
 
 
-def _metadata_file(output_folder, prefix: str | None, view: str) -> Path | None:
-    """Return the ``<prefix>.<view>.parquet`` file, or None when it does not exist.
-
-    Without a prefix, the folder must hold exactly one ``*.<view>.parquet`` file.
-    """
-    folder = Path(output_folder)
-    if prefix:
-        path = folder / f"{prefix}.{view}.parquet"
-        return path if path.exists() else None
-    matches = sorted(folder.glob(f"*.{view}.parquet"))
-    return matches[0] if len(matches) == 1 else None
-
-
 def _apply_software(
     output_folder,
-    prefix: str | None,
+    prefix: str,
     software_name: str | None,
     software_version: str | None,
     config_json: str | None,
@@ -191,64 +179,49 @@ def _apply_software(
     """
     if not software_name:
         return
-    import pyarrow.parquet as pq
+    import pandas as pd
 
-    from qpx.writers import DatasetWriter, ProvenanceWriter
+    from qpx.converters.orchestrator import build_provenance_step
+    from qpx.dataset import Dataset
 
-    dataset_path = _metadata_file(output_folder, prefix, "dataset")
-    provenance_path = _metadata_file(output_folder, prefix, "provenance")
-    if dataset_path is None or provenance_path is None:
-        click.echo("WARNING: no dataset/provenance metadata found; --software-name skipped", err=True)
-        return
+    with Dataset(str(output_folder), file_prefix=prefix) as ds:
+        if ds.dataset_meta is None or ds.provenance is None:
+            _warn("no dataset/provenance metadata found; --software-name skipped")
+            return
+        record = ds.dataset_meta.to_df().iloc[0].to_dict()
+        record["software_name"] = software_name
+        record["software_version"] = software_version
+        ds.save_structure([record], "dataset", prefix=prefix)
 
-    record = pq.read_table(dataset_path).to_pylist()[0]
-    record["software_name"] = software_name
-    record["software_version"] = software_version
-    with DatasetWriter(dataset_path) as writer:
-        writer.write_batch([record])
-
-    steps = pq.read_table(provenance_path).to_pylist()
-    steps.insert(
-        0,
-        {
-            "step_category": "workflow",
-            "step_name": "pipeline_execution",
-            "tool_name": software_name,
-            "tool_version": software_version,
-            "tool_uri": None,
-            "parameters": None,
-            "config": config_json,
-            "output_views": None,
-        },
-    )
-    for step_order, step in enumerate(steps, start=1):
-        step["step_order"] = step_order
-    with ProvenanceWriter(provenance_path) as writer:
-        writer.write_batch(steps)
+        workflow = build_provenance_step(
+            step_category="workflow",
+            step_name="pipeline_execution",
+            tool_name=software_name,
+            tool_version=software_version,
+            config=config_json,
+        )
+        frame = pd.concat([pd.DataFrame([workflow]), ds.provenance.to_df()], ignore_index=True)
+        frame["step_order"] = range(1, len(frame) + 1)
+        ds.save_structure(frame, "provenance", prefix=prefix)
 
 
-def _maybe_compute_integrity(output_folder, prefix: str | None, enabled: bool) -> None:
+def _maybe_compute_integrity(output_folder, prefix: str, enabled: bool) -> None:
     """Record checksums, row counts and sizes of the output folder in dataset parquet.
 
     Call this after the last file write of a conversion, so the record covers every file.
     """
     if not enabled:
         return
-    import pyarrow.parquet as pq
-
     from qpx.dataset import Dataset
-    from qpx.writers import DatasetWriter
 
-    dataset_path = _metadata_file(output_folder, prefix, "dataset")
-    if dataset_path is None:
-        click.echo("WARNING: no dataset.parquet found; --compute-integrity skipped", err=True)
-        return
     with Dataset(str(output_folder), file_prefix=prefix) as ds:
+        if ds.dataset_meta is None:
+            _warn("no dataset.parquet found; --compute-integrity skipped")
+            return
         integrity = ds.compute_integrity()
-    record = pq.read_table(dataset_path).to_pylist()[0]
-    record.update(integrity)
-    with DatasetWriter(dataset_path) as writer:
-        writer.write_batch([record])
+        record = ds.dataset_meta.to_df().iloc[0].to_dict()
+        record.update(integrity)
+        ds.save_structure([record], "dataset", prefix=prefix)
     click.echo(f"Integrity recorded for {integrity['total_structures']} files")
 
 
@@ -1045,7 +1018,7 @@ def convert_openms_cmd(**kwargs):
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
 
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
+    _maybe_enrich_pride(output_folder, project_accession, enrich_pride, output_prefix)
 
     click.echo(f"OpenMS QPX enrichment complete. Output: {output_folder}")
 

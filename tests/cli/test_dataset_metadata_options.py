@@ -7,7 +7,7 @@ import pyarrow.parquet as pq
 import pytest
 from click.testing import CliRunner
 
-from qpx.cli.convert import _apply_software, _metadata_file, convert
+from qpx.cli.convert import _apply_software, convert
 from qpx.dataset import Dataset
 from tests.converters.test_openms_consensus import _TMT_CONSENSUSXML
 
@@ -149,7 +149,7 @@ def test_enrich_pride_failure_is_a_warning(tmp_path, monkeypatch):
     result, _ = _run(tmp_path, "--enrich-pride", "--project-accession", "PXD000001")
 
     assert result.exit_code == 0, result.output
-    assert "Could not enrich from PRIDE" in result.output
+    assert "WARNING: Could not enrich from PRIDE" in result.output
 
 
 def test_enrich_pride_targets_the_converted_dataset_in_a_shared_folder(tmp_path, monkeypatch):
@@ -168,22 +168,44 @@ def test_enrich_pride_targets_the_converted_dataset_in_a_shared_folder(tmp_path,
     assert pq.read_table(folder / "a.dataset.parquet").to_pylist()[0]["project_title"] != "T"
 
 
-@pytest.mark.parametrize(
-    ("files", "expected"),
-    [
-        ([], None),
-        (["a.dataset.parquet"], "a.dataset.parquet"),
-        (["a.dataset.parquet", "b.dataset.parquet"], None),
-    ],
-)
-def test_metadata_file_without_prefix_requires_one_match(tmp_path, files, expected):
-    """Without a prefix, a view resolves only when the folder holds exactly one matching file."""
-    for name in files:
-        (tmp_path / name).write_bytes(b"")
+def test_deprecated_openms_enrich_pride_targets_the_output_prefix(tmp_path, monkeypatch):
+    """The deprecated convert openms command enriches the dataset of its own prefix in a shared folder."""
+    from tests.converters.test_openms_psm_runs import _write_native_psms, _write_xml
 
-    found = _metadata_file(tmp_path, None, "dataset")
+    monkeypatch.setattr(
+        "qpx.core.pride.fetch_pride_metadata",
+        lambda acc: {"project_title": "T", "project_description": "D", "pubmed_id": "1"},
+    )
+    source, _ = _write_native_psms(tmp_path, [{}], provided_ids=True)
+    companion = _write_xml(tmp_path, [(0, "scan=42", 10.123456789, 500.123456789)])
+    sdrf = tmp_path / "input.sdrf.tsv"
+    sdrf.write_text(
+        "source name\tcharacteristics[organism]\tcharacteristics[organism part]\tcomment[data file]\tcomment[label]\n"
+        "sample_1\tHomo sapiens\tliver\trun_a.mzML\tlabel free sample\n"
+    )
+    folder = tmp_path / "out"
+    base = [
+        "openms",
+        "--qpx-dir",
+        str(source),
+        "--sdrf-file",
+        str(sdrf),
+        "--consensusxml",
+        str(companion),
+        "--output-folder",
+        str(folder),
+    ]
+    first = CliRunner().invoke(convert, [*base, "--output-prefix", "a"])
+    assert first.exit_code == 0, first.output
 
-    assert found == (None if expected is None else tmp_path / expected)
+    result = CliRunner().invoke(
+        convert,
+        [*base, "--output-prefix", "t", "--project-accession", "PXD000002", "--enrich-pride"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert pq.read_table(folder / "t.dataset.parquet").to_pylist()[0]["project_title"] == "T"
+    assert pq.read_table(folder / "a.dataset.parquet").to_pylist()[0]["project_title"] != "T"
 
 
 def test_apply_software_without_metadata_files_warns(tmp_path, capsys):
