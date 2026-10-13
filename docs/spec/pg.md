@@ -85,12 +85,12 @@ consumers MUST filter on `is_decoy` themselves (for example with
 
 | Field | Description | Type | Required |
 |-------|-------------|------|----------|
-| `label` | Channel/label (e.g., TMT126, LFQ); **one row per label**, including identified groups without a quantity. Null only when identification-only input provides no label context. Part of the default identity composite. | `string` | Yes (nullable) |
+| `label` | Channel/label (e.g., TMT126, LFQ); **one row per label** in each unit where the group has evidence, including labels without a quantity (see [Missing quantities and absent groups](#missing-quantities-and-absent-groups)). Null only when identification-only input provides no label context. Part of the default identity composite. | `string` | Yes (nullable) |
 | `intensity` | Primary raw intensity value for this label. Null when the identified group has no reported quantity. | `float32` | No |
 | `additional_intensities` | Pre-computed intensity values from the upstream tool (normalized, LFQ, iBAQ, etc.) for this row's label. See [Intensities](intensities.md) | `array[struct]` | No |
 | `additional_scores` | Additional scores and metrics (posterior error probability, confidence, etc.). See [Scores](scores.md) | `array[struct]` | No |
 
-Since QPX 1.1 the protein-group quantification is **flattened**: instead of an `intensities` list, each row carries a scalar `label` + `intensity`, so there is one row per `(pg_accessions, grouped_runs, label)`.
+Since QPX 1.1 the protein-group quantification is **flattened**: instead of an `intensities` list, each row carries a scalar `label` + `intensity`, so there is at most one row per `(pg_accessions, grouped_runs, label)`. The next section defines which of these combinations have a row.
 
 #### Missing quantities and absent groups
 
@@ -101,6 +101,15 @@ For a known quantification unit and label, distinguish identification from quant
 | Identified and quantified | A row with the known `label` and reported `intensity` |
 | Passed identification/FDR filtering, but no quantity is available | A row with the known `label` and `intensity = null` |
 | No identification or quantification evidence for this unit | No row for that group/unit/label combination |
+
+A group has identification evidence in a unit when at least one PSM that passed
+the FDR threshold comes from a raw file of the unit and matches a protein of the
+group. The PSM can be assigned to a feature or unassigned, and its peptide can be
+unique to the group or shared. In a unit with evidence, write one row for each
+applicable label (each isobaric channel, or `LFQ`); a label without a measured
+quantity keeps its `label` and has `intensity = null`. In a unit with neither
+identification evidence nor a measured quantity, write no row for the group
+([bigbio/qpx#280](https://github.com/bigbio/qpx/issues/280)).
 
 Do not drop an identified group merely because its quantity is missing, and do
 not fill unobserved combinations with zero or synthetic null rows. Global peptide

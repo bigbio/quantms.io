@@ -458,11 +458,12 @@ def build_pg_records(cm, map_info, m: _ProteinMaps, pep_intensity: dict, sdrf_pa
         member_names = [uniprot_entry_name(a) for a in accs]
         pg_names = member_names if all(member_names) else None
         # Only the quantification units where this group was actually identified
-        # (its peptides appear in a run of that unit) — not every unit.
+        # (its peptides appear in a run of that unit) — not every unit. A group
+        # with no attributable run has no evidence in any unit, so it gets no row.
         group_runs: set[str] = set()
         for acc in accs:
             group_runs |= m.acc_to_runs.get(acc, set())
-        group_units = [unit for unit in units if group_runs.intersection(unit)] or list(units)
+        group_units = [unit for unit in units if group_runs.intersection(unit)]
         for unit in group_units:
             for label in labels:
                 intensity = _protein_intensity(peptide_seqs, group_accs, unit, label, pep_intensity, m.pep_to_accs, top)
