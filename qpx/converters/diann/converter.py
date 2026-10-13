@@ -129,12 +129,13 @@ class DiaNNConverter(BaseOrchestrator):
             else:
                 matched_scans = self._extract_matched_scans()
         adapter = DiannMzAdapter(compression=self._compression)
-        adapter.convert(
+        written = adapter.convert(
             mzml_statistics_folder=str(mzml_statistics_folder),
             output_path=str(output_folder / f"{prefix}.mz.parquet"),
             matched_scans=matched_scans,
         )
         logger.info("DIA-NN mz conversion complete")
+        return written
 
     def _extract_matched_scans(self) -> set[tuple[str, int]] | None:
         """Return the ``(run_file_name, scan)`` pairs with a DIA feature match.
@@ -179,11 +180,12 @@ class DiaNNConverter(BaseOrchestrator):
         e.g. via RT matching in ``_merge_scan_info``) is the authoritative
         feature-to-MS2-scan link. Returns ``None`` if the columns are absent.
         """
+        import pyarrow as pa
         import pyarrow.parquet as pq
 
         try:
             table = pq.read_table(str(feature_parquet), columns=["run_file_name", "scan"])
-        except Exception:
+        except (FileNotFoundError, KeyError, pa.ArrowInvalid, pa.ArrowIOError):
             logger.warning("could not read run_file_name/scan from %s; keeping all scans", feature_parquet)
             return None
         matched = set()
