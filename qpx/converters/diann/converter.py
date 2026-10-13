@@ -120,7 +120,7 @@ class DiaNNConverter(BaseOrchestrator):
 
         output_folder = Path(output_folder)
         prefix = output_prefix or "diann"
-        if not list(Path(mzml_statistics_folder).glob("*_ms2_info.parquet")):
+        if not mzml_statistics_folder or not list(Path(mzml_statistics_folder).glob("*_ms2_info.parquet")):
             logger.warning("no *_ms2_info.parquet in %s; skipping m/z view", mzml_statistics_folder)
             return None
         if matched_scans is None:
