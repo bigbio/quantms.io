@@ -30,18 +30,47 @@ def _scan_numbers(con: duckdb.DuckDBPyConnection, path: Path) -> pd.DataFrame:
     return scans.astype({"scan": "int64"})
 
 
-def _rt_lookup(con: duckdb.DuckDBPyConnection, stats: Path) -> dict[str, dict[int, float]]:
-    """Map run -> {scan: rt} from the per-run ``*_ms_info.parquet`` tables."""
-    lookup: dict[str, dict[int, float]] = {}
-    for path in sorted(stats.glob("*_ms_info.parquet")):
-        table = con.execute(
-            sql_build("SELECT scan, rt FROM parquet_scan('$path') WHERE rt IS NOT NULL", path=escape_path(str(path)))
-        ).df()
-        scans = _ms_info_scans(table["scan"])
-        known = scans.notna()
-        run_name = path.name.removesuffix("_ms_info.parquet")
-        lookup[run_name] = dict(zip(scans[known].astype("int64").tolist(), table.loc[known, "rt"].astype(float).tolist()))
-    return lookup
+def _ms_info_lookup(con: duckdb.DuckDBPyConnection, ms_info: Path) -> dict[int, tuple]:
+    """Map scan -> ``(rt, precursor_mz, precursor_charge)`` from one run's ``*_ms_info.parquet``.
+
+    The charge is kept only when positive, as the mzML spectra mapping keeps
+    it. A run without that table maps no scan.
+    """
+    if not ms_info.exists():
+        return {}
+    rows = con.execute(
+        sql_build(
+            "SELECT scan, rt, precursor_mz, "
+            "CASE WHEN precursor_charge > 0 THEN precursor_charge END "
+            "FROM parquet_scan('$path') WHERE rt IS NOT NULL",
+            path=escape_path(str(ms_info)),
+        )
+    ).fetchall()
+    scans = _ms_info_scans(pd.Series([row[0] for row in rows], dtype=object))
+    return {int(scan): row[1:] for scan, row in zip(scans.tolist(), rows) if pd.notna(scan)}
+
+
+def _precursors(precursor_mz: float | None, charge: int | None) -> list[dict]:
+    """The precursor list of one MS2 spectrum, empty without a precursor m/z.
+
+    Fields follow the mzML spectra mapping. MS-info tables carry no
+    isolation-window offsets, so the window bounds stay null. The selected-ion
+    intensity also stays null: a DIA window centre is not a selected ion, and
+    MS-info replaces a zero mzML intensity with an MS1 purity estimate.
+    """
+    if precursor_mz is None:
+        return []
+    return [
+        {
+            "selected_ion_mz": precursor_mz,
+            "selected_ion_charge": charge,
+            "selected_ion_intensity": None,
+            "isolation_window_target": precursor_mz,
+            "isolation_window_lower": None,
+            "isolation_window_upper": None,
+            "spectrum_ref": None,
+        }
+    ]
 
 
 def _matched_spectra(con: duckdb.DuckDBPyConnection, ms2_file: Path, run_name: str, matched_scans):
@@ -79,7 +108,8 @@ class DiannMzAdapter:
     ``mz_array``, ``intensity_array``) produced by the quantmsdiann workflow,
     keeping only the feature-matched MS2 scans (``matched_scans``) and writing
     their peak arrays to the ``mz`` / ``intensity`` float32 list columns.
-    ``scan_start_time`` is filled from the per-run ``*_ms_info.parquet`` ``rt``.
+    ``scan_start_time`` and ``precursors`` are filled from the per-run
+    ``*_ms_info.parquet`` (``rt`` and the ``precursor_*`` columns).
     """
 
     def __init__(self, compression: str = "zstd", batch_size: int = 100_000):
@@ -102,7 +132,6 @@ class DiannMzAdapter:
             raise FileNotFoundError(f"no *_ms2_info.parquet files in {mzml_statistics_folder}")
 
         con = duckdb.connect()
-        rt_lookup = _rt_lookup(con, stats)
 
         pending: list[dict] = []
         written = 0
@@ -110,9 +139,10 @@ class DiannMzAdapter:
         try:
             for ms2_file in ms2_files:
                 run_name = ms2_file.name.removesuffix("_ms2_info.parquet")
-                run_rt = rt_lookup.get(run_name, {})
+                run_info = _ms_info_lookup(con, stats / f"{run_name}_ms_info.parquet")
                 for scan, ms_level, mz, intensity in _matched_spectra(con, ms2_file, run_name, matched_scans):
-                    pending.append(self.build_record(run_name, scan, ms_level, mz, intensity, run_rt.get(scan)))
+                    rt, *precursor = run_info.get(scan, (None, None, None))
+                    pending.append(self.build_record(run_name, scan, ms_level, mz, intensity, rt, _precursors(*precursor)))
                     if len(pending) >= self._batch_size:
                         writer.write_batch(pending)
                         written += len(pending)
@@ -127,7 +157,15 @@ class DiannMzAdapter:
         return written
 
     @staticmethod
-    def build_record(run_name: str, scan: int, ms_level: int, mz, intensity, rt: float | None = None) -> dict:
+    def build_record(
+        run_name: str,
+        scan: int,
+        ms_level: int,
+        mz,
+        intensity,
+        rt: float | None = None,
+        precursors: list[dict] | None = None,
+    ) -> dict:
         """Build one ``mz``-view record with float32 peak arrays."""
         mz = np.asarray(mz, dtype=np.float32)
         intensity = np.asarray(intensity, dtype=np.float32)
@@ -141,7 +179,7 @@ class DiannMzAdapter:
             "inverse_ion_mobility": None,
             "ion_injection_time": 0.0,
             "total_ion_current": float(intensity.sum()) if len(intensity) else 0.0,
-            "precursors": [],
+            "precursors": precursors or [],
             "mz": mz,
             "intensity": intensity,
             "cv_params": [],

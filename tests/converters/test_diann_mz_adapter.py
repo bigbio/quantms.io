@@ -35,11 +35,13 @@ def _write_ms2_info(path, spectra):
 
 
 def _write_ms_info(path, rows):
-    """Write an ``*_ms_info.parquet`` file. ``rows`` is a list of ``(scan, rt)``."""
+    """Write an ``*_ms_info.parquet`` file. ``rows`` is a list of ``(scan, rt)``; precursor columns are null."""
     table = pa.table(
         {
             "scan": pa.array([str(r[0]) for r in rows], type=pa.string()),
             "rt": pa.array([r[1] for r in rows], type=pa.float64()),
+            "precursor_charge": pa.nulls(len(rows), type=pa.int32()),
+            "precursor_mz": pa.nulls(len(rows), type=pa.float64()),
         }
     )
     pq.write_table(table, str(path))
