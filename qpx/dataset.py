@@ -126,6 +126,18 @@ def _sha256_file(path: Path) -> str:
     return sha.hexdigest()
 
 
+def _skipped_check_reason(exc: duckdb.Error) -> str:
+    """Why a cross-structure check could not run, for its skipped issue.
+
+    An I/O failure says nothing about the data: DuckDB spills large queries to
+    its temp directory (``.tmp`` under the working directory by default), so a
+    read-only working directory fails the query (bigbio/qpx#300).
+    """
+    if isinstance(exc, duckdb.IOException):
+        return "I/O error; if DuckDB could not create its temp directory, run from a writable directory"
+    return "possible schema drift"
+
+
 class Dataset:
     """
     A QPX dataset — a directory of related Parquet/H5AD files.
@@ -857,14 +869,15 @@ class Dataset:
                 """
             ).fetchall()
         except duckdb.Error as exc:
-            _log.warning("feature->pg referential check could not run (possible schema drift): %s", exc)
+            reason = _skipped_check_reason(exc)
+            _log.warning("feature->pg referential check could not run (%s): %s", reason, exc)
             feature_result.issues.append(
                 ValidationIssue(
                     structure="feature",
                     check="referential_check_skipped",
                     severity=severity,
                     column="pg_ids",
-                    message=f"feature->pg referential check could not run (possible schema drift): {exc}",
+                    message=f"feature->pg referential check could not run ({reason}): {exc}",
                 )
             )
             return
@@ -972,13 +985,14 @@ class Dataset:
                     """
                 ).fetchall()
         except duckdb.Error as exc:
-            _log.warning("feature<->psm referential check could not run (possible schema drift): %s", exc)
+            reason = _skipped_check_reason(exc)
+            _log.warning("feature<->psm referential check could not run (%s): %s", reason, exc)
             skipped = ValidationIssue(
                 structure="psm",
                 check="referential_check_skipped",
                 severity="error" if strict else "warning",
                 column=None,
-                message=f"feature<->psm referential check could not run (possible schema drift): {exc}",
+                message=f"feature<->psm referential check could not run ({reason}): {exc}",
             )
             psm_result.issues.append(skipped)
             return
@@ -1052,14 +1066,15 @@ class Dataset:
             # Do not fail silently: a query error here can mean genuine schema
             # drift (a referenced pg/run column was removed/renamed), which is how
             # the last release's bug hid. Surface it in the validation result.
-            _log.warning("pg grouped_runs referential check could not run (possible schema drift): %s", exc)
+            reason = _skipped_check_reason(exc)
+            _log.warning("pg grouped_runs referential check could not run (%s): %s", reason, exc)
             pg_result.issues.append(
                 ValidationIssue(
                     structure="pg",
                     check="referential_check_skipped",
                     severity="error" if strict else "warning",
                     column=None,
-                    message=f"grouped_runs referential check could not run (possible schema drift): {exc}",
+                    message=f"grouped_runs referential check could not run ({reason}): {exc}",
                 )
             )
             return
@@ -1128,14 +1143,15 @@ class Dataset:
             ).fetchall()
         except duckdb.Error as exc:
             # Do not fail silently on drift (see _check_grouped_runs_referential).
-            _log.warning("pg grouped_runs sample-mapping check could not run (possible schema drift): %s", exc)
+            reason = _skipped_check_reason(exc)
+            _log.warning("pg grouped_runs sample-mapping check could not run (%s): %s", reason, exc)
             pg_result.issues.append(
                 ValidationIssue(
                     structure="pg",
                     check="sample_mapping_check_skipped",
                     severity="error" if strict else "warning",
                     column=None,
-                    message=f"grouped_runs sample-mapping check could not run (possible schema drift): {exc}",
+                    message=f"grouped_runs sample-mapping check could not run ({reason}): {exc}",
                 )
             )
             return
