@@ -98,6 +98,69 @@ class DiaNNConverter(BaseOrchestrator):
             self._resolved_mappings_by_view[PG] = resolve_columns(get_field_mappings("diann", "pg"), cols)
         logger.info("DIA-NN PG conversion complete")
 
+    def convert_mz(
+        self,
+        mzml_statistics_folder,
+        output_folder=".",
+        output_prefix=None,
+        matched_scans=None,
+        feature_parquet=None,
+    ):
+        """Generate the ``mz`` view from mzML-statistics MS2 spectra.
+
+        Writes only the feature-matched MS2 scans (the PSM fragment spectra).
+        ``matched_scans`` (a set of ``(run_file_name, scan)`` tuples) may be
+        supplied directly; otherwise it is read from ``feature_parquet``, the
+        generated feature view (default ``{prefix}.feature.parquet`` in
+        ``output_folder``), whose ``scan`` column links each feature to its MS2
+        scan. The view is skipped when that feature view cannot be read.
+        Peak arrays are written to the ``mz`` / ``intensity`` float32 list columns.
+        """
+        from qpx.converters.diann.mz_adapter import DiannMzAdapter
+
+        output_folder = Path(output_folder)
+        prefix = output_prefix or "diann"
+        if not mzml_statistics_folder or not list(Path(mzml_statistics_folder).glob("*_ms2_info.parquet")):
+            logger.warning("no *_ms2_info.parquet in %s; skipping m/z view", mzml_statistics_folder)
+            return None
+        if matched_scans is None:
+            matched_scans = self._extract_matched_scans_from_feature(
+                feature_parquet or output_folder / f"{prefix}.feature.parquet"
+            )
+            if matched_scans is None:
+                return None
+        adapter = DiannMzAdapter(compression=self._compression)
+        written = adapter.convert(
+            mzml_statistics_folder=str(mzml_statistics_folder),
+            output_path=str(output_folder / f"{prefix}.mz.parquet"),
+            matched_scans=matched_scans,
+        )
+        logger.info("DIA-NN mz conversion complete")
+        return written
+
+    def _extract_matched_scans_from_feature(self, feature_parquet) -> set[tuple[str, int]] | None:
+        """Return the ``(run_file_name, scan)`` pairs from a generated feature view.
+
+        The feature view's ``scan`` column (filled by the DIA-NN feature adapter,
+        e.g. via RT matching in ``_merge_scan_info``) is the authoritative
+        feature-to-MS2-scan link. Returns ``None`` if the columns are absent.
+        """
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+
+        try:
+            table = pq.read_table(str(feature_parquet), columns=["run_file_name", "scan"])
+        except (FileNotFoundError, KeyError, pa.ArrowInvalid, pa.ArrowIOError):
+            logger.warning("could not read run_file_name/scan from %s; skipping m/z view", feature_parquet)
+            return None
+        matched = set()
+        for run, scans in zip(table.column("run_file_name").to_pylist(), table.column("scan").to_pylist()):
+            for s in scans or ():
+                if s is not None:
+                    matched.add((str(run), int(s)))
+        logger.info("matched %s (run_file_name, scan) from feature view", len(matched))
+        return matched
+
     def convert_sdrf(
         self,
         output_folder: str | Path,

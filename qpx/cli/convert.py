@@ -488,6 +488,12 @@ def convert_diann_cmd(
             qvalue_threshold=qvalue_threshold,
         )
 
+    converter.convert_mz(
+        mzml_statistics_folder=mzml_info_folder,
+        output_folder=output_folder,
+        output_prefix=output_prefix,
+        feature_parquet=output_folder / f"{prefix}.feature.parquet",
+    )
     converter.convert_sdrf(output_folder=output_folder, prefix=prefix)
     converter.write_ontology(output_folder, prefix=prefix)
     converter.write_provenance(output_folder, prefix=prefix)
