@@ -8,7 +8,7 @@ Files:
     tests/examples/mzidentml/PXD054720/F001234.mgf.gz   (~25 MB, raw spectra)
 
 Markers:
-    @pytest.mark.large_data — skipped in CI with ``-m "not large_data"``
+    @pytest.mark.large_data — CI runs it with the integration tests, not the unit tests
 """
 
 import pytest
