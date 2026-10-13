@@ -8,7 +8,7 @@ This page lists which QPX data views each converter produces and explains the so
 | ----------- | :---: | :-------: | :--: | :------: | :------: | :---: | :-------: | :--------: | :----------: | :--: |
 | **MaxQuant** | Yes | Yes | Yes | No | If SDRF | If SDRF | Yes | If terms | Yes | No |
 | **FragPipe** | Yes | Yes | Yes | No | If SDRF | If SDRF | Yes | If terms | Yes | No |
-| **DIA-NN** | No | Yes | Yes | No | Yes | Yes | Yes | If terms | Yes | Yes |
+| **DIA-NN** | No | Yes | Yes | No | Yes | Yes | Yes | If terms | Yes | If MS2 info |
 | **Spectronaut** | No | Yes | Yes | No | If SDRF | If SDRF | Yes | Yes | Yes | No |
 | **OpenMS native QPX** | Yes | Yes | Yes | No | Yes | Yes | Yes | Yes | Yes | No |
 | **OpenMS consensusXML** | Yes | Yes | Yes | No | If SDRF | If SDRF | Yes | If terms | Yes | No |
@@ -22,9 +22,10 @@ This page lists which QPX data views each converter produces and explains the so
 - **If SDRF** — the view is produced only when an SDRF file is provided. Whether SDRF is optional or required depends on the converter; see its CLI contract below.
 - **If terms** — the view is produced when the converter discovers resolvable ontology entries.
 - **If in file** — the view is produced only when the input contains the source section (mzIdentML: a `ProteinDetectionList`).
+- **If MS2 info** — the view is produced only when `--mzml-info-folder` contains `*_ms2_info.parquet` files (quantms-utils mzML statistics run with `--ms2_file`) and the generated feature view can be read. It holds the MS2 spectra matched to features; if no spectrum matches, no file is written.
 - **If PDC** — CPTAC/PDC studies ship no SDRF, and CDAP `.psm` files carry no sample metadata. When run through `qpxc pdc2qpx` (default), the sample/run views are built from PDC GraphQL metadata, which also recovers the TMT/iTRAQ channel → biological-sample mapping. Disable with `--no-metadata`.
 
-> The `mz` (full-spectra) view is produced by the standalone `qpxc convert mz` command, or automatically by `qpxc pdc2qpx --include-spectra`; it is not emitted by the per-tool converters above.
+> The `mz` (full-spectra) view is produced by the standalone `qpxc convert mz` command, or automatically by `qpxc pdc2qpx --include-spectra`. Of the per-tool converters above, only DIA-NN emits it, and only with the feature-matched MS2 spectra (see **If MS2 info**).
 
 ## Field population: DIA-NN and OpenMS consensusXML
 
@@ -236,7 +237,7 @@ dataset. With the search FASTA they fill null `pg.sequence_coverage`,
 | ----------- | ---------------- |
 | MaxQuant | msms.txt, evidence.txt, proteinGroups.txt |
 | FragPipe | psm.tsv, combined_ion, combined_protein |
-| DIA-NN | report (TSV or Parquet), pg_matrix (optional); required SDRF |
+| DIA-NN | report (TSV or Parquet), pg_matrix (optional); required SDRF; optional mzML statistics folder (`--mzml-info-folder`) for feature scans and the `mz` view |
 | Spectronaut | report.tsv; optional SDRF |
 | OpenMS native QPX | `-out_qpx` Parquet directory; SDRF; optional companion consensusXML |
 | OpenMS consensusXML | consensusXML; optional SDRF |

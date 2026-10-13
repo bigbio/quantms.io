@@ -313,7 +313,10 @@ def convert():
 )
 @click.option(
     "--mzml-info-folder",
-    help="Folder containing mzML info files (optional; scan/mz fields left empty if omitted)",
+    help=(
+        "Folder containing mzML info files (optional; scan/mz fields left empty if omitted). "
+        "Its *_ms2_info.parquet files, when present, also produce the mz view of the feature-matched MS2 spectra."
+    ),
     type=click.Path(exists=True, file_okay=False, path_type=Path),
 )
 @click.option(
