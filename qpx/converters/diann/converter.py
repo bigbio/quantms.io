@@ -12,7 +12,7 @@ from qpx.converters.diann.feature_adapter import DiannFeatureAdapter
 from qpx.converters.diann.pg_adapter import DiannPgAdapter
 from qpx.converters.mappings import get_field_mappings, get_tool_meta
 from qpx.converters.orchestrator import BaseOrchestrator
-from qpx.core.constants import FEATURE, ONTOLOGY, PG, RUN, SAMPLE
+from qpx.core.constants import FEATURE, MZ, ONTOLOGY, PG, RUN, SAMPLE
 from qpx.core.scores import field_ontology_entries, score_ontology_entries
 
 logger = logging.getLogger(__name__)
@@ -40,6 +40,7 @@ class DiaNNConverter(BaseOrchestrator):
         self._diann_version = self._parse_diann_version(diann_log)
         self._ontology_entries: list[dict] = []
         self._resolved_mappings_by_view: dict[str, dict] = {}
+        self._mz_written = False
 
     def convert_features(
         self,
@@ -135,6 +136,8 @@ class DiaNNConverter(BaseOrchestrator):
             output_path=str(output_folder / f"{prefix}.mz.parquet"),
             matched_scans=matched_scans,
         )
+        # The writer creates no file when no spectrum matched.
+        self._mz_written = written > 0
         logger.info("DIA-NN mz conversion complete")
         return written
 
@@ -228,7 +231,7 @@ class DiaNNConverter(BaseOrchestrator):
                     {"key": "report_path", "value": Path(self.report_path).name},
                 ],
                 "config": None,
-                "output_views": [FEATURE, PG, SAMPLE, RUN, ONTOLOGY],
+                "output_views": [FEATURE, PG] + ([MZ] if self._mz_written else []) + [SAMPLE, RUN, ONTOLOGY],
             },
         ]
         self._write_provenance(Path(output_folder), prefix, records)
