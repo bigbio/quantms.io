@@ -238,7 +238,7 @@ def _apply_software(
 def _maybe_compute_integrity(output_folder, prefix: str, enabled: bool) -> None:
     """Record checksums, row counts and sizes of the output folder in dataset parquet.
 
-    Call this after the last file write of a conversion, so the record covers every file.
+    Call this after the last file write of a conversion, so the record covers every Parquet and h5ad file.
     """
     if not enabled:
         return
@@ -268,7 +268,8 @@ def _finish_conversion(
     """Run the post-conversion steps shared by the convert commands, in order.
 
     Dataset-changing steps run only when ``written`` is true. The MuData view is
-    refreshed when ``mudata`` is not None. The integrity record runs last, so it covers every file.
+    refreshed when ``mudata`` is not None. The integrity record runs last, so it covers every
+    Parquet and h5ad file (not the ``.h5mu`` view).
     """
     if written:
         _annotate_protein_properties(output_folder, fasta, prefix)
