@@ -21,7 +21,7 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from qpx.converters.base import resolve_columns
-from qpx.converters.diann.base_adapter import DiaNNBaseAdapter
+from qpx.converters.diann.base_adapter import DiaNNBaseAdapter, decoy_protein_group_sql
 from qpx.converters.diann.constants import to_modifications, to_proforma
 from qpx.converters.mappings import get_field_mappings
 from qpx.converters.ptm import compute_precursor_mz
@@ -384,6 +384,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
         resolved: dict,
         report_cols: set[str],
         has_decoy_col: bool,
+        pg_group: str,
     ) -> list[str]:
         """Build SQL SELECT parts for core feature columns."""
         has_column = report_cols.__contains__
@@ -484,7 +485,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
             [
                 "CAST(lk.missed_cleavages AS SMALLINT) AS missed_cleavages",
                 # Blank/whitespace Protein.Group → NULL (e.g. DIA-NN unmapped rows).
-                f"NULLIF(TRIM(SPLIT_PART(r.\"{pg_col}\", ';', 1)), '') AS anchor_protein",
+                f"NULLIF(TRIM(SPLIT_PART({pg_group}, ';', 1)), '') AS anchor_protein",
             ]
         )
         return parts
@@ -560,9 +561,13 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
         if qvalue_threshold is not None and qv_col is None:
             raise ValueError("qvalue_threshold requires the DIA-NN report column Q.Value")
         pg_col = r["pg_accessions"]
+        # Decoy rows get the DECOY_ accessions of their pg decoy group.
+        pg_group = f'r."{pg_col}"'
+        if has_decoy_col:
+            pg_group = decoy_protein_group_sql(pg_group, f'r."{r["decoy"]}"')
 
         has_column = report_cols.__contains__
-        parts = self._build_core_select_parts(r, report_cols, has_decoy_col)
+        parts = self._build_core_select_parts(r, report_cols, has_decoy_col, pg_group)
         parts.extend(self._build_metadata_select_parts(r, report_cols))
 
         # --- Nested: intensities ---
@@ -582,7 +587,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
         seq_col = r["sequence"]
         chg_col = r["charge"]
         parts.append(f'r."{mod_col}" AS _modified_sequence')
-        parts.append(f'r."{pg_col}" AS _pg_group')
+        parts.append(f"{pg_group} AS _pg_group")
         parts.extend(channel_helper_parts)
 
         # --- Build full query ---

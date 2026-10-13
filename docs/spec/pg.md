@@ -294,7 +294,7 @@ This section shows how output columns from common search engines and pipelines m
 
 ### DIA-NN (main report)
 
-DIA-NN's main report is precursor-level. PG-level columns (`PG.*`, `Genes.*`) are repeated for every precursor in the group within a run. Deduplicate by `Protein.Group` + `Run` to produce one `pg.parquet` row.
+DIA-NN's main report is precursor-level. PG-level columns (`PG.*`, `Genes.*`) are repeated for every precursor in the group within a run. Deduplicate by `Protein.Group` + `Run` to produce one `pg.parquet` row. `Global.PG.Q.Value`, `PG.Q.Value` and `PG.PEP` are carried for every protein group and never used as a cutoff; `--qvalue-threshold` filters precursors on `Q.Value`.
 
 === "Identity"
 
@@ -304,6 +304,7 @@ DIA-NN's main report is precursor-level. PG-level columns (`PG.*`, `Genes.*`) ar
     | `Protein.Names` | `pg_names` | |
     | `Genes` | `gg_names` / `gg_accessions` | |
     | `Run` | `grouped_runs` | Raw file name without path, wrapped as a single-element list |
+    | `Decoy` | `is_decoy` | Present with `--report-decoys`. DIA-NN reports a decoy precursor (`Decoy` = 1) under its target's `Protein.Group`; QPX writes those rows as a separate group with `DECOY_` before each accession, so `is_decoy` = `true`. Without the column, `is_decoy` is `true` only when every accession carries a decoy prefix (`DECOY_`, `decoy_`, `rev_`, `REV_`). |
 
 === "Quantification"
 

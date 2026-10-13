@@ -632,12 +632,12 @@ def _pg_rows_single_run(
     return pq.read_table(output_path).to_pylist()
 
 
-def test_diann_pg_qvalue_filter_excludes_subthreshold_groups(tmp_path):
-    """PG view must drop protein groups above the PG q-value threshold.
+def test_diann_pg_threshold_keeps_groups_above_pg_qvalue(tmp_path):
+    """The threshold filters precursors, never protein-group q-values.
 
-    Regression for bigbio/qpx#241: the pg WHERE clause filtered nothing, so every
-    protein group was emitted regardless of PG-level FDR, inflating gene/protein
-    counts on loosely-filtered reports. The filter mirrors the feature view.
+    Regression for bigbio/qpx#342: the pg view cut groups on Global.PG.Q.Value,
+    so a pipeline's 5% precursor threshold dropped groups that the feature view
+    kept. A group with confident precursors is kept with its PG q-value.
     """
     base = {
         "Run": "run_A",
@@ -661,7 +661,7 @@ def test_diann_pg_qvalue_filter_excludes_subthreshold_groups(tmp_path):
             "Stripped.Sequence": "PEPTIDEK",
             "Precursor.Id": "PEPTIDEK2",
         },
-        # Sub-threshold group (Global.PG.Q.Value = 0.50 > 0.01): dropped
+        # Global.PG.Q.Value = 0.50 > 0.01, precursor Q.Value = 0.002: kept
         {
             **base,
             "Protein.Group": "P2",
@@ -677,18 +677,16 @@ def test_diann_pg_qvalue_filter_excludes_subthreshold_groups(tmp_path):
         {"Protein.Group": "P2", "Protein.Names": "N2", "Genes": "G2", "run_A": 800.0},
     ]
     out = _pg_rows_single_run(tmp_path, rows, matrix_rows=matrix, qvalue_threshold=0.01)
-    accessions = {tuple(row["pg_accessions"]) for row in out}
-    assert accessions == {("P1",)}, "sub-threshold protein group P2 must be filtered out"
+    global_qvalues = {tuple(row["pg_accessions"]): row["global_qvalue"] for row in out}
+    assert global_qvalues == {("P1",): pytest.approx(0.003), ("P2",): pytest.approx(0.50)}
 
 
-def test_diann_pg_qvalue_filter_skipped_without_qvalue_columns(tmp_path, caplog):
-    """No PG q-value column -> skip the filter with a warning, do not crash.
+def test_diann_pg_without_qvalue_columns(tmp_path):
+    """Reports without q-value columns convert unfiltered; a threshold needs Q.Value.
 
     Older DIA-NN reports may omit Global.PG.Q.Value / PG.Q.Value entirely
     (bigbio/qpx#241 guard).
     """
-    import logging
-
     rows = [
         {
             "Run": "run_A",
@@ -704,11 +702,11 @@ def test_diann_pg_qvalue_filter_skipped_without_qvalue_columns(tmp_path, caplog)
             "Precursor.Id": "PEPTIDEK2",
         }
     ]
-    with caplog.at_level(logging.WARNING):
-        out = _pg_rows_single_run(tmp_path, rows, qvalue_threshold=0.01)
-    assert len(out) == 1, "group must still be emitted when no PG q-value filter can be applied"
+    out = _pg_rows_single_run(tmp_path, rows, qvalue_threshold=None)
+    assert len(out) == 1
     assert out[0]["pg_qvalue"] is None
-    assert any("skipping PG-level q-value filter" in rec.message for rec in caplog.records)
+    with pytest.raises(ValueError, match=r"Q\.Value"):
+        _pg_rows_single_run(tmp_path, rows, qvalue_threshold=0.01)
 
 
 def _feature_rows_single_run(
@@ -839,12 +837,11 @@ def test_diann_feature_threshold_requires_qvalue(tmp_path):
         _feature_rows_single_run(tmp_path, rows, qvalue_threshold=0.01)
 
 
-def test_diann_threshold_filters_each_view_at_its_own_level(tmp_path):
-    """A supplied threshold filters the feature view on precursor Q.Value and the
-    pg view on PG-level q-value (Global.PG.Q.Value / PG.Q.Value).
+def test_diann_threshold_filters_both_views_on_precursor_qvalue(tmp_path):
+    """A supplied threshold filters the feature and pg views on precursor Q.Value.
 
-    bigbio/qpx#241: when --qvalue-threshold IS given, each view filters at its
-    own level, dropping the sub-threshold precursor / protein group.
+    bigbio/qpx#241, #342: when --qvalue-threshold IS given, both views drop the
+    sub-threshold precursor, so its protein group has no pg row either.
     """
     rows = _two_precursor_report_rows()
     matrix = [
@@ -857,10 +854,10 @@ def test_diann_threshold_filters_each_view_at_its_own_level(tmp_path):
     feature_seqs = {row["sequence"] for row in feature_rows}
     assert feature_seqs == {"PEPTIDEK"}, "threshold must drop the high-Q.Value precursor from the feature view"
 
-    # PG view filters on PG-level q-value: the 0.50 group is dropped.
+    # PG view aggregates the same precursors: P2's only precursor is dropped.
     pg_rows = _pg_rows_single_run(tmp_path, rows, matrix_rows=matrix, qvalue_threshold=0.01)
     pg_accessions = {tuple(row["pg_accessions"]) for row in pg_rows}
-    assert pg_accessions == {("P1",)}, "threshold must drop the high-PG.Q.Value group from the pg view"
+    assert pg_accessions == {("P1",)}, "threshold must drop the group whose precursors are all above it"
 
 
 def test_diann_pg_conflicting_quantities_are_deterministic(tmp_path):
@@ -1282,6 +1279,7 @@ def test_feature_pg_softlink_empty_when_group_has_no_pg_row(tmp_path):
                 "Stripped.Sequence": "PEPTIDER",
                 "Modified.Sequence": "PEPTIDER",
                 "Precursor.Id": "PEPTIDER2",
+                "Q.Value": 0.5,
                 "Global.PG.Q.Value": 0.5,
             },
         ]
@@ -1294,7 +1292,7 @@ def test_feature_pg_softlink_empty_when_group_has_no_pg_row(tmp_path):
         ]
     ).to_csv(matrix_path, sep="\t", index=False)
 
-    # pg q-value filter drops P2 from the pg view; feature view keeps both.
+    # The pg view's q-value filter drops P2's precursor; the unfiltered feature view keeps both.
     with _convert_diann_feature_and_pg(tmp_path, report_path, matrix_path, pg_qvalue=0.01, feature_qvalue=None) as ds:
         feat, _pg, link = assert_softlink_valid(ds)
 

@@ -322,8 +322,8 @@ def convert():
         "Optional q-value threshold. Unset (the default) converts the DIA-NN "
         "report as reported — no filtering — since DIA-NN already FDR-filters its "
         "main report and every per-row q-value column is carried through for "
-        "downstream filtering. When given, the feature view filters on precursor "
-        "Q.Value and the pg view on PG-level q-value at their own levels."
+        "downstream filtering. When given, the feature and pg views keep only precursors "
+        "with Q.Value below it; protein-group q-values are carried, not filtered."
     ),
     default=None,
     type=float,

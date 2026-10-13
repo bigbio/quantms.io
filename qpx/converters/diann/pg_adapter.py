@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 
 from qpx.converters.base import resolve_columns
-from qpx.converters.diann.base_adapter import DiaNNBaseAdapter
+from qpx.converters.diann.base_adapter import DiaNNBaseAdapter, decoy_protein_group_sql
 from qpx.converters.mappings import get_field_mappings
 from qpx.converters.utils import is_contaminant_accession
 from qpx.core.sql import sql_build, validate_identifier
@@ -41,7 +41,14 @@ _PG_EXTRA_COLS = [
     # from PG.MaxLFQ (additional_intensities) so the primary value is not the
     # MaxLFQ matrix number duplicated under the "LFQ" label.
     ('"PG.Quantity"', "pg_quantity_raw"),
+    ('"PG.PEP"', "pg_pep"),
 ]
+
+# Precursor q-value column filtered by ``qvalue_threshold``, as in the feature view.
+_PRECURSOR_QVALUE_COL = "Q.Value"
+
+# Present when DIA-NN ran with --report-decoys (1 = decoy precursor).
+_DECOY_COL = "Decoy"
 
 # DIA-NN decoy protein-accession prefixes (mirrors feature_adapter is_decoy logic).
 _DECOY_PREFIXES = ("DECOY_", "decoy_", "rev_", "REV_")
@@ -51,7 +58,10 @@ _PROTEOTYPIC_VALUES = ("1", "1.0", "True")
 
 # Protein-group scores DIA-NN repeats on every precursor row of a group; the
 # first row of a (group, run) supplies them. Older reports may omit any of them.
-_FIRST_ROW_SCORES = ("global_qvalue", "pg_qvalue", "gg_qvalue")
+_FIRST_ROW_SCORES = ("global_qvalue", "pg_qvalue", "gg_qvalue", "pg_pep")
+
+# Protein-group scores carried in additional_scores (all lower is better).
+_ADDITIONAL_SCORES = ("pg_qvalue", "pg_pep")
 
 # Protein-group quantities, aggregated per (group, run, channel).
 _QUANTITY_COLUMNS = ("pg_quantity_raw", "lfq")
@@ -196,9 +206,10 @@ def _group_quantities(
 def _membership_fields(key: str) -> tuple[list[str], bool, bool]:
     """Return the members, decoy flag and contaminant flag of a canonical membership key.
 
-    A PG made up ENTIRELY of decoy proteins is a decoy group. Mirrors the feature
-    adapter's prefix-based derivation (DIA-NN carries no per-PG decoy flag in
-    report.tsv, so the accession prefix is the evidence).
+    A PG made up ENTIRELY of decoy proteins is a decoy group. DIA-NN reports a
+    decoy precursor under its target's protein group and flags it only in the
+    ``Decoy`` column, so ``_process_batch`` selects those accessions with a
+    ``DECOY_`` prefix; the prefix also covers decoy entries of a target-decoy FASTA.
     """
     members = _pg_members(key)
     is_decoy = all(acc.startswith(_DECOY_PREFIXES) for acc in members)
@@ -279,16 +290,12 @@ class DiannPgAdapter(DiaNNBaseAdapter):
             sdrf_path: Optional SDRF file for sample mapping.
             file_num: Number of runs to process per batch.
             creator: Creator tag in Parquet metadata.
-            qvalue_threshold: Optional PG-level q-value cutoff. Filtering is
+            qvalue_threshold: Optional precursor ``Q.Value`` cutoff. Filtering is
                 opt-in (bigbio/qpx#241): with the default ``None`` every protein
-                group in the report is emitted (DIA-NN already FDR-filters its
-                report and all PG q-value columns are carried through for
-                downstream filtering). When a threshold is provided, protein
-                groups whose PG q-value exceeds it are excluded — preferring the
-                experiment-wide ``Global.PG.Q.Value`` and falling back to the
-                run-wise ``PG.Q.Value``. If a threshold is given but the report
-                carries no PG q-value column, the filter is skipped with a
-                warning.
+                group in the report is emitted. When a threshold is provided,
+                only precursor rows with ``Q.Value`` below it are aggregated, the
+                rows the feature view keeps. PG-level q-values and ``PG.PEP`` are
+                carried for every group and never filtered (bigbio/qpx#342).
         """
         # Step 1: Load report into DuckDB
         self._load_diann_report(diann_report)
@@ -397,9 +404,12 @@ class DiannPgAdapter(DiaNNBaseAdapter):
                 ).fetchall()
             }
 
-        select_parts = []
-        for qpx_field, col in r.items():
-            select_parts.append(f'"{col}" AS {qpx_field}')
+        # Decoy rows form their own group with DECOY_ accessions.
+        pg_group = f'"{r["pg_accessions"]}"'
+        if _DECOY_COL in actual_report_cols:
+            pg_group = decoy_protein_group_sql(pg_group, f'"{_DECOY_COL}"')
+        select_parts = [f"{pg_group} AS pg_accessions"]
+        select_parts += [f'"{col}" AS {qpx_field}' for qpx_field, col in r.items() if qpx_field != "pg_accessions"]
         # Add extra columns needed for aggregation (guarded by presence)
         for src_col, alias in _PG_EXTRA_COLS:
             raw_name = src_col.strip('"')
@@ -417,28 +427,19 @@ class DiannPgAdapter(DiaNNBaseAdapter):
         # Use resolved column names for filtering
         pg_col = r["pg_accessions"]
 
-        # PG-level q-value filter is opt-in (bigbio/qpx#241). With no threshold
-        # the pg view is emitted as reported (DIA-NN already FDR-filters its
-        # report and every PG q-value column is carried through for downstream
-        # filtering), mirroring the feature view's as-reported default. When a
-        # threshold IS given, apply the analogous PG-level FDR: prefer the
-        # experiment-wide Global.PG.Q.Value; fall back to the run-wise
-        # PG.Q.Value. If neither column is present (older DIA-NN reports), skip
-        # the filter with a warning rather than crash.
+        # The q-value filter is opt-in (bigbio/qpx#241) and precursor-level, so
+        # pg aggregates exactly the rows the feature view keeps. PG-level
+        # q-values are carried for every group, never used as a cutoff: a
+        # protein FDR is left to downstream tools (bigbio/qpx#342).
         qvalue_filter = ""
         if qvalue_threshold is not None:
-            pg_qvalue_col = r.get("global_qvalue") or r.get("pg_qvalue")
-            if pg_qvalue_col and pg_qvalue_col in actual_report_cols:
-                qvalue_filter = sql_build(
-                    "AND CAST(report.$qv_col AS DOUBLE) <= $threshold",
-                    qv_col=validate_identifier(pg_qvalue_col),
-                    threshold=str(float(qvalue_threshold)),
-                )
-            else:
-                self.logger.warning(
-                    "DIA-NN report has no PG q-value column (Global.PG.Q.Value / PG.Q.Value); "
-                    "skipping PG-level q-value filter — protein groups are NOT FDR-filtered."
-                )
+            if _PRECURSOR_QVALUE_COL not in actual_report_cols:
+                raise ValueError(f"qvalue_threshold requires the DIA-NN report column {_PRECURSOR_QVALUE_COL}")
+            qvalue_filter = sql_build(
+                "AND report.$qv_col < $threshold",
+                qv_col=validate_identifier(_PRECURSOR_QVALUE_COL),
+                threshold=str(float(qvalue_threshold)),
+            )
 
         placeholders = ", ".join(["?" for _ in runs])
         channel_join = ""
@@ -569,8 +570,10 @@ class DiannPgAdapter(DiaNNBaseAdapter):
 
     def _additional_scores(self, row) -> list[dict] | None:
         """Return the PG scores without a dedicated pg column, tracking their names."""
-        pg_qvalue = _optional(row.pg_qvalue)
-        if pg_qvalue is None:
-            return None
-        self._discovered_scores.add("pg_qvalue")
-        return [{"score_name": "pg_qvalue", "score_value": pg_qvalue, "higher_better": False}]
+        scores = []
+        for name in _ADDITIONAL_SCORES:
+            value = _optional(getattr(row, name))
+            if value is not None:
+                self._discovered_scores.add(name)
+                scores.append({"score_name": name, "score_value": value, "higher_better": False})
+        return scores or None
