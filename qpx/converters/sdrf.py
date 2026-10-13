@@ -54,8 +54,6 @@ def _extract_nt(value: str) -> str:
 
 def _extract_ac(value: str) -> str:
     """Extract the ``AC=`` accession from a complex SDRF value ('' when absent)."""
-    if pd.isna(value):
-        return ""
     return parse_sdrf_kv(value).get("AC", "")
 
 
@@ -443,7 +441,9 @@ class SdrfConverter(BaseConverter):
         entries: list[dict] = []
         seen: set[str] = set()
 
-        for name, accession in sorted(self._run_instruments | self._run_enzymes | self._run_dissociation):
+        # A name with an accession sorts before the same name without one, so the accession is tried first.
+        run_terms = self._run_instruments | self._run_enzymes | self._run_dissociation
+        for name, accession in sorted(run_terms, key=lambda term: (term[0], not term[1], term[1])):
             if not name or name in seen:
                 continue
 
