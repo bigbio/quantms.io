@@ -20,9 +20,39 @@ modification handling is byte-identical.
 
 from __future__ import annotations
 
+import gzip
+from pathlib import Path
+
 import numpy as np
 import pyopenms as oms
 from defusedxml.ElementTree import iterparse
+
+
+def _is_gzip(path: str) -> bool:
+    with open(path, "rb") as handle:
+        return handle.read(2) == b"\x1f\x8b"
+
+
+def _iterparse(path: str, events: tuple[str, ...]):
+    """``iterparse`` over a consensusXML file, decompressing gzip transparently."""
+    with gzip.open(path, "rb") if _is_gzip(path) else open(path, "rb") as source:
+        yield from iterparse(source, events=events)
+
+
+def exceeds_xml_size(path: str, limit: int) -> bool:
+    """Whether the consensusXML, decompressed, is larger than *limit* bytes."""
+    if Path(path).stat().st_size > limit:
+        return True
+    if not _is_gzip(path):
+        return False
+    # gzip stores the decompressed size modulo 4 GiB, so count it up to the limit.
+    decompressed = 0
+    with gzip.open(path, "rb") as stream:
+        while chunk := stream.read(64 * 1024**2):
+            decompressed += len(chunk)
+            if decompressed > limit:
+                return True
+    return False
 
 
 def _localname(tag: str) -> str:
@@ -349,6 +379,9 @@ class StreamingConsensusMap:
         self._prots: list[_ProteinIdentification] = []
         self._enzyme: str = ""
         self._ph_to_acc: dict[str, str] = {}
+        self._software: list[tuple[str, str, str]] = []  # (name, version, processing action), file order
+        self._search_engines: list[tuple[str, str]] = []  # IdentificationRun search_engine, version
+        self._original_engines: list[tuple[str, str]] = []  # SE:<engine> search parameter, value
         self._parse_header()
 
     # -- header (proteins + maps), parsed once --------------------------------
@@ -359,7 +392,7 @@ class StreamingConsensusMap:
         prot_score_type = ""
         identifier = ""
         search_meta: dict[str, str] = {}
-        for event, el in iterparse(self._path, events=("start", "end")):
+        for event, el in _iterparse(self._path, events=("start", "end")):
             tag = _localname(el.tag)
             if event == "end" and tag == "map":
                 self._headers[int(el.attrib["id"])] = _ColHeader(el.attrib.get("name", ""), el.attrib.get("label", ""))
@@ -371,10 +404,13 @@ class StreamingConsensusMap:
                 if enzyme and not self._enzyme:
                     self._enzyme = enzyme
                 search_meta = _user_params(el)
+                self._original_engines.extend((key[3:], value) for key, value in search_meta.items() if key.startswith("SE:"))
                 el.clear()
             elif event == "start" and tag == "IdentificationRun":
                 identifier = el.attrib.get("id", "")
                 search_meta = {}
+                if el.attrib.get("search_engine"):
+                    self._search_engines.append((el.attrib["search_engine"], el.attrib.get("search_engine_version", "")))
             elif event == "start" and tag == "ProteinIdentification":
                 ph_hits = []
                 ph_meta = {}
@@ -402,6 +438,13 @@ class StreamingConsensusMap:
                 )
                 el.clear()
                 # do NOT stop: the <mapList> comes after the IdentificationRun.
+            elif event == "end" and tag == "dataProcessing":
+                software = next((child for child in el if _localname(child.tag) == "software"), None)
+                action = next((child for child in el if _localname(child.tag) == "processingAction"), None)
+                if software is not None and software.attrib.get("name"):
+                    action_name = action.attrib.get("name", "") if action is not None else ""
+                    self._software.append((software.attrib["name"], software.attrib.get("version", ""), action_name))
+                el.clear()
             elif event == "start" and tag == "consensusElementList":
                 break  # header done; the bulk element list follows
             if event == "end" and tag in ("consensusElement", "UnassignedPeptideIdentification"):
@@ -430,12 +473,24 @@ class StreamingConsensusMap:
     def getProteinIdentifications(self) -> list[_ProteinIdentification]:
         return list(self._prots)
 
+    def data_processing(self) -> list[tuple[str, str, str]]:
+        """Header ``dataProcessing`` software as (name, version, processing action), in file order."""
+        return list(self._software)
+
+    def search_engines(self) -> list[tuple[str, str]]:
+        """``IdentificationRun`` search engines as (name, version)."""
+        return list(self._search_engines)
+
+    def original_search_engines(self) -> list[tuple[str, str]]:
+        """Engines recorded as ``SE:<engine>`` search parameters, as (engine, value)."""
+        return list(self._original_engines)
+
     def getUnassignedPeptideIdentifications(self) -> list[_PeptideIdentification]:
         return [pid for _, pid in self.iter_identifications(include_assigned=False)]
 
     def iter_identifications(self, *, include_assigned: bool = True):
         """Stream identification context without constructing feature/sub-feature objects."""
-        for _, el in iterparse(self._path, events=("end",)):
+        for _, el in _iterparse(self._path, events=("end",)):
             tag = _localname(el.tag)
             if tag == "UnassignedPeptideIdentification":
                 yield "unassigned", _parse_peptide_id(el, self._ph_to_acc)
@@ -456,7 +511,7 @@ class StreamingConsensusMap:
         order, ``("unassigned", PeptideIdentification)``. The converter uses
         one traversal for identification context and another for all output views."""
         depth_in_list = False
-        for event, el in iterparse(self._path, events=("start", "end")):
+        for event, el in _iterparse(self._path, events=("start", "end")):
             tag = _localname(el.tag)
             if event == "start" and tag == "consensusElementList":
                 depth_in_list = True

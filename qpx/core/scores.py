@@ -248,6 +248,13 @@ _BUILTIN_SCORES: dict[str, dict] = {
         "description": "Protein group run-level q-value (DIA-NN PG.Q.Value, lower is better)",
         "higher_better": False,
     },
+    "pg_pep": {
+        "ontology_name": "protein group posterior error probability (DIA-NN:PG.PEP)",
+        "ontology_accession": None,
+        "ontology_source": None,
+        "description": "Protein group posterior error probability (DIA-NN PG.PEP, lower is better)",
+        "higher_better": False,
+    },
     "protein_global_qvalue": {
         "ontology_name": "protein-level global FDR",
         "ontology_accession": "MS:1001214",
@@ -578,41 +585,6 @@ def field_ontology_entries(
                 }
             )
 
-    return entries
-
-
-def modification_ontology_entries(
-    modifications_meta: dict,
-    view: str = "psm",
-) -> list[dict]:
-    """Generate ontology.parquet entries for discovered modifications.
-
-    Args:
-        modifications_meta: Dict keyed by accession, values
-            ``(name, list[site], list[position])``.
-        view: The QPX view name.
-
-    Returns:
-        List of dicts matching the ``OntologySchema``.
-    """
-    entries: list[dict] = []
-    for accession, (name, _sites, _positions) in modifications_meta.items():
-        if not accession:
-            continue
-        source = "UNIMOD" if accession.startswith("UNIMOD:") else "MOD"
-        entries.append(
-            {
-                "field_name": name,
-                "ontology_name": name,
-                "ontology_accession": accession,
-                "ontology_source": source,
-                "ontology_version": None,
-                "view": view,
-                "description": f"Modification: {name} ({accession})",
-                "source_column_name": None,
-                "source_tool": None,
-            }
-        )
     return entries
 
 

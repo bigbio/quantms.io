@@ -22,6 +22,7 @@ from qpx.converters.openms_consensus.feature_adapter import (
     _map_label,
     column_runs,
     feature_map_info,
+    is_decoy_hit,
     load_consensus_map,
     localization_scores,
     primary_run_stems,
@@ -40,7 +41,7 @@ from qpx.converters.openms_consensus.feature_adapter import (
 from qpx.converters.openms_consensus.protein_groups import identification_identifier
 from qpx.converters.utils import safe_float
 from qpx.core.cleavage import count_missed_cleavages
-from qpx.core.scan import scan_from_native_id
+from qpx.core.scan import scan_format_from_native_id, scan_from_native_id
 
 _log = logging.getLogger(__name__)
 
@@ -333,7 +334,7 @@ def psm_records_for_pid(
         peptidoform = to_proforma(seq_obj)
         charge = int(primary.getCharge() or 0)
         calc_mz = float(seq_obj.getMZ(charge)) if charge > 0 else None
-        is_decoy = primary.metaValueExists("target_decoy") and "decoy" in str(primary.getMetaValue("target_decoy")).lower()
+        is_decoy = is_decoy_hit(primary)
         peptide_level = confidence is not None and confidence.applies(pid)
         pep = None if peptide_level else _pep_of(primary)
         score = safe_float(primary.getScore())
@@ -365,3 +366,29 @@ def psm_records_for_pid(
             }
         )
     return records
+
+
+def collect_psm_scan_formats(identifications, formats: set[str | None], *, enabled=True) -> None:
+    """Accumulate explicit PID formats; unknown references prevent a file declaration."""
+    if not enabled:
+        return
+    for pid in identifications:
+        if not pid.getHits():
+            continue
+        reference = pid.getSpectrumReference() if hasattr(pid, "getSpectrumReference") else ""
+        if not reference and pid.metaValueExists("spectrum_reference"):
+            reference = pid.getMetaValue("spectrum_reference")
+        if reference:
+            formats.add(scan_format_from_native_id(str(reference)))
+
+
+def uniform_scan_format(formats: set[str | None]) -> str | None:
+    """Return the declaration only after the full input confirms one known format."""
+    return next(iter(formats)) if len(formats) == 1 else None
+
+
+def declare_psm_scan_format(writer, formats: set[str | None]) -> None:
+    """Finalize a streamed PSM writer's confirmed declaration before it closes."""
+    scan_format = uniform_scan_format(formats)
+    if writer is not None and scan_format is not None:
+        writer.set_scan_format(scan_format)

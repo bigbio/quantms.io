@@ -72,15 +72,10 @@ def sdrf_enzyme(sdrf_path) -> str | None:
     """
     if not sdrf_path:
         return None
-    try:
-        from qpx.core.sdrf import SDRFHandler
+    from qpx.core.sdrf import SDRFHandler
 
-        enzymes = SDRFHandler(str(sdrf_path)).get_enzymes()
-        if enzymes:
-            return str(enzymes[0])
-    except (OSError, KeyError, TypeError, ValueError):
-        _log.debug("Could not load enzyme from SDRF %s", sdrf_path)
-    return None
+    enzymes = SDRFHandler(str(sdrf_path)).get_enzymes()
+    return str(enzymes[0]) if enzymes else None
 
 
 def resolve_enzyme(cm, sdrf_path=None) -> str | None:
@@ -149,6 +144,16 @@ def qvalue_meta_of(hit) -> float | None:
     return None
 
 
+def is_decoy_hit(hit) -> bool:
+    """Whether a peptide/protein hit's ``target_decoy`` meta marks a decoy match.
+
+    OpenMS writes ``target``, ``decoy`` or ``target+decoy``. Only ``decoy`` is a
+    decoy: a peptide that also matches a target protein (``target+decoy``) counts
+    as a target, as in OpenMS FDR estimation and filtering.
+    """
+    return hit.metaValueExists("target_decoy") and str(hit.getMetaValue("target_decoy")).lower() == "decoy"
+
+
 def peptide_level_fdr_identifiers(cm) -> set[str]:
     """Identifiers of the identification runs whose Percolator q-values are peptide-level."""
     identifiers = set()
@@ -213,21 +218,6 @@ class PeptideLevelConfidence:
     def of(self, pid, peptidoform: str) -> tuple[float | None, float | None]:
         """``(PEP, q-value)`` of the peptide's best PSM in ``pid``'s source."""
         return self._best.get((identification_identifier(pid) or "", peptidoform), (None, None))
-
-
-def peptide_level_confidence(cm) -> PeptideLevelConfidence:
-    """Collect the peptide-level confidence of every identification in ``cm`` (one extra pass when streamed)."""
-    confidence = PeptideLevelConfidence(cm)
-    if not confidence:
-        return confidence
-    if hasattr(cm, "iter_all"):
-        for kind, obj in cm.iter_all():
-            confidence.add(obj.getPeptideIdentifications() if kind == "element" else [obj])
-    else:
-        for cf in cm:
-            confidence.add(cf.getPeptideIdentifications())
-        confidence.add(cm.getUnassignedPeptideIdentifications())
-    return confidence
 
 
 def _scored(value: float | None) -> float | None:
@@ -638,8 +628,6 @@ def _protein_group_fields(pid, group_map, group_meta) -> dict:
     """Attach metadata only after resolving the identification's protein group."""
     accessions = {ev.getProteinAccession() for ev in pid.getHits()[0].getPeptideEvidences()}
     accessions = {acc.decode() if isinstance(acc, bytes) else acc for acc in accessions if acc}
-    if isinstance(group_map, dict):
-        group_map = ProteinGroupIndex.from_groups(group_map.values())
     group = group_map.resolve(accessions, identification_identifier(pid)) if group_map is not None else None
     qvalue, genes = (group_meta or {}).get(group, (None, None)) if group else (None, None)
     return {
@@ -848,9 +836,7 @@ def feature_records_for_cf(
     additional_scores, site_scores = localization_scores(hit)
     modifications = to_modifications(seq_obj, site_scores)
     charge = int(cf.getCharge() or hit.getCharge() or 0)
-    is_decoy = False
-    if hit.metaValueExists("target_decoy"):
-        is_decoy = "decoy" in str(hit.getMetaValue("target_decoy")).lower()
+    is_decoy = is_decoy_hit(hit)
     observed_mz = float(cf.getMZ()) if cf.getMZ() else 0.0
     streamed_consensus_rt = getattr(cf, "consensus_rt", None)
     consensus_rt = float(cf.getRT() if streamed_consensus_rt is None else streamed_consensus_rt)

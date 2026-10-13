@@ -75,16 +75,22 @@ A `pg` row is an **analyte**: the quantified unit is the protein group *as a who
 | `sequence_coverage` | Percentage of the protein sequence covered by identified peptides | `float32` | No |
 | `molecular_weight` | Molecular weight of the protein in kDa | `float32` | No |
 
+A PG view may contain decoy protein groups (`is_decoy = true`) when the input
+reports them, for example to support protein-level FDR estimation across
+datasets. QPX does not remove decoy rows when it writes or reads the view, so
+consumers MUST filter on `is_decoy` themselves (for example with
+`PG.targets_only()`) when they need target protein groups only.
+
 ### Quantification
 
 | Field | Description | Type | Required |
 |-------|-------------|------|----------|
-| `label` | Channel/label (e.g., TMT126, LFQ); **one row per label**, including identified groups without a quantity. Null only when identification-only input provides no label context. Part of the default identity composite. | `string` | Yes (nullable) |
+| `label` | Channel/label (e.g., TMT126, LFQ); **one row per label** in each unit where the group has identification evidence, including labels without a quantity (see [Missing quantities and absent groups](#missing-quantities-and-absent-groups)). Null only when identification-only input provides no label context. Part of the default identity composite. | `string` | Yes (nullable) |
 | `intensity` | Primary raw intensity value for this label. Null when the identified group has no reported quantity. | `float32` | No |
 | `additional_intensities` | Pre-computed intensity values from the upstream tool (normalized, LFQ, iBAQ, etc.) for this row's label. See [Intensities](intensities.md) | `array[struct]` | No |
 | `additional_scores` | Additional scores and metrics (posterior error probability, confidence, etc.). See [Scores](scores.md) | `array[struct]` | No |
 
-Since QPX 1.1 the protein-group quantification is **flattened**: instead of an `intensities` list, each row carries a scalar `label` + `intensity`, so there is one row per `(pg_accessions, grouped_runs, label)`.
+Since QPX 1.1 the protein-group quantification is **flattened**: instead of an `intensities` list, each row carries a scalar `label` + `intensity`, so there is at most one row per `(pg_accessions, grouped_runs, label)`. The next section defines which of these combinations have a row.
 
 #### Missing quantities and absent groups
 
@@ -95,6 +101,17 @@ For a known quantification unit and label, distinguish identification from quant
 | Identified and quantified | A row with the known `label` and reported `intensity` |
 | Passed identification/FDR filtering, but no quantity is available | A row with the known `label` and `intensity = null` |
 | No identification or quantification evidence for this unit | No row for that group/unit/label combination |
+
+A group has identification evidence in a unit when at least one PSM that passed
+the FDR threshold comes from a raw file of the unit and matches a protein of the
+group. The PSM can be assigned to a feature or unassigned, and its peptide can be
+unique to the group or shared. In a unit with evidence, write one row for each
+applicable label (each isobaric channel, or `LFQ`); a label without a measured
+quantity keeps its `label` and has `intensity = null`. In a unit without
+identification evidence, write a row only for each label with a measured
+quantity (for example from match-between-runs), never a row with
+`intensity = null`; with no quantity either, the group has no row in that unit
+([bigbio/qpx#280](https://github.com/bigbio/qpx/issues/280)).
 
 Do not drop an identified group merely because its quantity is missing, and do
 not fill unobserved combinations with zero or synthetic null rows. Global peptide
@@ -279,7 +296,7 @@ This section shows how output columns from common search engines and pipelines m
 
 ### DIA-NN (main report)
 
-DIA-NN's main report is precursor-level. PG-level columns (`PG.*`, `Genes.*`) are repeated for every precursor in the group within a run. Deduplicate by `Protein.Group` + `Run` to produce one `pg.parquet` row.
+DIA-NN's main report is precursor-level. PG-level columns (`PG.*`, `Genes.*`) are repeated for every precursor in the group within a run. Deduplicate by `Protein.Group` + `Run` to produce one `pg.parquet` row. `Global.PG.Q.Value`, `PG.Q.Value` and `PG.PEP` are carried for every protein group and never used as a cutoff; `--qvalue-threshold` filters precursors on `Q.Value`.
 
 === "Identity"
 
@@ -289,6 +306,7 @@ DIA-NN's main report is precursor-level. PG-level columns (`PG.*`, `Genes.*`) ar
     | `Protein.Names` | `pg_names` | |
     | `Genes` | `gg_names` / `gg_accessions` | |
     | `Run` | `grouped_runs` | Raw file name without path, wrapped as a single-element list |
+    | `Decoy` | `is_decoy` | Present with `--report-decoys`. DIA-NN reports a decoy precursor (`Decoy` = 1) under its target's `Protein.Group`; QPX writes those rows as a separate group with `DECOY_` before each accession, so `is_decoy` = `true`. Without the column, `is_decoy` is `true` only when every accession carries a decoy prefix (`DECOY_`, `decoy_`, `rev_`, `REV_`). |
 
 === "Quantification"
 

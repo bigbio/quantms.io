@@ -51,19 +51,18 @@ class TestS3EngineConfig:
 
 
 class TestS3DatasetDetection:
-    def test_is_s3_flag_set(self):
+    @staticmethod
+    def _s3_dataset(monkeypatch):
+        """Open an S3 path without network access: discovery would list the bucket."""
         from qpx.dataset import Dataset
 
-        # S3 path detection (will fail on discovery, that's expected)
-        try:
-            ds = Dataset(
-                "s3://bucket/dataset/",
-                structures=[],
-                s3_config={"region": "us-east-1"},
-            )
-            assert ds._is_s3 is True
-        except Exception:
-            pass  # S3 discovery will fail — we just check the flag
+        monkeypatch.setattr(Dataset, "_discover_s3", lambda self, requested: None)
+        return Dataset("s3://bucket/dataset/")
+
+    def test_is_s3_flag_set(self, monkeypatch):
+        ds = self._s3_dataset(monkeypatch)
+        assert ds._is_s3 is True
+        ds.close()
 
     def test_local_path_not_s3(self, tmp_path):
         import qpx
@@ -72,16 +71,8 @@ class TestS3DatasetDetection:
         assert ds._is_s3 is False
         ds.close()
 
-    def test_s3_path_is_string(self):
+    def test_s3_path_is_string(self, monkeypatch):
         """S3 paths should stay as strings, not become Path objects."""
-        from qpx.dataset import Dataset
-
-        try:
-            ds = Dataset(
-                "s3://bucket/dataset/",
-                structures=[],
-                s3_config={"region": "us-east-1"},
-            )
-            assert isinstance(ds.path, str)
-        except Exception:
-            pass
+        ds = self._s3_dataset(monkeypatch)
+        assert isinstance(ds.path, str)
+        ds.close()

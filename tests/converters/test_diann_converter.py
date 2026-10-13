@@ -179,8 +179,7 @@ def _converted_output(tmp_path_factory):
 def _feature_table(converted_output):
     """Read the feature.parquet produced by the converter."""
     path = converted_output / "diann_test.feature.parquet"
-    if not path.exists():
-        pytest.skip("feature.parquet was not produced")
+    assert path.exists(), "feature.parquet was not produced"
     return pq.read_table(str(path))
 
 
@@ -188,8 +187,7 @@ def _feature_table(converted_output):
 def pg_table(converted_output):
     """Read the pg.parquet produced by the converter."""
     path = converted_output / "diann_test.pg.parquet"
-    if not path.exists():
-        pytest.skip("pg.parquet was not produced")
+    assert path.exists(), "pg.parquet was not produced"
     return pq.read_table(str(path))
 
 
@@ -634,12 +632,12 @@ def _pg_rows_single_run(
     return pq.read_table(output_path).to_pylist()
 
 
-def test_diann_pg_qvalue_filter_excludes_subthreshold_groups(tmp_path):
-    """PG view must drop protein groups above the PG q-value threshold.
+def test_diann_pg_threshold_keeps_groups_above_pg_qvalue(tmp_path):
+    """The threshold filters precursors, never protein-group q-values.
 
-    Regression for bigbio/qpx#241: the pg WHERE clause filtered nothing, so every
-    protein group was emitted regardless of PG-level FDR, inflating gene/protein
-    counts on loosely-filtered reports. The filter mirrors the feature view.
+    Regression for bigbio/qpx#342: the pg view cut groups on Global.PG.Q.Value,
+    so a pipeline's 5% precursor threshold dropped groups that the feature view
+    kept. A group with confident precursors is kept with its PG q-value.
     """
     base = {
         "Run": "run_A",
@@ -663,7 +661,7 @@ def test_diann_pg_qvalue_filter_excludes_subthreshold_groups(tmp_path):
             "Stripped.Sequence": "PEPTIDEK",
             "Precursor.Id": "PEPTIDEK2",
         },
-        # Sub-threshold group (Global.PG.Q.Value = 0.50 > 0.01): dropped
+        # Global.PG.Q.Value = 0.50 > 0.01, precursor Q.Value = 0.002: kept
         {
             **base,
             "Protein.Group": "P2",
@@ -679,18 +677,16 @@ def test_diann_pg_qvalue_filter_excludes_subthreshold_groups(tmp_path):
         {"Protein.Group": "P2", "Protein.Names": "N2", "Genes": "G2", "run_A": 800.0},
     ]
     out = _pg_rows_single_run(tmp_path, rows, matrix_rows=matrix, qvalue_threshold=0.01)
-    accessions = {tuple(row["pg_accessions"]) for row in out}
-    assert accessions == {("P1",)}, "sub-threshold protein group P2 must be filtered out"
+    global_qvalues = {tuple(row["pg_accessions"]): row["global_qvalue"] for row in out}
+    assert global_qvalues == {("P1",): pytest.approx(0.003), ("P2",): pytest.approx(0.50)}
 
 
-def test_diann_pg_qvalue_filter_skipped_without_qvalue_columns(tmp_path, caplog):
-    """No PG q-value column -> skip the filter with a warning, do not crash.
+def test_diann_pg_without_qvalue_columns(tmp_path):
+    """Reports without q-value columns convert unfiltered; a threshold needs Q.Value.
 
     Older DIA-NN reports may omit Global.PG.Q.Value / PG.Q.Value entirely
     (bigbio/qpx#241 guard).
     """
-    import logging
-
     rows = [
         {
             "Run": "run_A",
@@ -706,11 +702,11 @@ def test_diann_pg_qvalue_filter_skipped_without_qvalue_columns(tmp_path, caplog)
             "Precursor.Id": "PEPTIDEK2",
         }
     ]
-    with caplog.at_level(logging.WARNING):
-        out = _pg_rows_single_run(tmp_path, rows, qvalue_threshold=0.01)
-    assert len(out) == 1, "group must still be emitted when no PG q-value filter can be applied"
+    out = _pg_rows_single_run(tmp_path, rows, qvalue_threshold=None)
+    assert len(out) == 1
     assert out[0]["pg_qvalue"] is None
-    assert any("skipping PG-level q-value filter" in rec.message for rec in caplog.records)
+    with pytest.raises(ValueError, match=r"Q\.Value"):
+        _pg_rows_single_run(tmp_path, rows, qvalue_threshold=0.01)
 
 
 def _feature_rows_single_run(
@@ -841,12 +837,11 @@ def test_diann_feature_threshold_requires_qvalue(tmp_path):
         _feature_rows_single_run(tmp_path, rows, qvalue_threshold=0.01)
 
 
-def test_diann_threshold_filters_each_view_at_its_own_level(tmp_path):
-    """A supplied threshold filters the feature view on precursor Q.Value and the
-    pg view on PG-level q-value (Global.PG.Q.Value / PG.Q.Value).
+def test_diann_threshold_filters_both_views_on_precursor_qvalue(tmp_path):
+    """A supplied threshold filters the feature and pg views on precursor Q.Value.
 
-    bigbio/qpx#241: when --qvalue-threshold IS given, each view filters at its
-    own level, dropping the sub-threshold precursor / protein group.
+    bigbio/qpx#241, #342: when --qvalue-threshold IS given, both views drop the
+    sub-threshold precursor, so its protein group has no pg row either.
     """
     rows = _two_precursor_report_rows()
     matrix = [
@@ -859,10 +854,10 @@ def test_diann_threshold_filters_each_view_at_its_own_level(tmp_path):
     feature_seqs = {row["sequence"] for row in feature_rows}
     assert feature_seqs == {"PEPTIDEK"}, "threshold must drop the high-Q.Value precursor from the feature view"
 
-    # PG view filters on PG-level q-value: the 0.50 group is dropped.
+    # PG view aggregates the same precursors: P2's only precursor is dropped.
     pg_rows = _pg_rows_single_run(tmp_path, rows, matrix_rows=matrix, qvalue_threshold=0.01)
     pg_accessions = {tuple(row["pg_accessions"]) for row in pg_rows}
-    assert pg_accessions == {("P1",)}, "threshold must drop the high-PG.Q.Value group from the pg view"
+    assert pg_accessions == {("P1",)}, "threshold must drop the group whose precursors are all above it"
 
 
 def test_diann_pg_conflicting_quantities_are_deterministic(tmp_path):
@@ -1025,16 +1020,14 @@ class TestDiaNNOntologyConversion:
 
     def test_ontology_file_exists_or_no_scores(self, converted_output):
         path = converted_output / "diann_test.ontology.parquet"
-        if not path.exists():
-            pytest.skip("ontology.parquet not written (no scores discovered)")
+        assert path.exists(), "ontology.parquet not written (no scores discovered)"
 
         table = pq.read_table(str(path))
         assert table.num_rows > 0, "ontology.parquet exists but is empty"
 
     def test_ontology_columns(self, converted_output):
         path = converted_output / "diann_test.ontology.parquet"
-        if not path.exists():
-            pytest.skip("ontology.parquet not written (no scores discovered)")
+        assert path.exists(), "ontology.parquet not written (no scores discovered)"
 
         table = pq.read_table(str(path))
         column_names = set(table.column_names)
@@ -1053,8 +1046,7 @@ class TestDiaNNOntologyConversion:
         from qpx.core.data import OntologySchema
 
         path = converted_output / "diann_test.ontology.parquet"
-        if not path.exists():
-            pytest.skip("ontology.parquet not written (no scores discovered)")
+        assert path.exists(), "ontology.parquet not written (no scores discovered)"
         table = pq.read_table(str(path))
         errors = OntologySchema.validate(table)
         assert not errors, f"Schema validation errors: {errors}"
@@ -1287,6 +1279,7 @@ def test_feature_pg_softlink_empty_when_group_has_no_pg_row(tmp_path):
                 "Stripped.Sequence": "PEPTIDER",
                 "Modified.Sequence": "PEPTIDER",
                 "Precursor.Id": "PEPTIDER2",
+                "Q.Value": 0.5,
                 "Global.PG.Q.Value": 0.5,
             },
         ]
@@ -1299,7 +1292,7 @@ def test_feature_pg_softlink_empty_when_group_has_no_pg_row(tmp_path):
         ]
     ).to_csv(matrix_path, sep="\t", index=False)
 
-    # pg q-value filter drops P2 from the pg view; feature view keeps both.
+    # The pg view's q-value filter drops P2's precursor; the unfiltered feature view keeps both.
     with _convert_diann_feature_and_pg(tmp_path, report_path, matrix_path, pg_qvalue=0.01, feature_qvalue=None) as ds:
         feat, _pg, link = assert_softlink_valid(ds)
 
@@ -1404,8 +1397,7 @@ def test_protein_properties_from_fasta_on_bare_diann_accessions(converted_output
     from qpx.cli.transform import transform
 
     feature = converted_output / "diann_test.feature.parquet"
-    if not (converted_output / "diann_test.pg.parquet").exists():
-        pytest.skip("pg.parquet was not produced")
+    assert (converted_output / "diann_test.pg.parquet").exists(), "pg.parquet was not produced"
     groups = (
         duckdb.connect()
         .execute(
@@ -1484,3 +1476,84 @@ def test_diann_convert_writes_the_mudata_view(tmp_path, mudata_flag, expect_h5mu
     assert result.exit_code == 0, result.output
     assert (out / "d.feature.parquet").is_file()
     assert (out / "d.h5mu").is_file() is expect_h5mu
+
+
+def test_ms_info_scans_accept_one_component_native_ids():
+    """tdf2mzml ``index=N`` IDs stay verbatim in MS-info tables and still give a scan number."""
+    from qpx.converters.diann.feature_adapter import _ms_info_scans
+
+    scans = _ms_info_scans(pd.Series(["7", "index=5", "controllerType=0 controllerNumber=1 scan=9", "frame=1 scan=2", None]))
+
+    assert scans.tolist()[:3] == [7, 5, 9]
+    assert scans.iloc[3:].isna().all()
+
+
+def test_nearest_ms2_picks_the_precursor_window_among_spectra_sharing_a_time():
+    """diaPASEF windows of one frame share a time; the window centre nearest the
+    precursor m/z identifies the spectrum, and a later time is not chosen."""
+    from qpx.converters.diann.feature_adapter import _nearest_ms2
+
+    right = pd.DataFrame(
+        {
+            "_ms_rt": [100.0, 100.0, 100.0, 100.1],
+            "_matched_scan": [1.0, 2.0, 3.0, 4.0],
+            "_matched_mz": [412.5, 437.5, 462.5, 437.5],
+        }
+    )
+    left = pd.DataFrame({"_merge_row": [0, 1, 2], "rt": [100.0, 100.0, 100.02], "observed_mz": [440.1, 410.0, None]})
+
+    nearest = _nearest_ms2(left, right).set_index("_merge_row")["_matched_scan"]
+
+    assert nearest.to_dict() == {0: 2.0, 1: 1.0, 2: 1.0}
+
+
+@pytest.mark.parametrize("with_ms_info", [False, True])
+def test_diann_ms2_scan_position_becomes_a_scan_only_through_ms_info(tmp_path, with_ms_info):
+    """DIA-NN 1.8 MS2.Scan counts the run's MS2 spectra from 0. Without MS info it
+    names no native scan, so feature.scan stays empty; with it, the position selects
+    the scan. The MS-info precursor m/z is a DIA window centre and never fills
+    observed_mz."""
+    from qpx.converters.diann.feature_adapter import DiannFeatureAdapter
+
+    report_path = tmp_path / "report.tsv"
+    pd.DataFrame(
+        [
+            {
+                "Run": "run_A",
+                "Protein.Group": "P1",
+                "Genes": "G1",
+                "Modified.Sequence": "PEPTIDEK",
+                "Stripped.Sequence": "PEPTIDEK",
+                "Precursor.Charge": 2,
+                "Q.Value": 0.002,
+                "Precursor.Quantity": 100.0,
+                "RT": 10.0,
+                "MS2.Scan": 2,
+            }
+        ]
+    ).to_csv(report_path, sep="\t", index=False)
+    ms_info = tmp_path / "ms_info"
+    ms_info.mkdir()
+    # Native scan 2 would read as "MS2.Scan is a scan number"; the RT alone points at scan 3.
+    pd.DataFrame(
+        {
+            "scan": ["1", "2", "3", "4"],
+            "ms_level": [1, 2, 2, 2],
+            "rt": [599.0, 599.5, 600.0, 600.5],
+            "precursor_mz": [None, 412.5, 437.5, 462.5],
+        }
+    ).to_parquet(ms_info / "run_A_ms_info.parquet", index=False)
+
+    output_path = tmp_path / "report.feature.parquet"
+    with DiannFeatureAdapter() as adapter:
+        adapter.convert(
+            diann_report=str(report_path),
+            output_path=str(output_path),
+            mzml_info_folder=str(ms_info) if with_ms_info else None,
+            qvalue_threshold=0.01,
+        )
+
+    row = pq.read_table(output_path).to_pylist()[0]
+    assert row["scan"] == ([4] if with_ms_info else [])
+    assert row["observed_mz"] is None
+    assert row["mass_error_ppm"] is None

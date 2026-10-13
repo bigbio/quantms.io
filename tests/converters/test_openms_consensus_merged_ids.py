@@ -317,7 +317,8 @@ def test_several_consensusxml_inputs_form_one_dataset(tmp_path, streaming):
     assert {row["anchor_protein"] for row in pg} == {"P1", "P2"}
     assert {tuple(sorted(row["grouped_runs"])) for row in pg} == {("run_A", "run_B", "run_C", "run_D")}
     provenance = pq.read_table(out / "openms.provenance.parquet").to_pylist()
-    assert provenance[1]["parameters"] == [
+    qpx_step = next(step for step in provenance if step["tool_name"] == "qpx")
+    assert qpx_step["parameters"] == [
         {"key": "consensusxml", "value": "group1.consensusXML"},
         {"key": "consensusxml", "value": "group2.consensusXML"},
     ]

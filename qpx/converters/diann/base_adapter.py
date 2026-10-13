@@ -57,6 +57,21 @@ def _parse_duckdb_size(value: str) -> int | None:
     return int(float(match.group(1)) * _SIZE_UNITS.get((match.group(2) or "B").upper(), 1))
 
 
+def decoy_protein_group_sql(pg_expr: str, decoy_expr: str) -> str:
+    """SQL for a report row's ``;``-separated protein group, ``DECOY_``-prefixed on decoy rows.
+
+    DIA-NN ``--report-decoys`` reports a decoy precursor under its target's
+    protein group and flags it only in ``Decoy``. Prefixing every accession gives
+    the decoy rows their own pg group and links their features to it, not to the
+    target group.
+    """
+    prefixed = (
+        f"array_to_string(list_transform(list_filter(string_split({pg_expr}, ';'), x -> trim(x) <> ''), "
+        "x -> 'DECOY_' || trim(x)), ';')"
+    )
+    return f"CASE WHEN CAST({decoy_expr} AS BOOLEAN) THEN {prefixed} ELSE {pg_expr} END"
+
+
 def _populated_channel_values(raw_channels: list[object], channel_col: str) -> list[object]:
     """Return non-empty channel values, rejecting partially missing labels."""
     populated = [channel for channel in raw_channels if channel is not None and str(channel).strip()]

@@ -40,7 +40,7 @@ The Feature view captures quantified peptide features with intensity data. Featu
 | `sequence` | Sequence | Stripped.Sequence | Peptide | PeptideSequence (unmodified) |
 | `peptidoform` | Modified sequence | Modified.Sequence | Modified Peptide | PeptideSequence (ProForma-normalized) |
 | `charge` | Charge | Precursor.Charge | --- | Charge / PrecursorCharge |
-| `is_decoy` | Reverse | --- | --- | ProteinName prefix |
+| `is_decoy` | Reverse | Decoy (`--report-decoys`), else accession prefix | --- | ProteinName prefix |
 | `peptide_qvalue` | --- | --- | --- | --- |
 | `calculated_mz` | --- | --- | Calculated M/Z | --- |
 | `observed_mz` | m/z | --- | --- | --- |
@@ -49,8 +49,8 @@ The Feature view captures quantified peptide features with intensity data. Featu
 | `rt_stop` | --- | RT.Stop | --- | --- |
 | `predicted_rt` | --- | Predicted.RT | --- | --- |
 | `intensities` | Intensity | Precursor.Quantity | Intensity | Intensity + Channel |
-| `pg_accessions` | Proteins | Protein.Group | --- | ProteinName |
-| `anchor_protein` | --- | --- | --- | First ProteinName accession |
+| `pg_accessions` | Proteins | Protein.Group (`DECOY_`-prefixed on decoy rows) | --- | ProteinName |
+| `anchor_protein` | --- | First Protein.Group accession | --- | First ProteinName accession |
 | `pg_positions` | --- | --- | --- | --- |
 | `run_file_name` | Raw file | Run | --- | Reference / Run resolved through SDRF |
 
@@ -71,7 +71,7 @@ The Protein Group view captures protein-level quantification and inference resul
 | `global_qvalue` | Q-value | Global.PG.Q.Value | --- |
 | `intensities` | Intensity, LFQ intensity | PG.Quantity | --- |
 | `additional_intensities` | LFQ intensity, iBAQ | PG.Normalised, PG.MaxLFQ | --- |
-| `is_decoy` | Reverse | --- | --- |
+| `is_decoy` | Reverse | Decoy (`--report-decoys`; accessions prefixed `DECOY_`) | --- |
 | `contaminant` | Potential contaminant | --- | --- |
 
 !!! note "Tool version considerations"

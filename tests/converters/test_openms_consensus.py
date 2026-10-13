@@ -83,6 +83,32 @@ def _write_tmt_consensusxml(path):
     path.write_text(_TMT_CONSENSUSXML)
 
 
+def _invoke_consensus_convert(tmp_path, folder, *extra, prefix="t"):
+    """Run ``convert openms-consensus`` on the TMT fixture and return the CliRunner result without asserting."""
+    from click.testing import CliRunner
+
+    from qpx.cli.convert import convert
+
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    cx = tmp_path / "input.consensusXML"
+    cx.write_text(_TMT_CONSENSUSXML)
+    return CliRunner().invoke(
+        convert,
+        [
+            "openms-consensus",
+            "--consensusxml",
+            str(cx),
+            "--output-folder",
+            str(folder),
+            "--output-prefix",
+            prefix,
+            "--structures",
+            "feature,pg,psm",
+            *extra,
+        ],
+    )
+
+
 def test_converter_rejects_invalid_structure_before_creating_output(tmp_path):
     out = tmp_path / "out"
     with pytest.raises(ValueError, match="Unknown.*bogus"):
@@ -138,16 +164,13 @@ def test_pg_peptide_counts_are_per_protein(monkeypatch):
             return {0: Header()}
 
         @staticmethod
-        def getExperimentType():
-            return "label-free"
-
-        @staticmethod
         def getProteinIdentifications():
             return []
 
     protein_maps = pg_adapter._ProteinMaps()
     protein_maps.acc_to_pep.update({"P1": {"PEPA", "PEPB"}, "P2": {"PEPB"}})
     protein_maps.acc_to_runs.update({"P1": {"run_01"}, "P2": {"run_01"}})
+    protein_maps.acc_to_psm_runs.update({"P1": {"run_01"}, "P2": {"run_01"}})
     protein_maps.acc_to_feat.update({"P1": {("PEPA", 2), ("PEPB", 2)}, "P2": {("PEPB", 2)}})
     protein_maps.pep_to_accs.update({"PEPA": {"P1"}, "PEPB": {"P1", "P2"}})
     protein_maps.feat_to_accs.update({("PEPA", 2): {"P1"}, ("PEPB", 2): {"P1", "P2"}})
@@ -1080,27 +1103,7 @@ def test_openms_consensus_fasta_uses_the_output_prefix_in_a_shared_folder(tmp_pa
 
 
 def _consensus_convert(tmp_path, folder, *extra):
-    from click.testing import CliRunner
-
-    from qpx.cli.convert import convert
-
-    cx = tmp_path / "mudata.consensusXML"
-    cx.write_text(_TMT_CONSENSUSXML)
-    result = CliRunner().invoke(
-        convert,
-        [
-            "openms-consensus",
-            "--consensusxml",
-            str(cx),
-            "--output-folder",
-            str(folder),
-            "--output-prefix",
-            "t",
-            "--structures",
-            "feature,pg,psm",
-            *extra,
-        ],
-    )
+    result = _invoke_consensus_convert(tmp_path, folder, *extra)
     assert result.exit_code == 0, result.output
     return result
 
