@@ -110,9 +110,10 @@ class DiaNNConverter(BaseOrchestrator):
 
         Writes only the feature-matched MS2 scans (the PSM fragment spectra).
         ``matched_scans`` (a set of ``(run_file_name, scan)`` tuples) may be
-        supplied directly, or derived from ``feature_parquet`` (the generated
-        feature view, whose ``scan`` column links each feature to its MS2 scan),
-        or as a fallback from the DIA-NN report's ``Run`` / ``MS2.Scan`` columns.
+        supplied directly; otherwise it is read from ``feature_parquet``, the
+        generated feature view (default ``{prefix}.feature.parquet`` in
+        ``output_folder``), whose ``scan`` column links each feature to its MS2
+        scan. The view is skipped when that feature view cannot be read.
         Peak arrays are losslessly encoded into the binary ``mz`` / ``intensity``
         columns.
         """
@@ -124,10 +125,11 @@ class DiaNNConverter(BaseOrchestrator):
             logger.warning("no *_ms2_info.parquet in %s; skipping m/z view", mzml_statistics_folder)
             return None
         if matched_scans is None:
-            if feature_parquet is not None:
-                matched_scans = self._extract_matched_scans_from_feature(feature_parquet)
-            else:
-                matched_scans = self._extract_matched_scans()
+            matched_scans = self._extract_matched_scans_from_feature(
+                feature_parquet or output_folder / f"{prefix}.feature.parquet"
+            )
+            if matched_scans is None:
+                return None
         adapter = DiannMzAdapter(compression=self._compression)
         written = adapter.convert(
             mzml_statistics_folder=str(mzml_statistics_folder),
@@ -136,42 +138,6 @@ class DiaNNConverter(BaseOrchestrator):
         )
         logger.info("DIA-NN mz conversion complete")
         return written
-
-    def _extract_matched_scans(self) -> set[tuple[str, int]] | None:
-        """Return the ``(run_file_name, scan)`` pairs with a DIA feature match.
-
-        Resolves the report's run and MS2 scan columns via the DIA-NN column
-        mapping, then returns the distinct pairs. Returns ``None`` when the columns
-        cannot be resolved (callers then keep all scans).
-        """
-        import duckdb
-
-        from qpx.core.sql import escape_path, sql_build, validate_identifier
-
-        con = duckdb.connect()
-        try:
-            safe_path = escape_path(self.report_path)
-            if self.report_path.endswith(".parquet"):
-                reader = sql_build("read_parquet('$path')", path=safe_path)
-            else:
-                reader = sql_build("read_csv_auto('$path', delim='\t', header=true, auto_detect=true)", path=safe_path)
-            cols = {row[0] for row in con.execute(sql_build("DESCRIBE SELECT * FROM $reader", reader=reader)).fetchall()}
-            resolved = resolve_columns(get_field_mappings("diann", "feature"), cols)
-            run_col = resolved.get("run_file_name")
-            scan_col = resolved.get("ms2_scan")
-            if run_col is None or scan_col is None:
-                logger.warning("could not resolve Run / MS2.Scan columns; keeping all scans")
-                return None
-            run_ident = validate_identifier(run_col)
-            scan_ident = validate_identifier(scan_col)
-            rows = con.execute(
-                sql_build("SELECT DISTINCT $run, $scan FROM $reader", run=run_ident, scan=scan_ident, reader=reader)
-            ).fetchall()
-            matched = {(str(run), int(scan)) for run, scan in rows if run is not None and scan is not None}
-            logger.info("matched %s (run_file_name, scan) from DIA-NN report", len(matched))
-            return matched
-        finally:
-            con.close()
 
     def _extract_matched_scans_from_feature(self, feature_parquet) -> set[tuple[str, int]] | None:
         """Return the ``(run_file_name, scan)`` pairs from a generated feature view.
@@ -186,7 +152,7 @@ class DiaNNConverter(BaseOrchestrator):
         try:
             table = pq.read_table(str(feature_parquet), columns=["run_file_name", "scan"])
         except (FileNotFoundError, KeyError, pa.ArrowInvalid, pa.ArrowIOError):
-            logger.warning("could not read run_file_name/scan from %s; keeping all scans", feature_parquet)
+            logger.warning("could not read run_file_name/scan from %s; skipping m/z view", feature_parquet)
             return None
         matched = set()
         for run, scans in zip(table.column("run_file_name").to_pylist(), table.column("scan").to_pylist()):
