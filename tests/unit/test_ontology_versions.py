@@ -4,25 +4,18 @@ import pytest
 
 from qpx.converters.sdrf import SdrfConverter
 from qpx.core import scores
-from qpx.core.ontology import PublicOntology
 
 
 @pytest.fixture(name="loaded_ms_version", params=["4.1.235", None])
-def _loaded_ms_version(request, tmp_path, monkeypatch):
+def _loaded_ms_version(request, local_ms_ontology, monkeypatch):
     """Load a local ontology with an explicit version or no version metadata."""
-    header = f"data-version: {request.param}\n" if request.param else ""
-    path = tmp_path / "psi-ms.obo"
-    path.write_text(
-        header
-        + '\n[Term]\nid: MS:1001492\nname: percolator:score\ndef: "Percolator score." []\n'
-        + '\n[Term]\nid: MS:1000016\nname: scan start time\ndef: "Scan start time." []\n'
-        + '\n[Term]\nid: MS:1001251\nname: Trypsin\ndef: "Trypsin cleavage." []\n'
+    ontology = local_ms_ontology(
+        {"MS:1001492": "percolator:score", "MS:1000016": "scan start time", "MS:1001251": "Trypsin"},
+        version=request.param,
     )
-    with PublicOntology.from_obo(path) as ontology:
-        monkeypatch.setattr(scores, "_ontology", ontology)
-        monkeypatch.setattr(scores, "_lookup_cache", {})
-        monkeypatch.setattr("qpx.core.ontology.PublicOntology", lambda *_args, **_kwargs: ontology)
-        yield request.param
+    monkeypatch.setattr(scores, "_ontology", ontology)
+    monkeypatch.setattr(scores, "_lookup_cache", {})
+    return request.param
 
 
 def test_field_versions_belong_only_to_mapped_ontology(loaded_ms_version):

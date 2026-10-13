@@ -61,6 +61,16 @@ def get_name_from_complex_sdrf_value(sdrf_value: str) -> str:
         return sdrf_value
 
 
+def parse_sdrf_kv(sdrf_value: str) -> dict[str, str]:
+    """Split a complex SDRF value such as ``NT=Oxidation;AC=UNIMOD:35`` into stripped key/value pairs."""
+    pairs = {}
+    for part in str(sdrf_value).split(";"):
+        if "=" in part:
+            key, value = part.split("=", 1)
+            pairs[key.strip()] = value.strip()
+    return pairs
+
+
 def get_complex_value_sdrf_column(sdrf_table: DataFrame, column: str) -> list:
     """
     Get the complex values from a SDRF column

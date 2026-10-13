@@ -100,6 +100,8 @@ def generate_example(command, default_text=""):
 
 The `convert` command group provides converters for multiple proteomics software outputs, enabling standardization of data formats for downstream analysis. All commands generate parquet-format output files following the QPX specification.
 
+**Shared metadata options.** The commands `diann`, `maxquant`, `fragpipe`, `mzidentml`, `openms-consensus`, `quantms-msstats`, `spectronaut` and `cdap` accept five options: `--software-name`, `--software-version`, `--software-config`, `--enrich-pride` and `--compute-integrity`. `--software-version` and `--software-config` require `--software-name`. `--enrich-pride` needs `--project-accession`. Without it, or when PRIDE cannot be reached, the command prints a warning and continues. `--compute-integrity` covers the Parquet and h5ad files, not the `.h5mu` file. The steps run in this order: conversion, `--fasta`, `--software-name`, `--enrich-pride`, MuData, `--compute-integrity`. The `--fasta` option and MuData exist only on `diann` and `openms-consensus`.
+
 ## Available Commands
 
 - [openms](#openms) - Enrich native OpenMS `-out_qpx` output into a full QPX dataset
@@ -880,14 +882,11 @@ peptide assignments keep this field null.
 
 ### Parameters {#openms-consensus-parameters}
 
-| Option | Required | Description |
-| ------ | -------- | ----------- |
-| `--consensusxml` | yes | OpenMS `.consensusXML` file, or a comma-separated list of files to write into one dataset. |
-| `--sdrf-file` | no | SDRF metadata (run/sample views + `grouped_runs` fraction grouping). |
-| `--output-folder` | yes | Output directory for the QPX views. |
-| `--output-prefix` | no | Prefix for output file names (default `openms`). |
-| `--structures` | no | Comma-separated views (default `feature,psm,pg,run,sample`; `run`/`sample` require `--sdrf-file`). |
-| `--pg-top` | no | Peptides used for the interim pg intensity: `0` (default) sums all unique peptides; `3` mirrors the quantms ProteomicsLFQ/IsobaricWorkflow default. |
+```python exec="1" html="1" session="doc_utils"
+from qpx.cli.convert import convert_openms_consensus_cmd
+
+print(generate_params_table(convert_openms_consensus_cmd))
+```
 
 ### Usage Examples {#openms-consensus-examples}
 
@@ -908,6 +907,21 @@ qpxc convert openms-consensus \
   --structures feature,psm,run,sample \
   --output-folder ./qpx_output \
   --output-prefix PXD011628
+```
+
+Record the workflow, its parameters and PRIDE metadata:
+
+```bash
+qpxc convert openms-consensus \
+  --consensusxml results.consensusXML \
+  --sdrf-file experiment.sdrf.tsv \
+  --output-folder ./qpx_output \
+  --output-prefix PXD001819 \
+  --project-accession PXD001819 \
+  --software-name nf-core/mhcquant \
+  --software-version 3.1.0 \
+  --software-config params.json \
+  --enrich-pride
 ```
 
 ### Output Files {#openms-consensus-output}

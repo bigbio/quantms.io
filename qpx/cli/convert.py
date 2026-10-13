@@ -17,7 +17,10 @@ Subcommands:
 
 from __future__ import annotations
 
+import functools
+import json
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -26,6 +29,11 @@ import click
 from qpx.converters.openms import OpenMSConverter
 
 logger = logging.getLogger("qpx.cli.convert")
+
+
+def _warn(message: str) -> None:
+    """Print a warning to stderr with the shared ``WARNING:`` prefix."""
+    click.echo(f"WARNING: {message}", err=True)
 
 
 def _log_summary(output_folder) -> None:
@@ -57,7 +65,7 @@ def _write_mudata(output_folder: Path, prefix: str, enabled: bool) -> None:
 
     written = write_dataset_mudata(Path(output_folder), prefix)
     if written is None:
-        click.echo("WARNING: no MuData view was written (see the log); the Parquet views are complete")
+        _warn("no MuData view was written (see the log); the Parquet views are complete")
     else:
         click.echo(f"MuData view: {written.name}")
 
@@ -76,28 +84,201 @@ def _annotate_protein_properties(output_folder: Path, fasta: Optional[Path], pre
     try:
         annotate_dataset_protein_properties(Path(output_folder), fasta, in_place=True, prefix=prefix)
     except click.ClickException as exc:
-        click.echo(f"WARNING: protein properties from FASTA skipped: {exc.format_message()}")
+        _warn(f"protein properties from FASTA skipped: {exc.format_message()}")
 
 
-def _maybe_enrich_pride(output_folder, project_accession: str | None, enrich: bool) -> None:
+def _maybe_enrich_pride(output_folder, project_accession: str | None, enrich: bool, prefix: str) -> None:
     """Optionally enrich a converted dataset with PRIDE metadata."""
     if not enrich:
         return
     if not project_accession:
-        click.echo(
-            "Warning: --enrich-pride requires --project-accession; skipping enrichment.",
-            err=True,
-        )
+        _warn("--enrich-pride requires --project-accession; skipping enrichment.")
         return
     try:
         from qpx.dataset import Dataset
 
-        ds = Dataset(output_folder)
-        ds.enrich_from_pride(project_accession)
-        ds.close()
+        with Dataset(str(output_folder), file_prefix=prefix) as ds:
+            ds.enrich_from_pride(project_accession)
         click.echo(f"Enriched dataset with PRIDE metadata for {project_accession}")
     except Exception as exc:
-        click.echo(f"Warning: Could not enrich from PRIDE: {exc}", err=True)
+        _warn(f"Could not enrich from PRIDE: {exc}")
+
+
+@dataclass(frozen=True)
+class _DatasetMetadata:
+    """Validated dataset-metadata options of one convert command.
+
+    ``config_json`` holds the workflow parameters as compact JSON, or None when no config file is given.
+    """
+
+    software_name: str | None
+    software_version: str | None
+    config_json: str | None
+    enrich_pride: bool
+    compute_integrity: bool
+
+
+def _dataset_metadata_options(func):
+    """Add the dataset-metadata options shared by the convert commands.
+
+    The options set the workflow name and version, enrich from PRIDE and record
+    file integrity. They are listed in the order declared here. The command receives
+    them as one ``metadata`` argument.
+    """
+    options = (
+        click.option(
+            "--software-name",
+            default=None,
+            help=(
+                "Workflow that produced the input (e.g. nf-core/mhcquant). "
+                "Sets dataset.software_name/software_version and adds a 'workflow' provenance step."
+            ),
+        ),
+        click.option("--software-version", default=None, help="Version of --software-name."),
+        click.option(
+            "--software-config",
+            default=None,
+            type=click.Path(exists=True, dir_okay=False, path_type=Path),
+            help=(
+                "JSON file with the workflow parameters (e.g. Nextflow params.json), "
+                "stored in the workflow provenance step's config."
+            ),
+        ),
+        click.option(
+            "--enrich-pride",
+            is_flag=True,
+            default=False,
+            help=(
+                "Fetch project title, description and PubMed ID from the PRIDE API after "
+                "conversion (needs --project-accession; best-effort)."
+            ),
+        ),
+        click.option(
+            "--compute-integrity",
+            is_flag=True,
+            default=False,
+            help="Write file checksums, row counts and sizes for the output folder into dataset.parquet, as the last step.",
+        ),
+    )
+
+    @functools.wraps(func)
+    def wrapper(*, software_name, software_version, software_config, enrich_pride, compute_integrity, **kwargs):
+        """Validate the workflow options, then call the command with them as ``metadata``."""
+        metadata = _DatasetMetadata(
+            software_name=software_name,
+            software_version=software_version,
+            config_json=_software_config_json(software_name, software_version, software_config),
+            enrich_pride=enrich_pride,
+            compute_integrity=compute_integrity,
+        )
+        return func(metadata=metadata, **kwargs)
+
+    for option in reversed(options):
+        wrapper = option(wrapper)
+    return wrapper
+
+
+def _software_config_json(software_name, software_version, software_config) -> str | None:
+    """Validate the workflow options and return the parameters as compact, sorted JSON.
+
+    Runs before the conversion, so an invalid option fails without writing output.
+    """
+    if (software_version is not None or software_config is not None) and not software_name:
+        raise click.UsageError("--software-version and --software-config require --software-name.")
+    if software_config is None:
+        return None
+    try:
+        with open(software_config, encoding="utf-8") as handle:
+            config = json.load(handle)
+    except (OSError, ValueError) as exc:
+        raise click.UsageError(f"--software-config {software_config} is not a readable JSON file: {exc}") from exc
+    return json.dumps(config, separators=(",", ":"), sort_keys=True)
+
+
+def _apply_software(
+    output_folder,
+    prefix: str,
+    software_name: str | None,
+    software_version: str | None,
+    config_json: str | None,
+) -> None:
+    """Record the workflow that produced the dataset in dataset and provenance parquet.
+
+    Sets the software fields of dataset.parquet and prepends a 'workflow' step to
+    provenance.parquet. Skipped with a warning when either metadata file is missing.
+    """
+    if not software_name:
+        return
+    import pandas as pd
+
+    from qpx.converters.orchestrator import build_provenance_step
+    from qpx.dataset import Dataset
+
+    with Dataset(str(output_folder), file_prefix=prefix) as ds:
+        if ds.dataset_meta is None or ds.provenance is None:
+            _warn("no dataset/provenance metadata found; --software-name skipped")
+            return
+        record = ds.dataset_meta.to_df().iloc[0].to_dict()
+        record["software_name"] = software_name
+        record["software_version"] = software_version
+        ds.save_structure([record], "dataset", prefix=prefix)
+
+        workflow = build_provenance_step(
+            step_category="workflow",
+            step_name="pipeline_execution",
+            tool_name=software_name,
+            tool_version=software_version,
+            config=config_json,
+        )
+        frame = pd.concat([pd.DataFrame([workflow]), ds.provenance.to_df()], ignore_index=True)
+        frame["step_order"] = range(1, len(frame) + 1)
+        ds.save_structure(frame, "provenance", prefix=prefix)
+
+
+def _maybe_compute_integrity(output_folder, prefix: str, enabled: bool) -> None:
+    """Record checksums, row counts and sizes of the output folder in dataset parquet.
+
+    Call this after the last file write of a conversion, so the record covers every file.
+    """
+    if not enabled:
+        return
+    from qpx.dataset import Dataset
+
+    with Dataset(str(output_folder), file_prefix=prefix) as ds:
+        if ds.dataset_meta is None:
+            _warn("no dataset.parquet found; --compute-integrity skipped")
+            return
+        integrity = ds.compute_integrity()
+        record = ds.dataset_meta.to_df().iloc[0].to_dict()
+        record.update(integrity)
+        ds.save_structure([record], "dataset", prefix=prefix)
+    click.echo(f"Integrity recorded for {integrity['total_structures']} files")
+
+
+def _finish_conversion(
+    output_folder: Path,
+    prefix: str,
+    project_accession: str | None,
+    metadata: _DatasetMetadata,
+    *,
+    fasta: Path | None = None,
+    mudata: bool | None = None,
+    written: bool = True,
+) -> None:
+    """Run the post-conversion steps shared by the convert commands, in order.
+
+    Dataset-changing steps run only when ``written`` is true. The MuData view is
+    refreshed when ``mudata`` is not None. The integrity record runs last, so it covers every file.
+    """
+    if written:
+        _annotate_protein_properties(output_folder, fasta, prefix)
+        _apply_software(output_folder, prefix, metadata.software_name, metadata.software_version, metadata.config_json)
+        _maybe_enrich_pride(output_folder, project_accession, metadata.enrich_pride, prefix)
+    if mudata is not None:
+        _write_mudata(output_folder, prefix, mudata and written)
+    if written:
+        _maybe_compute_integrity(output_folder, prefix, metadata.compute_integrity)
+    _log_summary(output_folder)
 
 
 # ---------------------------------------------------------------------------
@@ -193,12 +374,6 @@ def convert():
     help="PRIDE / ProteomeXchange accession (e.g. PXD020192)",
 )
 @click.option(
-    "--enrich-pride",
-    help="Fetch project metadata from PRIDE API after conversion",
-    is_flag=True,
-    default=False,
-)
-@click.option(
     "--compression",
     type=click.Choice(["zstd", "snappy", "gzip", "none"], case_sensitive=False),
     default="zstd",
@@ -231,6 +406,7 @@ def convert():
     ),
 )
 @click.option("--verbose", help="Enable verbose logging", is_flag=True)
+@_dataset_metadata_options
 def convert_diann_cmd(
     report_path: Path,
     sdrf_file: Path,
@@ -246,12 +422,12 @@ def convert_diann_cmd(
     batch_size: int,
     standardized_intensities: bool,
     project_accession: Optional[str],
-    enrich_pride: bool,
     compression: str,
     diann_log: Optional[Path],
     fasta: Optional[Path],
     mudata: bool,
     verbose: bool,
+    metadata: _DatasetMetadata,
 ):
     """Convert DIA-NN report to QPX format.
 
@@ -317,11 +493,8 @@ def convert_diann_cmd(
     converter.write_provenance(output_folder, prefix=prefix)
     converter.write_dataset(output_folder, prefix=prefix, project_accession=project_accession)
 
-    _annotate_protein_properties(output_folder, fasta, prefix)
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
-    _write_mudata(output_folder, prefix, mudata)
+    _finish_conversion(output_folder, prefix, project_accession, metadata, fasta=fasta, mudata=mudata)
 
-    _log_summary(output_folder)
     click.echo(f"DIA-NN conversion complete. Output: {output_folder}")
 
 
@@ -402,12 +575,6 @@ def convert_diann_cmd(
     help="PRIDE / ProteomeXchange accession (e.g. PXD020192)",
 )
 @click.option(
-    "--enrich-pride",
-    help="Fetch project metadata from PRIDE API after conversion",
-    is_flag=True,
-    default=False,
-)
-@click.option(
     "--compression",
     type=click.Choice(["zstd", "snappy", "gzip", "none"], case_sensitive=False),
     default="zstd",
@@ -421,6 +588,7 @@ def convert_diann_cmd(
     is_flag=True,
     default=False,
 )
+@_dataset_metadata_options
 def convert_maxquant_cmd(
     msms_file: Optional[Path],
     evidence_file: Optional[Path],
@@ -436,10 +604,10 @@ def convert_maxquant_cmd(
     spectral_data: bool,
     standardized_intensities: bool,
     project_accession: Optional[str],
-    enrich_pride: bool,
     compression: str,
     verbose: bool,
     fixed_mod_only: bool,
+    metadata: _DatasetMetadata,
 ):
     """Convert MaxQuant output to QPX format.
 
@@ -504,9 +672,9 @@ def convert_maxquant_cmd(
         fixed_mod_only=fixed_mod_only,
     )
 
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
+    prefix = output_prefix or "maxquant"
+    _finish_conversion(output_folder, prefix, project_accession, metadata)
 
-    _log_summary(output_folder)
     click.echo(f"MaxQuant conversion complete. Output: {output_folder}")
 
 
@@ -571,12 +739,6 @@ def convert_maxquant_cmd(
     help="PRIDE / ProteomeXchange accession (e.g. PXD020192)",
 )
 @click.option(
-    "--enrich-pride",
-    help="Fetch project metadata from PRIDE API after conversion",
-    is_flag=True,
-    default=False,
-)
-@click.option(
     "--compression",
     type=click.Choice(["zstd", "snappy", "gzip", "none"], case_sensitive=False),
     default="zstd",
@@ -584,6 +746,7 @@ def convert_maxquant_cmd(
     help="Parquet compression codec.",
 )
 @click.option("--verbose", help="Enable verbose logging", is_flag=True)
+@_dataset_metadata_options
 def convert_fragpipe_cmd(
     psm_file: Optional[Path],
     ion_file: Optional[Path],
@@ -596,9 +759,9 @@ def convert_fragpipe_cmd(
     max_memory: Optional[str],
     max_cpus: Optional[int],
     project_accession: Optional[str],
-    enrich_pride: bool,
     compression: str,
     verbose: bool,
+    metadata: _DatasetMetadata,
 ):
     """Convert FragPipe output to QPX format.
 
@@ -644,9 +807,9 @@ def convert_fragpipe_cmd(
         project_accession=project_accession,
     )
 
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
+    prefix = output_prefix or "fragpipe"
+    _finish_conversion(output_folder, prefix, project_accession, metadata)
 
-    _log_summary(output_folder)
     click.echo(f"FragPipe conversion complete. Output: {output_folder}")
 
 
@@ -689,12 +852,6 @@ def convert_fragpipe_cmd(
     help="PRIDE / ProteomeXchange accession (e.g. PXD054720)",
 )
 @click.option(
-    "--enrich-pride",
-    help="Fetch project metadata from PRIDE API after conversion",
-    is_flag=True,
-    default=False,
-)
-@click.option(
     "--compression",
     type=click.Choice(["zstd", "snappy", "gzip", "none"], case_sensitive=False),
     default="zstd",
@@ -702,6 +859,7 @@ def convert_fragpipe_cmd(
     help="Parquet compression codec.",
 )
 @click.option("--verbose", help="Enable verbose logging", is_flag=True)
+@_dataset_metadata_options
 def convert_mzidentml_cmd(
     mzid_path: Path,
     output_folder: Path,
@@ -709,9 +867,9 @@ def convert_mzidentml_cmd(
     mgf_path: Optional[Path],
     include_spectra: bool,
     project_accession: Optional[str],
-    enrich_pride: bool,
     compression: str,
     verbose: bool,
+    metadata: _DatasetMetadata,
 ):
     """Convert mzIdentML file to QPX dataset.
 
@@ -761,9 +919,8 @@ def convert_mzidentml_cmd(
         project_accession=project_accession,
     )
 
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
+    _finish_conversion(output_folder, output_prefix, project_accession, metadata)
 
-    _log_summary(output_folder)
     click.echo(f"mzIdentML conversion complete. Output: {output_folder}")
 
 
@@ -883,7 +1040,7 @@ def convert_openms_cmd(**kwargs):
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
 
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
+    _maybe_enrich_pride(output_folder, project_accession, enrich_pride, output_prefix)
 
     click.echo(f"OpenMS QPX enrichment complete. Output: {output_folder}")
 
@@ -1000,6 +1157,7 @@ def _consensusxml_list(ctx, param, value) -> tuple[Path, ...]:
         "the build on very large datasets."
     ),
 )
+@_dataset_metadata_options
 def convert_openms_consensus_cmd(
     consensusxml_paths,
     sdrf_path,
@@ -1014,6 +1172,7 @@ def convert_openms_consensus_cmd(
     compression,
     fasta,
     mudata,
+    metadata: _DatasetMetadata,
 ):
     """Convert one or more OpenMS consensusXML files (+ SDRF) to one QPX dataset.
 
@@ -1043,10 +1202,16 @@ def convert_openms_consensus_cmd(
         )
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
-    if written:
-        _annotate_protein_properties(Path(output_folder), fasta, output_prefix)
-    _write_mudata(Path(output_folder), output_prefix, mudata and bool(written))
-    _log_summary(output_folder)
+    _finish_conversion(
+        output_folder,
+        output_prefix,
+        project_accession,
+        metadata,
+        fasta=fasta,
+        mudata=mudata,
+        written=bool(written),
+    )
+
     click.echo(f"consensusXML conversion complete. Wrote: {sorted(written)}")
 
 
@@ -1173,6 +1338,7 @@ def convert_sdrf_cmd(
     help="Parquet compression codec.",
 )
 @click.option("--verbose", help="Enable verbose logging", is_flag=True)
+@_dataset_metadata_options
 def convert_quantms_msstats_cmd(
     msstats_file: Path,
     sdrf_file: Path,
@@ -1184,6 +1350,7 @@ def convert_quantms_msstats_cmd(
     batch_size: int,
     compression: str,
     verbose: bool,
+    metadata: _DatasetMetadata,
 ):
     """Convert QuantMS MSstats and SDRF inputs to QPX.
 
@@ -1216,7 +1383,9 @@ def convert_quantms_msstats_cmd(
         project_accession=project_accession,
         batch_size=batch_size,
     )
-    _log_summary(output_folder)
+
+    _finish_conversion(output_folder, prefix, project_accession, metadata)
+
     click.echo(f"QuantMS MSstats conversion complete. Output prefix: {prefix}")
 
 
@@ -1268,12 +1437,6 @@ def convert_quantms_msstats_cmd(
     help="PRIDE / ProteomeXchange accession (e.g. PXD020192)",
 )
 @click.option(
-    "--enrich-pride",
-    help="Fetch project metadata from PRIDE API after conversion",
-    is_flag=True,
-    default=False,
-)
-@click.option(
     "--compression",
     type=click.Choice(["zstd", "snappy", "gzip", "none"], case_sensitive=False),
     default="zstd",
@@ -1281,6 +1444,7 @@ def convert_quantms_msstats_cmd(
     help="Parquet compression codec.",
 )
 @click.option("--verbose", help="Enable verbose logging", is_flag=True)
+@_dataset_metadata_options
 def convert_spectronaut_cmd(
     report_path: Path,
     sdrf_file: Optional[Path],
@@ -1290,9 +1454,9 @@ def convert_spectronaut_cmd(
     max_memory: Optional[str],
     max_cpus: Optional[int],
     project_accession: Optional[str],
-    enrich_pride: bool,
     compression: str,
     verbose: bool,
+    metadata: _DatasetMetadata,
 ):
     r"""Convert Spectronaut report to QPX format.
 
@@ -1343,7 +1507,7 @@ def convert_spectronaut_cmd(
     converter.write_provenance(output_folder, prefix=prefix)
     converter.write_dataset(output_folder, prefix=prefix, project_accession=project_accession)
 
-    _maybe_enrich_pride(output_folder, project_accession, enrich_pride)
+    _finish_conversion(output_folder, prefix, project_accession, metadata)
 
     click.echo(f"Spectronaut conversion complete. Output: {output_folder}")
 
@@ -1409,6 +1573,7 @@ def convert_spectronaut_cmd(
     show_default=True,
 )
 @click.option("--verbose", help="Enable verbose logging", is_flag=True)
+@_dataset_metadata_options
 def convert_cdap_cmd(
     psm_dir: Path,
     output_folder: Path,
@@ -1420,6 +1585,7 @@ def convert_cdap_cmd(
     max_memory: str,
     max_cpus: int,
     verbose: bool,
+    metadata: _DatasetMetadata,
 ):
     """Convert CPTAC CDAP .psm files to QPX format.
 
@@ -1465,7 +1631,8 @@ def convert_cdap_cmd(
         project_accession=project_accession,
     )
 
-    _log_summary(output_folder)
+    _finish_conversion(output_folder, output_prefix, project_accession, metadata)
+
     click.echo(f"CDAP conversion complete. Output: {output_folder}")
 
 
