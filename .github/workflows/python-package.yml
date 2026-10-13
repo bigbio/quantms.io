@@ -34,7 +34,7 @@ jobs:
           ruff check .
       - name: Test with pytest (Unit Tests Only)
         run: |
-          pytest -vv -m "not integration and not large_data"
+          pytest -vv -n auto -m "not integration and not large_data"
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -56,6 +56,6 @@ jobs:
           pip install -e ".[dev]"
       - name: Test with pytest (Integration Tests)
         run: |
-          pytest -vv -m "integration" --timeout=3000
+          pytest -vv -n auto -m "integration" --timeout=3000
         env:
           PYTHONIOENCODING: utf-8
