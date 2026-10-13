@@ -44,23 +44,23 @@ def _varint_encode(values: np.ndarray) -> bytes:
 
 
 def _varint_decode(data: bytes, n: int) -> np.ndarray:
-    """Decode ``n`` little-endian base-128 varints."""
-    out = np.zeros(n, dtype=np.uint64)
-    j = 0
-    val = 0
-    shift = 0
-    for b in data:
-        val |= (b & 0x7F) << shift
-        if not b & 0x80:
-            out[j] = val
-            j += 1
-            val = 0
-            shift = 0
-            if j >= n:
-                break
-        else:
-            shift += 7
-    return out
+    """Decode ``n`` little-endian base-128 varints (numpy-vectorized)."""
+    if n == 0:
+        return np.zeros(0, dtype=np.uint64)
+    a = np.frombuffer(data, dtype=np.uint8)
+    if a.size == 0:
+        return np.zeros(n, dtype=np.uint64)
+    payload = (a & 0x7F).astype(np.uint64)
+    cont = (a & 0x80) != 0
+    starts = np.empty(a.size, dtype=bool)
+    starts[0] = True
+    starts[1:] = ~cont[:-1]
+    seg_start_pos = np.maximum.accumulate(np.where(starts, np.arange(a.size), 0))
+    level = np.arange(a.size) - seg_start_pos
+    shifted = payload << ((level * 7).astype(np.uint64))
+    seg_starts_idx = np.flatnonzero(starts)
+    values = np.add.reduceat(shifted, seg_starts_idx)
+    return values[:n]
 
 
 def encode_mz(mz) -> bytes:
