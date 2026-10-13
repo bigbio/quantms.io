@@ -1,4 +1,5 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# This workflow installs dependencies with uv and runs the unit tests on Python 3.11 and the
+# integration tests on 3.10 and 3.11. Lint and the 3.10 unit tests run in python-app.yml.
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 
 name: Python package
@@ -15,26 +16,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11"]
+        python-version: ["3.11"]
+    env:
+      UV_PYTHON: ${{ matrix.python-version }}
 
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Check that core dependencies import qpx.mudata
         run: |
-          python -m pip install --upgrade pip
-          pip install -e .
-          python -c "import anndata, mudata, scipy; import qpx.mudata"
-          pip install -e ".[dev]"
-      - name: Lint with ruff
-        run: |
-          ruff check .
+          uv sync
+          uv run --no-sync python -c "import anndata, mudata, scipy; import qpx.mudata"
+      - name: Sync workspace
+        run: uv sync --extra dev
       - name: Test with pytest (Unit Tests Only)
-        run: |
-          pytest -vv -n auto -m "not integration and not large_data"
+        run: uv run pytest -vv -n auto -m "not integration and not large_data"
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -43,19 +46,22 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.10", "3.11"]
+    env:
+      UV_PYTHON: ${{ matrix.python-version }}
 
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Sync workspace
+        run: uv sync --extra dev
       - name: Test with pytest (Integration Tests)
-        run: |
-          pytest -vv -n auto -m "integration" --timeout=3000
+        run: uv run pytest -vv -n auto -m "integration" --timeout=3000
         env:
           PYTHONIOENCODING: utf-8

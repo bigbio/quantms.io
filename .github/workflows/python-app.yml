@@ -9,7 +9,7 @@ on:
   pull_request:
     branches: ["main", "dev"]
   schedule:
-    # Run full test suite daily at 2 AM UTC
+    # Run pre-commit and the unit tests daily at 2 AM UTC
     - cron: "0 2 * * *"
   workflow_dispatch:
 
