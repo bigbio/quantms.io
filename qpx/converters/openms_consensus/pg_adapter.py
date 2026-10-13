@@ -48,12 +48,16 @@ class _ProteinMaps:
     ``acc_to_*`` power the per-group unions; ``pep_to_accs`` / ``feat_to_accs`` are
     the inverse (peptide/feature -> the accessions it maps to) used to decide which
     peptides/features are *unique* to a group (map only to proteins in it) — the
-    same ``unique_peptides`` policy the intensity rollup uses.
+    same ``unique_peptides`` policy the intensity rollup uses. ``acc_to_runs``
+    holds every run that can carry a row (quantified or identified);
+    ``acc_to_psm_runs`` only the runs of the accession's own PSMs, its
+    identification evidence.
     """
 
     def __init__(self):
         self.acc_to_pep: dict[str, set[str]] = defaultdict(set)
         self.acc_to_runs: dict[str, set[str]] = defaultdict(set)
+        self.acc_to_psm_runs: dict[str, set[str]] = defaultdict(set)
         self.acc_to_feat: dict[str, set[tuple]] = defaultdict(set)
         self.pep_to_accs: dict[str, set[str]] = defaultdict(set)
         self.feat_to_accs: dict[tuple, set[str]] = defaultdict(set)
@@ -95,8 +99,13 @@ def _evidence_accession(ev) -> str | None:
     return acc.decode() if isinstance(acc, bytes) else str(acc)
 
 
-def _collect_pid(pid, runs: set[str], m: _ProteinMaps) -> None:
-    """Fold one PeptideIdentification's evidence into the accession maps."""
+def _collect_pid(pid, runs: set[str], psm_run: str | None, m: _ProteinMaps) -> None:
+    """Fold one PeptideIdentification's evidence into the accession maps.
+
+    ``runs`` are the runs its consensus feature quantified; ``psm_run`` is the
+    PSM's own run (``None`` when it cannot be resolved).
+    """
+    psm_runs = {psm_run} if psm_run else set()
     for hit in pid.getHits():
         seq_obj = hit.getSequence()
         seq = seq_obj.toUnmodifiedString()
@@ -106,7 +115,8 @@ def _collect_pid(pid, runs: set[str], m: _ProteinMaps) -> None:
             if acc:
                 m.acc_to_pep[acc].add(seq)
                 m.acc_to_feat[acc].add(feat)
-                m.acc_to_runs[acc] |= runs
+                m.acc_to_runs[acc] |= runs | psm_runs
+                m.acc_to_psm_runs[acc] |= psm_runs
                 m.pep_to_accs[seq].add(acc)
                 m.feat_to_accs[feat].add(acc)
 
@@ -117,17 +127,17 @@ def _cf_runs(cf, map_run: dict[int, str]) -> set[str]:
     return runs
 
 
-def accumulate_cf_maps(cf, map_run: dict[int, str], m: _ProteinMaps) -> None:
+def accumulate_cf_maps(cf, map_run: dict[int, str], resolve_run, m: _ProteinMaps) -> None:
     """Fold one consensus feature's assigned IDs into the accession maps (per-cf)."""
     runs = _cf_runs(cf, map_run)
     for pid in cf.getPeptideIdentifications():
-        _collect_pid(pid, runs, m)
+        # The PSM's own run, resolved as the PSM view does.
+        _collect_pid(pid, runs, resolve_run(pid, cf_runs=runs), m)
 
 
 def accumulate_unassigned_maps(pid, resolve_run, m: _ProteinMaps) -> None:
     """Fold one unassigned PeptideIdentification into the accession maps."""
-    run = resolve_run(pid)
-    _collect_pid(pid, {run} if run else set(), m)
+    _collect_pid(pid, set(), resolve_run(pid), m)
 
 
 def _protein_maps(cm) -> _ProteinMaps:
@@ -136,7 +146,7 @@ def _protein_maps(cm) -> _ProteinMaps:
     resolve_run = _run_resolver(cm)
     m = _ProteinMaps()
     for cf in cm:  # assigned IDs: runs are the consensus feature's member maps
-        accumulate_cf_maps(cf, map_run, m)
+        accumulate_cf_maps(cf, map_run, resolve_run, m)
     for pid in cm.getUnassignedPeptideIdentifications():  # run from map_index or id_merge_index (merge order)
         accumulate_unassigned_maps(pid, resolve_run, m)
     return m
@@ -146,7 +156,7 @@ def accumulate_consensus_map(cm, map_info, resolve_run, m: _ProteinMaps) -> None
     """Fold all identification evidence into the shared maps, including duplicate peaks."""
     map_run = {idx: run for idx, (run, _label) in map_info.items()}
     for cf in cm:
-        accumulate_cf_maps(cf, map_run, m)
+        accumulate_cf_maps(cf, map_run, resolve_run, m)
     for pid in cm.getUnassignedPeptideIdentifications():
         accumulate_unassigned_maps(pid, resolve_run, m)
 
@@ -457,16 +467,21 @@ def build_pg_records(cm, map_info, m: _ProteinMaps, pep_intensity: dict, sdrf_pa
         # null unless every member has one, so a partial list never misaligns.
         member_names = [uniprot_entry_name(a) for a in accs]
         pg_names = member_names if all(member_names) else None
-        # Only the quantification units where this group was actually identified
-        # (its peptides appear in a run of that unit) — not every unit. A group
-        # with no attributable run has no evidence in any unit, so it gets no row.
+        # Only the quantification units where this group was identified or
+        # quantified — not every unit. A group with no attributable run gets no row.
         group_runs: set[str] = set()
+        psm_runs: set[str] = set()
         for acc in accs:
             group_runs |= m.acc_to_runs.get(acc, set())
+            psm_runs |= m.acc_to_psm_runs.get(acc, set())
         group_units = [unit for unit in units if group_runs.intersection(unit)]
         for unit in group_units:
             for label in labels:
                 intensity = _protein_intensity(peptide_seqs, group_accs, unit, label, pep_intensity, m.pep_to_accs, top)
+                # Without a PSM of the group in this unit, only a measured quantity
+                # (e.g. a transferred feature) is evidence: no null row.
+                if intensity is None and not psm_runs.intersection(unit):
+                    continue
                 cv_params = [{"cv_name": "quantification_method", "cv_value": quant_method}] if intensity is not None else None
                 records.append(
                     {

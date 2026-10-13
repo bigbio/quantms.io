@@ -465,7 +465,7 @@ def _stream_feature_psm(
             psm_buf.extend(cf_psms)
             collect_psm_scan_formats(obj.getPeptideIdentifications(), scan_formats, enabled=pw is not None)
             if maps is not None:
-                accumulate_cf_maps(obj, map_run, maps)
+                accumulate_cf_maps(obj, map_run, resolve_run, maps)
         else:  # unassigned peptide identification
             if track:
                 seen.unassigned = True

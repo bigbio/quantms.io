@@ -170,6 +170,7 @@ def test_pg_peptide_counts_are_per_protein(monkeypatch):
     protein_maps = pg_adapter._ProteinMaps()
     protein_maps.acc_to_pep.update({"P1": {"PEPA", "PEPB"}, "P2": {"PEPB"}})
     protein_maps.acc_to_runs.update({"P1": {"run_01"}, "P2": {"run_01"}})
+    protein_maps.acc_to_psm_runs.update({"P1": {"run_01"}, "P2": {"run_01"}})
     protein_maps.acc_to_feat.update({"P1": {("PEPA", 2), ("PEPB", 2)}, "P2": {("PEPB", 2)}})
     protein_maps.pep_to_accs.update({"PEPA": {"P1"}, "PEPB": {"P1", "P2"}})
     protein_maps.feat_to_accs.update({("PEPA", 2): {"P1"}, ("PEPB", 2): {"P1", "P2"}})

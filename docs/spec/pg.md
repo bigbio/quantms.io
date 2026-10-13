@@ -85,7 +85,7 @@ consumers MUST filter on `is_decoy` themselves (for example with
 
 | Field | Description | Type | Required |
 |-------|-------------|------|----------|
-| `label` | Channel/label (e.g., TMT126, LFQ); **one row per label** in each unit where the group has evidence, including labels without a quantity (see [Missing quantities and absent groups](#missing-quantities-and-absent-groups)). Null only when identification-only input provides no label context. Part of the default identity composite. | `string` | Yes (nullable) |
+| `label` | Channel/label (e.g., TMT126, LFQ); **one row per label** in each unit where the group has identification evidence, including labels without a quantity (see [Missing quantities and absent groups](#missing-quantities-and-absent-groups)). Null only when identification-only input provides no label context. Part of the default identity composite. | `string` | Yes (nullable) |
 | `intensity` | Primary raw intensity value for this label. Null when the identified group has no reported quantity. | `float32` | No |
 | `additional_intensities` | Pre-computed intensity values from the upstream tool (normalized, LFQ, iBAQ, etc.) for this row's label. See [Intensities](intensities.md) | `array[struct]` | No |
 | `additional_scores` | Additional scores and metrics (posterior error probability, confidence, etc.). See [Scores](scores.md) | `array[struct]` | No |
@@ -107,8 +107,10 @@ the FDR threshold comes from a raw file of the unit and matches a protein of the
 group. The PSM can be assigned to a feature or unassigned, and its peptide can be
 unique to the group or shared. In a unit with evidence, write one row for each
 applicable label (each isobaric channel, or `LFQ`); a label without a measured
-quantity keeps its `label` and has `intensity = null`. In a unit with neither
-identification evidence nor a measured quantity, write no row for the group
+quantity keeps its `label` and has `intensity = null`. In a unit without
+identification evidence, write a row only for each label with a measured
+quantity (for example from match-between-runs), never a row with
+`intensity = null`; with no quantity either, the group has no row in that unit
 ([bigbio/qpx#280](https://github.com/bigbio/qpx/issues/280)).
 
 Do not drop an identified group merely because its quantity is missing, and do
