@@ -667,7 +667,7 @@ A single `mz.parquet` with one row per spectrum:
 - `id`, `run_file_name`, `scan` — spectrum identity and linkage to PSM / feature
 - `ms_level`, `scan_start_time`, `total_ion_current`, `centroid`
 - `precursors` — precursor m/z, charge, isolation window (MS2+)
-- `mz`, `intensity` — full peak arrays
+- `mz`, `intensity` — lossless binary blobs (decode with `MzSpectra.decode_spectrum()`)
 
 ### Best Practices {#mz-best-practices}
 

@@ -8,7 +8,7 @@ This page lists which QPX data views each converter produces and explains the so
 | ----------- | :---: | :-------: | :--: | :------: | :------: | :---: | :-------: | :--------: | :----------: | :--: |
 | **MaxQuant** | Yes | Yes | Yes | No | If SDRF | If SDRF | Yes | If SDRF | No | No |
 | **FragPipe** | Yes | Yes | Yes | No | If SDRF | If SDRF | Yes | If SDRF | No | No |
-| **DIA-NN** | No | Yes | Yes | No | Yes | Yes | Yes | If terms | Yes | No |
+| **DIA-NN** | No | Yes | Yes | No | Yes | Yes | Yes | If terms | Yes | Yes |
 | **Spectronaut** | No | Yes | Yes | No | If SDRF | If SDRF | Yes | Yes | Yes | No |
 | **OpenMS native QPX** | Yes | Yes | Yes | No | Yes | Yes | Yes | Yes | Yes | No |
 | **OpenMS consensusXML** | Yes | Yes | Yes | No | If SDRF | If SDRF | Yes | If terms | Yes | No |
