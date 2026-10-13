@@ -114,8 +114,7 @@ class DiaNNConverter(BaseOrchestrator):
         generated feature view (default ``{prefix}.feature.parquet`` in
         ``output_folder``), whose ``scan`` column links each feature to its MS2
         scan. The view is skipped when that feature view cannot be read.
-        Peak arrays are losslessly encoded into the binary ``mz`` / ``intensity``
-        columns.
+        Peak arrays are written to the ``mz`` / ``intensity`` float32 list columns.
         """
         from qpx.converters.diann.mz_adapter import DiannMzAdapter
 

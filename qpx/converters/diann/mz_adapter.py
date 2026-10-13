@@ -77,8 +77,8 @@ class DiannMzAdapter:
 
     Reads per-run ``*_ms2_info.parquet`` files (``scan``, ``ms_level``,
     ``mz_array``, ``intensity_array``) produced by the quantmsdiann workflow,
-    keeping only the feature-matched MS2 scans (``matched_scans``), losslessly
-    encoding the peak arrays into the ``mz`` / ``intensity`` binary columns.
+    keeping only the feature-matched MS2 scans (``matched_scans``) and writing
+    their peak arrays to the ``mz`` / ``intensity`` float32 list columns.
     ``scan_start_time`` is filled from the per-run ``*_ms_info.parquet`` ``rt``.
     """
 
