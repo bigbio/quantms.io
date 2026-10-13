@@ -49,6 +49,7 @@ The following score names are commonly used across QPX views. All names are `sna
 | `sage_hyperscore` | PSM | higher is better | Hyperscore from Sage search engine |
 | `precursor_qvalue` | Feature | lower is better | Run-level precursor q-value (`Q.Value`), as emitted by the DIA-NN converter |
 | `pg_qvalue` | Feature | lower is better | Run-level protein-group q-value, as emitted by the DIA-NN converter |
+| `pg_pep` | PG | lower is better | Protein-group posterior error probability (`PG.PEP`), as emitted by the DIA-NN converter |
 | `diann_lib_qvalue` | Feature | lower is better | Library q-value from DIA-NN |
 | `diann_cscore` | Feature | higher is better | Confidence score from DIA-NN |
 | `diann_evidence` | Feature | higher is better | Evidence score from DIA-NN |

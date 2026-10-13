@@ -248,6 +248,13 @@ _BUILTIN_SCORES: dict[str, dict] = {
         "description": "Protein group run-level q-value (DIA-NN PG.Q.Value, lower is better)",
         "higher_better": False,
     },
+    "pg_pep": {
+        "ontology_name": "protein group posterior error probability (DIA-NN:PG.PEP)",
+        "ontology_accession": None,
+        "ontology_source": None,
+        "description": "Protein group posterior error probability (DIA-NN PG.PEP, lower is better)",
+        "higher_better": False,
+    },
     "protein_global_qvalue": {
         "ontology_name": "protein-level global FDR",
         "ontology_accession": "MS:1001214",

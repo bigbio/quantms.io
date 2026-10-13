@@ -3,8 +3,8 @@
 Tests in this folder run against real proteomics datasets (e.g., PRIDE PXD downloads).
 
 These tests are expected to be slower and may require large files that are not
-committed to the repository. Use the `@pytest.mark.large_data` marker so they
-can be skipped in CI with `-m "not large_data"`.
+committed to the repository. Use the `@pytest.mark.large_data` marker so the unit-test
+run skips them; CI runs them with the integration tests (`-m "integration or large_data"`).
 
 ## Adding a test
 

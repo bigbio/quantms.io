@@ -4,7 +4,8 @@ Performance strategy:
     - DuckDB VIEW over parquet for memory efficiency (no in-memory table)
     - Precursor lookup (peptidoform, mz, missed_cleavages) via DuckDB temp table JOIN
     - All scalar and nested fields (scores, intensities, cv_params) constructed in SQL
-    - Only modifications + pg_accessions built in Python (requires PTM parsing)
+    - Only modifications built in Python (requires PTM parsing); pg_accessions
+      split with Arrow kernels
     - Arrow tables written directly via write_table() — no Python dict intermediaries
 """
 
@@ -16,10 +17,11 @@ from typing import Optional
 
 import pandas as pd
 import pyarrow as pa
+import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from qpx.converters.base import resolve_columns
-from qpx.converters.diann.base_adapter import DiaNNBaseAdapter
+from qpx.converters.diann.base_adapter import DiaNNBaseAdapter, decoy_protein_group_sql
 from qpx.converters.diann.constants import to_modifications, to_proforma
 from qpx.converters.mappings import get_field_mappings
 from qpx.converters.ptm import compute_precursor_mz
@@ -79,6 +81,25 @@ def _safe_float_sql(column: str) -> str:
 def _safe_double_sql(column: str) -> str:
     """Build a SQL expression that converts a finite value to DOUBLE."""
     return f'CASE WHEN r."{column}" IS NOT NULL AND NOT isnan(CAST(r."{column}" AS DOUBLE)) THEN CAST(r."{column}" AS DOUBLE) END'
+
+
+def _pg_accessions_array(pg_groups: pa.ChunkedArray, pg_acc_type: pa.ListType) -> pa.ListArray:
+    """Split ``;``-separated protein groups into the ``pg_accessions`` list column.
+
+    Each accession becomes a struct with null positions; an empty group becomes a
+    null list. Built with Arrow kernels instead of one Python dict per accession.
+    """
+    groups = pg_groups.combine_chunks()
+    blank = pc.call_function("equal", [groups, pa.scalar("", groups.type)])
+    nonblank = pc.call_function("if_else", [blank, pa.scalar(None, groups.type), groups])
+    split = pc.call_function("split_pattern", [nonblank], pc.SplitPatternOptions(";"))
+    accessions = split.values
+    struct_type = pg_acc_type.value_type
+    structs = pa.StructArray.from_arrays(
+        [accessions if field.name == "accession" else pa.nulls(len(accessions), field.type) for field in struct_type],
+        fields=list(struct_type),
+    )
+    return pa.ListArray.from_arrays(split.offsets, structs, type=pg_acc_type, mask=split.is_null())
 
 
 def _ms_info_scans(values: pd.Series) -> pd.Series:
@@ -363,6 +384,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
         resolved: dict,
         report_cols: set[str],
         has_decoy_col: bool,
+        pg_group: str,
     ) -> list[str]:
         """Build SQL SELECT parts for core feature columns."""
         has_column = report_cols.__contains__
@@ -463,7 +485,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
             [
                 "CAST(lk.missed_cleavages AS SMALLINT) AS missed_cleavages",
                 # Blank/whitespace Protein.Group → NULL (e.g. DIA-NN unmapped rows).
-                f"NULLIF(TRIM(SPLIT_PART(r.\"{pg_col}\", ';', 1)), '') AS anchor_protein",
+                f"NULLIF(TRIM(SPLIT_PART({pg_group}, ';', 1)), '') AS anchor_protein",
             ]
         )
         return parts
@@ -539,9 +561,13 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
         if qvalue_threshold is not None and qv_col is None:
             raise ValueError("qvalue_threshold requires the DIA-NN report column Q.Value")
         pg_col = r["pg_accessions"]
+        # Decoy rows get the DECOY_ accessions of their pg decoy group.
+        pg_group = f'r."{pg_col}"'
+        if has_decoy_col:
+            pg_group = decoy_protein_group_sql(pg_group, f'r."{r["decoy"]}"')
 
         has_column = report_cols.__contains__
-        parts = self._build_core_select_parts(r, report_cols, has_decoy_col)
+        parts = self._build_core_select_parts(r, report_cols, has_decoy_col, pg_group)
         parts.extend(self._build_metadata_select_parts(r, report_cols))
 
         # --- Nested: intensities ---
@@ -561,7 +587,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
         seq_col = r["sequence"]
         chg_col = r["charge"]
         parts.append(f'r."{mod_col}" AS _modified_sequence')
-        parts.append(f'r."{pg_col}" AS _pg_group')
+        parts.append(f"{pg_group} AS _pg_group")
         parts.extend(channel_helper_parts)
 
         # --- Build full query ---
@@ -817,16 +843,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
         mods_array = pa.array(mods_list, type=mods_type)
 
         # --- Build pg_accessions column ---
-        pg_groups = table.column("_pg_group").to_pylist()
-        pg_list = [
-            [
-                {"accession": acc, "start": None, "end": None, "pre": None, "post": None}
-                for acc in (str(pg).split(";") if pg else [])
-            ]
-            or None
-            for pg in pg_groups
-        ]
-        pg_array = pa.array(pg_list, type=pg_acc_type)
+        pg_array = _pg_accessions_array(table.column("_pg_group"), pg_acc_type)
 
         # feature.pg_ids is left null: the feature->pg association is computed on
         # read via the Dataset softlink (bigbio/qpx#269), not materialized here.

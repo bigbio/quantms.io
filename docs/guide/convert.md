@@ -186,6 +186,7 @@ Output files generated:
 
 - **Feature**: `{output-prefix}-{uuid}.feature.parquet` (always produced)
 - **Protein Group**: `{output-prefix}-{uuid}.pg.parquet` (produced when `--pg-matrix-path` is provided)
+- **Mass spectra**: `{output-prefix}.mz.parquet` (produced when `--mzml-info-folder` contains `*_ms2_info.parquet`; feature-matched MS2 spectra only)
 - **MuData**: `{output-prefix}.h5mu` (written by default; `--no-mudata` skips it)
 
 ### Common Issues {#diann-issues}

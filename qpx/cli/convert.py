@@ -238,7 +238,7 @@ def _apply_software(
 def _maybe_compute_integrity(output_folder, prefix: str, enabled: bool) -> None:
     """Record checksums, row counts and sizes of the output folder in dataset parquet.
 
-    Call this after the last file write of a conversion, so the record covers every file.
+    Call this after the last file write of a conversion, so the record covers every Parquet and h5ad file.
     """
     if not enabled:
         return
@@ -268,7 +268,8 @@ def _finish_conversion(
     """Run the post-conversion steps shared by the convert commands, in order.
 
     Dataset-changing steps run only when ``written`` is true. The MuData view is
-    refreshed when ``mudata`` is not None. The integrity record runs last, so it covers every file.
+    refreshed when ``mudata`` is not None. The integrity record runs last, so it covers every
+    Parquet and h5ad file (not the ``.h5mu`` view).
     """
     if written:
         _annotate_protein_properties(output_folder, fasta, prefix)
@@ -312,7 +313,10 @@ def convert():
 )
 @click.option(
     "--mzml-info-folder",
-    help="Folder containing mzML info files (optional; scan/mz fields left empty if omitted)",
+    help=(
+        "Folder containing mzML info files (optional; scan/mz fields left empty if omitted). "
+        "Its *_ms2_info.parquet files, when present, also produce the mz view of the feature-matched MS2 spectra."
+    ),
     type=click.Path(exists=True, file_okay=False, path_type=Path),
 )
 @click.option(
@@ -321,8 +325,8 @@ def convert():
         "Optional q-value threshold. Unset (the default) converts the DIA-NN "
         "report as reported — no filtering — since DIA-NN already FDR-filters its "
         "main report and every per-row q-value column is carried through for "
-        "downstream filtering. When given, the feature view filters on precursor "
-        "Q.Value and the pg view on PG-level q-value at their own levels."
+        "downstream filtering. When given, the feature and pg views keep only precursors "
+        "with Q.Value below it; protein-group q-values are carried, not filtered."
     ),
     default=None,
     type=float,

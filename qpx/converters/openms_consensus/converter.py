@@ -465,7 +465,7 @@ def _stream_feature_psm(
             psm_buf.extend(cf_psms)
             collect_psm_scan_formats(obj.getPeptideIdentifications(), scan_formats, enabled=pw is not None)
             if maps is not None:
-                accumulate_cf_maps(obj, map_run, maps)
+                accumulate_cf_maps(obj, map_run, resolve_run, maps)
         else:  # unassigned peptide identification
             if track:
                 seen.unassigned = True
@@ -610,6 +610,11 @@ def _collect_score_names(table_path: Path) -> set[str]:
                 if score and score.get("score_name"):
                     names.add(score["score_name"])
     return names
+
+
+# quantms-rescoring writes one of these labels instead of the engine names when it merges
+# several search engines ("quantms-rescoring" before June 2026). The file does not name the engines.
+_MERGED_ENGINE_LABELS = frozenset({"quantms-consensus-rescoring", "quantms-rescoring"})
 
 
 def _read_consensus_header(consensusxml_path: str):
@@ -877,15 +882,13 @@ class OpenMSConsensusConverter(BaseOrchestrator):  # pylint: disable=too-few-pub
         original_names = {name for name, _ in original}
         all_engines = list(dict.fromkeys(engine for header in headers for engine in header.search_engines()))
         engines = [engine for engine in all_engines if engine[0] not in original_names]
-        software: dict[tuple[str, str], str] = {}
-        for header in headers:
-            for name, version, action in header.data_processing():
-                software.setdefault((name, version), action)
+        # One step per (tool, version, action): ProteomicsLFQ records alignment and feature grouping separately.
+        software = list(dict.fromkeys(tool for header in headers for tool in header.data_processing()))
 
         steps = [
             build_provenance_step(
-                step_category="database_search",
-                step_name="sequence_search",
+                step_category="rescoring" if name in _MERGED_ENGINE_LABELS else "database_search",
+                step_name="engine_consensus" if name in _MERGED_ENGINE_LABELS else "sequence_search",
                 tool_name=name,
                 tool_version=version,
                 output_views=psm_views,
@@ -911,10 +914,10 @@ class OpenMSConsensusConverter(BaseOrchestrator):  # pylint: disable=too-few-pub
                 tool_version=version,
                 output_views=core_views,
             )
-            for (name, version), action in software.items()
+            for name, version, action in software
         ]
         if software:
-            versions = {version for _, version in software}
+            versions = {version for _, version, _ in software}
             software_name = "OpenMS"
             software_version = next(iter(versions)) if len(versions) == 1 and "" not in versions else None
         else:

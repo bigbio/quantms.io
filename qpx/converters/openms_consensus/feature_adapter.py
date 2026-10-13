@@ -144,6 +144,16 @@ def qvalue_meta_of(hit) -> float | None:
     return None
 
 
+def is_decoy_hit(hit) -> bool:
+    """Whether a peptide/protein hit's ``target_decoy`` meta marks a decoy match.
+
+    OpenMS writes ``target``, ``decoy`` or ``target+decoy``. Only ``decoy`` is a
+    decoy: a peptide that also matches a target protein (``target+decoy``) counts
+    as a target, as in OpenMS FDR estimation and filtering.
+    """
+    return hit.metaValueExists("target_decoy") and str(hit.getMetaValue("target_decoy")).lower() == "decoy"
+
+
 def peptide_level_fdr_identifiers(cm) -> set[str]:
     """Identifiers of the identification runs whose Percolator q-values are peptide-level."""
     identifiers = set()
@@ -826,9 +836,7 @@ def feature_records_for_cf(
     additional_scores, site_scores = localization_scores(hit)
     modifications = to_modifications(seq_obj, site_scores)
     charge = int(cf.getCharge() or hit.getCharge() or 0)
-    is_decoy = False
-    if hit.metaValueExists("target_decoy"):
-        is_decoy = "decoy" in str(hit.getMetaValue("target_decoy")).lower()
+    is_decoy = is_decoy_hit(hit)
     observed_mz = float(cf.getMZ()) if cf.getMZ() else 0.0
     streamed_consensus_rt = getattr(cf, "consensus_rt", None)
     consensus_rt = float(cf.getRT() if streamed_consensus_rt is None else streamed_consensus_rt)

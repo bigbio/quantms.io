@@ -22,6 +22,7 @@ from qpx.converters.openms_consensus.feature_adapter import (
     _map_label,
     column_runs,
     feature_map_info,
+    is_decoy_hit,
     load_consensus_map,
     localization_scores,
     primary_run_stems,
@@ -333,7 +334,7 @@ def psm_records_for_pid(
         peptidoform = to_proforma(seq_obj)
         charge = int(primary.getCharge() or 0)
         calc_mz = float(seq_obj.getMZ(charge)) if charge > 0 else None
-        is_decoy = primary.metaValueExists("target_decoy") and "decoy" in str(primary.getMetaValue("target_decoy")).lower()
+        is_decoy = is_decoy_hit(primary)
         peptide_level = confidence is not None and confidence.applies(pid)
         pep = None if peptide_level else _pep_of(primary)
         score = safe_float(primary.getScore())
