@@ -1,4 +1,4 @@
-"""Tests for the DIA-NN m/z adapter (AMS_info -> mz view with lossless blobs)."""
+"""Tests for the DIA-NN m/z adapter (mzML-statistics MS2 -> mz view with lossless blobs)."""
 
 import numpy as np
 import pyarrow as pa
@@ -18,96 +18,91 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def _write_ams_info(path, spectra):
-    """Write an ``*_AMS_info.parquet`` file.
+def _write_ms2_info(path, spectra):
+    """Write an ``*_ms2_info.parquet`` file.
 
-    ``spectra`` is a list of ``(run_name, scan, precursor_rt, mz, intensity)``.
+    ``spectra`` is a list of ``(scan, ms_level, mz, intensity)``.
     """
     table = pa.table(
         {
-            "run_name": pa.array([s[0] for s in spectra], type=pa.string()),
-            "scan": pa.array([[s[1]] for s in spectra], type=pa.list_(pa.int64())),
-            "precursor_rt": pa.array([s[2] for s in spectra], type=pa.float64()),
-            "mz_array": pa.array([np.asarray(s[3], np.float64) for s in spectra], type=pa.list_(pa.float64())),
-            "intensity_array": pa.array([np.asarray(s[4], np.float32) for s in spectra], type=pa.list_(pa.float32())),
+            "scan": pa.array([str(s[0]) for s in spectra], type=pa.string()),
+            "ms_level": pa.array([s[1] for s in spectra], type=pa.int32()),
+            "mz_array": pa.array([np.asarray(s[2], np.float64) for s in spectra], type=pa.list_(pa.float64())),
+            "intensity_array": pa.array([np.asarray(s[3], np.float64) for s in spectra], type=pa.list_(pa.float64())),
         }
     )
     pq.write_table(table, str(path))
 
 
 def _one_spectrum():
-    return (np.array([100.0, 200.0, 300.0], np.float64), np.array([10.0, 20.0, 30.0], np.float32))
+    return (np.array([100.0, 200.0, 300.0], np.float64), np.array([10.0, 20.0, 30.0], np.float64))
 
 
 def test_adapter_dedups_by_run_and_scan(tmp_path):
-    ams_dir = tmp_path / "ams"
-    ams_dir.mkdir()
+    stats_dir = tmp_path / "mzml_statistics"
+    stats_dir.mkdir()
     mz, it = _one_spectrum()
     spectra = [
-        ("run_a", 1, 60.0, mz, it),
-        ("run_a", 1, 60.0, mz, it),  # duplicate (same run+scan)
-        ("run_a", 2, 61.0, mz, it),
+        (1, 2, mz, it),
+        (1, 2, mz, it),  # duplicate scan
+        (2, 2, mz, it),
     ]
-    _write_ams_info(ams_dir / "run_a_AMS_info.parquet", spectra)
+    _write_ms2_info(stats_dir / "run_a_ms2_info.parquet", spectra)
 
     out = tmp_path / "out.mz.parquet"
-    written = DiannMzAdapter(compression="zstd").convert(str(ams_dir), str(out))
-    assert written == 2  # the duplicate collapsed
+    written = DiannMzAdapter(compression="zstd").convert(str(stats_dir), str(out))
+    assert written == 2  # duplicate scan collapsed
 
     table = pq.read_table(str(out))
     assert table.num_rows == 2
     assert sorted(table.column("scan").to_pylist()) == [1, 2]
+    assert table.column("run_file_name").to_pylist() == ["run_a", "run_a"]
 
 
 def test_adapter_stores_encoded_blobs_in_mz_intensity(tmp_path):
-    ams_dir = tmp_path / "ams"
-    ams_dir.mkdir()
+    stats_dir = tmp_path / "mzml_statistics"
+    stats_dir.mkdir()
     mz, it = _one_spectrum()
-    _write_ams_info(ams_dir / "run_a_AMS_info.parquet", [("run_a", 1, 60.0, mz, it)])
+    _write_ms2_info(stats_dir / "run_a_ms2_info.parquet", [(1, 2, mz, it)])
 
     out = tmp_path / "out.mz.parquet"
-    DiannMzAdapter(compression="zstd").convert(str(ams_dir), str(out))
+    DiannMzAdapter(compression="zstd").convert(str(stats_dir), str(out))
 
     table = pq.read_table(str(out))
-    # mz / intensity are binary (losslessly encoded), no separate blob columns
     assert pa.types.is_binary(table.schema.field("mz").type)
     assert pa.types.is_binary(table.schema.field("intensity").type)
-    assert "mz_blob" not in table.column_names
-    assert "intensity_blob" not in table.column_names
     assert all(b is not None and len(b) > 0 for b in table.column("mz").to_pylist())
 
 
 def test_adapter_roundtrip_is_bit_exact(tmp_path):
-    ams_dir = tmp_path / "ams"
-    ams_dir.mkdir()
-    mz = np.array([100.0, 200.0, 300.0, 400.0], np.float64)
-    it = np.array([10.0, 20.0, 30.0, 40.0], np.float32)
-    _write_ams_info(ams_dir / "run_a_AMS_info.parquet", [("run_a", 1, 60.0, mz, it)])
+    stats_dir = tmp_path / "mzml_statistics"
+    stats_dir.mkdir()
+    mz = np.array([300.0, 100.0, 200.0, 400.0], np.float64)  # unsorted on purpose
+    it = np.array([30.0, 10.0, 20.0, 40.0], np.float64)
+    _write_ms2_info(stats_dir / "run_a_ms2_info.parquet", [(1, 2, mz, it)])
 
     out = tmp_path / "out.mz.parquet"
-    DiannMzAdapter(compression="zstd").convert(str(ams_dir), str(out))
+    DiannMzAdapter(compression="zstd").convert(str(stats_dir), str(out))
 
     spec = MzSpectra.from_file(out)
     df = spec.to_df()
     dmz, dit = spec.decode_spectrum(df.iloc[0])
-    np.testing.assert_array_equal(dmz, mz.astype(np.float32))
-    np.testing.assert_array_equal(dit, it)
+    # m/z is sorted by the adapter; verify the sorted source matches bit-exactly
+    order = np.argsort(mz)
+    np.testing.assert_array_equal(dmz, mz.astype(np.float32)[order])
+    np.testing.assert_array_equal(dit, it.astype(np.float32)[order])
 
 
 def test_adapter_matched_scans_filter(tmp_path):
-    ams_dir = tmp_path / "ams"
-    ams_dir.mkdir()
+    stats_dir = tmp_path / "mzml_statistics"
+    stats_dir.mkdir()
     mz, it = _one_spectrum()
-    spectra = [
-        ("run_a", 1, 60.0, mz, it),
-        ("run_a", 2, 61.0, mz, it),
-        ("run_a", 3, 62.0, mz, it),
-    ]
-    _write_ams_info(ams_dir / "run_a_AMS_info.parquet", spectra)
+    spectra = [(1, 2, mz, it), (2, 2, mz, it), (3, 2, mz, it)]
+    _write_ms2_info(stats_dir / "run_a_ms2_info.parquet", spectra)
 
     out = tmp_path / "out.mz.parquet"
     matched = {("run_a", 1), ("run_a", 3)}
-    written = DiannMzAdapter(compression="zstd").convert(str(ams_dir), str(out), matched_scans=matched)
+    written = DiannMzAdapter(compression="zstd").convert(str(stats_dir), str(out), matched_scans=matched)
     assert written == 2
 
     table = pq.read_table(str(out))

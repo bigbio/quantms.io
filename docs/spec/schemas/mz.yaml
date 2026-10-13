@@ -27,7 +27,6 @@ fields:
   # Timing and mobility
   scan_start_time:
     type: float32
-    required: true
     doc: "Scan start time (minutes)"
   inverse_ion_mobility:
     type: float32

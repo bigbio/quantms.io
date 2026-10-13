@@ -100,12 +100,12 @@ class DiaNNConverter(BaseOrchestrator):
 
     def convert_mz(
         self,
-        ams_info_folder,
+        mzml_statistics_folder,
         output_folder=".",
         output_prefix=None,
         matched_scans=None,
     ):
-        """Generate the ``mz`` view from mzML-derived AMS_info spectra.
+        """Generate the ``mz`` view from mzML-statistics MS2 spectra.
 
         Writes only the feature-matched MS2 scans. When ``matched_scans`` (a set of
         ``(run_file_name, scan)`` tuples) is omitted it is derived from the DIA-NN
@@ -120,7 +120,7 @@ class DiaNNConverter(BaseOrchestrator):
             matched_scans = self._extract_matched_scans()
         adapter = DiannMzAdapter(compression=self._compression)
         adapter.convert(
-            ams_info_folder=str(ams_info_folder),
+            mzml_statistics_folder=str(mzml_statistics_folder),
             output_path=str(output_folder / f"{prefix}.mz.parquet"),
             matched_scans=matched_scans,
         )
