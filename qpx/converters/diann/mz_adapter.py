@@ -8,7 +8,6 @@ from pathlib import Path
 import duckdb
 import numpy as np
 
-from qpx.core.spectra_codec import encode_intensity, encode_mz
 from qpx.core.sql import escape_path, sql_build
 from qpx.writers.mz import MzWriter
 
@@ -91,24 +90,21 @@ class DiannMzAdapter:
 
     @staticmethod
     def build_record(run_name: str, scan: int, ms_level: int, mz, intensity, rt: float | None = None) -> dict:
-        """Build one ``mz``-view record with losslessly-encoded peak arrays."""
+        """Build one ``mz``-view record with float32 peak arrays."""
         mz = np.asarray(mz, dtype=np.float32)
         intensity = np.asarray(intensity, dtype=np.float32)
-        order = np.argsort(mz, kind="stable")
-        mz = mz[order]
-        intensity = intensity[order]
         return {
             "id": f"{run_name}:scan={scan}",
             "run_file_name": run_name,
-            "scan": scan,
+            "scan": [scan],
             "ms_level": int(ms_level) if ms_level is not None else 2,
             "centroid": True,
-            "scan_start_time": (float(rt) / 60.0) if rt is not None else None,
+            "scan_start_time": (float(rt) / 60.0) if rt is not None else 0.0,
             "inverse_ion_mobility": None,
-            "ion_injection_time": None,
-            "total_ion_current": None,
+            "ion_injection_time": 0.0,
+            "total_ion_current": float(intensity.sum()) if len(intensity) else 0.0,
             "precursors": [],
-            "mz": encode_mz(mz),
-            "intensity": encode_intensity(intensity),
+            "mz": mz,
+            "intensity": intensity,
             "cv_params": [],
         }

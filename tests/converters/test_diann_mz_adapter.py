@@ -1,4 +1,4 @@
-"""Tests for the DIA-NN m/z adapter (mzML-statistics MS2 -> mz view with lossless blobs)."""
+"""Tests for the DIA-NN m/z adapter (mzML-statistics MS2 -> mz view with float32 arrays)."""
 
 import numpy as np
 import pyarrow as pa
@@ -66,11 +66,11 @@ def test_adapter_dedups_by_run_and_scan(tmp_path):
 
     table = pq.read_table(str(out))
     assert table.num_rows == 2
-    assert sorted(table.column("scan").to_pylist()) == [1, 2]
+    assert sorted(table.column("scan").to_pylist()) == [[1], [2]]
     assert table.column("run_file_name").to_pylist() == ["run_a", "run_a"]
 
 
-def test_adapter_stores_encoded_blobs_in_mz_intensity(tmp_path):
+def test_adapter_stores_float32_peak_arrays(tmp_path):
     stats_dir = tmp_path / "mzml_statistics"
     stats_dir.mkdir()
     mz, it = _one_spectrum()
@@ -80,27 +80,28 @@ def test_adapter_stores_encoded_blobs_in_mz_intensity(tmp_path):
     DiannMzAdapter(compression="zstd").convert(str(stats_dir), str(out))
 
     table = pq.read_table(str(out))
-    assert pa.types.is_binary(table.schema.field("mz").type)
-    assert pa.types.is_binary(table.schema.field("intensity").type)
-    assert all(b is not None and len(b) > 0 for b in table.column("mz").to_pylist())
+    assert pa.types.is_list(table.schema.field("mz").type)
+    assert pa.types.is_floating(table.schema.field("mz").type.value_type)
+    assert pa.types.is_list(table.schema.field("intensity").type)
+    assert pa.types.is_floating(table.schema.field("intensity").type.value_type)
+    assert all(len(v) > 0 for v in table.column("mz").to_pylist())
 
 
-def test_adapter_roundtrip_is_bit_exact(tmp_path):
+def test_adapter_roundtrip_preserves_peaks(tmp_path):
     stats_dir = tmp_path / "mzml_statistics"
     stats_dir.mkdir()
-    mz = np.array([300.0, 100.0, 200.0, 400.0], np.float64)  # unsorted on purpose
+    mz = np.array([300.0, 100.0, 200.0, 400.0], np.float64)
     it = np.array([30.0, 10.0, 20.0, 40.0], np.float64)
     _write_ms2_info(stats_dir / "run_a_ms2_info.parquet", [(1, 2, mz, it)])
 
     out = tmp_path / "out.mz.parquet"
     DiannMzAdapter(compression="zstd").convert(str(stats_dir), str(out))
 
-    spec = MzSpectra.from_file(out)
-    df = spec.to_df()
-    dmz, dit = spec.decode_spectrum(df.iloc[0])
-    order = np.argsort(mz)
-    np.testing.assert_array_equal(dmz, mz.astype(np.float32)[order])
-    np.testing.assert_array_equal(dit, it.astype(np.float32)[order])
+    table = pq.read_table(str(out))
+    mz_out = np.asarray(table.column("mz").to_pylist()[0])
+    it_out = np.asarray(table.column("intensity").to_pylist()[0])
+    np.testing.assert_array_equal(mz_out, mz.astype(np.float32))
+    np.testing.assert_array_equal(it_out, it.astype(np.float32))
 
 
 def test_adapter_matched_scans_filter(tmp_path):
@@ -116,7 +117,7 @@ def test_adapter_matched_scans_filter(tmp_path):
     assert written == 2
 
     table = pq.read_table(str(out))
-    assert sorted(table.column("scan").to_pylist()) == [1, 3]
+    assert sorted(table.column("scan").to_pylist()) == [[1], [3]]
 
 
 def test_adapter_fills_scan_start_time_from_ms_info(tmp_path):

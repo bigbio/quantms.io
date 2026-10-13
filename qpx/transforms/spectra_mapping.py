@@ -34,7 +34,6 @@ import pandas as pd
 import pyarrow as pa
 
 from qpx.core.scan import scan_from_native_id
-from qpx.core.spectra_codec import encode_intensity, encode_mz
 
 logger = logging.getLogger(__name__)
 
@@ -572,11 +571,6 @@ class SpectraMappingTransform:
         so the spectrum can be linked back to PSM/feature records.
         """
         mz_array, intensity_array = spectrum.get_peaks()
-        mz_arr = np.asarray(mz_array, dtype=np.float32)
-        int_arr = np.asarray(intensity_array, dtype=np.float32)
-        order = np.argsort(mz_arr, kind="stable")
-        mz_arr = mz_arr[order]
-        int_arr = int_arr[order]
         native_id = spectrum.getNativeID()
         scan_id = f"{run_name}:{native_id}" if native_id else f"{run_name}:index={index}"
 
@@ -621,8 +615,8 @@ class SpectraMappingTransform:
             "ion_injection_time": _ion_injection_time(spectrum),
             "total_ion_current": _total_ion_current(spectrum, intensity_array),
             "precursors": precursors,
-            "mz": encode_mz(mz_arr),
-            "intensity": encode_intensity(int_arr),
+            "mz": mz_array,
+            "intensity": intensity_array,
             "cv_params": None,
         }
 

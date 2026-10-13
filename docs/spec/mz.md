@@ -27,10 +27,10 @@ See the full YAML schema in [`mz.yaml`](schemas/mz.yaml).
 
 | Field | Description | Type | Required |
 |-------|-------------|------|----------|
-| `scan_start_time` | Start time of the scan in minutes | `float` | No |
+| `scan_start_time` | Start time of the scan in minutes | `float` | Yes |
 | `inverse_ion_mobility` | Inverse ion mobility, used for TIMS data (1/K0) | `float` | No |
-| `ion_injection_time` | Ion injection time in milliseconds | `float` | No |
-| `total_ion_current` | Total ion current (TIC) for the scan | `float` | No |
+| `ion_injection_time` | Ion injection time in milliseconds | `float` | Yes |
+| `total_ion_current` | Total ion current (TIC) for the scan | `float` | Yes |
 
 ### Precursors
 
@@ -54,8 +54,8 @@ Each precursor struct contains:
 
 | Field | Description | Type | Required |
 |-------|-------------|------|----------|
-| `mz` | Losslessly encoded m/z array (uint32 delta + varint; see `qpx.core.spectra_codec`) | `binary` | No |
-| `intensity` | Losslessly encoded intensity array (bitshuffled float32) | `binary` | No |
+| `mz` | Array of m/z values for the scan | `array[float]` | Yes |
+| `intensity` | Array of intensity values corresponding to the m/z values | `array[float]` | Yes |
 
 ### CV params
 
@@ -131,5 +131,5 @@ An MS2 spectrum with a single precursor ion:
     GROUP BY ms_level
     ```
 
-!!! warning "Lossless binary encoding"
-    The `mz` and `intensity` columns store losslessly encoded binary blobs (see `qpx.core.spectra_codec`), not plain arrays. Decode them with `MzSpectra.decode_spectrum()`; the decoded arrays are bit-exact, always share the same length, and each `intensity` element at index `i` corresponds to the peak at index `i` in `mz`.
+!!! warning "Array alignment"
+    The `mz` and `intensity` arrays MUST have the same length within each record. Each element at index `i` in `intensity` corresponds to the peak at index `i` in `mz`.
