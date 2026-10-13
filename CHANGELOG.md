@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MuData stack is core**: `mudata`, `anndata`, and `scipy` are required dependencies (no longer an optional extra). Use bare `pip install qpx`.
 - **`quantify` extra**: now `mokume[directlfq]>=0.1.0` (DirectLFQ via mokume's optional extra).
 - **Convert warnings go to stderr** ([#346](https://github.com/bigbio/qpx/pull/346)) — the MuData and `--fasta` warnings moved from stdout to stderr. All `qpxc convert` CLI warnings now start with `WARNING:`.
+- **`convert diann` protein-group step is vectorised** ([#291](https://github.com/bigbio/qpx/issues/291)) — `pg` was built with a Python loop over every (protein group, run) group; it is now aggregated with grouped pandas operations, and feature `pg_accessions` is split with Arrow kernels instead of one Python dict per accession. Output is unchanged. On PXD056832 (368,251 pg rows) the pg step takes 15.8 s instead of 193.7 s; the feature `pg_accessions` build for its 1.8 million features takes 0.03 s instead of 2.3 s.
 
 ### Removed
 

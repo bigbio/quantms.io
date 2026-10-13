@@ -4,7 +4,8 @@ Performance strategy:
     - DuckDB VIEW over parquet for memory efficiency (no in-memory table)
     - Precursor lookup (peptidoform, mz, missed_cleavages) via DuckDB temp table JOIN
     - All scalar and nested fields (scores, intensities, cv_params) constructed in SQL
-    - Only modifications + pg_accessions built in Python (requires PTM parsing)
+    - Only modifications built in Python (requires PTM parsing); pg_accessions
+      split with Arrow kernels
     - Arrow tables written directly via write_table() — no Python dict intermediaries
 """
 
@@ -16,6 +17,7 @@ from typing import Optional
 
 import pandas as pd
 import pyarrow as pa
+import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from qpx.converters.base import resolve_columns
@@ -79,6 +81,25 @@ def _safe_float_sql(column: str) -> str:
 def _safe_double_sql(column: str) -> str:
     """Build a SQL expression that converts a finite value to DOUBLE."""
     return f'CASE WHEN r."{column}" IS NOT NULL AND NOT isnan(CAST(r."{column}" AS DOUBLE)) THEN CAST(r."{column}" AS DOUBLE) END'
+
+
+def _pg_accessions_array(pg_groups: pa.ChunkedArray, pg_acc_type: pa.ListType) -> pa.ListArray:
+    """Split ``;``-separated protein groups into the ``pg_accessions`` list column.
+
+    Each accession becomes a struct with null positions; an empty group becomes a
+    null list. Built with Arrow kernels instead of one Python dict per accession.
+    """
+    groups = pg_groups.combine_chunks()
+    blank = pc.call_function("equal", [groups, pa.scalar("", groups.type)])
+    nonblank = pc.call_function("if_else", [blank, pa.scalar(None, groups.type), groups])
+    split = pc.call_function("split_pattern", [nonblank], pc.SplitPatternOptions(";"))
+    accessions = split.values
+    struct_type = pg_acc_type.value_type
+    structs = pa.StructArray.from_arrays(
+        [accessions if field.name == "accession" else pa.nulls(len(accessions), field.type) for field in struct_type],
+        fields=list(struct_type),
+    )
+    return pa.ListArray.from_arrays(split.offsets, structs, type=pg_acc_type, mask=split.is_null())
 
 
 def _ms_info_scans(values: pd.Series) -> pd.Series:
@@ -817,16 +838,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
         mods_array = pa.array(mods_list, type=mods_type)
 
         # --- Build pg_accessions column ---
-        pg_groups = table.column("_pg_group").to_pylist()
-        pg_list = [
-            [
-                {"accession": acc, "start": None, "end": None, "pre": None, "post": None}
-                for acc in (str(pg).split(";") if pg else [])
-            ]
-            or None
-            for pg in pg_groups
-        ]
-        pg_array = pa.array(pg_list, type=pg_acc_type)
+        pg_array = _pg_accessions_array(table.column("_pg_group"), pg_acc_type)
 
         # feature.pg_ids is left null: the feature->pg association is computed on
         # read via the Dataset softlink (bigbio/qpx#269), not materialized here.
