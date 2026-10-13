@@ -75,6 +75,12 @@ A `pg` row is an **analyte**: the quantified unit is the protein group *as a who
 | `sequence_coverage` | Percentage of the protein sequence covered by identified peptides | `float32` | No |
 | `molecular_weight` | Molecular weight of the protein in kDa | `float32` | No |
 
+A PG view may contain decoy protein groups (`is_decoy = true`) when the input
+reports them, for example to support protein-level FDR estimation across
+datasets. QPX does not remove decoy rows when it writes or reads the view, so
+consumers MUST filter on `is_decoy` themselves (for example with
+`PG.targets_only()`) when they need target protein groups only.
+
 ### Quantification
 
 | Field | Description | Type | Required |

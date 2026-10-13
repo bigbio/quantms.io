@@ -28,6 +28,7 @@ from qpx.converters.openms_consensus.feature_adapter import (
     feature_map_info,
     feature_records_for_cf,
     identification_context,
+    is_decoy_hit,
     load_consensus_map,
     removed_same_peptide_ids,
     to_proforma,
@@ -171,7 +172,7 @@ def _protein_hit_meta(prot) -> tuple[dict[str, bool], dict[str, float], dict[str
     for hit in prot.getHits():
         acc = _acc_str(hit.getAccession())
         if hit.metaValueExists("target_decoy"):
-            acc_decoy[acc] = "decoy" in str(hit.getMetaValue("target_decoy")).lower()
+            acc_decoy[acc] = is_decoy_hit(hit)
         score = safe_float(hit.getScore())
         if score_is_qvalue and score is not None:
             acc_qvalue[acc] = score
