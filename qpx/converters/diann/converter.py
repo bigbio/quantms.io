@@ -40,7 +40,8 @@ class DiaNNConverter(BaseOrchestrator):
         self._diann_version = self._parse_diann_version(diann_log)
         self._ontology_entries: list[dict] = []
         self._resolved_mappings_by_view: dict[str, dict] = {}
-        self._mz_written = False
+        # Views written by this run, in write order; provenance lists only these.
+        self._written_views: list[str] = []
 
     def convert_features(
         self,
@@ -69,6 +70,7 @@ class DiaNNConverter(BaseOrchestrator):
             self._ontology_entries.extend(score_ontology_entries(adapter.get_discovered_scores(), view=FEATURE))
             cols = adapter.get_table_columns("report")
             self._resolved_mappings_by_view[FEATURE] = resolve_columns(get_field_mappings("diann", "feature"), cols)
+        self._written_views.append(FEATURE)
         logger.info("DIA-NN feature conversion complete")
 
     def convert_pg(
@@ -97,6 +99,7 @@ class DiaNNConverter(BaseOrchestrator):
             self._ontology_entries.extend(score_ontology_entries(adapter.get_discovered_scores(), view=PG))
             cols = adapter.get_table_columns("report")
             self._resolved_mappings_by_view[PG] = resolve_columns(get_field_mappings("diann", "pg"), cols)
+        self._written_views.append(PG)
         logger.info("DIA-NN PG conversion complete")
 
     def convert_mz(
@@ -137,7 +140,8 @@ class DiaNNConverter(BaseOrchestrator):
             matched_scans=matched_scans,
         )
         # The writer creates no file when no spectrum matched.
-        self._mz_written = written > 0
+        if written:
+            self._written_views.append(MZ)
         logger.info("DIA-NN mz conversion complete")
         return written
 
@@ -184,6 +188,7 @@ class DiaNNConverter(BaseOrchestrator):
                     run_output=str(output_folder / f"{prefix}.run.parquet"),
                 )
                 self._ontology_entries.extend(sdrf_conv.run_ontology_entries())
+            self._written_views.extend([SAMPLE, RUN])
             logger.info("SDRF conversion complete (sample + run)")
         except Exception as exc:
             logger.warning("SDRF conversion skipped (incomplete SDRF?): %s", exc)
@@ -204,7 +209,8 @@ class DiaNNConverter(BaseOrchestrator):
                     tool_name=get_tool_meta("diann")["tool_name"],
                 )
             )
-        self._write_ontology(Path(output_folder), prefix, entries)
+        if self._write_ontology(Path(output_folder), prefix, entries) is not None:
+            self._written_views.append(ONTOLOGY)
 
     def write_provenance(self, output_folder: str | Path, prefix: str = "diann") -> None:
         """Write provenance.parquet with DIA-NN + QPX conversion steps."""
@@ -218,7 +224,7 @@ class DiaNNConverter(BaseOrchestrator):
                 "tool_uri": None,
                 "parameters": None,
                 "config": None,
-                "output_views": [FEATURE, PG],
+                "output_views": [view for view in self._written_views if view in (FEATURE, PG)],
             },
             {
                 "step_order": 2,
@@ -231,7 +237,7 @@ class DiaNNConverter(BaseOrchestrator):
                     {"key": "report_path", "value": Path(self.report_path).name},
                 ],
                 "config": None,
-                "output_views": [FEATURE, PG] + ([MZ] if self._mz_written else []) + [SAMPLE, RUN, ONTOLOGY],
+                "output_views": list(self._written_views),
             },
         ]
         self._write_provenance(Path(output_folder), prefix, records)
