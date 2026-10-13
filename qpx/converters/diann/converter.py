@@ -104,20 +104,27 @@ class DiaNNConverter(BaseOrchestrator):
         output_folder=".",
         output_prefix=None,
         matched_scans=None,
+        feature_parquet=None,
     ):
         """Generate the ``mz`` view from mzML-statistics MS2 spectra.
 
-        Writes only the feature-matched MS2 scans. When ``matched_scans`` (a set of
-        ``(run_file_name, scan)`` tuples) is omitted it is derived from the DIA-NN
-        report's ``Run`` / ``MS2.Scan`` columns. Peak arrays are losslessly encoded
-        into ``mz_blob`` / ``intensity_blob``.
+        Writes only the feature-matched MS2 scans (the PSM fragment spectra).
+        ``matched_scans`` (a set of ``(run_file_name, scan)`` tuples) may be
+        supplied directly, or derived from ``feature_parquet`` (the generated
+        feature view, whose ``scan`` column links each feature to its MS2 scan),
+        or as a fallback from the DIA-NN report's ``Run`` / ``MS2.Scan`` columns.
+        Peak arrays are losslessly encoded into the binary ``mz`` / ``intensity``
+        columns.
         """
         from qpx.converters.diann.mz_adapter import DiannMzAdapter
 
         output_folder = Path(output_folder)
         prefix = output_prefix or "diann"
         if matched_scans is None:
-            matched_scans = self._extract_matched_scans()
+            if feature_parquet is not None:
+                matched_scans = self._extract_matched_scans_from_feature(feature_parquet)
+            else:
+                matched_scans = self._extract_matched_scans()
         adapter = DiannMzAdapter(compression=self._compression)
         adapter.convert(
             mzml_statistics_folder=str(mzml_statistics_folder),
@@ -161,6 +168,28 @@ class DiaNNConverter(BaseOrchestrator):
             return matched
         finally:
             con.close()
+
+    def _extract_matched_scans_from_feature(self, feature_parquet) -> set[tuple[str, int]] | None:
+        """Return the ``(run_file_name, scan)`` pairs from a generated feature view.
+
+        The feature view's ``scan`` column (filled by the DIA-NN feature adapter,
+        e.g. via RT matching in ``_merge_scan_info``) is the authoritative
+        feature-to-MS2-scan link. Returns ``None`` if the columns are absent.
+        """
+        import pyarrow.parquet as pq
+
+        try:
+            table = pq.read_table(str(feature_parquet), columns=["run_file_name", "scan"])
+        except Exception:
+            logger.warning("could not read run_file_name/scan from %s; keeping all scans", feature_parquet)
+            return None
+        matched = set()
+        for run, scans in zip(table.column("run_file_name").to_pylist(), table.column("scan").to_pylist()):
+            for s in scans or ():
+                if s is not None:
+                    matched.add((str(run), int(s)))
+        logger.info("matched %s (run_file_name, scan) from feature view", len(matched))
+        return matched
 
     def convert_sdrf(
         self,

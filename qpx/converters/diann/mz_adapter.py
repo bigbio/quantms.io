@@ -1,4 +1,4 @@
-"""DIA-NN m/z adapter — generate the ``mz`` view from mzML-derived MS2 spectra."""
+"""DIA-NN m/z adapter — generate the ``mz`` view from feature-matched MS2 spectra."""
 
 from __future__ import annotations
 
@@ -20,10 +20,9 @@ class DiannMzAdapter:
 
     Reads per-run ``*_ms2_info.parquet`` files (``scan``, ``ms_level``,
     ``mz_array``, ``intensity_array``) produced by the quantmsdiann workflow,
-    deduplicates by ``(run_file_name, scan)`` (the run name comes from the file
-    stem), losslessly encodes the peak arrays into the ``mz`` / ``intensity``
-    binary columns, and writes the ``mz`` view. Only the feature-matched MS2
-    scans are kept when ``matched_scans`` is provided.
+    keeping only the feature-matched MS2 scans (``matched_scans``), losslessly
+    encoding the peak arrays into the ``mz`` / ``intensity`` binary columns.
+    ``scan_start_time`` is filled from the per-run ``*_ms_info.parquet`` ``rt``.
     """
 
     def __init__(self, compression: str = "zstd", batch_size: int = 100_000):
@@ -36,28 +35,35 @@ class DiannMzAdapter:
         output_path: str,
         matched_scans: set[tuple[str, int]] | None = None,
     ) -> int:
-        """Write ``{output_path}`` from a folder of ``*_ms2_info.parquet`` files.
+        """Write ``{output_path}`` from ``*_ms2_info.parquet`` / ``*_ms_info.parquet``.
 
-        Returns the number of unique spectra written.
+        Returns the number of unique feature-matched spectra written.
         """
-        ms2_files = sorted(Path(mzml_statistics_folder).glob("*_ms2_info.parquet"))
+        stats = Path(mzml_statistics_folder)
+        ms2_files = sorted(stats.glob("*_ms2_info.parquet"))
         if not ms2_files:
             raise FileNotFoundError(f"no *_ms2_info.parquet files in {mzml_statistics_folder}")
+
+        con = duckdb.connect()
+
+        # run -> {scan: rt} from *_ms_info.parquet (scan metadata incl. MS2 retention time)
+        rt_lookup: dict[str, dict[int, float]] = {}
+        for ms1_file in sorted(stats.glob("*_ms_info.parquet")):
+            run_name = ms1_file.name.removesuffix("_ms_info.parquet")
+            cur = con.execute(sql_build("SELECT scan, rt FROM parquet_scan('$path')", path=escape_path(str(ms1_file))))
+            rt_lookup[run_name] = {int(scan): float(rt) for scan, rt in cur.fetchall() if rt is not None}
 
         seen: set[tuple[str, int]] = set()
         pending: list[dict] = []
         written = 0
-
-        con = duckdb.connect()
         writer = MzWriter(output_path, compression=self._compression)
         try:
             for ms2_file in ms2_files:
                 run_name = ms2_file.name.removesuffix("_ms2_info.parquet")
-                safe_path = escape_path(str(ms2_file))
                 cursor = con.execute(
                     sql_build(
                         "SELECT scan, ms_level, mz_array, intensity_array FROM parquet_scan('$path')",
-                        path=safe_path,
+                        path=escape_path(str(ms2_file)),
                     )
                 )
                 for scan, ms_level, mz, intensity in cursor.fetchall():
@@ -68,7 +74,8 @@ class DiannMzAdapter:
                     if matched_scans is not None and key not in matched_scans:
                         continue
                     seen.add(key)
-                    pending.append(self.build_record(run_name, scan0, ms_level, mz, intensity))
+                    rt = rt_lookup.get(run_name, {}).get(scan0)
+                    pending.append(self.build_record(run_name, scan0, ms_level, mz, intensity, rt))
                     if len(pending) >= self._batch_size:
                         writer.write_batch(pending)
                         written += len(pending)
@@ -79,11 +86,11 @@ class DiannMzAdapter:
             writer.close()
         finally:
             con.close()
-        logger.info("wrote %s unique spectra to %s", written, output_path)
+        logger.info("wrote %s unique feature-matched spectra to %s", written, output_path)
         return written
 
     @staticmethod
-    def build_record(run_name: str, scan: int, ms_level: int, mz, intensity) -> dict:
+    def build_record(run_name: str, scan: int, ms_level: int, mz, intensity, rt: float | None = None) -> dict:
         """Build one ``mz``-view record with losslessly-encoded peak arrays."""
         mz = np.asarray(mz, dtype=np.float32)
         intensity = np.asarray(intensity, dtype=np.float32)
@@ -96,7 +103,7 @@ class DiannMzAdapter:
             "scan": scan,
             "ms_level": int(ms_level) if ms_level is not None else 2,
             "centroid": True,
-            "scan_start_time": None,
+            "scan_start_time": (float(rt) / 60.0) if rt is not None else None,
             "inverse_ion_mobility": None,
             "ion_injection_time": None,
             "total_ion_current": None,
