@@ -21,7 +21,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from qpx.converters.base import resolve_columns
-from qpx.converters.diann.base_adapter import DiaNNBaseAdapter, decoy_protein_group_sql
+from qpx.converters.diann.base_adapter import DiaNNBaseAdapter, decoy_protein_group_sql, run_name_sql
 from qpx.converters.diann.constants import to_modifications, to_proforma
 from qpx.converters.mappings import get_field_mappings
 from qpx.converters.ptm import compute_precursor_mz
@@ -122,10 +122,6 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
                 sdrf_path="sdrf.tsv",
             )
     """
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._mz_cache: dict[tuple[str, int], float | None] = {}
 
     def convert(
         self,
@@ -244,42 +240,16 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
             # loss is visible; the drop behaviour itself is unchanged.
             self._warn_on_dropped_runs(set(run_names))
         else:
-            run_col = self._resolved["run_file_name"]
-            qcol = validate_identifier(run_col)
-            rows = self._conn.execute(
-                sql_build(
-                    """
-                    SELECT DISTINCT regexp_replace(
-                        CAST($col AS VARCHAR),
-                        '(?i)\\.(mzML|raw|d|wiff|htrms)$',
-                        ''
-                    ) AS run_file_name
-                    FROM report
-                    ORDER BY run_file_name
-                    """,
-                    col=qcol,
-                )
-            ).fetchall()
-            run_names = [row[0] for row in rows]
+            run_names = sorted(self._report_run_names())
             self.logger.info(f"Discovered {len(run_names)} runs from report")
 
         return run_names
 
     def _report_run_names(self) -> set[str]:
         """Return the distinct extension-stripped Run values in the report."""
-        run_col = self._resolved["run_file_name"]
+        run_col = validate_identifier(self._resolved["run_file_name"])
         rows = self._conn.execute(
-            sql_build(
-                """
-                SELECT DISTINCT regexp_replace(
-                    CAST($col AS VARCHAR),
-                    '(?i)\\.(mzML|raw|d|wiff|htrms)$',
-                    ''
-                ) AS run_file_name
-                FROM report
-                """,
-                col=validate_identifier(run_col),
-            )
+            sql_build("SELECT DISTINCT $run AS run_file_name FROM report", run=run_name_sql(run_col))
         ).fetchall()
         return {row[0] for row in rows}
 
@@ -335,10 +305,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
             peptidoform = to_proforma(modified_seq)
             _, modifications = to_modifications(modified_seq, sequence)
 
-            cache_key = (modified_seq, charge)
-            if cache_key not in self._mz_cache:
-                self._mz_cache[cache_key] = compute_precursor_mz(modified_seq, charge)
-            calculated_mz = self._mz_cache[cache_key] or 0.0
+            calculated_mz = compute_precursor_mz(modified_seq, charge) or 0.0
 
             missed = count_missed_cleavages(sequence, enzyme_name) if enzyme_name else None
 
@@ -439,8 +406,8 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
             else "NULL::FLOAT AS predicted_rt"
         )
 
-        run_col = resolved["run_file_name"]
-        parts.append(f"regexp_replace(r.\"{run_col}\", '(?i)\\.(mzML|raw|d|wiff|htrms)$', '') AS run_file_name")
+        run_col = "r." + validate_identifier(resolved["run_file_name"])
+        parts.append(f"{run_name_sql(run_col)} AS run_file_name")
 
         # MS2.Scan (DIA-NN 1.8) is a 0-based position among the run's MS2 spectra,
         # not a native scan number: it becomes a scan only through the MS-info table.
@@ -512,8 +479,8 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
         parts.append(f"{genes_expr} AS gg_accessions")
         parts.append(f"{genes_expr} AS gg_names")
 
-        run_col = resolved["run_file_name"]
-        parts.append(f"regexp_replace(r.\"{run_col}\", '(?i)\\.(mzML|raw|d|wiff|htrms)$', '') AS id_run_file_name")
+        run_col = "r." + validate_identifier(resolved["run_file_name"])
+        parts.append(f"{run_name_sql(run_col)} AS id_run_file_name")
 
         for field in ("rt_start", "rt_stop"):
             column = resolved.get(field)
@@ -596,11 +563,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
             AND r.$seq_col = lk.sequence
             AND r.$chg_col = lk.charge
         $channel_join
-        WHERE regexp_replace(
-                  CAST(r.$run_col AS VARCHAR),
-                  '(?i)\\.(mzML|raw|d|wiff|htrms)$',
-                  ''
-              ) IN ({run_placeholders})
+        WHERE $run_name IN ({run_placeholders})
           $qvalue_filter
           AND r.$pg_col IS NOT NULL
         """,
@@ -609,7 +572,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
             seq_col=validate_identifier(seq_col),
             chg_col=validate_identifier(chg_col),
             channel_join=channel_join,
-            run_col=validate_identifier(run_col),
+            run_name=run_name_sql("r." + validate_identifier(run_col)),
             qvalue_filter=qvalue_filter,
             pg_col=validate_identifier(pg_col),
         )

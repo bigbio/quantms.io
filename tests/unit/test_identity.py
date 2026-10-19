@@ -240,7 +240,6 @@ def test_override_provided_id_stashes_to_cv_params(tmp_path):
     table = pq.read_table(path)
     derived = derive_id([rec["peptidoform"], rec["charge"], rec["run_file_name"], rec["rt"]])
     assert table.column("feature_id").to_pylist() == [derived]
-    assert w.overridden_id_count == 1
     cv = table.column("cv_params").to_pylist()[0]
     assert {"cv_name": "provided_feature_id", "cv_value": "123456789"} in cv
 
@@ -308,7 +307,6 @@ def test_override_applies_on_write_table_path(tmp_path):
     out = pq.read_table(path)
     derived = derive_id([rec["peptidoform"], rec["charge"], rec["run_file_name"], rec["rt"]])
     assert out.column("feature_id").to_pylist() == [derived]
-    assert w.overridden_id_count == 1
     assert {"cv_name": "provided_feature_id", "cv_value": "424242"} in out.column("cv_params").to_pylist()[0]
 
 

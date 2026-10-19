@@ -56,7 +56,6 @@ class FeatureWriter(BaseWriter):
                 if provided_param not in params:
                     params.append(provided_param)
                 cv_lists[index] = params
-            self.overridden_id_count += 1
         return ids
 
     def _validate_identity_uniqueness(self) -> None:

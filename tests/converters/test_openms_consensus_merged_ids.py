@@ -14,7 +14,6 @@ import qpx  # noqa: E402
 from qpx.cli.main import qpx_main  # noqa: E402
 from qpx.converters.openms_consensus.converter import OpenMSConsensusConverter  # noqa: E402
 from qpx.converters.openms_consensus.feature_adapter import column_runs, load_consensus_map  # noqa: E402
-from qpx.converters.openms_consensus.psm_adapter import consensus_psms_to_records  # noqa: E402
 from qpx.converters.openms_consensus.streaming import StreamingConsensusMap  # noqa: E402
 from tests.converters.test_openms_consensus import (  # noqa: E402
     _MULTIRUN_CONSENSUSXML,
@@ -211,11 +210,8 @@ def test_quantms_style_psm_runs_are_unchanged(tmp_path, fixture, streaming):
 
     _, written = _convert(tmp_path, str(source), streaming, structures=("feature", "psm"))
     runs = sorted((row["peptidoform"], row["scan"][0], row["run_file_name"]) for row in _rows(written, "psm"))
-    adapter_runs = sorted(
-        (row["peptidoform"], row["scan"][0], row["run_file_name"]) for row in consensus_psms_to_records(str(source))
-    )
 
-    assert runs == adapter_runs == _EXPECTED_LFQ_RUNS[fixture]
+    assert runs == _EXPECTED_LFQ_RUNS[fixture]
 
 
 def _single_unnamed_map_xml(spectra_data="IP_lung_1T.mzML"):

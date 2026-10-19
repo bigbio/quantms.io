@@ -2,8 +2,8 @@
 
 
 def test_resolve_columns():
-    """resolve_columns: basic, ordered fallback, first match wins, missing skipped, empty, hasattr checks."""
-    from qpx.converters.base import BaseConverter, resolve_columns
+    """resolve_columns: basic, ordered fallback, first match wins, missing skipped, empty."""
+    from qpx.converters.base import resolve_columns
 
     # Basic resolution
     mappings = {"intensity": ["Precursor.Quantity"], "rt": ["RT"]}
@@ -29,7 +29,3 @@ def test_resolve_columns():
 
     # Empty
     assert resolve_columns({}, {"col1", "col2"}) == {}
-
-    # BaseConverter method existence
-    assert hasattr(BaseConverter, "write_ontology")
-    assert hasattr(BaseConverter, "write_score_ontology")

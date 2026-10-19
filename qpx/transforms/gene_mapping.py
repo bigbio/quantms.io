@@ -126,38 +126,20 @@ def _normalize_protein_list(accessions) -> Optional[list]:
 
     - None / float NaN  → None
     - str               → [str]
-    - dict / struct     → [item]   (list(dict) would give keys, not the struct)
-    - iterable          → list(item)
-    - other             → [item]
+    - list / array      → list(item)
     """
     if accessions is None or (isinstance(accessions, float) and accessions != accessions):
         return None
     if isinstance(accessions, str):
         return [accessions]
-    if isinstance(accessions, dict) or (
-        hasattr(accessions, "dtype") and hasattr(accessions.dtype, "names") and accessions.dtype.names
-    ):
-        return [accessions]
-    if hasattr(accessions, "__iter__"):
-        return list(accessions)
-    return [accessions]
+    return list(accessions)
 
 
 def _extract_accession_from_raw(raw) -> Optional[str]:
-    """Extract a bare accession string from a raw protein entry (str, dict, or struct).
-
-    Returns None for None, NaN, or unsupported types.
-    """
-    if raw is None or (isinstance(raw, float) and raw != raw):
-        return None
-    if isinstance(raw, str):
+    """Extract a bare accession string from a raw protein entry (str or struct dict)."""
+    if raw is None or isinstance(raw, str):
         return raw
-    if hasattr(raw, "__getitem__"):
-        try:
-            return raw["accession"]
-        except (KeyError, TypeError):
-            return None
-    return None
+    return raw.get("accession")
 
 
 def _resolve_gene_names(

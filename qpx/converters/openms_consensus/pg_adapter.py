@@ -23,19 +23,8 @@ from collections import defaultdict
 from typing import Optional
 
 from qpx.converters.channel_labels import fraction_groups_from_sdrf
-from qpx.converters.openms_consensus.feature_adapter import (
-    column_runs,
-    feature_map_info,
-    feature_records_for_cf,
-    identification_context,
-    is_decoy_hit,
-    load_consensus_map,
-    removed_same_peptide_ids,
-    to_proforma,
-)
-from qpx.converters.openms_consensus.feature_dedup import FeatureDeduplicator, feature_ids
+from qpx.converters.openms_consensus.feature_adapter import is_decoy_hit, to_proforma
 from qpx.converters.openms_consensus.protein_groups import ProteinGroupIndex, identification_identifier
-from qpx.converters.openms_consensus.psm_adapter import _run_resolver
 from qpx.converters.utils import is_contaminant_accession, safe_float, uniprot_entry_name
 from qpx.core.protein_sequence import average_molecular_weight_kda
 
@@ -140,18 +129,6 @@ def accumulate_unassigned_maps(pid, resolve_run, m: _ProteinMaps) -> None:
     _collect_pid(pid, set(), resolve_run(pid), m)
 
 
-def _protein_maps(cm) -> _ProteinMaps:
-    """Index peptide/feature/run evidence by accession (see :class:`_ProteinMaps`)."""
-    map_run = column_runs(cm)
-    resolve_run = _run_resolver(cm)
-    m = _ProteinMaps()
-    for cf in cm:  # assigned IDs: runs are the consensus feature's member maps
-        accumulate_cf_maps(cf, map_run, resolve_run, m)
-    for pid in cm.getUnassignedPeptideIdentifications():  # run from map_index or id_merge_index (merge order)
-        accumulate_unassigned_maps(pid, resolve_run, m)
-    return m
-
-
 def accumulate_consensus_map(cm, map_info, resolve_run, m: _ProteinMaps) -> None:
     """Fold all identification evidence into the shared maps, including duplicate peaks."""
     map_run = {idx: run for idx, (run, _label) in map_info.items()}
@@ -186,7 +163,7 @@ def _protein_hit_meta(prot) -> tuple[dict[str, bool], dict[str, float], dict[str
         score = safe_float(hit.getScore())
         if score_is_qvalue and score is not None:
             acc_qvalue[acc] = score
-        gene = _GENE_RE.search(str(hit.getDescription() or "")) if hasattr(hit, "getDescription") else None
+        gene = _GENE_RE.search(str(hit.getDescription() or ""))
         if gene:
             acc_gene[acc] = gene.group(1)
     return acc_decoy, acc_qvalue, acc_gene
@@ -330,43 +307,6 @@ def protein_group_maps(cm) -> tuple[ProteinGroupIndex, dict[tuple[str, ...], tup
     return group_map, group_meta
 
 
-def _map_info(cm) -> dict[int, tuple[str, str]]:
-    """Map index -> (run_file_name, channel label), matching the feature adapter.
-
-    Isobaric channels are detected from the map label (``tmt6plex_126`` ->
-    ``TMT126``); everything else is ``LFQ``. ``experiment_type`` is not used — it
-    is ``"label-free"`` even for real quantms TMT output.
-    """
-    return feature_map_info(cm)
-
-
-def _peptide_intensities(cm, map_info: dict[int, tuple[str, str]]) -> dict[tuple[str, str, str], float]:
-    """Return ``(peptide, run, label) -> summed feature intensity``.
-
-    Peptides are keyed by unmodified sequence (matching :func:`_protein_maps`, so
-    the same peptide->accession map drives the unique-to-group test). Feature
-    intensities are summed per (peptide, run, label) — charge states / peptidoforms
-    of one sequence roll up together.
-    """
-    pep_intensity: dict[tuple[str, str, str], float] = defaultdict(float)
-    dedup = FeatureDeduplicator(pep_intensity)
-    removed, confidence = identification_context(cm)
-    resolve_run = _run_resolver(cm)
-    group_map, group_meta = protein_group_maps(cm)
-    for cf in cm:
-        records = feature_records_for_cf(
-            cf,
-            map_info,
-            group_map,
-            group_meta=group_meta,
-            resolve_run=resolve_run,
-            removed_pids=removed_same_peptide_ids(cf, removed),
-            confidence=confidence,
-        )
-        dedup.keep(records, feature_ids(records), float(cf.getQuality()))
-    return pep_intensity
-
-
 def _protein_intensity(group_peps, group_accs, unit, label, pep_intensity, pep_accs, top) -> Optional[float]:
     """Interim protein-group intensity for one ``(unit, label)``.
 
@@ -389,30 +329,6 @@ def _protein_intensity(group_peps, group_accs, unit, label, pep_intensity, pep_a
     if top and top > 0:
         abundances = abundances[:top]
     return sum(abundances)
-
-
-def consensus_protein_groups_to_records(
-    consensusxml_path: str | None = None,
-    sdrf_path: Optional[str] = None,
-    cm=None,
-    top: int = 0,
-) -> list[dict]:
-    """Return QPX pg record dicts: one per (protein group, unit, label).
-
-    ``intensity`` is an **interim, unnormalized total** — the sum of the group's
-    unique-peptide feature intensities for that unit+label (quantms
-    ``unique_peptides`` policy, no normalization), until OpenMS ``-out_qpx``
-    provides the authoritative protein quant. ``top`` bounds the peptides used
-    (``0`` = all; set to 3 to mirror the ProteomicsLFQ/IsobaricWorkflow default).
-    Each quantified row is stamped with a ``quantification_method`` cv_param so it
-    is never mistaken for the authoritative number. Pass either
-    ``consensusxml_path`` (loaded here) or an already-loaded ``cm``.
-    """
-    cm = cm if cm is not None else load_consensus_map(consensusxml_path)
-    map_info = _map_info(cm)
-    m = _protein_maps(cm)
-    pep_intensity = _peptide_intensities(cm, map_info)
-    return build_pg_records(cm, map_info, m, pep_intensity, sdrf_path, top)
 
 
 def pg_units_and_labels(map_info, sdrf_path) -> tuple[set[tuple[str, ...]], list[str]]:

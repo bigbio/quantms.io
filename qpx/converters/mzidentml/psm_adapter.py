@@ -696,15 +696,6 @@ def _parse_native_id(spectrum_id: str) -> tuple[list[int], str | None]:
     return [], None
 
 
-def _parse_scan(spectrum_id: str) -> list[int]:
-    """Return the scan/index value(s) from a spectrumID, without the scheme.
-
-    Prefer :func:`_parse_native_id` when the nativeID scheme matters (e.g. to
-    attach the correct spectrum). Returns an empty list when nothing parses.
-    """
-    return _parse_native_id(spectrum_id)[0]
-
-
 def _group_siis(siis: list[dict]) -> list[dict]:
     """Group SII elements into classified cross-link groups.
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 from pathlib import Path
@@ -15,18 +14,10 @@ from qpx.converters.quantms_msstats.feature_adapter import (
 )
 from qpx.converters.sdrf import SdrfConverter
 from qpx.core.constants import FEATURE, ONTOLOGY, RUN, SAMPLE
+from qpx.core.files import sha256_file
 from qpx.core.scores import field_ontology_entries
 
 logger = logging.getLogger(__name__)
-
-
-def _sha256(path: str | Path) -> str:
-    """Return the SHA-256 digest of one input file."""
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 class QuantmsMsstatsConverter(BaseOrchestrator):
@@ -145,9 +136,9 @@ class QuantmsMsstatsConverter(BaseOrchestrator):
                 "tool_uri": "https://github.com/bigbio/qpx",
                 "parameters": [
                     {"key": "msstats_file", "value": msstats_file.name},
-                    {"key": "msstats_sha256", "value": _sha256(msstats_file)},
+                    {"key": "msstats_sha256", "value": sha256_file(msstats_file)},
                     {"key": "sdrf_file", "value": sdrf_file.name},
-                    {"key": "sdrf_sha256", "value": _sha256(sdrf_file)},
+                    {"key": "sdrf_sha256", "value": sha256_file(sdrf_file)},
                 ],
                 "config": config,
                 "output_views": output_views,

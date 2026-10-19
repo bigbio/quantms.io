@@ -88,9 +88,8 @@ class SpectronautFeatureAdapter(SpectronautBaseAdapter):
     """
 
     def __init__(self, **kwargs):
-        """Initialize feature adapter with empty caches."""
+        """Initialize the feature adapter."""
         super().__init__(**kwargs)
-        self._mz_cache: dict[tuple[str, int], float | None] = {}
         self._resolved: dict | None = None
 
     def convert(
@@ -220,10 +219,7 @@ class SpectronautFeatureAdapter(SpectronautBaseAdapter):
             peptidoform = to_proforma(modified_seq)
             _, modifications = to_modifications(modified_seq, sequence)
 
-            cache_key = (peptidoform, charge)
-            if cache_key not in self._mz_cache:
-                self._mz_cache[cache_key] = compute_precursor_mz(peptidoform, charge)
-            calculated_mz = self._mz_cache[cache_key] or 0.0
+            calculated_mz = compute_precursor_mz(peptidoform, charge) or 0.0
 
             missed = count_missed_cleavages(sequence, enzyme_name) if enzyme_name else None
 

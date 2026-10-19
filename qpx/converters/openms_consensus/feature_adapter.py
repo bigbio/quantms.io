@@ -158,10 +158,7 @@ def peptide_level_fdr_identifiers(cm) -> set[str]:
     """Identifiers of the identification runs whose Percolator q-values are peptide-level."""
     identifiers = set()
     for prot in cm.getProteinIdentifications():
-        get_params = getattr(prot, "getSearchParameters", None)
-        if get_params is None:
-            continue
-        params = get_params()
+        params = prot.getSearchParameters()
         if params.metaValueExists(_PEPTIDE_LEVEL_FDR_KEY) and str(params.getMetaValue(_PEPTIDE_LEVEL_FDR_KEY)) in (
             "1",
             "true",
@@ -319,23 +316,17 @@ def _parse_site_scores(raw) -> dict[int, float]:
         return {}
     try:
         parsed = ast.literal_eval(str(raw))
-        if not isinstance(parsed, dict):
-            return {}
-        out = {}
-        for k, v in parsed.items():
-            try:
-                pos = int(k)
-            except (TypeError, ValueError):
-                continue
-            if v is not None:
-                try:
-                    out[pos] = float(v)
-                except (TypeError, ValueError):
-                    pass
-        return out
     except (ValueError, SyntaxError, TypeError):
-        # Malformed literal (ast.literal_eval) or a non-mapping value -> no scores.
+        return {}  # malformed literal -> no scores
+    if not isinstance(parsed, dict):
         return {}
+    out = {}
+    for k, v in parsed.items():
+        try:
+            out[int(k)] = float(v)
+        except (TypeError, ValueError):
+            continue  # unparseable position or a None/non-numeric score
+    return out
 
 
 def to_modifications(aa_sequence, site_scores: dict[int, list[dict]] | None = None) -> list[dict]:
@@ -381,12 +372,12 @@ def to_modifications(aa_sequence, site_scores: dict[int, list[dict]] | None = No
             site_scores.get(i + 1) if site_scores else None,
         )
 
-    nterm = aa_sequence.getNTerminalModification() if hasattr(aa_sequence, "getNTerminalModification") else None
+    nterm = aa_sequence.getNTerminalModification()
     if nterm:
         # N-terminal position is always 0 (amino_acid null); see the QPX
         # modifications spec.
         _add_mod(nterm.getId() or "", _acc(nterm.getUniModAccession()), 0, None, None)
-    cterm = aa_sequence.getCTerminalModification() if hasattr(aa_sequence, "getCTerminalModification") else None
+    cterm = aa_sequence.getCTerminalModification()
     if cterm:
         # C-terminal position is always length + 1 (amino_acid null).
         _add_mod(cterm.getId() or "", _acc(cterm.getUniModAccession()), aa_sequence.size() + 1, None, None)
@@ -590,9 +581,7 @@ def consensus_features_to_records(
 
 def primary_run_stems(protein_identification) -> list[str]:
     """Run stems of one ProteinIdentification's primary MS run paths (``spectra_data``), in order."""
-    get_paths = getattr(protein_identification, "getPrimaryMSRunPath", None)
-    if get_paths is None:
-        return []
+    get_paths = protein_identification.getPrimaryMSRunPath
     paths: list = []
     try:
         get_paths(paths)  # pyopenms < 3.6 fills an output list
@@ -725,8 +714,7 @@ _RESOLVED_FROM_KEY = "feature_id"
 
 
 def _cf_unique_id(cf) -> str | None:
-    getter = getattr(cf, "getUniqueId", None)
-    uid = getter() if getter is not None else None
+    uid = cf.getUniqueId()
     return str(uid) if uid else None
 
 
