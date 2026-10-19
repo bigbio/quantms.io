@@ -49,9 +49,6 @@ class DiaNNConverter(BaseOrchestrator):
         qvalue_threshold=None,
         output_folder=".",
         output_prefix=None,
-        protein_file=None,
-        partitions=None,
-        batch_size=100,
     ):
         output_folder = Path(output_folder)
         prefix = output_prefix or "diann"
@@ -78,8 +75,6 @@ class DiaNNConverter(BaseOrchestrator):
         pg_matrix_path,
         output_folder=".",
         output_prefix=None,
-        batch_size=100,
-        standardized_intensities=False,
         qvalue_threshold=None,
     ):
         output_folder = Path(output_folder)

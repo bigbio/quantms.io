@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`[transforms]` optional extra, with its `biopython` and `mygene` dependencies** — gene mapping now parses FASTA headers directly, so `qpxc transform gene-map` works in a bare install (and in the published container, which never carried the extra).
 - **MyGene.info lookup and the `--species` option of `qpxc transform gene-map`** — the transform no longer queries a network service. `gg_names` comes from the FASTA `GN=` field; `gg_accessions` is left as the converter wrote it instead of being overwritten from the API.
 - **Unused converter APIs** — `BaseConverter.write_ontology` and `write_score_ontology` (the orchestrators write `ontology.parquet`), `BaseWriter.overridden_id_count`, and the openms-consensus `consensus_psms_to_records` and `consensus_protein_groups_to_records`. Only tests called the two record functions, and the PSM one left out the converter's feature links, missed cleavages and peptide-level confidence; the tests now check the converter output. Four private copies of a file SHA-256 helper are merged into `qpx.core.files.sha256_file`.
+- **No-op `convert diann` and `convert maxquant` options** — `convert diann --protein-file`, `--partitions`, `--batch-size` and `--standardized-intensities`, and `convert maxquant --protein-file` and `--standardized-intensities`, were accepted and ignored. They are removed, so passing one is now a usage error; workflows that pass them must drop them before upgrading.
 
 ### Fixed
 

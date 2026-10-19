@@ -148,9 +148,9 @@ from qpx.cli.convert import convert_diann_cmd
 print(generate_example(convert_diann_cmd, "Convert a DIA-NN report with default settings:"))
 ```
 
-#### Advanced Example with Partitioning {#diann-example-partitioning}
+#### Advanced Example {#diann-example-advanced}
 
-Convert with file partitioning based on run_file_name:
+Convert with a q-value cutoff, mzML info and resource limits:
 
 ```bash
 qpxc convert diann \
@@ -159,7 +159,6 @@ qpxc convert diann \
     --mzml-info-folder tests/examples/diann/full/mzml \
     --sdrf-file tests/examples/diann/full/PXD036609.sdrf.tsv \
     --output-folder ./output \
-    --partitions run_file_name \
     --max-memory 8GB \
     --max-cpus 4 \
     --verbose

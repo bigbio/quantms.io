@@ -33,11 +33,9 @@ class MaxQuantConverter(BaseOrchestrator):
         sdrf_file=None,
         output_prefix=None,
         structures=None,
-        protein_file=None,
         batch_size=100_000,
         n_workers=None,
         spectral_data=False,
-        standardized_intensities=False,
         project_accession=None,
         fixed_mod_only: bool = False,
     ):
