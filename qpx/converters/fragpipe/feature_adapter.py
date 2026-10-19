@@ -254,126 +254,118 @@ class FragPipeFeatureAdapter(BaseConverter):
         """
         lookup: dict[tuple, dict] = {}
 
-        try:
-            self._conn.execute(
-                sql_build(
-                    """CREATE TEMPORARY TABLE _fp_psm_lookup AS
-                SELECT * FROM read_csv_auto('$path',
-                    delim='\t', header=true, auto_detect=true)""",
-                    path=escape_path(psm_path),
-                )
+        self._conn.execute(
+            sql_build(
+                """CREATE TEMPORARY TABLE _fp_psm_lookup AS
+            SELECT * FROM read_csv_auto('$path',
+                delim='\t', header=true, auto_detect=true)""",
+                path=escape_path(psm_path),
             )
-            count = self._conn.execute("SELECT COUNT(*) FROM _fp_psm_lookup").fetchone()[0]
-            self.logger.info(f"PSM lookup: loaded {count:,} PSM rows from {psm_path}")
+        )
+        count = self._conn.execute("SELECT COUNT(*) FROM _fp_psm_lookup").fetchone()[0]
+        self.logger.info(f"PSM lookup: loaded {count:,} PSM rows from {psm_path}")
 
-            # Detect columns
-            actual_cols = {
-                c[0]
-                for c in self._conn.execute(
-                    "SELECT column_name FROM information_schema.columns WHERE table_name='_fp_psm_lookup'"
-                ).fetchall()
-            }
+        # Detect columns
+        actual_cols = {
+            c[0]
+            for c in self._conn.execute(
+                "SELECT column_name FROM information_schema.columns WHERE table_name='_fp_psm_lookup'"
+            ).fetchall()
+        }
 
-            # Observed m/z: prefer calibrated
-            obs_col = "Calibrated Observed M/Z" if "Calibrated Observed M/Z" in actual_cols else "Observed M/Z"
-            calc_col = "Calculated M/Z"
-            has_obs = obs_col in actual_cols
-            has_calc = calc_col in actual_cols
+        # Observed m/z: prefer calibrated
+        obs_col = "Calibrated Observed M/Z" if "Calibrated Observed M/Z" in actual_cols else "Observed M/Z"
+        calc_col = "Calculated M/Z"
+        has_obs = obs_col in actual_cols
+        has_calc = calc_col in actual_cols
 
-            obs_expr = f'TRY_CAST("{obs_col}" AS DOUBLE)' if has_obs else "NULL"
-            calc_expr = f'TRY_CAST("{calc_col}" AS DOUBLE)' if has_calc else "NULL"
+        obs_expr = f'TRY_CAST("{obs_col}" AS DOUBLE)' if has_obs else "NULL"
+        calc_expr = f'TRY_CAST("{calc_col}" AS DOUBLE)' if has_calc else "NULL"
 
-            # PeptideProphet Probability → PEP = 1 - prob
-            has_pp = "PeptideProphet Probability" in actual_cols
-            pp_expr = 'TRY_CAST("PeptideProphet Probability" AS DOUBLE)' if has_pp else "NULL"
+        # PeptideProphet Probability → PEP = 1 - prob
+        has_pp = "PeptideProphet Probability" in actual_cols
+        pp_expr = 'TRY_CAST("PeptideProphet Probability" AS DOUBLE)' if has_pp else "NULL"
 
-            # Ion mobility
-            has_im = "Ion Mobility" in actual_cols
-            im_expr = 'TRY_CAST("Ion Mobility" AS DOUBLE)' if has_im else "NULL"
+        # Ion mobility
+        has_im = "Ion Mobility" in actual_cols
+        im_expr = 'TRY_CAST("Ion Mobility" AS DOUBLE)' if has_im else "NULL"
 
-            # Missed cleavages
-            has_mc = "Number of Missed Cleavages" in actual_cols
-            mc_expr = 'TRY_CAST("Number of Missed Cleavages" AS INTEGER)' if has_mc else "NULL"
+        # Missed cleavages
+        has_mc = "Number of Missed Cleavages" in actual_cols
+        mc_expr = 'TRY_CAST("Number of Missed Cleavages" AS INTEGER)' if has_mc else "NULL"
 
-            sql = sql_build(
-                """
-                SELECT
-                    CAST("Spectrum" AS VARCHAR) AS spectrum,
-                    CAST("Peptide" AS VARCHAR) AS sequence,
-                    COALESCE(CAST("Assigned Modifications" AS VARCHAR), '') AS assigned_mods,
-                    CAST("Charge" AS INTEGER) AS charge,
-                    $obs_expr AS obs_mz,
-                    $calc_expr AS calc_mz,
-                    $pp_expr AS pp_prob,
-                    CAST("Protein" AS VARCHAR) AS protein,
-                    $im_expr AS ion_mobility,
-                    $mc_expr AS missed_cleavages
-                FROM _fp_psm_lookup""",
-                obs_expr=obs_expr,
-                calc_expr=calc_expr,
-                pp_expr=pp_expr,
-                im_expr=im_expr,
-                mc_expr=mc_expr,
-            )
-            rows = self._conn.execute(sql).fetchall()
+        sql = sql_build(
+            """
+            SELECT
+                CAST("Spectrum" AS VARCHAR) AS spectrum,
+                CAST("Peptide" AS VARCHAR) AS sequence,
+                COALESCE(CAST("Assigned Modifications" AS VARCHAR), '') AS assigned_mods,
+                CAST("Charge" AS INTEGER) AS charge,
+                $obs_expr AS obs_mz,
+                $calc_expr AS calc_mz,
+                $pp_expr AS pp_prob,
+                CAST("Protein" AS VARCHAR) AS protein,
+                $im_expr AS ion_mobility,
+                $mc_expr AS missed_cleavages
+            FROM _fp_psm_lookup""",
+            obs_expr=obs_expr,
+            calc_expr=calc_expr,
+            pp_expr=pp_expr,
+            im_expr=im_expr,
+            mc_expr=mc_expr,
+        )
+        rows = self._conn.execute(sql).fetchall()
 
-            for (
-                spectrum,
-                sequence,
-                assigned_mods,
-                charge,
-                obs_mz,
-                calc_mz,
-                pp_prob,
-                protein,
-                ion_mobility,
-                missed_cleavages_val,
-            ) in rows:
-                # Parse source file and scan from Spectrum column
-                tokens = str(spectrum).split(".") if spectrum else []
-                source_file = normalize_run_name(tokens[0]) if tokens else ""
-                scan_number = 0
-                if len(tokens) >= 2:
-                    try:
-                        scan_number = int(tokens[1].lstrip("0") or "0")
-                    except ValueError:
-                        pass
+        for (
+            spectrum,
+            sequence,
+            assigned_mods,
+            charge,
+            obs_mz,
+            calc_mz,
+            pp_prob,
+            protein,
+            ion_mobility,
+            missed_cleavages_val,
+        ) in rows:
+            # Parse source file and scan from Spectrum column
+            tokens = str(spectrum).split(".") if spectrum else []
+            source_file = normalize_run_name(tokens[0]) if tokens else ""
+            scan_number = 0
+            if len(tokens) >= 2:
+                try:
+                    scan_number = int(tokens[1].lstrip("0") or "0")
+                except ValueError:
+                    pass
 
-                sequence = str(sequence) if sequence else ""
-                assigned_mods = str(assigned_mods) if assigned_mods else ""
-                peptidoform = to_proforma(assigned_mods, sequence)
-                charge_str = str(charge) if charge is not None else "0"
+            sequence = str(sequence) if sequence else ""
+            assigned_mods = str(assigned_mods) if assigned_mods else ""
+            peptidoform = to_proforma(assigned_mods, sequence)
+            charge_str = str(charge) if charge is not None else "0"
 
-                key = (source_file, peptidoform, charge_str)
-                if key not in lookup:
-                    # PEP = 1 - PeptideProphet Probability
-                    pep = None
-                    if pp_prob is not None:
-                        pep = 1.0 - pp_prob if pp_prob <= 1.0 else pp_prob
+            key = (source_file, peptidoform, charge_str)
+            if key not in lookup:
+                # PEP = 1 - PeptideProphet Probability
+                pep = None
+                if pp_prob is not None:
+                    pep = 1.0 - pp_prob if pp_prob <= 1.0 else pp_prob
 
-                    is_decoy = is_decoy_accession(protein)
+                is_decoy = is_decoy_accession(protein)
 
-                    info = {
-                        "observed_mz": float(obs_mz) if obs_mz is not None else None,
-                        "calculated_mz": (float(calc_mz) if calc_mz is not None else None),
-                        "pep": pep,
-                        "is_decoy": is_decoy,
-                        "scan": [scan_number] if scan_number > 0 else [],
-                        "ion_mobility": (float(ion_mobility) if ion_mobility is not None else None),
-                        "missed_cleavages": (int(missed_cleavages_val) if missed_cleavages_val is not None else None),
-                    }
-                    lookup[key] = info
+                info = {
+                    "observed_mz": float(obs_mz) if obs_mz is not None else None,
+                    "calculated_mz": (float(calc_mz) if calc_mz is not None else None),
+                    "pep": pep,
+                    "is_decoy": is_decoy,
+                    "scan": [scan_number] if scan_number > 0 else [],
+                    "ion_mobility": (float(ion_mobility) if ion_mobility is not None else None),
+                    "missed_cleavages": (int(missed_cleavages_val) if missed_cleavages_val is not None else None),
+                }
+                lookup[key] = info
 
-            # Clean up temporary table
-            self._conn.execute("DROP TABLE IF EXISTS _fp_psm_lookup")
-            self.logger.info(f"PSM lookup: {len(lookup):,} unique keys built")
-
-        except Exception as e:
-            self.logger.warning(f"Could not build PSM lookup from {psm_path}: {e}")
-            try:
-                self._conn.execute("DROP TABLE IF EXISTS _fp_psm_lookup")
-            except Exception:
-                self.logger.debug("Failed to drop _fp_psm_lookup table", exc_info=True)
+        # Clean up temporary table
+        self._conn.execute("DROP TABLE IF EXISTS _fp_psm_lookup")
+        self.logger.info(f"PSM lookup: {len(lookup):,} unique keys built")
 
         return lookup
 
@@ -398,7 +390,7 @@ class FragPipeFeatureAdapter(BaseConverter):
                 row = {col: vals[i] for col, vals in col_arrays.items()}
                 recs = self._transform_row(row, experiments, psm_lookup, experiment_psm_sources)
                 records.extend(recs)
-            except Exception as e:
+            except (ValueError, TypeError, KeyError, IndexError, ArithmeticError) as e:
                 skipped += 1
                 self.logger.debug(f"Skipping FragPipe feature row: {e}")
         if skipped:

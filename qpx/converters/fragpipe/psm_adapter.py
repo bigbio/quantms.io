@@ -132,7 +132,7 @@ class FragPipePsmAdapter(BaseConverter):
                 rec = self._transform_row(row)
                 if rec:
                     records.append(rec)
-            except Exception as e:
+            except (ValueError, TypeError, KeyError, IndexError, ArithmeticError) as e:
                 skipped += 1
                 self.logger.debug(f"Skipping FragPipe PSM row: {e}")
         if skipped:
