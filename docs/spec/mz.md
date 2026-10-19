@@ -29,7 +29,7 @@ See the full YAML schema in [`mz.yaml`](schemas/mz.yaml).
 |-------|-------------|------|----------|
 | `scan_start_time` | Start time of the scan in minutes | `float` | Yes |
 | `inverse_ion_mobility` | Inverse ion mobility, used for TIMS data (1/K0) | `float` | No |
-| `ion_injection_time` | Ion injection time in milliseconds | `float` | Yes |
+| `ion_injection_time` | Ion injection time in milliseconds; null when the source does not record it | `float` | No |
 | `total_ion_current` | Total ion current (TIC) for the scan | `float` | Yes |
 
 ### Precursors

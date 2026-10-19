@@ -203,7 +203,7 @@ class DiannMzAdapter:
             "centroid": True,
             "scan_start_time": (float(rt) / 60.0) if rt is not None else 0.0,
             "inverse_ion_mobility": None,
-            "ion_injection_time": 0.0,
+            "ion_injection_time": None,
             "total_ion_current": float(intensity.sum()) if len(intensity) else 0.0,
             "precursors": precursors or [],
             "mz": mz,

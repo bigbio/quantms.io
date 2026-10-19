@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`convert fragpipe` stops hiding failures** — when `psm.tsv` could not be loaded, the conversion logged a warning and wrote features without their PSM scan, PEP, m/z and decoy flag; it now fails. Rows of `psm.tsv`, `combined_ion.tsv` and `combined_protein.tsv` are still skipped for bad values, but only on value, type, key, index and arithmetic errors, as in `convert cdap`; any other error is raised.
 - **An unloadable PSI-MS ontology stops the conversion** — score and field ontology entries and SDRF run terms use the PSI-MS ontology shipped with qpx. A failure to load it was swallowed, so `ontology.parquet` silently lost its PSI-MS accessions and versions; it now raises.
 - **`convert diann` and `convert maxquant` SDRF step** — any error while writing `sample` and `run` from the SDRF was logged and the two views were dropped. As in `convert spectronaut`, only value, key, OS and type errors are now treated as an incomplete SDRF; other errors stop the conversion.
+- **`mz.ion_injection_time` is nullable** — `convert diann`, whose MS-info tables carry no injection time, and `qpxc convert mz` for scans without `MS:1000927` wrote 0. Both now write null, and the mz schema no longer requires a value.
 
 ### Removed
 
