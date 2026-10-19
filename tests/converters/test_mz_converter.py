@@ -143,7 +143,7 @@ def test_scan_keeps_native_id_components(tmp_path, native_id, expected):
 
 
 def test_ion_injection_time_comes_from_the_scan_acquisition(tmp_path):
-    """The mzML scan's ion injection time (MS:1000927) is kept instead of 0."""
+    """The mzML scan's ion injection time (MS:1000927) is kept; a scan without one is null."""
     from qpx.transforms.spectra_mapping import SpectraMappingTransform
 
     d = tmp_path / "mzml"
@@ -154,7 +154,7 @@ def test_ion_injection_time_comes_from_the_scan_acquisition(tmp_path):
     SpectraMappingTransform(mzml_directory=d).write_mz_parquet_from_dir(out)
 
     rows = pq.read_table(str(out), columns=["run_file_name", "ion_injection_time"]).to_pylist()
-    assert {row["run_file_name"]: row["ion_injection_time"] for row in rows} == {"run_d": 55.0, "run_e": 0.0}
+    assert {row["run_file_name"]: row["ion_injection_time"] for row in rows} == {"run_d": 55.0, "run_e": None}
 
 
 def test_inverse_ion_mobility_comes_from_the_selected_ion(tmp_path):

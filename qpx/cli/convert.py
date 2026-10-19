@@ -344,15 +344,6 @@ def convert():
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
 )
 @click.option(
-    "--protein-file",
-    help="Protein file for filtering",
-    type=click.Path(exists=True, dir_okay=False, path_type=Path),
-)
-@click.option(
-    "--partitions",
-    help="Field(s) for splitting output files (comma-separated)",
-)
-@click.option(
     "--max-memory",
     help="Maximum memory limit (e.g. '16GB')",
 )
@@ -360,18 +351,6 @@ def convert():
     "--max-cpus",
     help="Maximum number of threads",
     type=int,
-)
-@click.option(
-    "--batch-size",
-    help="Number of files to process simultaneously",
-    default=100,
-    type=int,
-)
-@click.option(
-    "--standardized-intensities",
-    help="Calculate standardized intensity metrics for PG output",
-    is_flag=True,
-    default=False,
 )
 @click.option(
     "--project-accession",
@@ -419,12 +398,8 @@ def convert_diann_cmd(
     output_folder: Path,
     output_prefix: Optional[str],
     pg_matrix_path: Optional[Path],
-    protein_file: Optional[Path],
-    partitions: Optional[str],
     max_memory: Optional[str],
     max_cpus: Optional[int],
-    batch_size: int,
-    standardized_intensities: bool,
     project_accession: Optional[str],
     compression: str,
     diann_log: Optional[Path],
@@ -454,8 +429,7 @@ def convert_diann_cmd(
             --sdrf-file data.sdrf.tsv \\
             --mzml-info-folder ./mzml_info \\
             --pg-matrix-path report.pg_matrix.tsv \\
-            --output-folder ./qpx_output \\
-            --standardized-intensities
+            --output-folder ./qpx_output
     """
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
@@ -478,17 +452,12 @@ def convert_diann_cmd(
         qvalue_threshold=qvalue_threshold,
         output_folder=output_folder,
         output_prefix=output_prefix,
-        protein_file=protein_file,
-        partitions=partitions,
-        batch_size=batch_size,
     )
     if pg_matrix_path:
         converter.convert_pg(
             pg_matrix_path=pg_matrix_path,
             output_folder=output_folder,
             output_prefix=output_prefix,
-            batch_size=batch_size,
-            standardized_intensities=standardized_intensities,
             qvalue_threshold=qvalue_threshold,
         )
 
@@ -550,11 +519,6 @@ def convert_diann_cmd(
     default=None,
 )
 @click.option(
-    "--protein-file",
-    help="Protein list file for filtering feature output",
-    type=click.Path(exists=True, dir_okay=False, path_type=Path),
-)
-@click.option(
     "--batch-size",
     help="Processing batch size",
     default=100_000,
@@ -573,12 +537,6 @@ def convert_diann_cmd(
     "--spectral-data",
     help="Include spectral data fields in PSM output",
     is_flag=True,
-)
-@click.option(
-    "--standardized-intensities",
-    help="Calculate standardized intensity metrics for PG output",
-    is_flag=True,
-    default=False,
 )
 @click.option(
     "--project-accession",
@@ -607,12 +565,10 @@ def convert_maxquant_cmd(
     output_folder: Path,
     output_prefix: Optional[str],
     structures: Optional[str],
-    protein_file: Optional[Path],
     batch_size: int,
     max_cpus: Optional[int],
     max_memory: Optional[str],
     spectral_data: bool,
-    standardized_intensities: bool,
     project_accession: Optional[str],
     compression: str,
     verbose: bool,
@@ -673,11 +629,9 @@ def convert_maxquant_cmd(
         output_folder=output_folder,
         output_prefix=output_prefix,
         structures=list(requested),
-        protein_file=protein_file,
         batch_size=batch_size,
         n_workers=max_cpus,
         spectral_data=spectral_data,
-        standardized_intensities=standardized_intensities,
         project_accession=project_accession,
         fixed_mod_only=fixed_mod_only,
     )

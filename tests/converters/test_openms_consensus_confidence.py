@@ -18,9 +18,9 @@ from qpx.converters.openms_consensus.feature_adapter import (
     qvalue_of,
 )
 from qpx.converters.openms_consensus.protein_groups import ProteinGroupIndex
-from qpx.converters.openms_consensus.psm_adapter import consensus_psms_to_records
 from tests.converters.test_openms_consensus import (
     _TMT_CONSENSUSXML,
+    _psm_rows,
     _write_multirun_confidence_consensusxml,
 )
 
@@ -156,7 +156,7 @@ def test_zero_charge_psm_has_no_mass_error(tmp_path):
     path = tmp_path / "zero-charge.consensusXML"
     path.write_text(_TMT_CONSENSUSXML.replace('charge="2"', 'charge="0"'))
 
-    records = consensus_psms_to_records(str(path))
+    records = _psm_rows(tmp_path, path)
 
     assert records
     assert all(record["charge"] == 0 for record in records)

@@ -57,6 +57,15 @@ def _parse_duckdb_size(value: str) -> int | None:
     return int(float(match.group(1)) * _SIZE_UNITS.get((match.group(2) or "B").upper(), 1))
 
 
+# Raw-file extensions stripped from a report ``Run`` to give ``run_file_name``.
+RUN_EXTENSIONS = "mzML|raw|d|wiff|htrms"
+
+
+def run_name_sql(run_expr: str) -> str:
+    """SQL for a report ``Run`` value without its raw-file extension."""
+    return f"regexp_replace(CAST({run_expr} AS VARCHAR), '(?i)\\.({RUN_EXTENSIONS})$', '')"
+
+
 def decoy_protein_group_sql(pg_expr: str, decoy_expr: str) -> str:
     """SQL for a report row's ``;``-separated protein group, ``DECOY_``-prefixed on decoy rows.
 

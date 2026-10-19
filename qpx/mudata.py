@@ -304,39 +304,11 @@ def _detect_intensity_label(engine: DuckDBEngine, table: str = "feature") -> str
     return row[0]
 
 
-def _prepare_observations(
-    df: pd.DataFrame,
-    intensity_label: str | None,
-) -> tuple[pd.DataFrame, str, pd.Index, pd.DataFrame]:
-    """Create matrix row IDs and their run/label lookup keys."""
-    if intensity_label is None:
-        df = df.copy()
-        df["observation_id"] = df["run_file_name"].astype(str) + "|" + df["intensity_label"].astype(str)
-        obs_index = pd.Index(sorted(df["observation_id"].unique()), name="observation_id")
-        keys = (
-            df[["observation_id", "run_file_name", "intensity_label"]]
-            .drop_duplicates(subset="observation_id", keep="first")
-            .set_index("observation_id")
-            .reindex(obs_index)
-        )
-        return df, "observation_id", obs_index, keys
-
-    obs_index = pd.Index(sorted(df["run_file_name"].unique()), name="run_file_name")
-    keys = pd.DataFrame(
-        {
-            "run_file_name": obs_index,
-            "intensity_label": str(intensity_label),
-        },
-        index=obs_index,
-    )
-    return df, "run_file_name", obs_index, keys
-
-
 def _prepare_observations_arrow(
     table,
     intensity_label: str | None,
 ):
-    """Arrow-native :func:`_prepare_observations`.
+    """Create matrix row IDs and their run/label lookup keys.
 
     Returns ``(table, row_col, obs_index, observation_keys)``. When every label is
     requested the ``observation_id`` column is appended to the Arrow table rather

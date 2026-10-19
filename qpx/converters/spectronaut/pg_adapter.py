@@ -150,7 +150,7 @@ class SpectronautPgAdapter(SpectronautBaseAdapter):
             return []
 
         records: list[dict] = []
-        for _, row in report_df.iterrows():
+        for row in report_df.to_dict("records"):
             rec = self._build_pg_record(row)
             if rec:
                 records.append(rec)
@@ -159,27 +159,27 @@ class SpectronautPgAdapter(SpectronautBaseAdapter):
 
     @staticmethod
     def _extract_pg_names_genes(
-        row: pd.Series,
+        row: dict,
     ) -> tuple[list[str] | None, list[str] | None]:
         """Extract protein names and gene accessions from a PG row."""
         pg_names = None
-        if "pg_names" in row.index and pd.notna(row["pg_names"]):
+        if "pg_names" in row and pd.notna(row["pg_names"]):
             pg_names = str(row["pg_names"]).split(";")
         gg_accessions = None
-        if "gg_accessions" in row.index and pd.notna(row["gg_accessions"]):
+        if "gg_accessions" in row and pd.notna(row["gg_accessions"]):
             gg_accessions = str(row["gg_accessions"]).split(";")
         return pg_names, gg_accessions
 
     def _build_pg_scores(
         self,
-        row: pd.Series,
+        row: dict,
     ) -> tuple[float | None, float | None, list[dict] | None]:
         """Build additional_scores and extract q-values from a PG row."""
         global_qvalue = None
-        if "qvalue" in row.index:
+        if "qvalue" in row:
             global_qvalue = safe_float(row["qvalue"])
         pg_qvalue = None
-        if "qvalue_runwise" in row.index:
+        if "qvalue_runwise" in row:
             pg_qvalue = safe_float(row["qvalue_runwise"])
 
         additional_scores: list[dict] = []
@@ -194,7 +194,7 @@ class SpectronautPgAdapter(SpectronautBaseAdapter):
 
     def _build_pg_record(
         self,
-        row: pd.Series,
+        row: dict,
     ) -> Optional[dict]:
         """Build a single PG record from an aggregated row."""
         pg_acc_str = str(row["pg_accessions"])
@@ -212,8 +212,8 @@ class SpectronautPgAdapter(SpectronautBaseAdapter):
         global_qvalue, pg_qvalue, additional_scores = self._build_pg_scores(row)
 
         # Peptide counts
-        total_sequences = int(row["total_sequences"]) if "total_sequences" in row.index else 0
-        unique_sequences = int(row["unique_sequences"]) if "unique_sequences" in row.index else 0
+        total_sequences = int(row["total_sequences"]) if "total_sequences" in row else 0
+        unique_sequences = int(row["unique_sequences"]) if "unique_sequences" in row else 0
         peptide_count = max(total_sequences, 1)
         peptides = [{"protein_name": acc, "peptide_count": peptide_count} for acc in pg_accessions]
 

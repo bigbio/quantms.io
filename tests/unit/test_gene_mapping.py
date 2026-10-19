@@ -14,7 +14,7 @@ from qpx.writers.feature import FeatureWriter
 from tests.conftest import make_feature_record
 
 
-def test_write_annotated_features_preserves_source_identity(tmp_path, monkeypatch):
+def test_write_annotated_features_preserves_source_identity(tmp_path):
     """Annotation must not replace a producer-specific Feature identity recipe."""
     source_dir = tmp_path / "source"
     source_dir.mkdir()
@@ -39,8 +39,6 @@ def test_write_annotated_features_preserves_source_identity(tmp_path, monkeypatc
     fasta = tmp_path / "empty.fasta"
     fasta.touch()
     transform = GeneMappingTransform(fasta)
-    source_frame = dataset.feature.to_df()
-    monkeypatch.setattr(transform, "annotate_dataset_features", lambda *_args, **_kwargs: source_frame)
 
     output_path = tmp_path / "annotated.feature.parquet"
     transform.write_annotated_features(dataset, output_path)

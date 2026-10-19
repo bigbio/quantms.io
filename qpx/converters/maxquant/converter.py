@@ -33,11 +33,9 @@ class MaxQuantConverter(BaseOrchestrator):
         sdrf_file=None,
         output_prefix=None,
         structures=None,
-        protein_file=None,
         batch_size=100_000,
         n_workers=None,
         spectral_data=False,
-        standardized_intensities=False,
         project_accession=None,
         fixed_mod_only: bool = False,
     ):
@@ -69,7 +67,7 @@ class MaxQuantConverter(BaseOrchestrator):
                     )
                     ontology_entries.extend(sdrf_conv.run_ontology_entries())
                 logger.info("SDRF conversion complete")
-            except Exception as exc:
+            except (ValueError, KeyError, OSError, TypeError) as exc:
                 logger.warning("SDRF conversion skipped (incomplete SDRF?): %s", exc)
                 # Clean up any corrupt partial files left by the failed write
                 for suffix in (".sample.parquet", ".run.parquet"):

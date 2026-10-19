@@ -21,7 +21,6 @@ silently partial.
 from __future__ import annotations
 
 import gzip
-import hashlib
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -30,6 +29,7 @@ from pathlib import Path
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from qpx.core.files import sha256_file
 from qpx.core.protein_sequence import (
     average_molecular_weight_kda,
     peptide_occurrences,
@@ -433,20 +433,12 @@ def _fill_feature_table(table: pa.Table, fasta: FastaSequences, report: ProteinP
     return table.set_column(index, table.schema.field(index), pa.array(positions, type=table.schema.field(index).type))
 
 
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with open(path, "rb") as handle:
-        for chunk in iter(lambda: handle.read(1 << 20), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
 def _provenance_step(report: ProteinPropertiesReport, fasta_path: Path, views: list[str], step_order: int) -> dict:
     from qpx._version import __version__
 
     parameters = {
         "fasta": fasta_path.name,
-        "fasta_sha256": _sha256(fasta_path),
+        "fasta_sha256": sha256_file(fasta_path),
         "fill_policy": "null values on target rows only; producer values are never overwritten",
         "pg_sequence_coverage_filled": report.pg_coverage_filled,
         "pg_molecular_weight_filled": report.pg_molecular_weight_filled,

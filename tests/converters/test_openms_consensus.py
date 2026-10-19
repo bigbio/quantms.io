@@ -83,6 +83,25 @@ def _write_tmt_consensusxml(path):
     path.write_text(_TMT_CONSENSUSXML)
 
 
+def _psm_rows(tmp_path, path, name="psm"):
+    """Convert ``path`` to the psm view and return its rows."""
+    import pyarrow.parquet as pq
+
+    written = OpenMSConsensusConverter().convert(str(path), str(tmp_path / name), structures=("psm",))
+    return pq.read_table(written["psm"]).to_pylist()
+
+
+def _accumulated_protein_maps(cm):
+    """Fold ``cm`` into fresh pg accession maps, as the converter does."""
+    from qpx.converters.openms_consensus.feature_adapter import feature_map_info
+    from qpx.converters.openms_consensus.pg_adapter import _ProteinMaps, accumulate_consensus_map
+    from qpx.converters.openms_consensus.psm_adapter import _run_resolver
+
+    protein_maps = _ProteinMaps()
+    accumulate_consensus_map(cm, feature_map_info(cm), _run_resolver(cm), protein_maps)
+    return protein_maps
+
+
 def _invoke_consensus_convert(tmp_path, folder, *extra, prefix="t"):
     """Run ``convert openms-consensus`` on the TMT fixture and return the CliRunner result without asserting."""
     from click.testing import CliRunner
@@ -153,6 +172,7 @@ def test_converter_writes_only_requested_sdrf_structure(tmp_path):
 
 def test_pg_peptide_counts_are_per_protein(monkeypatch):
     from qpx.converters.openms_consensus import pg_adapter
+    from qpx.converters.openms_consensus.feature_adapter import feature_map_info
 
     class Header:
         filename = "run_01.mzML"
@@ -174,15 +194,14 @@ def test_pg_peptide_counts_are_per_protein(monkeypatch):
     protein_maps.acc_to_feat.update({"P1": {("PEPA", 2), ("PEPB", 2)}, "P2": {("PEPB", 2)}})
     protein_maps.pep_to_accs.update({"PEPA": {"P1"}, "PEPB": {"P1", "P2"}})
     protein_maps.feat_to_accs.update({("PEPA", 2): {"P1"}, ("PEPB", 2): {"P1", "P2"}})
-    monkeypatch.setattr(pg_adapter, "_protein_maps", lambda _cm: protein_maps)
     monkeypatch.setattr(
         pg_adapter,
         "_merge_protein_ids",
         lambda _cm: ({}, {}, {}, [["P1", "P2"]]),
     )
-    monkeypatch.setattr(pg_adapter, "_peptide_intensities", lambda _cm, _map_info: {})
 
-    records = pg_adapter.consensus_protein_groups_to_records(cm=ConsensusMap())
+    cm = ConsensusMap()
+    records = pg_adapter.build_pg_records(cm, feature_map_info(cm), protein_maps, {}, None, 0)
 
     assert records[0]["peptide_counts"]["unique_sequences"] == 2
     assert records[0]["peptides"] == [
@@ -195,9 +214,10 @@ def test_pg_uses_id_merge_index_after_unmapped_map_index():
     """An unassigned PID with an unmapped map_index resolves its run via
     id_merge_index -> the i-th merged MS run (spectra_data order), not the
     map-column dict."""
-    from qpx.converters.openms_consensus.pg_adapter import _protein_maps
 
     class Header:
+        label = ""
+
         def __init__(self, filename):
             self.filename = filename
 
@@ -263,7 +283,7 @@ def test_pg_uses_id_merge_index_after_unmapped_map_index():
         def getHits():
             return [Hit()]
 
-    protein_maps = _protein_maps(ConsensusMap())
+    protein_maps = _accumulated_protein_maps(ConsensusMap())
     assert protein_maps.acc_to_pep == {"P1": {"PEPTIDE"}}
     assert protein_maps.acc_to_runs == {"P1": {"run_02"}}
     assert protein_maps.acc_to_feat == {"P1": {("PEPTIDE", 2)}}
@@ -271,8 +291,6 @@ def test_pg_uses_id_merge_index_after_unmapped_map_index():
 
 def test_consensus_psms_use_parent_feature_run_context(tmp_path):
     """Assigned PSMs inherit the run represented by their parent feature."""
-    from qpx.converters.openms_consensus.psm_adapter import consensus_psms_to_records
-
     consensusxml = _TMT_CONSENSUSXML.replace(
         '<map id="0" name="run_01.mzML"',
         '<map id="0" name="run_A.mzML"',
@@ -290,7 +308,7 @@ def test_consensus_psms_use_parent_feature_run_context(tmp_path):
     path = tmp_path / "multi_run.consensusXML"
     path.write_text(consensusxml)
 
-    records = consensus_psms_to_records(str(path))
+    records = _psm_rows(tmp_path, path)
 
     assert len(records) == 1
     assert records[0]["run_file_name"] == "run_B"
@@ -355,12 +373,10 @@ def test_unassigned_isobaric_psm_run_from_id_merge_index(tmp_path):
     """An unassigned PSM in a merged multi-run isobaric consensusXML is attributed
     to the run its id_merge_index selects (the SECOND run), not the first map's
     run — the regression for issue #243."""
-    from qpx.converters.openms_consensus.psm_adapter import consensus_psms_to_records
-
     path = tmp_path / "two_plex.consensusXML"
     path.write_text(_TWO_PLEX_ISOBARIC_CONSENSUSXML)
 
-    records = consensus_psms_to_records(str(path))
+    records = _psm_rows(tmp_path, path)
 
     unassigned = [r for r in records if r["peptidoform"] == "ELVISLIVEK"]
     assert len(unassigned) == 1
@@ -373,12 +389,11 @@ def test_unassigned_isobaric_pg_run_from_id_merge_index(tmp_path):
     """The corrected run flows into the pg adapter's acc_to_runs for an unassigned
     PID (via accumulate_unassigned_maps)."""
     from qpx.converters.openms_consensus.feature_adapter import load_consensus_map
-    from qpx.converters.openms_consensus.pg_adapter import _protein_maps
 
     path = tmp_path / "two_plex_pg.consensusXML"
     path.write_text(_TWO_PLEX_ISOBARIC_CONSENSUSXML)
 
-    m = _protein_maps(load_consensus_map(str(path)))
+    m = _accumulated_protein_maps(load_consensus_map(str(path)))
     # ELVISLIVEK (unassigned, id_merge_index=1) contributes plexB, not plexA.
     assert "plexB" in m.acc_to_runs["P12345"]
     assert "plexA" in m.acc_to_runs["P12345"]  # from the assigned PEPTIDEK feature
@@ -413,8 +428,6 @@ def test_unassigned_isobaric_run_streaming_matches_pyopenms(tmp_path):
 def test_consensus_psm_multihit_keeps_lowest_pep_and_merges_scores(tmp_path):
     """A PID with two hits colliding on the identity key resolves to one PSM: the
     lowest-PEP hit is kept and the other (engine's) search score is preserved."""
-    from qpx.converters.openms_consensus.psm_adapter import consensus_psms_to_records
-
     # First hit: score 1.5, PEP 5.0e-02. Second hit (inserted): score 2.7, PEP
     # 1.0e-03 -> the second must win (lower PEP) even though it is not first.
     xml = _TMT_CONSENSUSXML.replace('score="0" sequence="PEPTIDEK"', 'score="1.5" sequence="PEPTIDEK"')
@@ -437,7 +450,7 @@ def test_consensus_psm_multihit_keeps_lowest_pep_and_merges_scores(tmp_path):
     path = tmp_path / "multihit.consensusXML"
     path.write_text(xml)
 
-    records = consensus_psms_to_records(str(path))
+    records = _psm_rows(tmp_path, path)
 
     assert len(records) == 1  # collapsed to a single PSM, not two
     rec = records[0]
@@ -451,8 +464,6 @@ def test_consensus_psm_multihit_keeps_lowest_pep_and_merges_scores(tmp_path):
 
 def test_consensus_psm_distinct_peptidoforms_both_emitted(tmp_path):
     """Two *different* peptidoforms in one PID are distinct PSMs and both survive."""
-    from qpx.converters.openms_consensus.psm_adapter import consensus_psms_to_records
-
     second_hit = (
         '        <PeptideHit score="0" sequence="PEPTIDER" charge="2" protein_refs="PH_0">\n'
         '          <UserParam type="string" name="target_decoy" value="target"/>\n'
@@ -466,15 +477,13 @@ def test_consensus_psm_distinct_peptidoforms_both_emitted(tmp_path):
     path = tmp_path / "twopep.consensusXML"
     path.write_text(xml)
 
-    records = consensus_psms_to_records(str(path))
+    records = _psm_rows(tmp_path, path)
 
     assert {r["peptidoform"] for r in records} == {"PEPTIDEK", "PEPTIDER"}
 
 
 def test_consensus_psm_sciex_nativeid_not_dropped(tmp_path):
     """A Sciex WIFF nativeID retains all four components, including repeats."""
-    from qpx.converters.openms_consensus.psm_adapter import consensus_psms_to_records
-
     xml = _TMT_CONSENSUSXML.replace(
         'spectrum_reference="controllerType=0 controllerNumber=1 scan=42"',
         'spectrum_reference="sample=1 period=1 cycle=123 experiment=2"',
@@ -482,7 +491,7 @@ def test_consensus_psm_sciex_nativeid_not_dropped(tmp_path):
     path = tmp_path / "sciex.consensusXML"
     path.write_text(xml)
 
-    records = consensus_psms_to_records(str(path))
+    records = _psm_rows(tmp_path, path)
 
     assert len(records) == 1  # not silently dropped
     assert list(records[0]["scan"]) == [1, 1, 123, 2]
@@ -491,8 +500,6 @@ def test_consensus_psm_sciex_nativeid_not_dropped(tmp_path):
 def test_consensus_psm_unknown_nativeid_uses_surrogate_scan(tmp_path):
     """A nativeID with no recognizable ordinal falls back to a deterministic
     int32 surrogate rather than being dropped."""
-    from qpx.converters.openms_consensus.psm_adapter import consensus_psms_to_records
-
     xml = _TMT_CONSENSUSXML.replace(
         'spectrum_reference="controllerType=0 controllerNumber=1 scan=42"',
         'spectrum_reference="uuid=opaque-spectrum-reference"',
@@ -500,8 +507,8 @@ def test_consensus_psm_unknown_nativeid_uses_surrogate_scan(tmp_path):
     path = tmp_path / "exotic.consensusXML"
     path.write_text(xml)
 
-    records = consensus_psms_to_records(str(path))
-    repeated = consensus_psms_to_records(str(path))
+    records = _psm_rows(tmp_path, path)
+    repeated = _psm_rows(tmp_path, path, name="repeated")
 
     assert len(records) == 1  # not dropped
     scan = list(records[0]["scan"])

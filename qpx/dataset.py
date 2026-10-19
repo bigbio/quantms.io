@@ -25,6 +25,7 @@ from qpx.core.data import (
 )
 from qpx.core.data.schema import ValidationIssue, ValidationResult
 from qpx.core.engine import DuckDBEngine
+from qpx.core.files import sha256_file
 from qpx.core.sql import escape_path, sql_build, validate_table
 from qpx.version import (
     QPX_SPEC_VERSION,
@@ -60,7 +61,7 @@ def _verify_one_file(
             # reporting it by name beats a bare checksum mismatch.
             errors.append(f"Size mismatch: {name} ({actual_size} != {expected_size})")
 
-    if _sha256_file(fpath) != expected_sha:
+    if sha256_file(fpath) != expected_sha:
         errors.append(f"Checksum mismatch: {name}")
 
     if expected_rows is None:
@@ -108,22 +109,6 @@ def _row_count(path: Path) -> int | None:
     except Exception as exc:  # noqa: BLE001 - verification must not raise on a bad file
         _log.debug("Could not read a row count for %s: %s", path, exc)
         return None
-
-
-def _sha256_file(path: Path) -> str:
-    """SHA-256 of a file, read in chunks.
-
-    Never ``read_bytes()`` here: these are Parquet views, and a feature table
-    routinely runs to gigabytes (PXD017199's is 1.66 GB, and a large DIA report
-    is far bigger). Slurping one to hash it allocates the whole file.
-    """
-    import hashlib
-
-    sha = hashlib.sha256()
-    with open(path, "rb") as fh:
-        for chunk in iter(lambda: fh.read(65536), b""):
-            sha.update(chunk)
-    return sha.hexdigest()
 
 
 def _skipped_check_reason(exc: duckdb.Error) -> str:
@@ -752,7 +737,8 @@ class Dataset:
         level : str
             "protein" (uses pg + run) or "peptide" (uses feature + run).
         value_col : str
-            Which intensity column to pivot (default: "intensity").
+            Intensity column to pivot. Only ``"intensity"`` (the primary
+            quantity) is supported; any other value raises ``ValueError``.
         fillna : float | None
             Value to fill missing cells. Use *None* to keep NaN.
             Ignored when *output_path* is set.
@@ -768,6 +754,8 @@ class Dataset:
         """
         import pandas as pd
 
+        if value_col != "intensity":
+            raise ValueError(f"value_col must be 'intensity', got {value_col!r}")
         sql = self._abundance_sql(level)
 
         if output_path is not None:
@@ -1207,7 +1195,7 @@ class Dataset:
         for f in sorted(path.rglob("*.parquet")):
             name = f.relative_to(path).as_posix()
             sizes[name] = f.stat().st_size
-            checksums[name] = _sha256_file(f)
+            checksums[name] = sha256_file(f)
             try:
                 row_counts[name] = pq.read_metadata(f).num_rows
             # pylint: disable-next=broad-exception-caught
@@ -1222,7 +1210,7 @@ class Dataset:
         for f in sorted(path.rglob("*.h5ad")):
             name = f.relative_to(path).as_posix()
             sizes[name] = f.stat().st_size
-            checksums[name] = _sha256_file(f)
+            checksums[name] = sha256_file(f)
             try:
                 import anndata
 

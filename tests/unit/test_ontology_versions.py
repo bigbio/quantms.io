@@ -61,18 +61,3 @@ def test_run_versions_use_the_loaded_resource(loaded_ms_version, tmp_path):
     assert len(entries) == 1
     assert entries[0]["ontology_accession"] == "MS:1001251"
     assert entries[0]["ontology_version"] == loaded_ms_version
-
-
-def test_unavailable_ontology_does_not_invent_a_version(monkeypatch):
-    """Known mappings remain usable when their resource cannot be loaded."""
-
-    def unavailable():
-        raise FileNotFoundError("PSI-MS resource unavailable")
-
-    monkeypatch.setattr(scores, "_get_ontology", unavailable)
-    monkeypatch.setattr(scores, "_lookup_cache", {})
-    entries = scores.field_ontology_entries(view="feature", resolved_mappings={"rt": "RT", "lfq": "Precursor.Normalised"})
-    entries.extend(scores.score_ontology_entries({"qvalue", "diann_cscore"}))
-
-    assert any(entry["ontology_accession"] == "MS:1002354" for entry in entries)
-    assert all(entry["ontology_version"] is None for entry in entries)

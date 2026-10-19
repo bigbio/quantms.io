@@ -49,9 +49,6 @@ class DiaNNConverter(BaseOrchestrator):
         qvalue_threshold=None,
         output_folder=".",
         output_prefix=None,
-        protein_file=None,
-        partitions=None,
-        batch_size=100,
     ):
         output_folder = Path(output_folder)
         prefix = output_prefix or "diann"
@@ -78,8 +75,6 @@ class DiaNNConverter(BaseOrchestrator):
         pg_matrix_path,
         output_folder=".",
         output_prefix=None,
-        batch_size=100,
-        standardized_intensities=False,
         qvalue_threshold=None,
     ):
         output_folder = Path(output_folder)
@@ -153,6 +148,7 @@ class DiaNNConverter(BaseOrchestrator):
         feature-to-MS2-scan link. Returns ``None`` if the columns are absent.
         """
         import pyarrow as pa
+        import pyarrow.compute as pc
         import pyarrow.parquet as pq
 
         try:
@@ -160,11 +156,19 @@ class DiaNNConverter(BaseOrchestrator):
         except (FileNotFoundError, KeyError, pa.ArrowInvalid, pa.ArrowIOError):
             logger.warning("could not read run_file_name/scan from %s; skipping m/z view", feature_parquet)
             return None
-        matched = set()
-        for run, scans in zip(table.column("run_file_name").to_pylist(), table.column("scan").to_pylist()):
-            for s in scans or ():
-                if s is not None:
-                    matched.add((str(run), int(s)))
+        scans = table.column("scan")
+        pairs = (
+            pa.table(
+                {
+                    "run": table.column("run_file_name").take(pc.call_function("list_parent_indices", [scans])),
+                    "scan": pc.call_function("list_flatten", [scans]),
+                }
+            )
+            .filter(pc.field("scan").is_valid())
+            .group_by(["run", "scan"])
+            .aggregate([])
+        )
+        matched = set(zip(pairs.column("run").to_pylist(), pairs.column("scan").to_pylist()))
         logger.info("matched %s (run_file_name, scan) from feature view", len(matched))
         return matched
 
@@ -190,7 +194,7 @@ class DiaNNConverter(BaseOrchestrator):
                 self._ontology_entries.extend(sdrf_conv.run_ontology_entries())
             self._written_views.extend([SAMPLE, RUN])
             logger.info("SDRF conversion complete (sample + run)")
-        except Exception as exc:
+        except (ValueError, KeyError, OSError, TypeError) as exc:
             logger.warning("SDRF conversion skipped (incomplete SDRF?): %s", exc)
             for suffix in (".sample.parquet", ".run.parquet"):
                 corrupt = output_folder / f"{prefix}{suffix}"

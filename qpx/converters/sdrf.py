@@ -430,13 +430,9 @@ class SdrfConverter(BaseConverter):
         PSI-MS CV accessions using ``PublicOntology``. The SDRF ``AC=``
         accession takes precedence over the ``NT=`` name.
         """
-        try:
-            from qpx.core.ontology import PublicOntology
+        from qpx.core.ontology import PublicOntology
 
-            ms = PublicOntology("psi_ms", auto_update=False)
-        except Exception:
-            logger.debug("Could not load PSI-MS ontology for run enrichment")
-            return []
+        ms = PublicOntology("psi_ms", auto_update=False)
 
         entries: list[dict] = []
         seen: set[str] = set()

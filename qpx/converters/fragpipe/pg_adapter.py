@@ -278,7 +278,7 @@ class FragPipePgAdapter(BaseConverter):
             try:
                 recs = self._transform_row(row, experiments)
                 records.extend(recs)
-            except Exception as e:
+            except (ValueError, TypeError, KeyError, IndexError, ArithmeticError) as e:
                 skipped += 1
                 self.logger.debug(f"Skipping FragPipe PG row: {e}")
         if skipped:

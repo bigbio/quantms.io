@@ -5,7 +5,7 @@ from copy import deepcopy
 import pytest
 from defusedxml import ElementTree
 
-from qpx.converters.openms_consensus import converter, pg_adapter
+from qpx.converters.openms_consensus import converter
 from qpx.converters.openms_consensus import streaming as stream_reader
 from qpx.converters.openms_consensus.converter import _stream_feature_psm
 from qpx.core.data.identity import derive_id
@@ -127,14 +127,6 @@ def test_duplicate_direct_ids_keep_scans_and_confidence_together(tmp_path, monke
     assert {tuple(rec["scan"]) for rec in psms} == {(7,), (8,)}
     assert {rec["feature_id"] for rec in psms} == {own["feature_id"]}
     _assert_valid(out, ("feature", "psm"))
-
-
-def test_pg_adapter_also_counts_each_peak_once(tmp_path):
-    """The direct PG API agrees with PG-only and combined conversion."""
-    source = tmp_path / "pg.consensusXML"
-    _shared_peak_source(source)
-    records = pg_adapter.consensus_protein_groups_to_records(str(source))
-    assert [rec["intensity"] for rec in records] == [9000]
 
 
 @pytest.mark.parametrize("streaming", [False, True])

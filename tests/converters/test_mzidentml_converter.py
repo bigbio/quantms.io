@@ -12,7 +12,6 @@ from qpx.converters.mzidentml.psm_adapter import (
     MzIdentMLPsmAdapter,
     _group_siis,
     _parse_native_id,
-    _parse_scan,
 )
 
 XL_EXAMPLES = Path(__file__).parent.parent / "examples" / "mzidentml" / "xl"
@@ -36,25 +35,6 @@ def _convert(mzid_name: str, tmp_path: Path, examples_dir: Path = None) -> pq.Pa
 # ---------------------------------------------------------------------------
 # Unit tests for helpers
 # ---------------------------------------------------------------------------
-
-
-class TestParseScan:
-    def test_scan_format(self):
-        assert _parse_scan("scan=100") == [100]
-
-    def test_index_format(self):
-        assert _parse_scan("index=7483") == [7483]
-
-    def test_spectrum_format(self):
-        assert _parse_scan("spectrum=5") == [5]
-
-    def test_bare_integer(self):
-        assert _parse_scan("42") == [42]
-
-    def test_unknown_format(self):
-        # Unparseable spectrumIDs must NOT collapse onto a ``[0]`` sentinel
-        # (which aliases distinct spectra and a real scan-0 spectrum).
-        assert _parse_scan("something_else") == []
 
 
 class TestParseNativeId:

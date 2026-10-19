@@ -34,8 +34,7 @@ fields:
     doc: "Inverse ion mobility (TIMS)"
   ion_injection_time:
     type: float32
-    required: true
-    doc: "Ion injection time (ms)"
+    doc: "Ion injection time (ms); null when the source does not record it"
   total_ion_current:
     type: float32
     required: true
