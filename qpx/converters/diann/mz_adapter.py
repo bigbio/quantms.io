@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import logging
+from collections import defaultdict
 from pathlib import Path
 
 import duckdb
 import numpy as np
 import pandas as pd
+import pyarrow as pa
+import pyarrow.compute as pc
 
 from qpx.converters.diann.feature_adapter import _ms_info_scans
 from qpx.core.sql import escape_path, sql_build
@@ -15,7 +18,7 @@ from qpx.writers.mz import MzWriter
 
 logger = logging.getLogger(__name__)
 
-# Rows fetched from DuckDB at a time, so only a bounded slice of peak arrays is in Python.
+# Rows per Arrow batch fetched from DuckDB, so only a bounded slice of peak arrays is in memory.
 _FETCH_ROWS = 500
 
 
@@ -73,30 +76,46 @@ def _precursors(precursor_mz: float | None, charge: int | None) -> list[dict]:
     ]
 
 
-def _matched_spectra(con: duckdb.DuckDBPyConnection, ms2_file: Path, run_name: str, matched_scans):
+def _float32_peaks(column) -> tuple[np.ndarray, np.ndarray]:
+    """Values and offsets of a list column of peak values cast to float32."""
+    peaks = pc.cast(column, pa.list_(pa.float32()))
+    return peaks.values.to_numpy(zero_copy_only=False), peaks.offsets.to_numpy()
+
+
+def _matched_spectra(con: duckdb.DuckDBPyConnection, ms2_file: Path, matched_scans: set[int] | None):
     """Yield ``(scan, ms_level, mz_array, intensity_array)`` once per matched scan of one run.
 
-    DuckDB applies the scan filter and rows are fetched in chunks, so only the
-    matched spectra reach Python. ``matched_scans`` of ``None`` keeps every scan.
+    DuckDB applies the scan filter and rows are fetched as Arrow batches, so only
+    the matched spectra are read and peak arrays reach Python as float32 numpy
+    arrays. ``matched_scans`` holds the run's scan numbers; ``None`` keeps every scan.
     """
     keep = _scan_numbers(con, ms2_file)
     if matched_scans is not None:
-        keep = keep[keep["scan"].isin({scan for run, scan in matched_scans if run == run_name})]
+        keep = keep[keep["scan"].isin(matched_scans)]
     con.register("keep_scans", keep.drop_duplicates("scan"))
     try:
-        cursor = con.execute(
+        reader = con.execute(
             sql_build(
                 "SELECT k.scan, m.ms_level, m.mz_array, m.intensity_array "
                 "FROM parquet_scan('$path') m JOIN keep_scans k ON m.scan = k.raw",
                 path=escape_path(str(ms2_file)),
             )
-        )
+        ).fetch_record_batch(_FETCH_ROWS)
         seen: set[int] = set()
-        while rows := cursor.fetchmany(_FETCH_ROWS):
-            for scan, ms_level, mz, intensity in rows:
+        for batch in reader:
+            mz, mz_offsets = _float32_peaks(batch.column("mz_array"))
+            intensity, intensity_offsets = _float32_peaks(batch.column("intensity_array"))
+            scans = batch.column("scan").to_pylist()
+            ms_levels = batch.column("ms_level").to_pylist()
+            for row, scan in enumerate(scans):
                 if scan not in seen:
                     seen.add(scan)
-                    yield scan, ms_level, mz, intensity
+                    yield (
+                        scan,
+                        ms_levels[row],
+                        mz[mz_offsets[row] : mz_offsets[row + 1]],
+                        intensity[intensity_offsets[row] : intensity_offsets[row + 1]],
+                    )
     finally:
         con.unregister("keep_scans")
 
@@ -131,6 +150,12 @@ class DiannMzAdapter:
         if not ms2_files:
             raise FileNotFoundError(f"no *_ms2_info.parquet files in {mzml_statistics_folder}")
 
+        scans_by_run: dict[str, set[int]] | None = None
+        if matched_scans is not None:
+            scans_by_run = defaultdict(set)
+            for run, scan in matched_scans:
+                scans_by_run[run].add(scan)
+
         con = duckdb.connect()
 
         pending: list[dict] = []
@@ -140,7 +165,8 @@ class DiannMzAdapter:
             for ms2_file in ms2_files:
                 run_name = ms2_file.name.removesuffix("_ms2_info.parquet")
                 run_info = _ms_info_lookup(con, stats / f"{run_name}_ms_info.parquet")
-                for scan, ms_level, mz, intensity in _matched_spectra(con, ms2_file, run_name, matched_scans):
+                run_scans = None if scans_by_run is None else scans_by_run.get(run_name, set())
+                for scan, ms_level, mz, intensity in _matched_spectra(con, ms2_file, run_scans):
                     rt, *precursor = run_info.get(scan, (None, None, None))
                     pending.append(self.build_record(run_name, scan, ms_level, mz, intensity, rt, _precursors(*precursor)))
                     if len(pending) >= self._batch_size:

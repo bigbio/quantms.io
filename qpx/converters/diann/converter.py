@@ -153,6 +153,7 @@ class DiaNNConverter(BaseOrchestrator):
         feature-to-MS2-scan link. Returns ``None`` if the columns are absent.
         """
         import pyarrow as pa
+        import pyarrow.compute as pc
         import pyarrow.parquet as pq
 
         try:
@@ -160,11 +161,19 @@ class DiaNNConverter(BaseOrchestrator):
         except (FileNotFoundError, KeyError, pa.ArrowInvalid, pa.ArrowIOError):
             logger.warning("could not read run_file_name/scan from %s; skipping m/z view", feature_parquet)
             return None
-        matched = set()
-        for run, scans in zip(table.column("run_file_name").to_pylist(), table.column("scan").to_pylist()):
-            for s in scans or ():
-                if s is not None:
-                    matched.add((str(run), int(s)))
+        scans = table.column("scan")
+        pairs = (
+            pa.table(
+                {
+                    "run": table.column("run_file_name").take(pc.call_function("list_parent_indices", [scans])),
+                    "scan": pc.call_function("list_flatten", [scans]),
+                }
+            )
+            .filter(pc.field("scan").is_valid())
+            .group_by(["run", "scan"])
+            .aggregate([])
+        )
+        matched = set(zip(pairs.column("run").to_pylist(), pairs.column("scan").to_pylist()))
         logger.info("matched %s (run_file_name, scan) from feature view", len(matched))
         return matched
 
