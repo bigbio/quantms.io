@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`qpxc transform gene-map` streams the views** — it read the whole feature or pg view into one pandas DataFrame and wrote it back; it now annotates Parquet batches and writes them through the view's writer. On PXD056598 (5.29 million features) it takes 48.7 s and 1.75 GiB instead of 151.7 s and 70.4 GiB. An empty view is written as an empty file instead of failing. Output is otherwise unchanged.
 - **SDRF channel relabelling is vectorised** — `convert openms` and `relabel_intensities_parquet` renamed each row's intensity labels in Python; the labels are now mapped once per distinct value with Arrow dictionary encoding. For 1 million rows with 16 channels this takes 1.15 s instead of 33.3 s. Output is unchanged.
 - **`convert fragpipe` stops hiding failures** — when `psm.tsv` could not be loaded, the conversion logged a warning and wrote features without their PSM scan, PEP, m/z and decoy flag; it now fails. Rows of `psm.tsv`, `combined_ion.tsv` and `combined_protein.tsv` are still skipped for bad values, but only on value, type, key, index and arithmetic errors, as in `convert cdap`; any other error is raised.
+- **An unloadable PSI-MS ontology stops the conversion** — score and field ontology entries and SDRF run terms use the PSI-MS ontology shipped with qpx. A failure to load it was swallowed, so `ontology.parquet` silently lost its PSI-MS accessions and versions; it now raises.
 
 ### Removed
 

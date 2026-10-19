@@ -362,12 +362,7 @@ def _get_ontology():
 
 def _lookup_from_obo(normalized_name: str) -> Optional[dict]:
     """Try to resolve a score from the PSI-MS PublicOntology."""
-    try:
-        ontology = _get_ontology()
-    except Exception:
-        return None
-
-    term = ontology.lookup_normalized(normalized_name)
+    term = _get_ontology().lookup_normalized(normalized_name)
     if term is None:
         return None
 
@@ -537,10 +532,7 @@ def field_ontology_entries(
     Returns:
         List of dicts matching the ``OntologySchema``.
     """
-    try:
-        ontology_version = _get_ontology().version
-    except Exception:
-        ontology_version = None
+    ontology_version = _get_ontology().version
     if ontology_version == "unknown":
         ontology_version = None
 
@@ -605,10 +597,7 @@ def score_ontology_entries(
         List of dicts matching the ``OntologySchema``.
     """
     # Fetch ontology version for provenance tracking
-    try:
-        ontology_version = _get_ontology().version
-    except Exception:
-        ontology_version = None
+    ontology_version = _get_ontology().version
     if ontology_version == "unknown":
         ontology_version = None
 
