@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **SDRF channel relabelling is vectorised** — `convert openms` and `relabel_intensities_parquet` renamed each row's intensity labels in Python; the labels are now mapped once per distinct value with Arrow dictionary encoding. For 1 million rows with 16 channels this takes 1.15 s instead of 33.3 s. Output is unchanged.
 - **`convert fragpipe` stops hiding failures** — when `psm.tsv` could not be loaded, the conversion logged a warning and wrote features without their PSM scan, PEP, m/z and decoy flag; it now fails. Rows of `psm.tsv`, `combined_ion.tsv` and `combined_protein.tsv` are still skipped for bad values, but only on value, type, key, index and arithmetic errors, as in `convert cdap`; any other error is raised.
 - **An unloadable PSI-MS ontology stops the conversion** — score and field ontology entries and SDRF run terms use the PSI-MS ontology shipped with qpx. A failure to load it was swallowed, so `ontology.parquet` silently lost its PSI-MS accessions and versions; it now raises.
+- **`convert diann` and `convert maxquant` SDRF step** — any error while writing `sample` and `run` from the SDRF was logged and the two views were dropped. As in `convert spectronaut`, only value, key, OS and type errors are now treated as an incomplete SDRF; other errors stop the conversion.
 
 ### Removed
 
