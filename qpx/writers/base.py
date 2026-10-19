@@ -395,9 +395,11 @@ class BaseWriter:
         composite_values = self._persisted_composite_values(table, composite)
         existing = table.column(id_field).to_pylist() if id_field in names else [None] * n
         override = self._override_provided_ids
-        if override and "cv_params" not in names and any(provided is not None for provided in existing):
+        any_provided = any(provided is not None for provided in existing)
+        if override and "cv_params" not in names and any_provided:
             raise ValueError(f"override_provided_ids requires a 'cv_params' column to preserve provided {id_field} values")
-        cv_lists = table.column("cv_params").to_pylist() if (override and "cv_params" in names) else None
+        # Only round-trip cv_params when there is a provided id to stash.
+        cv_lists = table.column("cv_params").to_pylist() if (override and any_provided and "cv_params" in names) else None
         ids = self._identity_values(existing, composite_values, composite, cv_lists, id_field)
         if cv_lists is not None:
             cv_type = table.schema.field("cv_params").type
