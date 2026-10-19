@@ -16,6 +16,8 @@ from qpx.writers.pg import _explode_pg_records
 
 
 class ProteoformWriter(BaseWriter):
+    """Write proteoform.parquet files, one row per label as in pg."""
+
     _schema_class = ProteoformSchema
 
     def _write_batch(self, records: list[dict]):

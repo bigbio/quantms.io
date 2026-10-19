@@ -335,10 +335,12 @@ class Dataset:
 
     @property
     def site(self) -> Site | None:
+        """The site view, or None when the dataset has no site.parquet."""
         return self._structures.get("site")
 
     @property
     def proteoform(self) -> Proteoform | None:
+        """The proteoform view, or None when the dataset has no proteoform.parquet."""
         return self._structures.get("proteoform")
 
     # --- View accessors (cached) ---
