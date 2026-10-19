@@ -300,6 +300,8 @@ def to_proforma(aa_sequence) -> str:
     (``[UNIMOD:737]-THSQEEM[UNIMOD:35]QHMQR``).
     """
     s = aa_sequence.toUniModString().replace("UniMod:", "UNIMOD:")
+    if "(" not in s:
+        return s  # unmodified
     s = re.sub(r"^\.\(([^)]+)\)", r"[\1]-", s)  # N-terminal
     s = re.sub(r"\.\(([^)]+)\)$", r"-[\1]", s)  # C-terminal
     s = re.sub(r"\(([^)]+)\)", r"[\1]", s)  # internal residue mods
@@ -347,6 +349,8 @@ def to_modifications(aa_sequence, site_scores: dict[int, list[dict]] | None = No
     carries them), mirroring ``to_proforma``'s ``[UNIMOD:N]-`` / ``-[UNIMOD:N]``
     rendering.
     """
+    if not aa_sequence.isModified():
+        return None
     mods: list[dict] = []
     seen: dict[tuple[str, str | None], dict] = {}
 

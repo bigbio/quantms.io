@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import gzip
 from pathlib import Path
+from typing import NamedTuple
 
 import numpy as np
 import pyopenms as oms
@@ -92,6 +93,56 @@ def _parse_spectra_data(prot_meta: dict[str, str]) -> list[str]:
     if inner.startswith("[") and inner.endswith("]"):
         inner = inner[1:-1]
     return [p.strip() for p in inner.split(",") if p.strip()]
+
+
+def _se_engines(search_meta: dict[str, str]) -> list[tuple[str, str]]:
+    """Engines recorded as ``SE:<engine>`` search parameters, as (engine, value)."""
+    return [(key[3:], value) for key, value in search_meta.items() if key.startswith("SE:")]
+
+
+def _software(element) -> tuple[str, str, str] | None:
+    """A ``dataProcessing`` element's software as (name, version, processing action); None without a name."""
+    software = next((child for child in element if _localname(child.tag) == "software"), None)
+    if software is None or not software.attrib.get("name"):
+        return None
+    action = next((child for child in element if _localname(child.tag) == "processingAction"), None)
+    action_name = action.attrib.get("name", "") if action is not None else ""
+    return software.attrib["name"], software.attrib.get("version", ""), action_name
+
+
+class ProvenanceHeader(NamedTuple):
+    """The consensusXML header fields that provenance records."""
+
+    search_engines: list[tuple[str, str]]
+    original_search_engines: list[tuple[str, str]]
+    data_processing: list[tuple[str, str, str]]
+
+
+def read_provenance_header(path: str) -> ProvenanceHeader:
+    """Read the search engines and data processing of a consensusXML.
+
+    OpenMS writes ``dataProcessing`` and ``IdentificationRun`` before the unassigned
+    identifications and the map list, so parsing stops at the first of those
+    instead of walking the whole header.
+    """
+    header = ProvenanceHeader([], [], [])
+    for event, el in _iterparse(path, events=("start", "end")):
+        tag = _localname(el.tag)
+        if event == "start" and tag in ("UnassignedPeptideIdentification", "mapList", "consensusElementList"):
+            break
+        if event == "start" and tag == "IdentificationRun" and el.attrib.get("search_engine"):
+            header.search_engines.append((el.attrib["search_engine"], el.attrib.get("search_engine_version", "")))
+        elif event == "end" and tag == "SearchParameters":
+            header.original_search_engines.extend(_se_engines(_user_params(el)))
+            el.clear()
+        elif event == "end" and tag == "dataProcessing":
+            software = _software(el)
+            if software is not None:
+                header.data_processing.append(software)
+            el.clear()
+        elif event == "end" and tag in ("ProteinHit", "ProteinIdentification"):
+            el.clear()
+    return header
 
 
 # ---------------------------------------------------------------------------
@@ -404,7 +455,7 @@ class StreamingConsensusMap:
                 if enzyme and not self._enzyme:
                     self._enzyme = enzyme
                 search_meta = _user_params(el)
-                self._original_engines.extend((key[3:], value) for key, value in search_meta.items() if key.startswith("SE:"))
+                self._original_engines.extend(_se_engines(search_meta))
                 el.clear()
             elif event == "start" and tag == "IdentificationRun":
                 identifier = el.attrib.get("id", "")
@@ -439,11 +490,9 @@ class StreamingConsensusMap:
                 el.clear()
                 # do NOT stop: the <mapList> comes after the IdentificationRun.
             elif event == "end" and tag == "dataProcessing":
-                software = next((child for child in el if _localname(child.tag) == "software"), None)
-                action = next((child for child in el if _localname(child.tag) == "processingAction"), None)
-                if software is not None and software.attrib.get("name"):
-                    action_name = action.attrib.get("name", "") if action is not None else ""
-                    self._software.append((software.attrib["name"], software.attrib.get("version", ""), action_name))
+                software = _software(el)
+                if software is not None:
+                    self._software.append(software)
                 el.clear()
             elif event == "start" and tag == "consensusElementList":
                 break  # header done; the bulk element list follows

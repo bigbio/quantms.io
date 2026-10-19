@@ -631,6 +631,17 @@ def _read_consensus_header(consensusxml_path: str):
         return None
 
 
+def _read_provenance_header(consensusxml_path: str):
+    """Read the search engines and data processing of a consensusXML; None when unreadable."""
+    from qpx.converters.openms_consensus.streaming import read_provenance_header
+
+    try:
+        return read_provenance_header(consensusxml_path)
+    except (OSError, ValueError, KeyError, AttributeError, RuntimeError) as exc:
+        _log.warning("could not read the consensusXML header of %s: %s", consensusxml_path, exc)
+        return None
+
+
 def _consensus_is_isobaric(header) -> bool:
     """Return whether a parsed header's map labels indicate an isobaric (TMT/iTRAQ) run."""
     from qpx.converters.openms_consensus.feature_adapter import consensus_channels
@@ -640,6 +651,15 @@ def _consensus_is_isobaric(header) -> bool:
     except (ValueError, KeyError, AttributeError) as exc:
         _log.warning("could not determine isobaric labeling: %s", exc)
         return False
+
+
+def _inputs_are_isobaric(consensusxml_paths: list[str]) -> bool:
+    """Whether any input's map labels are isobaric.
+
+    The map labels follow the unassigned identifications, so this parses the whole header.
+    """
+    headers = (_read_consensus_header(path) for path in consensusxml_paths)
+    return any(_consensus_is_isobaric(header) for header in headers if header is not None)
 
 
 def _write_sdrf_metadata(
@@ -875,15 +895,15 @@ class OpenMSConsensusConverter(BaseOrchestrator):  # pylint: disable=too-few-pub
         Search engines and processing tools come from the consensusXML headers of every input.
         The qpx conversion step is always last.
         """
-        headers = [header for header in (_read_consensus_header(path) for path in consensusxml_paths) if header is not None]
+        headers = [header for header in (_read_provenance_header(path) for path in consensusxml_paths) if header is not None]
         psm_views = [PSM] if PSM in structures else []
         core_views = [v for v in (FEATURE, PSM, PG) if v in structures]
-        original = list(dict.fromkeys(engine for header in headers for engine in header.original_search_engines()))
+        original = list(dict.fromkeys(engine for header in headers for engine in header.original_search_engines))
         original_names = {name for name, _ in original}
-        all_engines = list(dict.fromkeys(engine for header in headers for engine in header.search_engines()))
+        all_engines = list(dict.fromkeys(engine for header in headers for engine in header.search_engines))
         engines = [engine for engine in all_engines if engine[0] not in original_names]
         # One step per (tool, version, action): ProteomicsLFQ records alignment and feature grouping separately.
-        software = list(dict.fromkeys(tool for header in headers for tool in header.data_processing()))
+        software = list(dict.fromkeys(tool for header in headers for tool in header.data_processing))
 
         steps = [
             build_provenance_step(
@@ -921,7 +941,7 @@ class OpenMSConsensusConverter(BaseOrchestrator):  # pylint: disable=too-few-pub
             software_name = "OpenMS"
             software_version = next(iter(versions)) if len(versions) == 1 and "" not in versions else None
         else:
-            is_isobaric = any(_consensus_is_isobaric(header) for header in headers)
+            is_isobaric = _inputs_are_isobaric(consensusxml_paths)
             software_name = "OpenMS/IsobaricWorkflow" if is_isobaric else "OpenMS/ProteomicsLFQ"
             software_version = None
             fallback_step = "isobaric_quantification" if is_isobaric else "label_free_quantification"
