@@ -219,7 +219,7 @@ class SpectronautFeatureAdapter(SpectronautBaseAdapter):
             peptidoform = to_proforma(modified_seq)
             _, modifications = to_modifications(modified_seq, sequence)
 
-            calculated_mz = compute_precursor_mz(peptidoform, charge) or 0.0
+            calculated_mz = compute_precursor_mz(peptidoform, charge)
 
             missed = count_missed_cleavages(sequence, enzyme_name) if enzyme_name else None
 
@@ -285,12 +285,12 @@ class SpectronautFeatureAdapter(SpectronautBaseAdapter):
             parts.append("false AS is_decoy")
 
         # calculated_mz / observed_mz
-        parts.append("COALESCE(CAST(FIRST(lk.calculated_mz) AS FLOAT), 0.0::FLOAT) AS calculated_mz")
+        parts.append("CAST(FIRST(lk.calculated_mz) AS FLOAT) AS calculated_mz")
         omz_col = r.get("observed_mz")
         if omz_col and _has(omz_col):
-            parts.append(f"COALESCE({_safe_float_sql(omz_col)}, 0.0::FLOAT) AS observed_mz")
+            parts.append(f"{_safe_float_sql(omz_col)} AS observed_mz")
         else:
-            parts.append("0.0::FLOAT AS observed_mz")
+            parts.append("NULL::FLOAT AS observed_mz")
 
         # predicted_rt / rt (minutes → seconds)
         prt_col = r.get("predicted_rt")
