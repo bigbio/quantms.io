@@ -110,12 +110,12 @@ def _total_ion_current(spectrum, intensity) -> float:
     return float(intensity.sum()) if len(intensity) else 0.0
 
 
-def _ion_injection_time(spectrum) -> float:
-    """Ion injection time (ms) of the scan, 0.0 when the mzML does not report it."""
+def _ion_injection_time(spectrum) -> Optional[float]:
+    """Ion injection time (ms) of the scan, None when the mzML does not report it."""
     for acquisition in spectrum.getAcquisitionInfo():
         if acquisition.metaValueExists(_ION_INJECTION_TIME):
             return float(acquisition.getMetaValue(_ION_INJECTION_TIME))
-    return 0.0
+    return None
 
 
 class _MzMLCache:

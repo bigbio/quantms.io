@@ -32,6 +32,8 @@ from pathlib import Path
 from typing import Optional, Union
 
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 
 logger = logging.getLogger(__name__)
 
@@ -124,38 +126,20 @@ def _normalize_protein_list(accessions) -> Optional[list]:
 
     - None / float NaN  → None
     - str               → [str]
-    - dict / struct     → [item]   (list(dict) would give keys, not the struct)
-    - iterable          → list(item)
-    - other             → [item]
+    - list / array      → list(item)
     """
     if accessions is None or (isinstance(accessions, float) and accessions != accessions):
         return None
     if isinstance(accessions, str):
         return [accessions]
-    if isinstance(accessions, dict) or (
-        hasattr(accessions, "dtype") and hasattr(accessions.dtype, "names") and accessions.dtype.names
-    ):
-        return [accessions]
-    if hasattr(accessions, "__iter__"):
-        return list(accessions)
-    return [accessions]
+    return list(accessions)
 
 
 def _extract_accession_from_raw(raw) -> Optional[str]:
-    """Extract a bare accession string from a raw protein entry (str, dict, or struct).
-
-    Returns None for None, NaN, or unsupported types.
-    """
-    if raw is None or (isinstance(raw, float) and raw != raw):
-        return None
-    if isinstance(raw, str):
+    """Extract a bare accession string from a raw protein entry (str or struct dict)."""
+    if raw is None or isinstance(raw, str):
         return raw
-    if hasattr(raw, "__getitem__"):
-        try:
-            return raw["accession"]
-        except (KeyError, TypeError):
-            return None
-    return None
+    return raw.get("accession")
 
 
 def _resolve_gene_names(
@@ -192,6 +176,34 @@ def _resolve_gene_names(
                     gene_names.append(name)
 
     return gene_names if gene_names else None
+
+
+def _view_batches(file_paths):
+    """Tables of bounded size read from a view's Parquet files, in order."""
+    from qpx.transforms.protein_properties import _rewrite_batch_rows
+
+    for path in file_paths:
+        parquet = pq.ParquetFile(path)
+        for group in range(parquet.num_row_groups):
+            for batch in parquet.iter_batches(batch_size=_rewrite_batch_rows(parquet, group), row_groups=[group]):
+                yield pa.Table.from_batches([batch])
+
+
+def _annotate_table(table: pa.Table, gene_map: dict[str, set[str]], names_type: pa.DataType) -> tuple[pa.Table, int]:
+    """*table* with gene names resolved from ``pg_accessions``, and the number of rows resolved.
+
+    Existing ``gg_names`` stay where the FASTA resolves none.
+    """
+    mapped = [
+        _resolve_gene_names(_normalize_protein_list(accessions), gene_map)
+        for accessions in table.column("pg_accessions").to_pylist()
+    ]
+    names = mapped
+    if "gg_names" in table.column_names:
+        names = [new if new is not None else old for new, old in zip(mapped, table.column("gg_names").to_pylist(), strict=True)]
+        table = table.drop_columns("gg_names")
+    table = table.append_column("gg_names", pa.array(names, type=names_type))
+    return table, sum(name is not None for name in mapped)
 
 
 class GeneMappingTransform:
@@ -311,16 +323,42 @@ class GeneMappingTransform:
         if "gg_accessions" not in result.columns:
             result["gg_accessions"] = None
 
-        n_mapped = int(mapped.notna().sum())
-        mapped_share = n_mapped / len(result) * 100 if len(result) else 0.0
+        self._record_mapped_share(int(mapped.notna().sum()), len(result))
+        return result
+
+    def _record_mapped_share(self, n_mapped: int, n_rows: int) -> None:
+        """Log and keep the share of rows resolved from the FASTA."""
+        mapped_share = n_mapped / n_rows * 100 if n_rows else 0.0
         logger.info(
             "Mapped gene names from FASTA for %d/%d rows (%.1f%%)",
             n_mapped,
-            len(result),
+            n_rows,
             mapped_share,
         )
         self._last_mapped_share = mapped_share
-        return result
+
+    def _write_annotated_view(self, structure, writer_class, output_path: Path) -> None:
+        """Write *structure* with gene names to *output_path*, keeping its identity recipe.
+
+        The view's Parquet files are read in bounded batches, so only one batch is
+        in memory. As in :meth:`annotate_dataframe`, existing names stay where the
+        FASTA resolves none.
+        """
+        gene_map = self.gene_map
+        source_composite = structure.file_metadata.get("identity_composite")
+        identity_composite = tuple(source_composite.split(",")) if source_composite else None
+        n_mapped = n_rows = 0
+        with writer_class(output_path, override_provided_ids=False, identity_composite=identity_composite) as writer:
+            names_type = writer.arrow_schema.field("gg_names").type
+            for table in _view_batches(structure.file_paths):
+                table, mapped = _annotate_table(table, gene_map, names_type)
+                writer.write_table(writer.align_table_to_schema(table))
+                n_mapped += mapped
+                n_rows += table.num_rows
+            if not n_rows:
+                # An empty view still gets its (empty) file.
+                writer.write_table(writer.align_table_to_schema(pq.read_schema(structure.file_paths[0]).empty_table()))
+        self._record_mapped_share(n_mapped, n_rows)
 
     def annotate_dataset_features(
         self,
@@ -366,19 +404,11 @@ class GeneMappingTransform:
         """
         from qpx.writers.feature import FeatureWriter
 
+        if dataset.feature is None:
+            raise ValueError("Dataset does not contain feature data.")
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        annotated_df = self.annotate_dataset_features(dataset)
-
-        source_composite = dataset.feature.file_metadata.get("identity_composite")
-        identity_composite = tuple(source_composite.split(",")) if source_composite else None
-        with FeatureWriter(
-            output_path,
-            override_provided_ids=False,
-            identity_composite=identity_composite,
-        ) as writer:
-            writer.write_dataframe(annotated_df)
+        self._write_annotated_view(dataset.feature, FeatureWriter, output_path)
 
         logger.info("Wrote gene-annotated features to %s", output_path)
         return output_path
@@ -425,19 +455,11 @@ class GeneMappingTransform:
         """
         from qpx.writers.pg import PgWriter
 
+        if dataset.pg is None:
+            raise ValueError("Dataset does not contain protein group data.")
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        annotated_df = self.annotate_dataset_pg(dataset)
-
-        source_composite = dataset.pg.file_metadata.get("identity_composite")
-        identity_composite = tuple(source_composite.split(",")) if source_composite else None
-        with PgWriter(
-            output_path,
-            override_provided_ids=False,
-            identity_composite=identity_composite,
-        ) as writer:
-            writer.write_dataframe(annotated_df)
+        self._write_annotated_view(dataset.pg, PgWriter, output_path)
 
         logger.info("Wrote gene-annotated protein groups to %s", output_path)
         return output_path

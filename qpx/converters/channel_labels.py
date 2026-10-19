@@ -20,8 +20,10 @@ import re
 from collections import defaultdict
 from typing import Iterable, Optional
 
+import numpy as np
 import pandas as pd
 import pyarrow as pa
+import pyarrow.compute as pc
 import pyarrow.parquet as pq
 from defusedxml.common import DefusedXmlException
 from defusedxml.ElementTree import ParseError, iterparse
@@ -400,7 +402,7 @@ def fraction_groups_from_consensusxml(
     return groups
 
 
-def _relabel_entries(rows, channel_labels: dict[int, str], is_lfq: bool):
+def _relabel_entries(column, channel_labels: dict[int, str], is_lfq: bool) -> pa.Array:
     """
     Relabel the ``label`` field of a list<struct> intensities column.
 
@@ -408,30 +410,43 @@ def _relabel_entries(rows, channel_labels: dict[int, str], is_lfq: bool):
     and a bare 1-based index (``"1"``, ``"2"``, ...) into pg ``intensities[].label``.
     Recover the channel index from a numeric label, else from the array position
     (channels are emitted in index order), then map to the canonical label.
-    LFQ collapses to the single ``"LFQ"`` label.
+    LFQ collapses to the single ``"LFQ"`` label. Each distinct label (and, for a
+    non-numeric one, position) is mapped once; the lists are rebuilt with Arrow.
     """
-    out = []
-    for row in rows:
-        if row is None:
-            out.append(None)
-            continue
-        new_row = []
-        for position, entry in enumerate(row):
-            label = entry.get("label")
-            if is_lfq:
-                new_label = "LFQ"
-            else:
-                text = str(label) if label is not None else ""
-                index = int(text) if text.isdigit() else position + 1
-                new_label = channel_labels.get(index, normalize_label(text) if text else text)
-            updated = dict(entry)
-            updated["label"] = new_label
-            new_row.append(updated)
-        out.append(new_row)
-    return out
+    lists = column.combine_chunks()
+    lengths = pc.fill_null(pc.call_function("list_value_length", [lists]), 0).to_numpy(zero_copy_only=False)
+    offsets = np.concatenate([[0], np.cumsum(lengths)])
+    entries = lists.flatten()
+    encoded = pc.fill_null(entries.field("label"), "").dictionary_encode()
+    texts = encoded.dictionary.to_pylist()
+    codes = encoded.indices.to_numpy(zero_copy_only=False).astype(np.int64)
+    positions = np.arange(len(entries)) - np.repeat(offsets[:-1], lengths) + 1
+    # A numeric label fixes the channel; any other label takes its position's channel.
+    fixed = [
+        "LFQ" if is_lfq else channel_labels.get(int(text), normalize_label(text)) if text.isdigit() else None for text in texts
+    ]
+    width = int(positions.max()) + 1 if len(positions) else 1
+    keys = np.where(np.array([label is not None for label in fixed], dtype=bool)[codes], codes * width, codes * width + positions)
+    unique, inverse = np.unique(keys, return_inverse=True)
+
+    def label_of(key: int) -> str:
+        code, position = divmod(key, width)
+        if fixed[code] is not None:
+            return fixed[code]
+        text = texts[code]
+        return channel_labels.get(position, normalize_label(text) if text else text)
+
+    label_field = entries.type.field("label")
+    labels = pa.array([label_of(int(key)) for key in unique], type=label_field.type).take(pa.array(inverse))
+    structs = pa.StructArray.from_arrays(
+        [labels if field.name == "label" else entries.field(field.name) for field in entries.type],
+        fields=list(entries.type),
+    )
+    offset_type = pa.int64() if pa.types.is_large_list(lists.type) else pa.int32()
+    return type(lists).from_arrays(pa.array(offsets, type=offset_type), structs, type=lists.type, mask=lists.is_null())
 
 
-def _relabel_scalar_labels(values, channel_labels: dict[int, str], is_lfq: bool):
+def _relabel_scalar_labels(column, channel_labels: dict[int, str], is_lfq: bool) -> pa.Array:
     """Relabel a flat scalar ``label`` column (pg is flattened since QPX 1.1).
 
     OpenMS writes a bare 1-based index (``"1"``, ``"2"``, ...) into the pg
@@ -439,20 +454,12 @@ def _relabel_scalar_labels(values, channel_labels: dict[int, str], is_lfq: bool)
     collapses to ``"LFQ"``. Null labels (identification-only rows) pass through.
     Non-numeric labels are normalized but otherwise kept.
     """
-    out = []
-    for value in values:
-        if value is None:
-            out.append(None)
-            continue
-        if is_lfq:
-            out.append("LFQ")
-            continue
-        text = str(value)
-        if text.isdigit():
-            out.append(channel_labels.get(int(text), normalize_label(text)))
-        else:
-            out.append(normalize_label(text))
-    return out
+    encoded = column.combine_chunks().dictionary_encode()
+    labels = [
+        "LFQ" if is_lfq else channel_labels.get(int(text), normalize_label(text)) if text.isdigit() else normalize_label(text)
+        for text in encoded.dictionary.to_pylist()
+    ]
+    return pa.array(labels, type=column.type).take(encoded.indices)
 
 
 def _resolve_parquet_compression(
@@ -527,12 +534,12 @@ def relabel_intensities_table(
             field_index = table.schema.get_field_index(column)
             original = table.column(column)
             if pa.types.is_list(original.type) or pa.types.is_large_list(original.type):
-                values = _relabel_entries(original.to_pylist(), channel_labels, is_lfq)
+                values = _relabel_entries(original, channel_labels, is_lfq)
             elif column == "label" and pa.types.is_string(original.type):
-                values = _relabel_scalar_labels(original.to_pylist(), channel_labels, is_lfq)
+                values = _relabel_scalar_labels(original, channel_labels, is_lfq)
             else:
                 continue
-            table = table.set_column(field_index, column, pa.array(values, type=original.type))
+            table = table.set_column(field_index, column, values)
 
     do_cv_param = cv_param_resolver is not None and run_column is not None and cv_param_name is not None
     if not do_cv_param:

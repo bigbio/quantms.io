@@ -21,13 +21,13 @@ Usage::
 from __future__ import annotations
 
 import argparse
-import hashlib
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
 
+from qpx.core.files import sha256_file
 from qpx.core.obo import (
     download_obo,
     extract_obo_version,
@@ -63,15 +63,6 @@ def _load_sources_config() -> dict:
     """Load sources.yaml shipped with the package."""
     with open(_SOURCES_PATH, encoding="utf-8") as f:
         return yaml.safe_load(f)
-
-
-def _sha256(path: Path) -> str:
-    """Compute the SHA-256 hex digest of a file."""
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(8192), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 def _load_versions(versions_path: Path) -> dict:
@@ -146,7 +137,7 @@ def build_ontology(source_name: str, config: dict) -> dict:
     print(f"        Wrote {pkg_parquet}")
 
     # 5. Compute checksum (use repo copy as canonical)
-    checksum = _sha256(repo_parquet)
+    checksum = sha256_file(repo_parquet)
     built_at = datetime.now(timezone.utc).isoformat()
 
     result = {

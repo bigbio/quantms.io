@@ -221,10 +221,8 @@ class BaseWriter:
         self._extra_columns = extra_columns or []
         # Override mode (e.g. consensusXML): re-derive the id even when the
         # producer supplied one, stashing the original as a cv_param so it is
-        # preserved/traceable. ``overridden_id_count`` lets the converter record
-        # the override in provenance.
+        # preserved/traceable.
         self._override_provided_ids = override_provided_ids
-        self.overridden_id_count = 0
         # Producer-specific identity composite override. When set, the writer
         # hashes THIS composite into the derived id (feature_id / psm_id / pg_id)
         # instead of the schema default, letting each converter declare the
@@ -359,7 +357,6 @@ class BaseWriter:
                     params = list(cv_lists[index] or [])
                     params.append({"cv_name": f"provided_{id_field}", "cv_value": str(provided)})
                     cv_lists[index] = params
-                self.overridden_id_count += 1
             ids.append(
                 derive_id(
                     [composite_values[field][index] for field in composite],
@@ -395,9 +392,11 @@ class BaseWriter:
         composite_values = self._persisted_composite_values(table, composite)
         existing = table.column(id_field).to_pylist() if id_field in names else [None] * n
         override = self._override_provided_ids
-        if override and "cv_params" not in names and any(provided is not None for provided in existing):
+        any_provided = any(provided is not None for provided in existing)
+        if override and "cv_params" not in names and any_provided:
             raise ValueError(f"override_provided_ids requires a 'cv_params' column to preserve provided {id_field} values")
-        cv_lists = table.column("cv_params").to_pylist() if (override and "cv_params" in names) else None
+        # Only round-trip cv_params when there is a provided id to stash.
+        cv_lists = table.column("cv_params").to_pylist() if (override and any_provided and "cv_params" in names) else None
         ids = self._identity_values(existing, composite_values, composite, cv_lists, id_field)
         if cv_lists is not None:
             cv_type = table.schema.field("cv_params").type

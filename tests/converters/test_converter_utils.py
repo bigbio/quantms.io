@@ -1,7 +1,6 @@
 """Unit tests for converter utility methods added in recent commits.
 
 Tests cover:
-- BaseConverter._escape_path (SQL path injection prevention)
 - MaxQuantPgAdapter._extract_protein_names / _extract_gene_names
 - MaxQuantFeatureAdapter._detect_pg_columns / _build_pg_lookup / _lookup_pg_metadata
 """
@@ -9,7 +8,6 @@ Tests cover:
 import pandas as pd
 import pytest
 
-from qpx.converters.base import BaseConverter
 from qpx.converters.maxquant.feature_adapter import MaxQuantFeatureAdapter
 from qpx.converters.maxquant.pg_adapter import MaxQuantPgAdapter
 from qpx.converters.utils import parse_uniprot_id, strip_uniprot_prefix
@@ -34,40 +32,6 @@ from qpx.core.files import run_file_stem
 )
 def test_run_file_stem_preserves_meaningful_dots(value, expected):
     assert run_file_stem(value) == expected
-
-
-# ---------------------------------------------------------------------------
-# BaseConverter._escape_path
-# ---------------------------------------------------------------------------
-
-
-class TestEscapePath:
-    """Validate SQL path escaping."""
-
-    def test_normal_path(self):
-        result = BaseConverter._escape_path("/data/results.txt")
-        if result != "/data/results.txt":
-            raise AssertionError(f"Expected '/data/results.txt', got {result!r}")
-
-    def test_path_with_single_quote(self):
-        result = BaseConverter._escape_path("O'Brien/data.txt")
-        if result != "O''Brien/data.txt":
-            raise AssertionError(f"Expected \"O''Brien/data.txt\", got {result!r}")
-
-    def test_path_with_multiple_quotes(self):
-        result = BaseConverter._escape_path("a'b'c.txt")
-        if result != "a''b''c.txt":
-            raise AssertionError(f"Expected \"a''b''c.txt\", got {result!r}")
-
-    def test_windows_path(self):
-        result = BaseConverter._escape_path("C:\\Users\\test\\file.txt")
-        if result != "C:\\Users\\test\\file.txt":
-            raise AssertionError(f"Expected windows path unchanged, got {result!r}")
-
-    def test_empty_path(self):
-        result = BaseConverter._escape_path("")
-        if result != "":
-            raise AssertionError(f"Expected empty string, got {result!r}")
 
 
 # ---------------------------------------------------------------------------

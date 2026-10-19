@@ -21,9 +21,7 @@ from collections import Counter
 from qpx.converters.openms_consensus.feature_adapter import (
     _map_label,
     column_runs,
-    feature_map_info,
     is_decoy_hit,
-    load_consensus_map,
     localization_scores,
     primary_run_stems,
     to_modifications,
@@ -203,25 +201,6 @@ def _run_resolver(cm):
         return sole_run
 
     return resolve
-
-
-def consensus_psms_to_records(consensusxml_path: str | None = None, cm=None) -> list[dict]:
-    """Return QPX psm record dicts extracted from a consensusXML.
-
-    Pass either ``consensusxml_path`` (loaded here) or an already-loaded ``cm``.
-    """
-    cm = cm if cm is not None else load_consensus_map(consensusxml_path)
-    resolve_run = _run_resolver(cm)
-    records: list[dict] = []
-    seen: set[tuple] = set()
-    for pid in cm.getUnassignedPeptideIdentifications():
-        records.extend(psm_records_for_pid(pid, resolve_run, seen))
-    map_info = feature_map_info(cm)
-    for cf in cm:
-        cf_runs = _cf_element_runs(cf, map_info)
-        for pid in cf.getPeptideIdentifications():
-            records.extend(psm_records_for_pid(pid, resolve_run, seen, cf_runs=cf_runs))
-    return records
 
 
 def _psm_additional_scores(primary, hits, score, score_type, score_is_qvalue, higher_better, peptide_level=False):

@@ -15,16 +15,17 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+import numpy as np
 import pandas as pd
 import pyarrow as pa
-import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from qpx.converters.base import resolve_columns
-from qpx.converters.diann.base_adapter import DiaNNBaseAdapter, decoy_protein_group_sql
+from qpx.converters.diann.base_adapter import DiaNNBaseAdapter, decoy_protein_group_sql, run_name_sql
 from qpx.converters.diann.constants import to_modifications, to_proforma
 from qpx.converters.mappings import get_field_mappings
 from qpx.converters.ptm import compute_precursor_mz
+from qpx.converters.utils import pg_accessions_array
 from qpx.core.cleavage import count_missed_cleavages
 from qpx.core.scan import scan_from_native_id
 from qpx.core.sql import sql_build, validate_identifier
@@ -83,25 +84,6 @@ def _safe_double_sql(column: str) -> str:
     return f'CASE WHEN r."{column}" IS NOT NULL AND NOT isnan(CAST(r."{column}" AS DOUBLE)) THEN CAST(r."{column}" AS DOUBLE) END'
 
 
-def _pg_accessions_array(pg_groups: pa.ChunkedArray, pg_acc_type: pa.ListType) -> pa.ListArray:
-    """Split ``;``-separated protein groups into the ``pg_accessions`` list column.
-
-    Each accession becomes a struct with null positions; an empty group becomes a
-    null list. Built with Arrow kernels instead of one Python dict per accession.
-    """
-    groups = pg_groups.combine_chunks()
-    blank = pc.call_function("equal", [groups, pa.scalar("", groups.type)])
-    nonblank = pc.call_function("if_else", [blank, pa.scalar(None, groups.type), groups])
-    split = pc.call_function("split_pattern", [nonblank], pc.SplitPatternOptions(";"))
-    accessions = split.values
-    struct_type = pg_acc_type.value_type
-    structs = pa.StructArray.from_arrays(
-        [accessions if field.name == "accession" else pa.nulls(len(accessions), field.type) for field in struct_type],
-        fields=list(struct_type),
-    )
-    return pa.ListArray.from_arrays(split.offsets, structs, type=pg_acc_type, mask=split.is_null())
-
-
 def _ms_info_scans(values: pd.Series) -> pd.Series:
     """Scan numbers of an MS-info table: numbers, or one-component native IDs such as ``index=5``."""
     scans = pd.to_numeric(values, errors="coerce")
@@ -140,10 +122,6 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
                 sdrf_path="sdrf.tsv",
             )
     """
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._mz_cache: dict[tuple[str, int], float | None] = {}
 
     def convert(
         self,
@@ -262,42 +240,16 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
             # loss is visible; the drop behaviour itself is unchanged.
             self._warn_on_dropped_runs(set(run_names))
         else:
-            run_col = self._resolved["run_file_name"]
-            qcol = validate_identifier(run_col)
-            rows = self._conn.execute(
-                sql_build(
-                    """
-                    SELECT DISTINCT regexp_replace(
-                        CAST($col AS VARCHAR),
-                        '(?i)\\.(mzML|raw|d|wiff|htrms)$',
-                        ''
-                    ) AS run_file_name
-                    FROM report
-                    ORDER BY run_file_name
-                    """,
-                    col=qcol,
-                )
-            ).fetchall()
-            run_names = [row[0] for row in rows]
+            run_names = sorted(self._report_run_names())
             self.logger.info(f"Discovered {len(run_names)} runs from report")
 
         return run_names
 
     def _report_run_names(self) -> set[str]:
         """Return the distinct extension-stripped Run values in the report."""
-        run_col = self._resolved["run_file_name"]
+        run_col = validate_identifier(self._resolved["run_file_name"])
         rows = self._conn.execute(
-            sql_build(
-                """
-                SELECT DISTINCT regexp_replace(
-                    CAST($col AS VARCHAR),
-                    '(?i)\\.(mzML|raw|d|wiff|htrms)$',
-                    ''
-                ) AS run_file_name
-                FROM report
-                """,
-                col=validate_identifier(run_col),
-            )
+            sql_build("SELECT DISTINCT $run AS run_file_name FROM report", run=run_name_sql(run_col))
         ).fetchall()
         return {row[0] for row in rows}
 
@@ -353,10 +305,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
             peptidoform = to_proforma(modified_seq)
             _, modifications = to_modifications(modified_seq, sequence)
 
-            cache_key = (modified_seq, charge)
-            if cache_key not in self._mz_cache:
-                self._mz_cache[cache_key] = compute_precursor_mz(modified_seq, charge)
-            calculated_mz = self._mz_cache[cache_key] or 0.0
+            calculated_mz = compute_precursor_mz(modified_seq, charge)
 
             missed = count_missed_cleavages(sequence, enzyme_name) if enzyme_name else None
 
@@ -414,7 +363,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
                 f"OR starts_with(r.\"{pg_col}\", 'rev_') OR starts_with(r.\"{pg_col}\", 'REV_')) AS is_decoy"
             )
 
-        parts.append("COALESCE(CAST(lk.calculated_mz AS FLOAT), 0.0::FLOAT) AS calculated_mz")
+        parts.append("CAST(lk.calculated_mz AS FLOAT) AS calculated_mz")
 
         # observed_mz: emit a truthful NULL when the report carries no Precursor.Mz
         # (bigbio/qpx#244). A sentinel 0.0 looks like a real measurement and
@@ -433,9 +382,9 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
         # inputs are present — on PXD030304 22% of rows carry an observed m/z that
         # genuinely differs from the theoretical one, and that error was discarded
         # (bigbio/qpx#298). Guarded on both values being positive: calculated_mz is
-        # COALESCEd to 0.0 above, and observed_mz is null when the report has no
-        # Precursor.Mz, so an unmeasured row stays null rather than dividing by zero
-        # or reporting a fabricated error. The formula matches docs/spec/feature.md.
+        # null when the peptidoform's mass cannot be computed, and observed_mz is null
+        # when the report has no Precursor.Mz, so an unmeasured row stays null rather
+        # than reporting a fabricated error. The formula matches docs/spec/feature.md.
         mass_error_col = resolved.get("mass_error_ppm")
         if mass_error_col and has_column(mass_error_col):
             parts.append(f"{_safe_float_sql(mass_error_col)} AS mass_error_ppm")
@@ -457,8 +406,8 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
             else "NULL::FLOAT AS predicted_rt"
         )
 
-        run_col = resolved["run_file_name"]
-        parts.append(f"regexp_replace(r.\"{run_col}\", '(?i)\\.(mzML|raw|d|wiff|htrms)$', '') AS run_file_name")
+        run_col = "r." + validate_identifier(resolved["run_file_name"])
+        parts.append(f"{run_name_sql(run_col)} AS run_file_name")
 
         # MS2.Scan (DIA-NN 1.8) is a 0-based position among the run's MS2 spectra,
         # not a native scan number: it becomes a scan only through the MS-info table.
@@ -530,8 +479,8 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
         parts.append(f"{genes_expr} AS gg_accessions")
         parts.append(f"{genes_expr} AS gg_names")
 
-        run_col = resolved["run_file_name"]
-        parts.append(f"regexp_replace(r.\"{run_col}\", '(?i)\\.(mzML|raw|d|wiff|htrms)$', '') AS id_run_file_name")
+        run_col = "r." + validate_identifier(resolved["run_file_name"])
+        parts.append(f"{run_name_sql(run_col)} AS id_run_file_name")
 
         for field in ("rt_start", "rt_stop"):
             column = resolved.get(field)
@@ -614,11 +563,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
             AND r.$seq_col = lk.sequence
             AND r.$chg_col = lk.charge
         $channel_join
-        WHERE regexp_replace(
-                  CAST(r.$run_col AS VARCHAR),
-                  '(?i)\\.(mzML|raw|d|wiff|htrms)$',
-                  ''
-              ) IN ({run_placeholders})
+        WHERE $run_name IN ({run_placeholders})
           $qvalue_filter
           AND r.$pg_col IS NOT NULL
         """,
@@ -627,7 +572,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
             seq_col=validate_identifier(seq_col),
             chg_col=validate_identifier(chg_col),
             channel_join=channel_join,
-            run_col=validate_identifier(run_col),
+            run_name=run_name_sql("r." + validate_identifier(run_col)),
             qvalue_filter=qvalue_filter,
             pg_col=validate_identifier(pg_col),
         )
@@ -843,7 +788,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
         mods_array = pa.array(mods_list, type=mods_type)
 
         # --- Build pg_accessions column ---
-        pg_array = _pg_accessions_array(table.column("_pg_group"), pg_acc_type)
+        pg_array = pg_accessions_array(table.column("_pg_group"), pg_acc_type)
 
         # feature.pg_ids is left null: the feature->pg association is computed on
         # read via the Dataset softlink (bigbio/qpx#269), not materialized here.
@@ -876,9 +821,14 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
         return pa.table(columns, schema=target_schema)
 
     def _merge_scan_info_arrow(self, table: pa.Table, mzml_info_folder: str) -> pa.Table:
-        """Merge MS scan info from mzml files into the Arrow table."""
-        df = table.to_pandas()
-        merged_parts = []
+        """Merge MS scan info from mzml files into the Arrow table.
+
+        Only the columns the merge reads go through pandas; the merged ``scan``
+        column replaces the table's, with rows grouped by run.
+        """
+        df = table.select(["run_file_name", "rt", "observed_mz", "scan", "_ms2_index"]).to_pandas()
+        rows: list[np.ndarray] = []
+        scans: list = []
 
         for run_name, group_df in df.groupby("run_file_name", sort=False):
             ms_info_path = next(
@@ -887,11 +837,12 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
             )
             if ms_info_path:
                 group_df = self._merge_scan_info(group_df, ms_info_path)
-            merged_parts.append(group_df)
+            rows.append(group_df.index.to_numpy())
+            scans.extend(group_df["scan"])
 
-        merged_df = pd.concat(merged_parts, ignore_index=True)
-        # Rebuild Arrow table preserving the original schema for non-scan columns
-        return pa.Table.from_pandas(merged_df, schema=table.schema, preserve_index=False)
+        merged = table.take(pa.array(np.concatenate(rows), type=pa.int64()))
+        scan_field = merged.schema.field("scan")
+        return merged.set_column(merged.schema.get_field_index("scan"), scan_field, pa.array(scans, type=scan_field.type))
 
     def _merge_scan_info(self, run_data: pd.DataFrame, ms_info_path: Path) -> pd.DataFrame:
         """Fill feature scans from one run's MS-info table.

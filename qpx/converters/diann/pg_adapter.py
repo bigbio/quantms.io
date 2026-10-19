@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 
 from qpx.converters.base import resolve_columns
-from qpx.converters.diann.base_adapter import DiaNNBaseAdapter, decoy_protein_group_sql
+from qpx.converters.diann.base_adapter import RUN_EXTENSIONS, DiaNNBaseAdapter, decoy_protein_group_sql, run_name_sql
 from qpx.converters.mappings import get_field_mappings
 from qpx.converters.utils import is_contaminant_accession
 from qpx.core.sql import sql_build, validate_identifier
@@ -30,7 +30,7 @@ from qpx.writers.pg import PgWriter
 
 logger = logging.getLogger(__name__)
 
-_EXT_RE = re.compile(r"\.(mzML|raw|d|wiff|htrms)$", re.IGNORECASE)
+_EXT_RE = re.compile(rf"\.({RUN_EXTENSIONS})$", re.IGNORECASE)
 
 # Extra columns needed for PG aggregation but not in the field mappings
 _PG_EXTRA_COLS = [
@@ -387,22 +387,13 @@ class DiannPgAdapter(DiaNNBaseAdapter):
         self,
         runs: list[str],
         pg_matrix_indexed: pd.DataFrame,
-        actual_report_cols: set[str] | None = None,
+        actual_report_cols: set[str],
         channel_col: str | None = None,
         qvalue_threshold: Optional[float] = None,
     ) -> list[dict]:
         """Process a batch of runs for PG quantification."""
         # Build SQL SELECT clause from resolved field mappings
         r = self._resolved_pg
-
-        # Use cached columns or query (backward compatibility)
-        if actual_report_cols is None:
-            actual_report_cols = {
-                c[0]
-                for c in self._conn.execute(
-                    "SELECT column_name FROM information_schema.columns WHERE table_name='report'"
-                ).fetchall()
-            }
 
         # Decoy rows form their own group with DECOY_ accessions.
         pg_group = f'"{r["pg_accessions"]}"'
@@ -420,7 +411,7 @@ class DiannPgAdapter(DiaNNBaseAdapter):
 
         # Push run_file_name extension stripping into SQL
         run_col = r["run_file_name"]
-        select_parts.append(f"regexp_replace(\"{run_col}\", '(?i)\\.(mzML|raw|d|wiff|htrms)$', '') AS run_file_name_clean")
+        select_parts.append(f"{run_name_sql(validate_identifier(run_col))} AS run_file_name_clean")
 
         select_clause = ",\n                ".join(select_parts)
 
@@ -499,7 +490,7 @@ class DiannPgAdapter(DiaNNBaseAdapter):
         PG.Quantity / PG.MaxLFQ are protein-group-level values that DIA-NN repeats
         identically on every precursor row of a group within a run, so a group's
         rows should agree. When annotation noise merges rows that disagree on the
-        quantity (Codex HIGH), picking the "first" row makes the emitted intensity
+        quantity, picking the "first" row makes the emitted intensity
         depend on SQL row order, which is undefined. The max of the finite values
         is deterministic, order-independent, and equal to the shared value in the
         normal (consistent) case; a warning keeps a real disagreement visible.

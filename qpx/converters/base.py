@@ -9,12 +9,10 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from pathlib import Path
 
 import duckdb
 
 from qpx.core.engine import create_converter_connection
-from qpx.core.scores import score_ontology_entries
 from qpx.core.sql import escape_path, sql_build, validate_table
 
 
@@ -50,9 +48,6 @@ class BaseConverter(ABC):
         1. Load tool output into DuckDB tables
         2. SQL transform into QPX schema columns
         3. Stream results into a Writer (FeatureWriter, PsmWriter, etc.)
-
-    After conversion, call ``write_score_ontology()`` to emit ontology
-    entries for all discovered score names.
     """
 
     def __init__(
@@ -120,15 +115,6 @@ class BaseConverter(ABC):
     # Helpers shared by all converters
     # ------------------------------------------------------------------
 
-    @staticmethod
-    def _escape_path(path: str) -> str:
-        """Escape a filesystem path for safe embedding in DuckDB SQL.
-
-        Doubles any single-quote characters so that paths like
-        ``O'Brien/data.txt`` don't break or inject SQL.
-        """
-        return str(path).replace("'", "''")
-
     def _table_exists(self, name: str) -> bool:
         """Return True if *name* is registered as a DuckDB table or view."""
         rows = self._conn.execute(
@@ -164,7 +150,7 @@ class BaseConverter(ABC):
                 yield batch
 
     # ------------------------------------------------------------------
-    # Score tracking and ontology writing
+    # Score tracking
     # ------------------------------------------------------------------
 
     def _track_scores(self, records: list[dict]) -> None:
@@ -194,100 +180,6 @@ class BaseConverter(ABC):
                                     name = s.get("score_name")
                                     if name:
                                         self._discovered_scores.add(name)
-
-    def write_score_ontology(
-        self,
-        output_path: str | Path,
-        view: str = "psm",
-        extra_entries: list[dict] | None = None,
-    ) -> Path | None:
-        """Write ontology.parquet with CV term entries for discovered scores.
-
-        Args:
-            output_path: Path for the ontology Parquet file.
-            view: QPX view name (``"psm"``, ``"feature"``, ``"pg"``).
-            extra_entries: Additional ontology entries to include.
-
-        Returns:
-            Path to the written file, or ``None`` if no entries to write.
-        """
-        entries = score_ontology_entries(self._discovered_scores, view=view)
-        if extra_entries:
-            entries.extend(extra_entries)
-        if not entries:
-            return None
-
-        from qpx.converters.ontology_util import dedupe_ontology_entries
-        from qpx.writers.ontology import OntologyWriter
-
-        entries = dedupe_ontology_entries(entries)
-        output_path = Path(output_path)
-        with OntologyWriter(output_path, creator="qpx", compression=self._compression) as writer:
-            writer.write_batch(entries)
-        self.logger.info(
-            "Wrote %d ontology entries (%d scores) to %s",
-            len(entries),
-            len(self._discovered_scores),
-            output_path,
-        )
-        return output_path
-
-    def write_ontology(
-        self,
-        output_path: str | Path,
-        view: str = "psm",
-        resolved_mappings: dict[str, str] | None = None,
-        tool_name: str | None = None,
-        extra_entries: list[dict] | None = None,
-    ) -> Path | None:
-        """Write ontology.parquet with score + field provenance entries.
-
-        Combines:
-        1. Score ontology entries (from _discovered_scores)
-        2. Field provenance entries (from resolved column mappings)
-        3. Any extra entries passed by the converter
-
-        Args:
-            output_path: Path for the ontology Parquet file.
-            view: QPX view name.
-            resolved_mappings: QPX field -> resolved tool column name.
-            tool_name: Tool name string (e.g. "DIA-NN").
-            extra_entries: Additional ontology entries to include.
-
-        Returns:
-            Path to the written file, or None if no entries to write.
-        """
-        from qpx.core.scores import field_ontology_entries
-
-        entries = score_ontology_entries(self._discovered_scores, view=view)
-        if resolved_mappings:
-            entries.extend(
-                field_ontology_entries(
-                    view=view,
-                    resolved_mappings=resolved_mappings,
-                    tool_name=tool_name,
-                )
-            )
-        if extra_entries:
-            entries.extend(extra_entries)
-        if not entries:
-            return None
-
-        from qpx.converters.ontology_util import dedupe_ontology_entries
-        from qpx.writers.ontology import OntologyWriter
-
-        entries = dedupe_ontology_entries(entries)
-        output_path = Path(output_path)
-        with OntologyWriter(output_path, creator="qpx", compression=self._compression) as writer:
-            writer.write_batch(entries)
-        self.logger.info(
-            "Wrote %d ontology entries (%d scores, %d field mappings) to %s",
-            len(entries),
-            len(self._discovered_scores),
-            len(resolved_mappings or {}),
-            output_path,
-        )
-        return output_path
 
     # ------------------------------------------------------------------
     # Lifecycle

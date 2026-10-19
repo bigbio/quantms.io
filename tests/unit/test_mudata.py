@@ -661,11 +661,11 @@ class TestArrowPivotEquivalence:
         expected = pd.Index(sorted(df["precursor_id"].unique()), name="precursor_id")
         assert list(_sorted_unique(table, "precursor_id")) == list(expected)
 
-    def test_prepare_observations_arrow_matches_pandas(self):
-        """Arrow observation preparation matches the pandas implementation."""
+    def test_prepare_observations_arrow(self):
+        """Every run/label pair becomes one sorted observation with its lookup keys."""
         import pyarrow as pa
 
-        from qpx.mudata import _prepare_observations, _prepare_observations_arrow
+        from qpx.mudata import _prepare_observations_arrow
 
         df = pd.DataFrame(
             {
@@ -675,13 +675,12 @@ class TestArrowPivotEquivalence:
                 "intensity": [1.0, 2.0, 3.0],
             }
         )
-        _, pandas_col, pandas_index, pandas_keys = _prepare_observations(df, None)
         _, arrow_col, arrow_index, arrow_keys = _prepare_observations_arrow(pa.Table.from_pandas(df), None)
 
-        assert arrow_col == pandas_col
-        assert list(arrow_index) == list(pandas_index)
-        assert list(arrow_keys["run_file_name"]) == list(pandas_keys["run_file_name"])
-        assert list(arrow_keys["intensity_label"]) == list(pandas_keys["intensity_label"])
+        assert arrow_col == "observation_id"
+        assert list(arrow_index) == ["r1|L", "r1|M", "r2|L"]
+        assert list(arrow_keys["run_file_name"]) == ["r1", "r1", "r2"]
+        assert list(arrow_keys["intensity_label"]) == ["L", "M", "L"]
 
 
 def test_protein_var_gene_names_serialise_when_every_gene_is_null(tmp_path):
