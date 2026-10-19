@@ -1,0 +1,97 @@
+name: site
+file_type: site_file
+primary_key: [site_id]
+identity_composite: [protein_accession, position, mass_delta, grouped_runs]
+doc: "Protein modification sites: one row per (protein, residue, modification) claim, with a site-level q-value, the probability that the residue is modified (occupancy) and the probability of this modification among the candidates at that residue (identity)"
+
+fields:
+  # Identity
+  site_id:
+    type: int64
+    required: true
+    nullable: false
+    doc: "Opaque identity of the site (int64), supplied by the producer or derived from the identity_composite declared in the footer; the primary key of this view."
+
+  # Site
+  protein_accession:
+    type: string
+    required: true
+    doc: "Accession of the protein the position refers to"
+  family:
+    type: string
+    nullable: true
+    doc: "Protein family the protein belongs to (the canonical entry of an isoform, variant or chain); equal to protein_accession for a canonical entry"
+  position:
+    type: int32
+    required: true
+    doc: "1-based residue position in the protein sequence"
+  amino_acid:
+    type: string
+    required: true
+    doc: "Residue at the position (one letter)"
+  modification_name:
+    type: string
+    required: true
+    doc: "Modification name (e.g. Phospho, Acetyl)"
+  modification_accession:
+    type: string
+    nullable: true
+    doc: "Modification accession (e.g. UNIMOD:21)"
+  mass_delta:
+    type: float64
+    required: true
+    doc: "Monoisotopic mass shift of the modification (Da). Part of the identity composite: two modifications claimed at one residue are two rows."
+
+  # Context
+  grouped_runs:
+    type: "list<string>"
+    required: true
+    doc: "Runs whose PSMs support the site (all runs of the dataset for a dataset-level estimate)"
+  pg_id:
+    type: int64
+    nullable: true
+    doc: "The protein group (pg.pg_id) that holds the protein; null when the protein is in no reported group"
+  prior_evidence:
+    type: string
+    nullable: true
+    doc: "Where the claim comes from before the search, e.g. curated (reviewed annotation), catalogue, sample (the sample's own calls), or null for a site found without a prior"
+
+  # Error control and probabilities
+  site_qvalue:
+    type: float64
+    nullable: true
+    doc: "Site-level q-value: the estimated false share among sites at least as well supported (for example from decoy or knockoff sites). Null when the producer does not estimate one."
+  occupancy:
+    type: float64
+    nullable: true
+    doc: "Probability that the residue carries a modification, given the spectra of the peptides that cover it"
+  identity_probability:
+    type: float64
+    nullable: true
+    doc: "Probability that the modification at the residue is this one, given that it is modified. The identity probabilities of a residue's rows and of its alternatives sum to 1."
+  alternatives:
+    type: "list<site_alternative>"
+    nullable: true
+    doc: "Other modifications the evidence places at the residue, with their identity probabilities, largest first (e.g. trimethyl 0.29 beside acetyl 0.71)"
+
+  # Evidence
+  psm_count:
+    type: int32
+    nullable: true
+    doc: "PSMs passing the PSM-level cutoff that place the modification at the residue"
+  best_psm_id:
+    type: int64
+    nullable: true
+    doc: "The best of those PSMs (psm.psm_id)"
+  is_decoy:
+    type: bool
+    required: true
+    doc: "Decoy or knockoff site, written when a reader should be able to recompute site_qvalue"
+
+  # Scores and metadata
+  additional_scores:
+    type: "list<score>"
+    doc: "Additional scores (e.g. a localization probability)"
+  cv_params:
+    type: "list<cv_param>"
+    doc: "CV parameters"

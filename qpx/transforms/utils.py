@@ -13,6 +13,8 @@ _QPX_PARQUET_SUFFIXES = (
     ".ontology.parquet",
     ".provenance.parquet",
     ".pepmap.parquet",
+    ".site.parquet",
+    ".proteoform.parquet",
     ".mz.parquet",
 )
 

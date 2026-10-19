@@ -1,0 +1,100 @@
+name: proteoform
+file_type: proteoform_file
+primary_key: [proteoform_id]
+identity_composite: [accession, grouped_runs, label]
+doc: "Proteoforms: per protein family, the canonical entry and each isoform, sequence variant and processed chain identified with its own evidence, with a member-level q-value and optional per-label quantification (one row per label, as in pg)"
+
+fields:
+  # Identity
+  proteoform_id:
+    type: int64
+    required: true
+    nullable: false
+    doc: "Opaque identity of the proteoform (int64), supplied by the producer or derived from the identity_composite declared in the footer; the primary key of this view."
+
+  # Member
+  family:
+    type: string
+    required: true
+    doc: "Protein family: the canonical entry (e.g. the UniProt accession) shared by all its members"
+  accession:
+    type: string
+    required: true
+    doc: "Accession of this member (canonical, isoform, variant or chain entry)"
+  kind:
+    type: string
+    required: true
+    doc: "canonical, isoform, variant or chain"
+  description:
+    type: string
+    nullable: true
+    doc: "What distinguishes the member, e.g. a variant in HGVS protein notation (p.Arg175His), an isoform identifier, or a chain range"
+  pg_id:
+    type: int64
+    nullable: true
+    doc: "The protein group (pg.pg_id) that holds the family"
+
+  # Context
+  grouped_runs:
+    type: "list<string>"
+    required: true
+    doc: "Runs grouped into this quantification unit (as in pg)"
+  source:
+    type: string
+    nullable: true
+    doc: "Database or annotation the member comes from (e.g. UniProt, a variant catalogue, the sample's own calls)"
+  prior_evidence:
+    type: string
+    nullable: true
+    doc: "Prior evidence class of the member before the search (e.g. curated, catalogue, sample)"
+
+  # Evidence and error control
+  specific_peptides:
+    type: int32
+    nullable: true
+    doc: "Peptides that no other member of the family explains"
+  shared_peptides:
+    type: int32
+    nullable: true
+    doc: "Peptides the member shares with other members of its family"
+  psm_count:
+    type: int32
+    nullable: true
+    doc: "PSMs passing their cutoff that support the member"
+  evidence:
+    type: string
+    nullable: true
+    doc: "specific (the q-value comes from the member's specific peptides) or shared (from peptides shared within the family)"
+  qvalue:
+    type: float64
+    nullable: true
+    doc: "Member-level q-value: the error control of the member's own claim (e.g. a class-aware or knockoff-based q-value of its best specific PSM)"
+  best_psm_id:
+    type: int64
+    nullable: true
+    doc: "The PSM the q-value comes from (psm.psm_id)"
+  is_decoy:
+    type: bool
+    required: true
+    doc: "Decoy or knockoff member"
+
+  # Quantification (flattened as in pg)
+  label:
+    type: string
+    nullable: true
+    doc: "Channel/label of this quantification; null for identification-only output. Part of the identity composite."
+  intensity:
+    type: float32
+    nullable: true
+    doc: "Quantity of the member from its specific peptides, for this label; null when not quantified"
+  additional_intensities:
+    type: "list<additional_intensity>"
+    doc: "Other quantities for this row's label"
+
+  # Scores and metadata
+  additional_scores:
+    type: "list<score>"
+    doc: "Additional scores"
+  cv_params:
+    type: "list<cv_param>"
+    doc: "CV parameters"

@@ -19,9 +19,11 @@ from qpx.core.data import (
     MzSpectra,
     Ontology,
     PepMap,
+    Proteoform,
     Provenance,
     Run,
     Sample,
+    Site,
 )
 from qpx.core.data.schema import ValidationIssue, ValidationResult
 from qpx.core.engine import DuckDBEngine
@@ -148,6 +150,8 @@ class Dataset:
         "ontology": (Ontology, ".ontology.parquet"),
         "provenance": (Provenance, ".provenance.parquet"),
         "pepmap": (PepMap, ".pepmap.parquet"),
+        "site": (Site, ".site.parquet"),
+        "proteoform": (Proteoform, ".proteoform.parquet"),
     }
 
     @classmethod
@@ -328,6 +332,14 @@ class Dataset:
     @property
     def pepmap(self) -> PepMap | None:
         return self._structures.get("pepmap")
+
+    @property
+    def site(self) -> Site | None:
+        return self._structures.get("site")
+
+    @property
+    def proteoform(self) -> Proteoform | None:
+        return self._structures.get("proteoform")
 
     # --- View accessors (cached) ---
     @property
