@@ -22,6 +22,7 @@ from qpx.converters.mappings import get_field_mappings
 from qpx.converters.ptm import compute_precursor_mz
 from qpx.converters.spectronaut.base_adapter import SpectronautBaseAdapter
 from qpx.converters.spectronaut.constants import to_modifications, to_proforma
+from qpx.converters.utils import pg_accessions_array
 from qpx.core.cleavage import count_missed_cleavages
 from qpx.core.data import FeatureSchema
 from qpx.core.sql import sql_build, validate_identifier
@@ -518,23 +519,6 @@ class SpectronautFeatureAdapter(SpectronautBaseAdapter):
         mods_list = [mods_lookup.get((str(ms), str(s), int(c))) for ms, s, c in zip(mod_seqs, seqs, charges)]
         return pa.array(mods_list, type=mods_type)
 
-    @staticmethod
-    def _build_pg_accessions_array(
-        table: pa.Table,
-        pg_acc_type: pa.DataType,
-    ) -> pa.Array:
-        """Build pg_accessions column from protein group strings."""
-        pg_groups = table.column("_pg_group").to_pylist()
-        pg_list = [
-            [
-                {"accession": acc, "start": None, "end": None, "pre": None, "post": None}
-                for acc in (str(pg).split(";") if pg else [])
-            ]
-            or None
-            for pg in pg_groups
-        ]
-        return pa.array(pg_list, type=pg_acc_type)
-
     def _process_batch_arrow(
         self,
         runs: list[str],
@@ -554,7 +538,7 @@ class SpectronautFeatureAdapter(SpectronautBaseAdapter):
 
         n = len(table)
         mods_array = self._build_modifications_array(table, mods_lookup, mods_type)
-        pg_array = self._build_pg_accessions_array(table, pg_acc_type)
+        pg_array = pg_accessions_array(table.column("_pg_group"), pg_acc_type)
 
         table = table.drop("_modified_sequence").drop("_pg_group")
 

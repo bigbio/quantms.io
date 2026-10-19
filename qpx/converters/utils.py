@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import Optional
 
+import pyarrow as pa
+import pyarrow.compute as pc
+
 
 def safe_float(val) -> Optional[float]:
     """Convert a value to float, returning None for missing/invalid values.
@@ -82,3 +85,22 @@ def strip_uniprot_prefix(accession: str) -> str:
 def mq_flag_to_bool(val) -> bool:
     """Convert MaxQuant '+' flag to boolean."""
     return str(val).strip() == "+"
+
+
+def pg_accessions_array(pg_groups: pa.ChunkedArray, pg_acc_type: pa.ListType) -> pa.ListArray:
+    """Split ``;``-separated protein groups into the ``pg_accessions`` list column.
+
+    Each accession becomes a struct with null positions; an empty group becomes a
+    null list. Built with Arrow kernels instead of one Python dict per accession.
+    """
+    groups = pg_groups.combine_chunks()
+    blank = pc.call_function("equal", [groups, pa.scalar("", groups.type)])
+    nonblank = pc.call_function("if_else", [blank, pa.scalar(None, groups.type), groups])
+    split = pc.call_function("split_pattern", [nonblank], pc.SplitPatternOptions(";"))
+    accessions = split.values
+    struct_type = pg_acc_type.value_type
+    structs = pa.StructArray.from_arrays(
+        [accessions if field.name == "accession" else pa.nulls(len(accessions), field.type) for field in struct_type],
+        fields=list(struct_type),
+    )
+    return pa.ListArray.from_arrays(split.offsets, structs, type=pg_acc_type, mask=split.is_null())

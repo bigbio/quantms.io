@@ -15,9 +15,9 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+import numpy as np
 import pandas as pd
 import pyarrow as pa
-import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from qpx.converters.base import resolve_columns
@@ -25,6 +25,7 @@ from qpx.converters.diann.base_adapter import DiaNNBaseAdapter, decoy_protein_gr
 from qpx.converters.diann.constants import to_modifications, to_proforma
 from qpx.converters.mappings import get_field_mappings
 from qpx.converters.ptm import compute_precursor_mz
+from qpx.converters.utils import pg_accessions_array
 from qpx.core.cleavage import count_missed_cleavages
 from qpx.core.scan import scan_from_native_id
 from qpx.core.sql import sql_build, validate_identifier
@@ -81,25 +82,6 @@ def _safe_float_sql(column: str) -> str:
 def _safe_double_sql(column: str) -> str:
     """Build a SQL expression that converts a finite value to DOUBLE."""
     return f'CASE WHEN r."{column}" IS NOT NULL AND NOT isnan(CAST(r."{column}" AS DOUBLE)) THEN CAST(r."{column}" AS DOUBLE) END'
-
-
-def _pg_accessions_array(pg_groups: pa.ChunkedArray, pg_acc_type: pa.ListType) -> pa.ListArray:
-    """Split ``;``-separated protein groups into the ``pg_accessions`` list column.
-
-    Each accession becomes a struct with null positions; an empty group becomes a
-    null list. Built with Arrow kernels instead of one Python dict per accession.
-    """
-    groups = pg_groups.combine_chunks()
-    blank = pc.call_function("equal", [groups, pa.scalar("", groups.type)])
-    nonblank = pc.call_function("if_else", [blank, pa.scalar(None, groups.type), groups])
-    split = pc.call_function("split_pattern", [nonblank], pc.SplitPatternOptions(";"))
-    accessions = split.values
-    struct_type = pg_acc_type.value_type
-    structs = pa.StructArray.from_arrays(
-        [accessions if field.name == "accession" else pa.nulls(len(accessions), field.type) for field in struct_type],
-        fields=list(struct_type),
-    )
-    return pa.ListArray.from_arrays(split.offsets, structs, type=pg_acc_type, mask=split.is_null())
 
 
 def _ms_info_scans(values: pd.Series) -> pd.Series:
@@ -843,7 +825,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
         mods_array = pa.array(mods_list, type=mods_type)
 
         # --- Build pg_accessions column ---
-        pg_array = _pg_accessions_array(table.column("_pg_group"), pg_acc_type)
+        pg_array = pg_accessions_array(table.column("_pg_group"), pg_acc_type)
 
         # feature.pg_ids is left null: the feature->pg association is computed on
         # read via the Dataset softlink (bigbio/qpx#269), not materialized here.
@@ -876,9 +858,14 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
         return pa.table(columns, schema=target_schema)
 
     def _merge_scan_info_arrow(self, table: pa.Table, mzml_info_folder: str) -> pa.Table:
-        """Merge MS scan info from mzml files into the Arrow table."""
-        df = table.to_pandas()
-        merged_parts = []
+        """Merge MS scan info from mzml files into the Arrow table.
+
+        Only the columns the merge reads go through pandas; the merged ``scan``
+        column replaces the table's, with rows grouped by run.
+        """
+        df = table.select(["run_file_name", "rt", "observed_mz", "scan", "_ms2_index"]).to_pandas()
+        rows: list[np.ndarray] = []
+        scans: list = []
 
         for run_name, group_df in df.groupby("run_file_name", sort=False):
             ms_info_path = next(
@@ -887,11 +874,12 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
             )
             if ms_info_path:
                 group_df = self._merge_scan_info(group_df, ms_info_path)
-            merged_parts.append(group_df)
+            rows.append(group_df.index.to_numpy())
+            scans.extend(group_df["scan"])
 
-        merged_df = pd.concat(merged_parts, ignore_index=True)
-        # Rebuild Arrow table preserving the original schema for non-scan columns
-        return pa.Table.from_pandas(merged_df, schema=table.schema, preserve_index=False)
+        merged = table.take(pa.array(np.concatenate(rows), type=pa.int64()))
+        scan_field = merged.schema.field("scan")
+        return merged.set_column(merged.schema.get_field_index("scan"), scan_field, pa.array(scans, type=scan_field.type))
 
     def _merge_scan_info(self, run_data: pd.DataFrame, ms_info_path: Path) -> pd.DataFrame:
         """Fill feature scans from one run's MS-info table.
