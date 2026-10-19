@@ -193,7 +193,7 @@ class MaxQuantPsmAdapter(MaxQuantBaseAdapter):
         if neutral_mass and charge:
             calculated_mz = (neutral_mass + charge * PROTON_MASS) / charge
         else:
-            calculated_mz = 0.0
+            calculated_mz = None
 
         # RT (minutes → seconds)
         rt = safe_float(row.get(r.get("rt", "Retention time")))

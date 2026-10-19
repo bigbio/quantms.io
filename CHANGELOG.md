@@ -82,6 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Ontology PK uniqueness**: ontology writes collapse to one row per `(field_name, view)` (first-wins) when a field is both a discovered score and a mapped field.
 - **DIA-NN blank `anchor_protein`**: empty/whitespace first accession from `Protein.Group` is written as NULL; validators treat blank anchors as unset.
 - **`qpxc validate` reported I/O failures as schema drift** ([#300](https://github.com/bigbio/qpx/issues/300)) — when DuckDB could not create its spill directory (`.tmp` in a read-only working directory), a cross-view check that had to spill was reported as "could not run (possible schema drift)". It is now reported as an I/O error with a hint to run from a writable directory. Check names and severities are unchanged; under strict validation a check that could not run is still an error.
+- **`convert maxquant` missing m/z** — `feature.calculated_mz` and `psm.calculated_mz` were 0 when a row had no mass or charge, and `feature.observed_mz` was 0 without an `m/z` value. They are now null, as the schema allows; `psm.observed_mz` is required and stays 0.
 
 ### Added
 
