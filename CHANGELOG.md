@@ -86,6 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`convert fragpipe` missing m/z** — `feature.calculated_mz` and `feature.observed_mz` were 0 when neither `psm.tsv` nor the ion table had a value, and `psm.calculated_mz` was 0 without `Calculated M/Z`. They are now null. `compensation_voltage` stays 0 for non-FAIMS units because it is part of the feature identity.
 - **`convert diann` `calculated_mz` of an unknown modification** — a precursor whose mass could not be computed got `calculated_mz = 0`; it is now null, like `observed_mz` ([#244](https://github.com/bigbio/qpx/issues/244)).
 - **`convert spectronaut` missing m/z** — `calculated_mz` was 0 for a precursor whose mass could not be computed, and `observed_mz` was 0 when the report had no precursor m/z column or value. Both are now null, as in `convert diann` ([#244](https://github.com/bigbio/qpx/issues/244)).
+- **`Dataset.design_matrix(value_col=...)`** — the parameter was documented as selecting the intensity column to pivot but was ignored; `intensity` was always used. Any other value now raises `ValueError`.
 
 ### Added
 

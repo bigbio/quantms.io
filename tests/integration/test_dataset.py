@@ -489,6 +489,12 @@ class TestDesignMatrix:
             with pytest.raises(ValueError, match="level must be"):
                 ds.design_matrix(level="invalid")
 
+    def test_unsupported_value_col_raises(self, dataset_dir):
+        """Only the primary intensity can be pivoted."""
+        with Dataset(dataset_dir) as ds:
+            with pytest.raises(ValueError, match="value_col must be 'intensity'"):
+                ds.design_matrix(value_col="abundance")
+
     def test_output_path_writes_parquet(self, dataset_dir, tmp_path):
         """output_path writes pivot directly to Parquet (out-of-core)."""
         import pyarrow.parquet as pq

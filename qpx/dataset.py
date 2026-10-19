@@ -737,7 +737,8 @@ class Dataset:
         level : str
             "protein" (uses pg + run) or "peptide" (uses feature + run).
         value_col : str
-            Which intensity column to pivot (default: "intensity").
+            Intensity column to pivot. Only ``"intensity"`` (the primary
+            quantity) is supported; any other value raises ``ValueError``.
         fillna : float | None
             Value to fill missing cells. Use *None* to keep NaN.
             Ignored when *output_path* is set.
@@ -753,6 +754,8 @@ class Dataset:
         """
         import pandas as pd
 
+        if value_col != "intensity":
+            raise ValueError(f"value_col must be 'intensity', got {value_col!r}")
         sql = self._abundance_sql(level)
 
         if output_path is not None:
