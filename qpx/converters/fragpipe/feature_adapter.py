@@ -441,7 +441,7 @@ class FragPipeFeatureAdapter(BaseConverter):
             _, modifications = to_modifications(assigned_mods_str, sequence)
 
         # M/Z (from feature file — used as fallback)
-        mz = safe_float(row.get(r.get("observed_mz", "M/Z"))) or 0.0
+        mz = safe_float(row.get(r.get("observed_mz", "M/Z")))
         compensation_voltage = safe_float(row.get(r.get("compensation_voltage", "Compensation Voltage"))) or 0.0
 
         charge = int(row.get(r.get("charge", "Charge"), 0))
@@ -479,8 +479,8 @@ class FragPipeFeatureAdapter(BaseConverter):
                 "charge": charge,
                 "posterior_error_probability": psm_info.get("pep"),
                 "is_decoy": psm_info.get("is_decoy", _is_decoy_fallback),
-                "calculated_mz": _calc or float(mz),
-                "observed_mz": _obs or float(mz),
+                "calculated_mz": _calc or mz,
+                "observed_mz": _obs or mz,
                 "mass_error_ppm": mass_error_ppm,
                 "additional_scores": None,
                 "predicted_rt": None,

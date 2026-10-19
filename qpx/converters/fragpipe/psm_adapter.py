@@ -172,7 +172,7 @@ class FragPipePsmAdapter(BaseConverter):
             )
             or 0.0
         )
-        calculated_mz = safe_float(row.get(r.get("calculated_mz", "Calculated M/Z"))) or 0.0
+        calculated_mz = safe_float(row.get(r.get("calculated_mz", "Calculated M/Z")))
 
         # RT (FragPipe Retention is already in seconds)
         rt = safe_float(row.get(r.get("rt", "Retention")))
