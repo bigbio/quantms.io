@@ -305,7 +305,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
             peptidoform = to_proforma(modified_seq)
             _, modifications = to_modifications(modified_seq, sequence)
 
-            calculated_mz = compute_precursor_mz(modified_seq, charge) or 0.0
+            calculated_mz = compute_precursor_mz(modified_seq, charge)
 
             missed = count_missed_cleavages(sequence, enzyme_name) if enzyme_name else None
 
@@ -363,7 +363,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
                 f"OR starts_with(r.\"{pg_col}\", 'rev_') OR starts_with(r.\"{pg_col}\", 'REV_')) AS is_decoy"
             )
 
-        parts.append("COALESCE(CAST(lk.calculated_mz AS FLOAT), 0.0::FLOAT) AS calculated_mz")
+        parts.append("CAST(lk.calculated_mz AS FLOAT) AS calculated_mz")
 
         # observed_mz: emit a truthful NULL when the report carries no Precursor.Mz
         # (bigbio/qpx#244). A sentinel 0.0 looks like a real measurement and
@@ -382,9 +382,9 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
         # inputs are present — on PXD030304 22% of rows carry an observed m/z that
         # genuinely differs from the theoretical one, and that error was discarded
         # (bigbio/qpx#298). Guarded on both values being positive: calculated_mz is
-        # COALESCEd to 0.0 above, and observed_mz is null when the report has no
-        # Precursor.Mz, so an unmeasured row stays null rather than dividing by zero
-        # or reporting a fabricated error. The formula matches docs/spec/feature.md.
+        # null when the peptidoform's mass cannot be computed, and observed_mz is null
+        # when the report has no Precursor.Mz, so an unmeasured row stays null rather
+        # than reporting a fabricated error. The formula matches docs/spec/feature.md.
         mass_error_col = resolved.get("mass_error_ppm")
         if mass_error_col and has_column(mass_error_col):
             parts.append(f"{_safe_float_sql(mass_error_col)} AS mass_error_ppm")
