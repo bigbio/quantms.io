@@ -68,7 +68,7 @@ fields:
   identity_probability:
     type: float64
     nullable: true
-    doc: "Probability that the modification at the residue is this one, given that it is modified. The identity probabilities of a residue's rows and of its alternatives sum to 1."
+    doc: "Probability that the modification at the residue is this one, given that it is modified. It and the identity probabilities in alternatives sum to 1."
   alternatives:
     type: "list<site_alternative>"
     nullable: true
