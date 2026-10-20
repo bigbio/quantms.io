@@ -1400,6 +1400,8 @@ class Dataset:
         "ontology": ("OntologyWriter", ".ontology.parquet"),
         "provenance": ("ProvenanceWriter", ".provenance.parquet"),
         "pepmap": ("PepMapWriter", ".pepmap.parquet"),
+        "site": ("SiteWriter", ".site.parquet"),
+        "proteoform": ("ProteoformWriter", ".proteoform.parquet"),
     }
 
     def save_structure(
