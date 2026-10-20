@@ -17,7 +17,13 @@ from typing import Optional
 
 import click
 
+from qpx.dataset import Dataset
+
 logger = logging.getLogger("qpx.cli.info")
+
+# Derived from the canonical registry so a new structure cannot be supported
+# by the library while the CLI silently rejects it (bigbio/qpx#289).
+_VALID_STRUCTURES = Dataset.structure_names()
 
 
 # ---------------------------------------------------------------------------
@@ -145,20 +151,7 @@ def _show_dataset_summary(dataset_path: Path, verbose: bool):
 @click.option(
     "--structure",
     help="QPX data structure name (when using --dataset-path)",
-    type=click.Choice(
-        [
-            "psm",
-            "feature",
-            "pg",
-            "mz",
-            "sample",
-            "run",
-            "dataset",
-            "ontology",
-            "provenance",
-        ],
-        case_sensitive=False,
-    ),
+    type=click.Choice(_VALID_STRUCTURES, case_sensitive=False),
 )
 @click.option(
     "--canonical",
@@ -249,37 +242,14 @@ def _show_file_schema(file_path: Path):
 
 
 def _show_canonical_schema(structure: str):
-    """Display the canonical QPX schema from the schema class definitions."""
-    from qpx.core.data import (
-        PG,
-        PSM,
-        DatasetMeta,
-        Feature,
-        MzSpectra,
-        Ontology,
-        Provenance,
-        Run,
-        Sample,
-    )
+    """Display the canonical QPX schema from its YAML definition."""
+    from qpx.core.data.loader import load_schema
 
-    class_map = {
-        "psm": PSM,
-        "feature": Feature,
-        "pg": PG,
-        "mz": MzSpectra,
-        "sample": Sample,
-        "run": Run,
-        "dataset": DatasetMeta,
-        "ontology": Ontology,
-        "provenance": Provenance,
-    }
-
-    cls = class_map.get(structure)
-    if cls is None:
+    if structure not in _VALID_STRUCTURES:
         raise click.ClickException(f"Unknown structure: {structure}")
 
     try:
-        schema = cls.schema()
+        schema = load_schema(structure).get_arrow_schema()
     except (AttributeError, TypeError) as e:
         raise click.ClickException(f"Cannot retrieve canonical schema for '{structure}': {e}")
 
