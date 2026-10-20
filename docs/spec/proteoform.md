@@ -55,7 +55,14 @@ A PSM-level q-value does not control error over members, even the q-value of a m
 
 ## Validation
 
-Under `qpxc validate` (strict), `proteoform_qvalue` must be finite and in [0, 1], and a populated `pg_id` must resolve to a pg row with the same `label` and `grouped_runs`.
+Under `qpxc validate` (strict):
+
+- `proteoform_qvalue` is finite and in [0, 1];
+- `kind` is one of `canonical`, `isoform`, `variant`, `chain`, and `evidence` one of `specific`, `shared` (or null);
+- a populated `pg_id` resolves to a pg row with the same `label` and `grouped_runs`;
+- a populated `best_psm_id` resolves to a `psm.psm_id` when the dataset has a psm view.
+
+`source` and `prior_evidence` are open vocabularies: producers name their own sources and evidence classes.
 
 ## Python API
 

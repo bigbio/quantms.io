@@ -55,7 +55,7 @@ fields:
   prior_evidence:
     type: string
     nullable: true
-    doc: "Where the claim comes from before the search, e.g. curated (reviewed annotation), catalogue, sample (the sample's own calls), or null for a site found without a prior"
+    doc: "Where the claim comes from before the search, e.g. curated (reviewed annotation), catalogue, sample (the sample's own calls), or null for a site found without a prior. An open vocabulary: producers name their own evidence classes."
 
   # Error control and probabilities
   site_qvalue:
@@ -69,7 +69,7 @@ fields:
   evidence_fraction:
     type: float64
     nullable: true
-    doc: "Share of the residue's modification evidence that supports this modification: each spectrum's explanations (the candidate peptidoforms of that spectrum) are mutually exclusive and get posterior probabilities; the probability mass that places a modification on the residue is summed over spectra, and this is the part placing this modification. Together with the alternatives it sums to 1. A relative share, not the probability that the modification is present: two modifications that both occur on the residue (on different molecules or in different runs) are two rows, each with its own site_qvalue, and can each have a fraction near 0.5."
+    doc: "Share of the residue's modification evidence that supports this modification: each spectrum's explanations (the candidate peptidoforms of that spectrum) are mutually exclusive and get posterior probabilities; the probability mass that places a modification on the residue is summed over spectra, and this is the part placing this modification. Together with the alternatives it sums to 1; a row without alternatives holds the whole pool, so its fraction is 1. A relative share, not the probability that the modification is present: two modifications that both occur on the residue (on different molecules or in different runs) are two rows, each with its own site_qvalue, and can each have a fraction near 0.5."
   alternatives:
     type: "list<site_alternative>"
     nullable: true

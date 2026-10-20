@@ -83,7 +83,7 @@ def test_site_schema_round_trip_and_identity(tmp_path):
             alternatives=[{"name": "Acetyl", "accession": "UNIMOD:1", "mass_delta": 42.010565, "evidence_fraction": 0.71}],
         ),
         # A site found without a prior and without a site-level estimate.
-        make_site_record(position=382, prior_evidence=None, site_qvalue=None, alternatives=None),
+        make_site_record(position=382, prior_evidence=None, site_qvalue=None, alternatives=None, evidence_fraction=1.0),
     ]
     out = tmp_path / "exp.site.parquet"
     with SiteWriter(out) as w:
@@ -105,10 +105,18 @@ def test_equal_mass_modifications_get_distinct_site_ids(tmp_path):
         w.write_batch(
             [
                 make_site_record(
-                    modification_name="Dimethyl", modification_accession="UNIMOD:36", mass_delta=28.0313, alternatives=None
+                    modification_name="Dimethyl",
+                    modification_accession="UNIMOD:36",
+                    mass_delta=28.0313,
+                    alternatives=None,
+                    evidence_fraction=1.0,
                 ),
                 make_site_record(
-                    modification_name="Ethyl", modification_accession="UNIMOD:280", mass_delta=28.0313, alternatives=None
+                    modification_name="Ethyl",
+                    modification_accession="UNIMOD:280",
+                    mass_delta=28.0313,
+                    alternatives=None,
+                    evidence_fraction=1.0,
                 ),
             ]
         )
@@ -145,6 +153,16 @@ def test_protein_n_terminus_and_residue_1_are_distinct_sites(tmp_path):
             "evidence_fraction": 0.5,
             "alternatives": [{"name": "Trimethyl", "accession": None, "mass_delta": 42.04695, "evidence_fraction": 1.5}],
         },
+        # Without alternatives the row holds the residue's whole evidence.
+        {"evidence_fraction": 0.71, "alternatives": None},
+        # Alternatives listed smallest first.
+        {
+            "evidence_fraction": 0.5,
+            "alternatives": [
+                {"name": "Methyl", "accession": None, "mass_delta": 14.01565, "evidence_fraction": 0.1},
+                {"name": "Trimethyl", "accession": None, "mass_delta": 42.04695, "evidence_fraction": 0.4},
+            ],
+        },
         # In range, but the residue's fractions do not sum to 1.
         {
             "evidence_fraction": 0.71,
@@ -159,7 +177,7 @@ def test_site_values_outside_their_range_fail_strict_validation(tmp_path, overri
         w.write_batch([make_site_record(**overrides)])
     result = _validate(tmp_path, "site")
     assert not result.is_valid
-    assert {i.check for i in result.errors} & {"value_out_of_range", "evidence_fraction_sum"}
+    assert {i.check for i in result.errors} & {"value_out_of_range", "evidence_fraction_sum", "alternatives_order"}
 
 
 def test_proteoform_qvalue_outside_its_range_fails_strict_validation(tmp_path):
@@ -256,6 +274,63 @@ def test_a_cross_label_pg_link_fails_strict_validation(tmp_path):
         w.write_batch([make_proteoform_record(label="TMT127N", intensity=12.5, pg_id=pg_ids["TMT126"])])
     result = _validate(tmp_path, "proteoform")
     assert any(i.check == "pg_link_context" for i in result.errors)
+
+
+@pytest.mark.parametrize("overrides", [{"kind": "gene"}, {"evidence": "maybe"}])
+def test_proteoform_values_outside_the_vocabulary_fail_strict_validation(tmp_path, overrides):
+    from qpx.writers import ProteoformWriter
+
+    with ProteoformWriter(tmp_path / "exp.proteoform.parquet") as w:
+        w.write_batch([make_proteoform_record(**overrides)])
+    result = _validate(tmp_path, "proteoform")
+    assert any(i.check == "value_not_in_vocabulary" for i in result.errors)
+
+
+def _id_only_pg(tmp_path):
+    """One identification-only protein group (null label); returns its pg_id."""
+    from qpx.writers import PgWriter
+    from tests.conftest import make_pg_record
+
+    with PgWriter(tmp_path / "exp.pg.parquet") as w:
+        w.write_batch([make_pg_record(anchor_protein="P04637", intensities=[])])
+    pg = pq.read_table(tmp_path / "exp.pg.parquet")
+    assert pg.column("label").to_pylist() == [None]
+    return pg.column("pg_id")[0].as_py()
+
+
+def test_a_site_links_to_the_identification_pg_row(tmp_path):
+    """A site links to the null-label pg row of its runs; a labelled pg row is reported."""
+    from qpx.writers import SiteWriter
+
+    pg_id = _id_only_pg(tmp_path)
+    with SiteWriter(tmp_path / "exp.site.parquet") as w:
+        w.write_batch([make_site_record(pg_id=pg_id)])
+    assert _validate(tmp_path, "site").is_valid
+
+    for f in tmp_path.glob("exp.*.parquet"):
+        f.unlink()
+    labelled = _two_channel_pg(tmp_path)
+    with SiteWriter(tmp_path / "exp.site.parquet") as w:
+        w.write_batch([make_site_record(pg_id=labelled["TMT126"])])
+    result = _validate(tmp_path, "site")
+    assert any(i.check == "pg_link_context" for i in result.errors)
+
+
+def test_best_psm_id_must_resolve_when_the_psm_view_is_present(tmp_path):
+    from qpx.writers import ProteoformWriter, PsmWriter, SiteWriter
+    from tests.conftest import make_psm_record
+
+    with PsmWriter(tmp_path / "exp.psm.parquet") as w:
+        w.write_batch([make_psm_record()])
+    psm_id = pq.read_table(tmp_path / "exp.psm.parquet").column("psm_id")[0].as_py()
+    with SiteWriter(tmp_path / "exp.site.parquet") as w:
+        w.write_batch([make_site_record(best_psm_id=psm_id), make_site_record(position=200, best_psm_id=psm_id + 1)])
+    with ProteoformWriter(tmp_path / "exp.proteoform.parquet") as w:
+        w.write_batch([make_proteoform_record(best_psm_id=psm_id)])
+    site = _validate(tmp_path, "site")
+    assert [i.check for i in site.errors] == ["dangling_psm_id"]
+    assert "1 site row(s)" in site.errors[0].message
+    assert _validate(tmp_path, "proteoform").is_valid
 
 
 def test_dataset_discovers_site_and_proteoform(tmp_path):

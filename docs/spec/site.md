@@ -4,7 +4,7 @@
 
 - **`site_qvalue`** — error control over the claims of this view. A claim is **false** when the residue does not carry this modification in the sample, whatever the reason: the peptide or the protein is wrong, the modification is on another residue, or it is another modification. The **counting unit** is the distinct row (protein, position, modification, runs), not the PSM: the q-value is the estimated proportion of false claims among the rows at least as well supported. It is a set-level statistic, not the probability that one row is correct. A producer that has no estimate at this unit leaves it null, and records the method and the population it estimated over in [provenance](provenance.md).
 - **`modified_probability`** — the probability that the residue carries *some* modification, from the spectra of the peptides that cover it. It is **not stoichiometry** (the fraction of the protein's copies that are modified), which this view does not report.
-- **`evidence_fraction`** — the share of the residue's modification evidence that supports *this* modification. Within one spectrum the candidate explanations are mutually exclusive and get posterior probabilities; the probability mass placing a modification on the residue is summed over spectra, and the evidence fraction is the part of it placing this modification. With the `alternatives` of the row it sums to 1. Mass spectrometry often cannot tell near-isobaric modifications apart (acetyl and trimethyl differ by 0.036 Da), and the fractions show how the evidence splits between them.
+- **`evidence_fraction`** — the share of the residue's modification evidence that supports *this* modification. Within one spectrum the candidate explanations are mutually exclusive and get posterior probabilities; the probability mass placing a modification on the residue is summed over spectra, and the evidence fraction is the part of it placing this modification. With the `alternatives` of the row it sums to 1; a row without alternatives holds the residue's whole evidence, so its fraction is 1. Mass spectrometry often cannot tell near-isobaric modifications apart (acetyl and trimethyl differ by 0.036 Da), and the fractions show how the evidence splits between them.
 
 !!! warning "An evidence fraction is not a presence probability"
     Two modifications that both occur at a residue — on different molecules, or in different runs — are two rows, each with its own `site_qvalue`. Their evidence fractions can both be near 0.5 although both are confidently present. Read presence from `site_qvalue`, and use the evidence fraction to see whether the data tell competing modifications apart.
@@ -65,7 +65,15 @@ The `site_alternative` struct:
 
 ## Validation
 
-Under `qpxc validate` (strict), `site_qvalue`, `modified_probability`, `evidence_fraction` and the alternatives' fractions must be finite and in [0, 1], a row's evidence fraction and its alternatives' must sum to 1, and a populated `pg_id` must resolve to a pg row with a null label and the same `grouped_runs`.
+Under `qpxc validate` (strict):
+
+- `site_qvalue`, `modified_probability`, `evidence_fraction` and the alternatives' fractions are finite and in [0, 1];
+- a row's evidence fraction and its alternatives' sum to 1, and a row without alternatives has a fraction of 1 (or null);
+- alternatives are listed in decreasing evidence fraction;
+- a populated `pg_id` resolves to a pg row with a null label and the same `grouped_runs`;
+- a populated `best_psm_id` resolves to a `psm.psm_id` when the dataset has a psm view.
+
+`prior_evidence` is an open vocabulary: producers name their own evidence classes.
 
 ## Python API
 

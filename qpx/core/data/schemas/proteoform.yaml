@@ -24,7 +24,7 @@ fields:
   kind:
     type: string
     required: true
-    doc: "canonical, isoform, variant or chain"
+    doc: "canonical, isoform, variant or chain (a closed vocabulary, checked by strict validation)"
   description:
     type: string
     nullable: true
@@ -46,7 +46,7 @@ fields:
   prior_evidence:
     type: string
     nullable: true
-    doc: "Prior evidence class of the member before the search (e.g. curated, catalogue, sample)"
+    doc: "Prior evidence class of the member before the search (e.g. curated, catalogue, sample). An open vocabulary: producers name their own evidence classes."
 
   # Evidence and error control
   specific_peptides:
@@ -64,7 +64,7 @@ fields:
   evidence:
     type: string
     nullable: true
-    doc: "specific: the member has peptides specific to it within the family; shared: only peptides shared within the family support it. A shared-only row establishes support for the family, not the presence of this member."
+    doc: "specific: the member has peptides specific to it within the family; shared: only peptides shared within the family support it (a closed vocabulary, checked by strict validation). A shared-only row establishes support for the family, not the presence of this member."
   proteoform_qvalue:
     type: float64
     nullable: true

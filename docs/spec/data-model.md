@@ -161,8 +161,8 @@ The join keys, spelled out:
 | `(file, label)` | `sample` | unnest `run.samples[]`, match `label`, take `sample_accession`; then `sample.sample_accession` |
 | `psm` ↔ `feature` | — | `psm.feature_id` is the **authoritative** (optional) foreign key: `psm.feature_id = feature.feature_id` (null when a producer does not assign one). Its inverse, `feature.psm_ids`, is a **computed softlink** (`Dataset.link_feature_psm()`, bigbio/qpx#267) — the `(feature_id, psm_id)` pairs from `psm` where `feature_id IS NOT NULL`, grouped by `feature_id`; qpx does not materialize it. `feature.psm_ids` is an optional producer hardlink (`psm.psm_id ∈ feature.psm_ids` when a producer supplies it). When explicit references are absent, shared identification fields can be used for semantic matching but are not a guaranteed row-level link. |
 | `psm` / `feature` | `pepmap` | shared `peptidoform` |
-| `site` / `proteoform` | `pg` | optional producer hardlink `pg_id = pg.pg_id` |
-| `site` / `proteoform` | `psm` | optional `best_psm_id = psm.psm_id` |
+| `site` / `proteoform` | `pg` | optional producer hardlink `pg_id = pg.pg_id`, checked by strict validation (a proteoform links to the pg row of its label and runs, a site to the null-label row of its runs) |
+| `site` / `proteoform` | `psm` | optional producer hardlink `best_psm_id = psm.psm_id`, checked by strict validation when the psm view is present |
 | `mz` ↔ `psm`/`feature` | — | `run_file_name + scan` |
 
 ## Quantification units: fractions → one grouped_runs → one quantity per label
