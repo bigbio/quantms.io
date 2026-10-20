@@ -62,8 +62,8 @@ graph LR
 | `feature`      | `{PREFIX}.feature.parquet`      | Parquet   | Quantified peptide features per MS run, with sample and channel intensities |
 | `pg`           | `{PREFIX}.pg.parquet`           | Parquet   | Protein groups with quantification across runs and channels                 |
 | `pepmap` | `{PREFIX}.pepmap.parquet` | Parquet | Deduplicated peptide-to-protein mapping with gene names and uniqueness flags |
-| `site` | `{PREFIX}.site.parquet` | Parquet | Protein modification sites with site q-value, occupancy and modification identity probabilities |
-| `proteoform` | `{PREFIX}.proteoform.parquet` | Parquet | Canonical, isoform, variant and chain members of protein families with member-level q-values |
+| `site` | `{PREFIX}.site.parquet` | Parquet | Protein modification-site claims with a q-value over the claims, the probability that the residue is modified and the evidence fraction of each candidate modification |
+| `proteoform` | `{PREFIX}.proteoform.parquet` | Parquet | Canonical, isoform, variant and chain members of protein families with member-level q-values (sequence entries, not modification combinations) |
 
 ### API Views
 

@@ -84,7 +84,7 @@ site_alternative:
     name: {type: string}
     accession: {type: string, nullable: true}
     mass_delta: {type: float64}
-    identity_probability: {type: float64}
+    evidence_fraction: {type: float64}
 
 peptide_per_protein:
   fields:

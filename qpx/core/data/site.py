@@ -8,7 +8,7 @@ SiteSchema = load_schema("site")
 
 
 class Site(BaseStructure):
-    """Protein modification-site claims with occupancy and identity probabilities."""
+    """Protein modification-site claims with their q-value, modified probability and evidence fraction."""
 
     _schema_class = SiteSchema
 
@@ -23,21 +23,24 @@ class Site(BaseStructure):
     def confident(
         self,
         max_qvalue: float | None = 0.05,
-        min_occupancy: float | None = None,
-        min_identity: float | None = None,
+        min_modified_probability: float | None = None,
+        min_evidence_fraction: float | None = None,
     ) -> "Site":
-        """Sites at a site q-value cutoff and, optionally, occupancy and identity floors.
+        """Sites at a site q-value cutoff and, optionally, floors on the
+        probability that the residue is modified and on this modification's
+        evidence fraction.
 
         ``max_qvalue=None`` skips the q-value cutoff, for producers that do not
-        estimate ``site_qvalue``.
+        estimate ``site_qvalue``. A row with a null value fails any floor set
+        on it.
         """
         clauses = []
         if max_qvalue is not None:
             clauses.append(f"site_qvalue <= {float(max_qvalue)}")
-        if min_occupancy is not None:
-            clauses.append(f"occupancy >= {float(min_occupancy)}")
-        if min_identity is not None:
-            clauses.append(f"identity_probability >= {float(min_identity)}")
+        if min_modified_probability is not None:
+            clauses.append(f"modified_probability >= {float(min_modified_probability)}")
+        if min_evidence_fraction is not None:
+            clauses.append(f"evidence_fraction >= {float(min_evidence_fraction)}")
         return self.filter(" AND ".join(clauses)) if clauses else self
 
     def targets_only(self) -> "Site":

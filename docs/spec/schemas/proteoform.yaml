@@ -2,7 +2,7 @@ name: proteoform
 file_type: proteoform_file
 primary_key: [proteoform_id]
 identity_composite: [accession, grouped_runs, label]
-doc: "Proteoforms: per protein family, the canonical entry and each isoform, sequence variant and processed chain identified with its own evidence, with a member-level q-value and optional per-label quantification (one row per label, as in pg)"
+doc: "Sequence-entry members of protein families: per family, the canonical entry and each isoform, sequence variant and processed chain the evidence supports, with an optional member-level q-value and per-label quantification (one row per label, as in pg). Members are sequence entries, not combinations of modifications on one molecule; site rows do not establish that modifications co-occur."
 
 fields:
   # Identity
@@ -32,7 +32,7 @@ fields:
   pg_id:
     type: int64
     nullable: true
-    doc: "The protein group (pg.pg_id) that holds the family"
+    doc: "The protein group row (pg.pg_id) that holds the family for this row's grouped_runs and label. pg_id identifies one pg row, so a member quantified in several labels links each label row to the pg row of that label."
 
   # Context
   grouped_runs:
@@ -52,7 +52,7 @@ fields:
   specific_peptides:
     type: int32
     nullable: true
-    doc: "Peptides that no other member of the family explains"
+    doc: "Peptides that no other member of the family explains. Specificity is within the family only: such a peptide can also map to another family, and whether it counts for this family is decided by the protein inference behind pg_id."
   shared_peptides:
     type: int32
     nullable: true
@@ -64,15 +64,15 @@ fields:
   evidence:
     type: string
     nullable: true
-    doc: "specific (the q-value comes from the member's specific peptides) or shared (from peptides shared within the family)"
-  qvalue:
+    doc: "specific: the member has peptides specific to it within the family; shared: only peptides shared within the family support it. A shared-only row establishes support for the family, not the presence of this member."
+  proteoform_qvalue:
     type: float64
     nullable: true
-    doc: "Member-level q-value: the error control of the member's own claim (e.g. a class-aware or knockoff-based q-value of its best specific PSM)"
+    doc: "q-value over member claims: the estimated proportion of false members among the members of this view at least as well supported, where a member is false when it is not present in the sample. Estimated at the member level (each member counted once, e.g. by target-decoy or knockoff competition between members); the method belongs in provenance. A PSM-level q-value, even of the member's best PSM, does not control error over members: leave this null and keep PSM-level values in additional_scores."
   best_psm_id:
     type: int64
     nullable: true
-    doc: "The PSM the q-value comes from (psm.psm_id)"
+    doc: "A PSM that supports the member, the best one (psm.psm_id); supporting evidence, not the source of proteoform_qvalue"
   is_decoy:
     type: bool
     required: true
@@ -86,7 +86,7 @@ fields:
   intensity:
     type: float32
     nullable: true
-    doc: "Quantity of the member from its specific peptides, for this label; null when not quantified"
+    doc: "Quantity of the member for this label, from peptides specific to it within the family that the protein inference assigns to its protein group (pg_id); null when not quantified"
   additional_intensities:
     type: "list<additional_intensity>"
     doc: "Other quantities for this row's label"

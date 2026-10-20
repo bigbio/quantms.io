@@ -287,6 +287,91 @@ def pg_referential_issues_from_parquet(
         con.close()
 
 
+# Unit-interval columns of the site and proteoform views: q-values,
+# probabilities and evidence fractions.
+_UNIT_INTERVAL_COLUMNS = {
+    "site": ("site_qvalue", "modified_probability", "evidence_fraction"),
+    "proteoform": ("proteoform_qvalue",),
+}
+# Tolerance for a residue's evidence fractions summing to 1.
+_FRACTION_SUM_TOLERANCE = 1e-6
+
+
+def _unit_interval_issues(table: pa.Table, structure: str, severity: str) -> list[ValidationIssue]:
+    """Flag q-values, probabilities and evidence fractions outside [0, 1] or not finite.
+
+    For the site view, a row with alternatives must also have its own evidence
+    fraction and its alternatives' fractions sum to 1: they share one pool of
+    evidence at the residue.
+    """
+    columns = _UNIT_INTERVAL_COLUMNS.get(structure, ())
+    issues: list[ValidationIssue] = []
+    names = table.schema.names
+
+    def out_of_range(values: pa.ChunkedArray | pa.Array) -> int:
+        if not pa.types.is_floating(values.type):
+            return 0
+        bad = pc.or_(
+            pc.or_(pc.less(values, 0.0), pc.greater(values, 1.0)),
+            pc.invert(pc.is_finite(values)),
+        )
+        return pc.sum(pc.cast(pc.fill_null(bad, False), pa.int64())).as_py() or 0
+
+    for name in columns:
+        if name not in names:
+            continue
+        bad = out_of_range(table.column(name))
+        if bad:
+            issues.append(
+                ValidationIssue(
+                    structure=structure,
+                    check="value_out_of_range",
+                    severity=severity,
+                    column=name,
+                    message=f"{bad} value(s) of {name} are not finite numbers in [0, 1]",
+                )
+            )
+    if structure == "site" and "alternatives" in names and len(table) > 0:
+        alternatives = table.column("alternatives")
+        if pa.types.is_list(alternatives.type) and pa.types.is_struct(alternatives.type.value_type):
+            flat = pc.list_flatten(alternatives)
+            if flat.type.get_field_index("evidence_fraction") >= 0:
+                fractions = pc.struct_field(flat, "evidence_fraction")
+                bad = out_of_range(fractions)
+                if bad:
+                    issues.append(
+                        ValidationIssue(
+                            structure=structure,
+                            check="value_out_of_range",
+                            severity=severity,
+                            column="alternatives",
+                            message=f"{bad} alternative evidence fraction(s) are not finite numbers in [0, 1]",
+                        )
+                    )
+                if "evidence_fraction" in names:
+                    own = table.column("evidence_fraction").to_pylist()
+                    unsummed = 0
+                    for row, alts in enumerate(alternatives.to_pylist()):
+                        if not alts or own[row] is None:
+                            continue
+                        values = [a.get("evidence_fraction") for a in alts]
+                        if any(v is None for v in values):
+                            continue
+                        if abs(own[row] + sum(values) - 1.0) > _FRACTION_SUM_TOLERANCE:
+                            unsummed += 1
+                    if unsummed:
+                        issues.append(
+                            ValidationIssue(
+                                structure=structure,
+                                check="evidence_fraction_sum",
+                                severity=severity,
+                                column="alternatives",
+                                message=(f"{unsummed} row(s) have an evidence fraction and alternatives that do not sum to 1"),
+                            )
+                        )
+    return issues
+
+
 def _anchor_membership_issues(table: pa.Table, structure: str, severity: str) -> list[ValidationIssue]:
     """Flag rows that carry an ``anchor_protein`` but no ``pg_accessions`` membership.
 
@@ -536,6 +621,7 @@ class ViewSchema:
             result.issues.extend(_pg_referential_issues(table, self._view_name, gated_severity))
 
         result.issues.extend(_anchor_membership_issues(table, self._view_name, gated_severity))
+        result.issues.extend(_unit_interval_issues(table, self._view_name, gated_severity))
         result.issues.extend(_scan_format_issues(table, self._view_name, gated_severity))
 
         return result

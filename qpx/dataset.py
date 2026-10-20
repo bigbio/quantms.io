@@ -852,7 +852,72 @@ class Dataset:
         if "feature" in results and "pg" in results and self.feature is not None and self.pg is not None:
             self._check_feature_pg_referential(results["feature"], strict=strict)
 
+        # site.pg_id / proteoform.pg_id name one pg row: it must exist and share
+        # the row's run (and, for a proteoform, label) context.
+        for view in ("site", "proteoform"):
+            if view in results and self._structures.get(view) is not None and self.pg is not None:
+                self._check_pg_link(view, results[view], strict=strict)
+
         return results
+
+    def _check_pg_link(self, view: str, result: ValidationResult, *, strict: bool = False) -> None:
+        """Flag pg_id links that do not resolve, or resolve to a pg row of another context.
+
+        A proteoform row must link to the pg row of its own label and grouped
+        runs; a site row (no label) to the identification pg row (null label) of
+        its grouped runs.
+        """
+        severity = "error" if strict else "warning"
+        label_rule = "v.label IS NOT DISTINCT FROM p.label" if view == "proteoform" else "p.label IS NULL"
+        try:
+            dangling = self._engine.execute(
+                f"""
+                SELECT count(*) FROM "{view}" v
+                WHERE v.pg_id IS NOT NULL
+                  AND NOT EXISTS (SELECT 1 FROM pg p WHERE p.pg_id = v.pg_id)
+                """
+            ).fetchone()[0]
+            mismatched = self._engine.execute(
+                f"""
+                SELECT count(*) FROM "{view}" v JOIN pg p ON p.pg_id = v.pg_id
+                WHERE NOT ({label_rule})
+                   OR list_sort(list_distinct(v.grouped_runs)) <> list_sort(list_distinct(p.grouped_runs))
+                """
+            ).fetchone()[0]
+        except duckdb.Error as exc:
+            reason = _skipped_check_reason(exc)
+            _log.warning("%s->pg referential check could not run (%s): %s", view, reason, exc)
+            result.issues.append(
+                ValidationIssue(
+                    structure=view,
+                    check="referential_check_skipped",
+                    severity=severity,
+                    column="pg_id",
+                    message=f"{view}->pg referential check could not run ({reason}): {exc}",
+                )
+            )
+            return
+        if dangling:
+            result.issues.append(
+                ValidationIssue(
+                    structure=view,
+                    check="dangling_pg_id",
+                    severity=severity,
+                    column="pg_id",
+                    message=f"{dangling} {view} row(s) have a pg_id that does not resolve to a pg.pg_id",
+                )
+            )
+        if mismatched:
+            context = "label and grouped_runs" if view == "proteoform" else "grouped_runs (and a null label)"
+            result.issues.append(
+                ValidationIssue(
+                    structure=view,
+                    check="pg_link_context",
+                    severity=severity,
+                    column="pg_id",
+                    message=f"{mismatched} {view} row(s) link to a pg row whose {context} differ from the row's",
+                )
+            )
 
     def _check_feature_pg_referential(self, feature_result: ValidationResult, *, strict: bool = False) -> None:
         """Flag feature.pg_ids elements that do not resolve to pg.pg_id."""

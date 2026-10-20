@@ -25,8 +25,8 @@ class Proteoform(BaseStructure):
         return self.filter(f"kind = '{kind}'")
 
     def confident(self, max_qvalue: float = 0.05) -> "Proteoform":
-        """Members at a member-level q-value cutoff."""
-        return self.filter(f"qvalue <= {float(max_qvalue)}")
+        """Members at a member-level q-value cutoff (rows without one are left out)."""
+        return self.filter(f"proteoform_qvalue <= {float(max_qvalue)}")
 
     def targets_only(self) -> "Proteoform":
         """Filter to target members (exclude decoys and knockoffs)."""

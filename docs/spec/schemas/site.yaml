@@ -1,8 +1,8 @@
 name: site
 file_type: site_file
 primary_key: [site_id]
-identity_composite: [protein_accession, position, mass_delta, grouped_runs]
-doc: "Protein modification sites: one row per (protein, residue, modification) claim, with a site-level q-value, the probability that the residue is modified (occupancy) and the probability of this modification among the candidates at that residue (identity)"
+identity_composite: [protein_accession, position, modification_name, grouped_runs]
+doc: "Protein modification sites: one row per claim that a residue of a protein carries a given modification (protein, position, modification, runs), with a q-value over those claims, the probability that the residue is modified, and the share of the residue's modification evidence that supports this modification"
 
 fields:
   # Identity
@@ -40,7 +40,7 @@ fields:
   mass_delta:
     type: float64
     required: true
-    doc: "Monoisotopic mass shift of the modification (Da). Part of the identity composite: two modifications claimed at one residue are two rows."
+    doc: "Monoisotopic mass shift of the modification (Da). Not part of the identity: modifications of equal mass (e.g. dimethyl and ethyl) are distinct rows, told apart by modification_name."
 
   # Context
   grouped_runs:
@@ -50,7 +50,7 @@ fields:
   pg_id:
     type: int64
     nullable: true
-    doc: "The protein group (pg.pg_id) that holds the protein; null when the protein is in no reported group"
+    doc: "The protein group (pg.pg_id) that holds the protein, for the same grouped_runs: the pg row with a null label (identification) when one exists. Null when the site spans several pg rows (several labels, or runs grouped differently in pg); join through pg_accessions membership then."
   prior_evidence:
     type: string
     nullable: true
@@ -60,19 +60,19 @@ fields:
   site_qvalue:
     type: float64
     nullable: true
-    doc: "Site-level q-value: the estimated false share among sites at least as well supported (for example from decoy or knockoff sites). Null when the producer does not estimate one."
-  occupancy:
+    doc: "q-value over the site-modification claims of this view: the estimated proportion of false claims among the rows at least as well supported. A claim is false when the residue does not carry this modification in the sample, whatever the reason (wrong peptide, wrong protein, wrong residue, wrong modification). The counting unit is the distinct row (protein, position, modification, grouped_runs), not the PSM. A set-level statistic, not the probability that this row is correct. Null when the producer has no estimate at this unit; the method and the population it was estimated over belong in provenance."
+  modified_probability:
     type: float64
     nullable: true
-    doc: "Probability that the residue carries a modification, given the spectra of the peptides that cover it"
-  identity_probability:
+    doc: "Probability that the residue carries some modification, from the spectra of the peptides that cover it. Not stoichiometry (the fraction of the protein's copies that are modified), which this view does not report."
+  evidence_fraction:
     type: float64
     nullable: true
-    doc: "Probability that the modification at the residue is this one, given that it is modified. It and the identity probabilities in alternatives sum to 1."
+    doc: "Share of the residue's modification evidence that supports this modification: each spectrum's explanations (the candidate peptidoforms of that spectrum) are mutually exclusive and get posterior probabilities; the probability mass that places a modification on the residue is summed over spectra, and this is the part placing this modification. Together with the alternatives it sums to 1. A relative share, not the probability that the modification is present: two modifications that both occur on the residue (on different molecules or in different runs) are two rows, each with its own site_qvalue, and can each have a fraction near 0.5."
   alternatives:
     type: "list<site_alternative>"
     nullable: true
-    doc: "Other modifications the evidence places at the residue, with their identity probabilities, largest first (e.g. trimethyl 0.29 beside acetyl 0.71)"
+    doc: "The other modifications the same evidence places on the residue, with their evidence fractions, largest first (e.g. trimethyl 0.29 beside acetyl 0.71)"
 
   # Evidence
   psm_count:
