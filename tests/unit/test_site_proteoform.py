@@ -373,3 +373,19 @@ def test_dataset_discovers_site_and_proteoform(tmp_path):
 
     assert qpx.read_site(str(tmp_path / "exp.site.parquet")).count() == 3
     assert qpx.read_proteoform(str(tmp_path / "exp.proteoform.parquet")).count() == 3
+
+
+def test_a_wrongly_typed_evidence_fraction_is_reported_not_raised(tmp_path):
+    """A string evidence_fraction is a type mismatch; the fraction checks are skipped."""
+    import pyarrow as pa
+
+    from qpx.writers import SiteWriter
+
+    with SiteWriter(tmp_path / "exp.site.parquet") as w:
+        w.write_batch([make_site_record()])
+    table = pq.read_table(tmp_path / "exp.site.parquet")
+    index = table.schema.get_field_index("evidence_fraction")
+    as_text = pa.array([str(v) for v in table.column("evidence_fraction").to_pylist()])
+    pq.write_table(table.set_column(index, "evidence_fraction", as_text), tmp_path / "exp.site.parquet")
+    result = _validate(tmp_path, "site")
+    assert any(i.check == "type_mismatch" for i in result.errors)

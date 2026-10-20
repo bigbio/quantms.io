@@ -339,7 +339,8 @@ def _alternative_fractions(table: pa.Table) -> list[list | None] | None:
     alternatives = table.column("alternatives")
     if not (pa.types.is_list(alternatives.type) and pa.types.is_struct(alternatives.type.value_type)):
         return None
-    if alternatives.type.value_type.get_field_index("evidence_fraction") < 0:
+    index = alternatives.type.value_type.get_field_index("evidence_fraction")
+    if index < 0 or not pa.types.is_floating(alternatives.type.value_type.field(index).type):
         return None
     return [None if alts is None else [a.get("evidence_fraction") for a in alts] for alts in alternatives.to_pylist()]
 
@@ -352,6 +353,8 @@ def _evidence_fraction_issues(table: pa.Table, structure: str, severity: str) ->
     """
     fractions = _alternative_fractions(table)
     if fractions is None or "evidence_fraction" not in table.schema.names:
+        return []
+    if not pa.types.is_floating(table.column("evidence_fraction").type):
         return []
     own = table.column("evidence_fraction").to_pylist()
     out_of_range = unsummed = unordered = 0
