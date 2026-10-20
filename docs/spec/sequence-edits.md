@@ -24,7 +24,7 @@ Coordinates are the reference protein's, 1-based and inclusive, so `reference` h
 | Deletion | 30 | 30 | `G` | `` | p.Gly30del |
 | Insertion before residue 50 | 50 | 49 | `` | `AA` | p.Pro49_Leu50insAlaAla |
 
-Several edits on one molecule are several entries, sorted by `start` and not overlapping.
+Several edits on one sequence are several entries, sorted by `start` and not overlapping: each edit starts after the previous one ends. An edit covers reference residues `start..end`, and an insertion before residue `s` sits between `s - 1` and `s`. Two edits of the same residue (R175H and R175C) cannot describe one sequence; alternative variants are separate proteoforms or separate peptide mappings.
 
 ## Where edits are stored
 
@@ -41,4 +41,4 @@ Some substitutions have the same mass as a modification: D→E and G→A weigh t
 
 ## Validation
 
-Under `qpxc validate` (strict), each edit has `start >= 1`, a `reference` of `end - start + 1` one-letter residues (empty with `end = start - 1` for an insertion), an `alternative` of one-letter residues, and changes something (not both empty).
+Under `qpxc validate` (strict), each edit has `start >= 1`, a `reference` of `end - start + 1` one-letter residues (empty with `end = start - 1` for an insertion), an `alternative` of one-letter residues, and changes something (not both empty). The edits of one sequence (a proteoform row, or one protein mapping of a pepmap row) are in order and do not overlap (`conflicting_sequence_edits`). Fields of the wrong type are reported as a type mismatch and the edit checks are skipped.

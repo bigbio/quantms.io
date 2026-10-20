@@ -199,6 +199,9 @@ def phospho_candidates(
     ``site_scores`` is :func:`parse_phospho_probabilities`'s output. A candidate
     is ``assigned`` when the peptidoform places the phosphorylation there; the
     others are the residues it competes with, which ``modifications`` cannot hold.
+    With one phosphate, the candidates are one alternative group (their
+    probabilities sum to 1); with several, MaxQuant's probabilities sum to the
+    number of phosphates and no single group applies.
     """
     if not site_scores:
         return None
@@ -208,6 +211,7 @@ def phospho_candidates(
         if mod.get("accession") == "UNIMOD:21" or mod.get("name") == "Phospho"
         for pos in mod.get("positions") or []
     }
+    group = 1 if len(placed) == 1 else None
     candidates = []
     for position in sorted(site_scores):
         probability = site_scores[position][0]["score_value"]
@@ -220,6 +224,7 @@ def phospho_candidates(
                 "mass_delta": PHOSPHO_MASS,
                 "probability": probability,
                 "assigned": position in placed,
+                "alternative_group": group,
                 "scores": None,
             }
         )

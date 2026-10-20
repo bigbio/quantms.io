@@ -397,31 +397,56 @@ def _vocabulary_issues(table: pa.Table, structure: str, severity: str) -> list[V
     return issues
 
 
-# Columns holding sequence edits, per view.
-_SEQUENCE_EDIT_COLUMNS = {"pepmap": "sequence_edits", "proteoform": "edits"}
+# Columns holding sequence edits, per view, and the keys one sequence is
+# identified by within a row (pepmap: one per protein mapping).
+_SEQUENCE_EDIT_COLUMNS = {"pepmap": ("sequence_edits", ("protein_accession",)), "proteoform": ("edits", ())}
 
 
-def _flattened_struct_column(table: pa.Table, column: str, fields: tuple[str, ...]) -> pa.Table | None:
+def _is_float(t: pa.DataType) -> bool:
+    return pa.types.is_floating(t)
+
+
+def _is_int(t: pa.DataType) -> bool:
+    return pa.types.is_integer(t)
+
+
+def _is_str(t: pa.DataType) -> bool:
+    return pa.types.is_string(t) or pa.types.is_large_string(t)
+
+
+def _flattened_struct_column(table: pa.Table, column: str, fields: dict) -> pa.Table | None:
     """One row per list element of a list<struct> column, with its parent row index.
 
-    None when the column is absent, not a list of structs, or lacks a field.
+    ``fields`` maps each needed struct field to a type predicate. None when the
+    column is absent or empty, not a list of structs, or a field is missing or of
+    another type: the type check reports that, and semantic checks must not run
+    arithmetic or string kernels on it.
     """
     if column not in table.schema.names or len(table) == 0:
         return None
     col = table.column(column).combine_chunks()
     if not (pa.types.is_list(col.type) and pa.types.is_struct(col.type.value_type)):
         return None
-    if any(col.type.value_type.get_field_index(f) < 0 for f in fields):
-        return None
+    struct = col.type.value_type
+    for name, ok in fields.items():
+        index = struct.get_field_index(name)
+        if index < 0 or not ok(struct.field(index).type):
+            return None
     flat = pc.list_flatten(col)
-    return pa.table(
-        {"row": pc.list_parent_indices(col), **{f: pc.struct_field(flat, f) for f in fields}},
-    )
+    return pa.table({"row": pc.list_parent_indices(col), **{f: pc.struct_field(flat, f) for f in fields}})
 
 
 def _modification_candidate_issues(table: pa.Table, structure: str, severity: str) -> list[ValidationIssue]:
-    """Candidate probabilities are in [0, 1] and sum to at most 1 at a position."""
-    flat = _flattened_struct_column(table, "modification_candidates", ("position", "probability"))
+    """Candidate probabilities are in [0, 1]; within an alternative group they sum to at most 1.
+
+    Candidates without a group may co-occur (a label and an acetyl on one
+    residue), so no sum is implied across them.
+    """
+    flat = _flattened_struct_column(
+        table,
+        "modification_candidates",
+        {"position": _is_int, "probability": _is_float, "alternative_group": _is_int},
+    )
     if flat is None or flat.num_rows == 0:
         return []
     issues = []
@@ -429,27 +454,19 @@ def _modification_candidate_issues(table: pa.Table, structure: str, severity: st
     if bad:
         message = f"{bad} modification candidate probabilities are not finite numbers in [0, 1]"
         issues.append(_issue(structure, "value_out_of_range", severity, "modification_candidates", message))
-    sums = flat.group_by(["row", "position"]).aggregate([("probability", "sum")])
-    over = pc.sum(pc.cast(pc.greater(sums.column("probability_sum"), 1.0 + _FRACTION_SUM_TOLERANCE), pa.int64()))
-    over = over.as_py() or 0
-    if over:
-        message = f"{over} position(s) have candidate probabilities that sum to more than 1"
-        issues.append(_issue(structure, "candidate_probability_sum", severity, "modification_candidates", message))
+    grouped = flat.filter(pc.is_valid(flat.column("alternative_group")))
+    if grouped.num_rows:
+        sums = grouped.group_by(["row", "alternative_group"]).aggregate([("probability", "sum")])
+        over = pc.greater(sums.column("probability_sum"), 1.0 + _FRACTION_SUM_TOLERANCE)
+        over = pc.sum(pc.cast(pc.fill_null(over, False), pa.int64())).as_py() or 0
+        if over:
+            message = f"{over} alternative group(s) have candidate probabilities that sum to more than 1"
+            issues.append(_issue(structure, "candidate_probability_sum", severity, "modification_candidates", message))
     return issues
 
 
-def _sequence_edit_issues(table: pa.Table, structure: str, severity: str) -> list[ValidationIssue]:
-    """A sequence edit names a real reference span and residues.
-
-    ``reference`` is the span ``start..end`` (1-based, inclusive) of the reference
-    sequence, so its length is ``end - start + 1``; an insertion has an empty
-    reference and ``end = start - 1``. Residues are one-letter codes, and an
-    edit changes something.
-    """
-    column = _SEQUENCE_EDIT_COLUMNS.get(structure)
-    flat = _flattened_struct_column(table, column, ("start", "end", "reference", "alternative")) if column else None
-    if flat is None or flat.num_rows == 0:
-        return []
+def _malformed_edit_count(flat: pa.Table) -> int:
+    """Edits that do not name a real reference span and residues, or change nothing."""
     start, end = flat.column("start"), flat.column("end")
     ref, alt = flat.column("reference"), flat.column("alternative")
     span = pc.add(pc.subtract(end, start), 1)
@@ -464,15 +481,66 @@ def _sequence_edit_issues(table: pa.Table, structure: str, severity: str) -> lis
             pc.and_(pc.equal(pc.utf8_length(ref), 0), pc.equal(pc.utf8_length(alt), 0)),
         ),
     )
-    count = pc.sum(pc.cast(pc.fill_null(bad, True), pa.int64())).as_py() or 0
-    if not count:
+    return pc.sum(pc.cast(pc.fill_null(bad, True), pa.int64())).as_py() or 0
+
+
+def _conflicting_edit_count(flat: pa.Table, keys: tuple[str, ...]) -> int:
+    """Sequences whose edits are out of order or overlap, so they define no single sequence.
+
+    An edit covers the reference interval ``[start, end]``; an insertion before
+    residue ``s`` (``end = s - 1``) is the point ``s - 1/2``. Within one sequence
+    (a row, or a row and protein mapping), each edit must start strictly after
+    the previous one ends: two edits of one residue, overlapping spans and two
+    insertions at one point all conflict.
+    """
+    previous_end: dict[tuple, float] = {}
+    conflicting: set[tuple] = set()
+    for record in flat.select(["row", *keys, "start", "end"]).to_pylist():
+        start, end = record["start"], record["end"]
+        if start is None or end is None:
+            continue
+        key = tuple(record[k] for k in ("row", *keys))
+        low, high = (start - 0.5, start - 0.5) if end == start - 1 else (start, end)
+        if key in previous_end and low <= previous_end[key]:
+            conflicting.add(key)
+        previous_end[key] = max(high, previous_end.get(key, high))
+    return len(conflicting)
+
+
+def _sequence_edit_issues(table: pa.Table, structure: str, severity: str) -> list[ValidationIssue]:
+    """Each sequence edit names a real reference span and residues, and the edits of
+    one sequence are ordered and do not overlap.
+
+    ``reference`` is the span ``start..end`` (1-based, inclusive) of the reference
+    sequence, so its length is ``end - start + 1``; an insertion has an empty
+    reference and ``end = start - 1``. Residues are one-letter codes, and an edit
+    changes something.
+    """
+    column, keys = _SEQUENCE_EDIT_COLUMNS.get(structure, (None, ()))
+    if column is None:
         return []
-    message = (
-        f"{count} sequence edit(s) are malformed: start must be >= 1, reference must be the "
-        "end - start + 1 residues of the span (empty with end = start - 1 for an insertion), "
-        "residues must be one-letter codes, and an edit must change something"
-    )
-    return [_issue(structure, "malformed_sequence_edit", severity, column, message)]
+    fields = {"start": _is_int, "end": _is_int, "reference": _is_str, "alternative": _is_str}
+    fields.update({k: _is_str for k in keys})
+    flat = _flattened_struct_column(table, column, fields)
+    if flat is None or flat.num_rows == 0:
+        return []
+    issues = []
+    malformed = _malformed_edit_count(flat)
+    if malformed:
+        message = (
+            f"{malformed} sequence edit(s) are malformed: start must be >= 1, reference must be the "
+            "end - start + 1 residues of the span (empty with end = start - 1 for an insertion), "
+            "residues must be one-letter codes, and an edit must change something"
+        )
+        issues.append(_issue(structure, "malformed_sequence_edit", severity, column, message))
+    conflicting = _conflicting_edit_count(flat, keys)
+    if conflicting:
+        message = (
+            f"{conflicting} sequence(s) have edits that overlap or are out of order, so they do not define "
+            "one sequence: each edit must start after the previous one ends"
+        )
+        issues.append(_issue(structure, "conflicting_sequence_edits", severity, column, message))
+    return issues
 
 
 def _anchor_membership_issues(table: pa.Table, structure: str, severity: str) -> list[ValidationIssue]:

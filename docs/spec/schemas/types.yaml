@@ -88,6 +88,7 @@ modification_candidate:
     mass_delta: {type: float64, nullable: true}
     probability: {type: float64, nullable: true}
     assigned: {type: bool}
+    alternative_group: {type: int32, nullable: true}
     scores: {type: "list<score>", nullable: true}
 
 sequence_edit:

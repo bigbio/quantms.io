@@ -110,7 +110,7 @@ The `modifications` field records what the peptidoform says: which modification 
 - **Identity**: another modification at the same residue. Near-isobaric modifications such as acetyl (+42.0106 Da) and trimethyl (+42.0470 Da) are often not told apart.
 - **Substitution**: a residue change with the same mass as a modification. D→E and G→A weigh the same as methylation (+14.0157 Da), and N→D the same as deamidation.
 
-The optional `modification_candidates` column of the PSM and feature views lists every interpretation the producer considered, position by position. A position can hold several candidates, and a modification can have several candidate positions.
+The optional `modification_candidates` column of the PSM and feature views lists every interpretation the producer considered, position by position. A position can hold several candidates, and a modification can have several candidate positions. Candidates that are mutually exclusive explanations of one event share an `alternative_group`; candidates that can co-occur (a SILAC label and an acetyl on one lysine) are in different groups or in none.
 
 ```text
 modification_candidates: array[struct{
@@ -121,31 +121,35 @@ modification_candidates: array[struct{
     mass_delta:  float64, null,  -- monoisotopic mass shift (Da)
     probability: float64, null,  -- P(this modification at this position | this identification)
     assigned:    bool,           -- true where the peptidoform places it
+    alternative_group: int32, null,  -- candidates with the same group exclude each other
     scores:      array[score], null  -- tool scores for this candidate
 }]
 ```
 
-Example: `PEPS[Phospho]TK[Acetyl]R`, where the phosphate could also be on T5 and the +42 Da on K6 could be trimethyl:
+Example: `PEPS[Phospho]TK[Label:13C(6)15N(2)][Acetyl]R` from a SILAC heavy channel, where the phosphate could also be on T5 and the +42 Da on K6 could be trimethyl. The heavy label on K6 is certain and co-occurs with the +42 Da, so it is in no group:
 
 ```json
 [
-  {"position": 4, "amino_acid": "S", "name": "Phospho",   "accession": "UNIMOD:21", "mass_delta": 79.966331, "probability": 0.95, "assigned": true,  "scores": null},
-  {"position": 5, "amino_acid": "T", "name": "Phospho",   "accession": "UNIMOD:21", "mass_delta": 79.966331, "probability": 0.05, "assigned": false, "scores": null},
-  {"position": 6, "amino_acid": "K", "name": "Acetyl",    "accession": "UNIMOD:1",  "mass_delta": 42.010565, "probability": 0.71, "assigned": true,  "scores": null},
-  {"position": 6, "amino_acid": "K", "name": "Trimethyl", "accession": "UNIMOD:37", "mass_delta": 42.04695,  "probability": 0.29, "assigned": false, "scores": null}
+  {"position": 4, "amino_acid": "S", "name": "Phospho",   "accession": "UNIMOD:21",  "probability": 0.95, "assigned": true,  "alternative_group": 1},
+  {"position": 5, "amino_acid": "T", "name": "Phospho",   "accession": "UNIMOD:21",  "probability": 0.05, "assigned": false, "alternative_group": 1},
+  {"position": 6, "amino_acid": "K", "name": "Acetyl",    "accession": "UNIMOD:1",   "probability": 0.71, "assigned": true,  "alternative_group": 2},
+  {"position": 6, "amino_acid": "K", "name": "Trimethyl", "accession": "UNIMOD:37",  "probability": 0.29, "assigned": false, "alternative_group": 2},
+  {"position": 6, "amino_acid": "K", "name": "Label:13C(6)15N(2)", "accession": "UNIMOD:259", "probability": 1.0, "assigned": true, "alternative_group": null}
 ]
 ```
 
+(`mass_delta` and `scores` are left out of the example for space.)
+
 The probabilities are marginals of one posterior over the peptide's interpretations:
 
-- Summed over the positions of one modification, they give how many of it the peptide carries (0.95 + 0.05 = one phosphate): this is localization.
-- Summed over the candidates at one position, they give the probability that the position is modified at all, so they never exceed 1 (0.71 + 0.29 at K6): this is identity.
+- An **alternative group** is one modification event and its mutually exclusive explanations, so its probabilities sum to at most 1. Group 1 is localization (one phosphate, on S4 or T5); group 2 is identity (acetyl or trimethyl on K6). A group can mix both, e.g. one +42 Da on K6 or K9, as acetyl or trimethyl.
+- Probabilities are not summed across groups or over ungrouped candidates: modifications in different groups can occur together, so the sum over all candidates at a position is not the probability that the position is modified.
 - `assigned` rows agree with `modifications` and the peptidoform; the others are alternatives they cannot hold.
 
 In the PSM view the probabilities are given this one identification. In the feature view they are combined over the feature's identifications, as the producer states in [provenance](provenance.md). The [site view](site.md) combines them at the protein level. A substitution that spans more than one residue cannot be a candidate at one position; it is a [sequence edit](sequence-edits.md).
 
 !!! note "Validation"
-    Under `qpxc validate` (strict), candidate probabilities are finite and in [0, 1], and those at one position sum to at most 1.
+    Under `qpxc validate` (strict), candidate probabilities are finite and in [0, 1], and those of one alternative group sum to at most 1. A candidate field of the wrong type is reported as a type mismatch and the probability checks are skipped.
 
 ## Complete example
 
