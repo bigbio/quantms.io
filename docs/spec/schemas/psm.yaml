@@ -24,6 +24,12 @@ fields:
   modifications:
     type: "list<modification>"
     doc: "Structured modifications"
+  # Competing modification interpretations (optional)
+  modification_candidates:
+    type: "list<modification_candidate>"
+    optional: true
+    nullable: true
+    doc: "Every modification the evidence considers at each position, the one the peptidoform places (assigned) and the ones it competes with, each with its probability given this identification. A position can hold several candidates (acetyl or trimethyl on one Lys, or a substitution); one modification can have several candidate positions (localization). Null when the producer reports no alternatives; modifications keeps what the peptidoform says."
   charge:
     type: int16
     required: true

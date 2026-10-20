@@ -33,6 +33,7 @@ step in `provenance.parquet`.
 | `sequence` | Unmodified peptide amino acid sequence | string | yes |
 | `peptidoform` | Peptide sequence with modifications in ProForma notation | string | yes |
 | `modifications` | Structured list of modifications with name, accession, position, and localization scores | array[struct], null | no |
+| `modification_candidates` | Every modification considered at each position, assigned or competing, with its probability given this identification (see [Competing interpretations](modifications.md#competing-interpretations)); optional column | array[struct], null | no |
 | `charge` | Charge state of the precursor ion | int16 | yes |
 | `posterior_error_probability` | Posterior error probability (PEP) for the peptide-spectrum match — the probability that the PSM is incorrect. **Lower values indicate higher confidence** (lower is better). Ranges from 0.0 (confident) to 1.0 (likely incorrect) | float64, null | no |
 | `is_decoy` | Whether the PSM is a decoy match (`true`) or a target match (`false`); use `false` when no target-decoy search was used. A peptide that matches both target and decoy proteins (OpenMS `target_decoy = target+decoy`) is a target match | bool | yes |

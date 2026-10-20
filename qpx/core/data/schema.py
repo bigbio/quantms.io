@@ -397,6 +397,84 @@ def _vocabulary_issues(table: pa.Table, structure: str, severity: str) -> list[V
     return issues
 
 
+# Columns holding sequence edits, per view.
+_SEQUENCE_EDIT_COLUMNS = {"pepmap": "sequence_edits", "proteoform": "edits"}
+
+
+def _flattened_struct_column(table: pa.Table, column: str, fields: tuple[str, ...]) -> pa.Table | None:
+    """One row per list element of a list<struct> column, with its parent row index.
+
+    None when the column is absent, not a list of structs, or lacks a field.
+    """
+    if column not in table.schema.names or len(table) == 0:
+        return None
+    col = table.column(column).combine_chunks()
+    if not (pa.types.is_list(col.type) and pa.types.is_struct(col.type.value_type)):
+        return None
+    if any(col.type.value_type.get_field_index(f) < 0 for f in fields):
+        return None
+    flat = pc.list_flatten(col)
+    return pa.table(
+        {"row": pc.list_parent_indices(col), **{f: pc.struct_field(flat, f) for f in fields}},
+    )
+
+
+def _modification_candidate_issues(table: pa.Table, structure: str, severity: str) -> list[ValidationIssue]:
+    """Candidate probabilities are in [0, 1] and sum to at most 1 at a position."""
+    flat = _flattened_struct_column(table, "modification_candidates", ("position", "probability"))
+    if flat is None or flat.num_rows == 0:
+        return []
+    issues = []
+    bad = _out_of_range_count(flat.column("probability"))
+    if bad:
+        message = f"{bad} modification candidate probabilities are not finite numbers in [0, 1]"
+        issues.append(_issue(structure, "value_out_of_range", severity, "modification_candidates", message))
+    sums = flat.group_by(["row", "position"]).aggregate([("probability", "sum")])
+    over = pc.sum(pc.cast(pc.greater(sums.column("probability_sum"), 1.0 + _FRACTION_SUM_TOLERANCE), pa.int64()))
+    over = over.as_py() or 0
+    if over:
+        message = f"{over} position(s) have candidate probabilities that sum to more than 1"
+        issues.append(_issue(structure, "candidate_probability_sum", severity, "modification_candidates", message))
+    return issues
+
+
+def _sequence_edit_issues(table: pa.Table, structure: str, severity: str) -> list[ValidationIssue]:
+    """A sequence edit names a real reference span and residues.
+
+    ``reference`` is the span ``start..end`` (1-based, inclusive) of the reference
+    sequence, so its length is ``end - start + 1``; an insertion has an empty
+    reference and ``end = start - 1``. Residues are one-letter codes, and an
+    edit changes something.
+    """
+    column = _SEQUENCE_EDIT_COLUMNS.get(structure)
+    flat = _flattened_struct_column(table, column, ("start", "end", "reference", "alternative")) if column else None
+    if flat is None or flat.num_rows == 0:
+        return []
+    start, end = flat.column("start"), flat.column("end")
+    ref, alt = flat.column("reference"), flat.column("alternative")
+    span = pc.add(pc.subtract(end, start), 1)
+    letters = r"^[A-Z]*$"
+    bad = pc.or_kleene(
+        pc.or_kleene(pc.less(start, 1), pc.not_equal(pc.utf8_length(ref), span)),
+        pc.or_kleene(
+            pc.or_kleene(
+                pc.invert(pc.match_substring_regex(ref, letters)),
+                pc.invert(pc.match_substring_regex(alt, letters)),
+            ),
+            pc.and_(pc.equal(pc.utf8_length(ref), 0), pc.equal(pc.utf8_length(alt), 0)),
+        ),
+    )
+    count = pc.sum(pc.cast(pc.fill_null(bad, True), pa.int64())).as_py() or 0
+    if not count:
+        return []
+    message = (
+        f"{count} sequence edit(s) are malformed: start must be >= 1, reference must be the "
+        "end - start + 1 residues of the span (empty with end = start - 1 for an insertion), "
+        "residues must be one-letter codes, and an edit must change something"
+    )
+    return [_issue(structure, "malformed_sequence_edit", severity, column, message)]
+
+
 def _anchor_membership_issues(table: pa.Table, structure: str, severity: str) -> list[ValidationIssue]:
     """Flag rows that carry an ``anchor_protein`` but no ``pg_accessions`` membership.
 
@@ -648,6 +726,8 @@ class ViewSchema:
         result.issues.extend(_anchor_membership_issues(table, self._view_name, gated_severity))
         result.issues.extend(_unit_interval_issues(table, self._view_name, gated_severity))
         result.issues.extend(_vocabulary_issues(table, self._view_name, gated_severity))
+        result.issues.extend(_modification_candidate_issues(table, self._view_name, gated_severity))
+        result.issues.extend(_sequence_edit_issues(table, self._view_name, gated_severity))
         result.issues.extend(_scan_format_issues(table, self._view_name, gated_severity))
 
         return result

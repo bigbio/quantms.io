@@ -188,6 +188,44 @@ def parse_phospho_probabilities(
     return site_scores if site_scores else None
 
 
+PHOSPHO_MASS = 79.966331
+
+
+def phospho_candidates(
+    site_scores: dict[int, list[dict]] | None, sequence: str, modifications: list[dict] | None
+) -> list[dict] | None:
+    """Every residue MaxQuant gives a phosphorylation probability, as modification candidates.
+
+    ``site_scores`` is :func:`parse_phospho_probabilities`'s output. A candidate
+    is ``assigned`` when the peptidoform places the phosphorylation there; the
+    others are the residues it competes with, which ``modifications`` cannot hold.
+    """
+    if not site_scores:
+        return None
+    placed = {
+        pos["position"]
+        for mod in modifications or []
+        if mod.get("accession") == "UNIMOD:21" or mod.get("name") == "Phospho"
+        for pos in mod.get("positions") or []
+    }
+    candidates = []
+    for position in sorted(site_scores):
+        probability = site_scores[position][0]["score_value"]
+        candidates.append(
+            {
+                "position": position,
+                "amino_acid": sequence[position - 1] if 0 < position <= len(sequence) else None,
+                "name": "Phospho",
+                "accession": "UNIMOD:21",
+                "mass_delta": PHOSPHO_MASS,
+                "probability": probability,
+                "assigned": position in placed,
+                "scores": None,
+            }
+        )
+    return candidates
+
+
 # MaxQuant orders reporter ions strictly by mass (N-isomer before C-isomer), so
 # alphabetical sorting of channel labels (C < N) would map each label to the
 # wrong column.  The i+1 fallback that was previously used to handle 0- vs

@@ -120,6 +120,7 @@ nav:
       - Common Concepts:
           - Peptidoform: spec/peptidoform.md
           - Modifications: spec/modifications.md
+          - Sequence Edits: spec/sequence-edits.md
           - Intensities: spec/intensities.md
           - Scores & CV Terms: spec/scores.md
           - Scan Numbers: spec/scan.md

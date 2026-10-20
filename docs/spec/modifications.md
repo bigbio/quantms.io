@@ -102,6 +102,51 @@ Each position can carry one or more scores that describe the confidence in placi
 
 Multiple scores can be attached to a single position -- for example, both a localization probability and a tool-specific confidence metric.
 
+## Competing interpretations
+
+The `modifications` field records what the peptidoform says: which modification sits where. A spectrum often fits other readings as well, and those are lost there:
+
+- **Localization**: the same modification on another residue (a phosphate on S4 or T5).
+- **Identity**: another modification at the same residue. Near-isobaric modifications such as acetyl (+42.0106 Da) and trimethyl (+42.0470 Da) are often not told apart.
+- **Substitution**: a residue change with the same mass as a modification. D→E and G→A weigh the same as methylation (+14.0157 Da), and N→D the same as deamidation.
+
+The optional `modification_candidates` column of the PSM and feature views lists every interpretation the producer considered, position by position. A position can hold several candidates, and a modification can have several candidate positions.
+
+```text
+modification_candidates: array[struct{
+    position:    int32,          -- same convention as modifications (0 N-term, length + 1 C-term)
+    amino_acid:  string, null,   -- residue at the position; null for a terminus
+    name:        string,         -- modification name, or a substitution ("Asp->Glu")
+    accession:   string, null,   -- e.g. "UNIMOD:1"; substitutions use Unimod's amino-acid substitution entries
+    mass_delta:  float64, null,  -- monoisotopic mass shift (Da)
+    probability: float64, null,  -- P(this modification at this position | this identification)
+    assigned:    bool,           -- true where the peptidoform places it
+    scores:      array[score], null  -- tool scores for this candidate
+}]
+```
+
+Example: `PEPS[Phospho]TK[Acetyl]R`, where the phosphate could also be on T5 and the +42 Da on K6 could be trimethyl:
+
+```json
+[
+  {"position": 4, "amino_acid": "S", "name": "Phospho",   "accession": "UNIMOD:21", "mass_delta": 79.966331, "probability": 0.95, "assigned": true,  "scores": null},
+  {"position": 5, "amino_acid": "T", "name": "Phospho",   "accession": "UNIMOD:21", "mass_delta": 79.966331, "probability": 0.05, "assigned": false, "scores": null},
+  {"position": 6, "amino_acid": "K", "name": "Acetyl",    "accession": "UNIMOD:1",  "mass_delta": 42.010565, "probability": 0.71, "assigned": true,  "scores": null},
+  {"position": 6, "amino_acid": "K", "name": "Trimethyl", "accession": "UNIMOD:37", "mass_delta": 42.04695,  "probability": 0.29, "assigned": false, "scores": null}
+]
+```
+
+The probabilities are marginals of one posterior over the peptide's interpretations:
+
+- Summed over the positions of one modification, they give how many of it the peptide carries (0.95 + 0.05 = one phosphate): this is localization.
+- Summed over the candidates at one position, they give the probability that the position is modified at all, so they never exceed 1 (0.71 + 0.29 at K6): this is identity.
+- `assigned` rows agree with `modifications` and the peptidoform; the others are alternatives they cannot hold.
+
+In the PSM view the probabilities are given this one identification. In the feature view they are combined over the feature's identifications, as the producer states in [provenance](provenance.md). The [site view](site.md) combines them at the protein level. A substitution that spans more than one residue cannot be a candidate at one position; it is a [sequence edit](sequence-edits.md).
+
+!!! note "Validation"
+    Under `qpxc validate` (strict), candidate probabilities are finite and in [0, 1], and those at one position sum to at most 1.
+
 ## Complete example
 
 Consider the peptide `PEPTSDMK` with a phosphorylation on Ser at position 5 (high confidence) and an oxidation on Met at position 7.
@@ -200,6 +245,7 @@ The `modifications` field is available in the following QPX views:
 | ------------------------ | ---------------- | --------------------------------------------------- |
 | PSM (`psm_file`)         | `modifications`  | Per-PSM modification detail with localization scores |
 | Feature (`feature_file`) | `modifications`  | Carried forward from best PSM or identification      |
+| PSM, Feature             | `modification_candidates` | Competing interpretations per position, with probabilities (optional) |
 | Peptide (`peptide_file`) | `modifications`  | Summarized at the peptide level                      |
 
 ## Further reading

@@ -612,6 +612,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
             "psm_ids",
             "pg_ids",
             # Producer-specific optional fields not emitted by DIA-NN.
+            "modification_candidates",
             "quantification_unit_id",
             "compensation_voltage",
             "consensus_rt",

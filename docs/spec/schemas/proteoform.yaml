@@ -29,6 +29,11 @@ fields:
     type: string
     nullable: true
     doc: "What distinguishes the member, e.g. a variant in HGVS protein notation (p.Arg175His), an isoform identifier, or a chain range"
+  edits:
+    type: "list<sequence_edit>"
+    optional: true
+    nullable: true
+    doc: "For a variant, the sequence changes that make it from the canonical entry, in canonical coordinates; null for other kinds"
   pg_id:
     type: int64
     nullable: true

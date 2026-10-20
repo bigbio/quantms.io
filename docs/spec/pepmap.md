@@ -17,6 +17,7 @@ The YAML schema definition lives at `qpx/core/data/schemas/pepmap.yaml` in the s
 | `sequence` | Unmodified peptide amino acid sequence | string | yes |
 | `peptidoform` | ProForma notation | string | yes |
 | `pg_accessions` | Protein accessions with optional positions (start, end, pre, post) | list\<pg_protein\> | no |
+| `sequence_edits` | Sequence changes the peptide carries relative to a reference protein it maps to (see [Sequence Edits](sequence-edits.md)); optional column | list\<peptide_sequence_edit\>, null | no |
 | `is_unique` | `true` if peptide maps to exactly one protein | bool | no |
 
 The `pg_protein` struct contains:
