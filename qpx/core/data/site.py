@@ -22,17 +22,23 @@ class Site(BaseStructure):
 
     def confident(
         self,
-        max_qvalue: float = 0.05,
+        max_qvalue: float | None = 0.05,
         min_occupancy: float | None = None,
         min_identity: float | None = None,
     ) -> "Site":
-        """Sites at a site q-value cutoff and, optionally, occupancy and identity floors."""
-        clauses = [f"site_qvalue <= {float(max_qvalue)}"]
+        """Sites at a site q-value cutoff and, optionally, occupancy and identity floors.
+
+        ``max_qvalue=None`` skips the q-value cutoff, for producers that do not
+        estimate ``site_qvalue``.
+        """
+        clauses = []
+        if max_qvalue is not None:
+            clauses.append(f"site_qvalue <= {float(max_qvalue)}")
         if min_occupancy is not None:
             clauses.append(f"occupancy >= {float(min_occupancy)}")
         if min_identity is not None:
             clauses.append(f"identity_probability >= {float(min_identity)}")
-        return self.filter(" AND ".join(clauses))
+        return self.filter(" AND ".join(clauses)) if clauses else self
 
     def targets_only(self) -> "Site":
         """Filter to target sites (exclude decoy and knockoff sites)."""

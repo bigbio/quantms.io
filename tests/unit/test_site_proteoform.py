@@ -133,6 +133,7 @@ def test_dataset_discovers_site_and_proteoform(tmp_path):
     assert ds.site.by_protein("P04637").count() == 2
     assert ds.site.by_modification("Phospho").count() == 1
     assert ds.site.targets_only().confident(0.05, min_occupancy=0.5, min_identity=0.7).count() == 1
+    assert ds.site.confident(None).count() == 3
     assert ds.proteoform.by_family("P04637").count() == 3
     assert ds.proteoform.by_kind("variant").count() == 1
     assert ds.proteoform.confident(0.05).count() == 2
