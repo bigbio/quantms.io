@@ -24,8 +24,8 @@ The YAML schema definition lives at `qpx/core/data/schemas/site.yaml` in the sou
 | `site_id` | Opaque int64 identity, derived from the identity composite (`protein_accession`, `position`, `modification_name`, `grouped_runs`) | int64 | yes |
 | `protein_accession` | Protein the position refers to | string | yes |
 | `family` | Protein family (the canonical entry of an isoform, variant or chain) | string, null | no |
-| `position` | 1-based residue position in the protein | int32 | yes |
-| `amino_acid` | Residue at the position | string | yes |
+| `position` | Position in the protein: 1-based for a residue, 0 for the protein N-terminus, length + 1 for the C-terminus (see below) | int32 | yes |
+| `amino_acid` | Residue at the position; null for a protein terminus | string, null | yes |
 | `modification_name` | Modification name (e.g. `Phospho`); part of the identity | string | yes |
 | `modification_accession` | Modification accession (e.g. `UNIMOD:21`) | string, null | no |
 | `mass_delta` | Monoisotopic mass shift (Da); not part of the identity, so modifications of equal mass (dimethyl, ethyl) are distinct rows | float64 | yes |
@@ -54,8 +54,14 @@ The `site_alternative` struct:
 !!! note "Linking to pg"
     `pg_id` names one pg row, and a pg row has one label. A site has no label, so it links to the identification pg row (null `label`) with the same `grouped_runs`. When the site spans several pg rows — several labels, or runs grouped differently in pg — `pg_id` is null, and the protein is found through `pg_accessions` membership.
 
+!!! note "Positions and termini"
+    Positions follow the [Modifications](modifications.md#position-format-rules) convention, applied to the protein instead of the peptide: a residue is 1-based and the modification is on its side chain, the protein N-terminus is `0` and the C-terminus is the protein length + 1, both with a null `amino_acid`. Protein N-terminal acetylation of Met1 is position `0`; acetylation of the side chain of a Lys at residue 1 is position `1`.
+
+!!! note "Aggregated over spectra, unlike psm and feature"
+    A site row summarises every spectrum that places a modification on the residue. The `psm` view reports one identification, and the `feature` view carries the modifications of its best PSM; neither aggregates. The competing explanations of one spectrum (acetyl or trimethyl on the same peptide) are separate PSM rows, each with its own scores; the site view is where their evidence is combined.
+
 !!! note "Not localization"
-    None of these is a localization score: which residue of a peptide carries a modification is reported per PSM in `psm.modifications[].positions[].scores` (see [Modifications](modifications.md)).
+    None of these is a localization score. Which residue of a peptide carries a modification is reported per PSM in `psm.modifications[].positions[].scores`, under the [localization score names](modifications.md#localization-scores) (e.g. `localization_probability`, `luciphor_site_probability`, see [Scores](scores.md)). A localization-only error rate (false localization rate) is a different quantity from `site_qvalue`, which also counts wrong peptides, proteins and modifications; a producer that estimates one reports it in `additional_scores`.
 
 ## Validation
 

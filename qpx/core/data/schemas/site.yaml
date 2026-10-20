@@ -24,11 +24,12 @@ fields:
   position:
     type: int32
     required: true
-    doc: "1-based residue position in the protein sequence"
+    doc: "Position in the protein, with the psm.modifications convention: 1-based for a residue (its side chain), 0 for the protein N-terminus and protein length + 1 for the protein C-terminus. N-terminal acetylation of Met1 is position 0; acetylation of a Lys1 side chain is position 1."
   amino_acid:
     type: string
     required: true
-    doc: "Residue at the position (one letter)"
+    nullable: true
+    doc: "Residue at the position (one letter); null for a protein terminus (position 0 or length + 1)"
   modification_name:
     type: string
     required: true

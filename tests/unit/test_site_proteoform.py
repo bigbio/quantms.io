@@ -117,6 +117,23 @@ def test_equal_mass_modifications_get_distinct_site_ids(tmp_path):
     assert _validate(tmp_path, "site").is_valid
 
 
+def test_protein_n_terminus_and_residue_1_are_distinct_sites(tmp_path):
+    """N-terminal acetylation is position 0 with no residue; a Lys1 side chain is position 1."""
+    from qpx.writers import SiteWriter
+
+    with SiteWriter(tmp_path / "exp.site.parquet") as w:
+        w.write_batch(
+            [
+                make_site_record(position=0, amino_acid=None, alternatives=None, evidence_fraction=1.0),
+                make_site_record(position=1, amino_acid="K", alternatives=None, evidence_fraction=1.0),
+            ]
+        )
+    table = pq.read_table(tmp_path / "exp.site.parquet")
+    assert table.column("amino_acid").to_pylist() == [None, "K"]
+    assert len(set(table.column("site_id").to_pylist())) == 2
+    assert _validate(tmp_path, "site").is_valid
+
+
 @pytest.mark.parametrize(
     "overrides",
     [
