@@ -478,7 +478,7 @@ def _malformed_edit_count(flat: pa.Table) -> int:
                 pc.invert(pc.match_substring_regex(ref, letters)),
                 pc.invert(pc.match_substring_regex(alt, letters)),
             ),
-            pc.and_(pc.equal(pc.utf8_length(ref), 0), pc.equal(pc.utf8_length(alt), 0)),
+            pc.equal(ref, alt),
         ),
     )
     return pc.sum(pc.cast(pc.fill_null(bad, True), pa.int64())).as_py() or 0

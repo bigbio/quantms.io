@@ -63,6 +63,19 @@ def test_candidates_round_trip_and_validate(tmp_path):
     assert _validate(tmp_path, "psm").is_valid
 
 
+def test_feature_candidates_round_trip_and_validate(tmp_path):
+    from qpx.writers import FeatureWriter
+    from tests.conftest import make_feature_record
+
+    record = make_feature_record()
+    record["modification_candidates"] = CANDIDATES
+    with FeatureWriter(tmp_path / "exp.feature.parquet") as w:
+        w.write_batch([record])
+    table = pq.read_table(tmp_path / "exp.feature.parquet")
+    assert len(table.column("modification_candidates").to_pylist()[0]) == len(CANDIDATES)
+    assert _validate(tmp_path, "feature").is_valid
+
+
 def test_a_file_without_the_column_stays_valid(tmp_path):
     """The column is optional: files written before it existed still validate."""
     from qpx.writers import PsmWriter
@@ -203,6 +216,7 @@ def test_sequence_edits_cover_substitutions_spans_deletions_and_insertions(tmp_p
         edit(0, 0, "", "M"),  # start before the protein
         edit(20, 20, "r", "h"),  # not one-letter codes
         edit(20, 19, "", ""),  # changes nothing
+        edit(20, 20, "R", "R"),  # reference equals alternative
     ],
 )
 def test_malformed_sequence_edits_fail_strict_validation(tmp_path, bad):

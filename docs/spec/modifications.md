@@ -145,11 +145,21 @@ The probabilities are marginals of one posterior over the peptide's interpretati
 - An **alternative group** is one modification event and its mutually exclusive explanations, so its probabilities sum to at most 1. Group 1 is localization (one phosphate, on S4 or T5); group 2 is identity (acetyl or trimethyl on K6). A group can mix both, e.g. one +42 Da on K6 or K9, as acetyl or trimethyl.
 - Probabilities are not summed across groups or over ungrouped candidates: modifications in different groups can occur together, so the sum over all candidates at a position is not the probability that the position is modified.
 - `assigned` rows agree with `modifications` and the peptidoform; the others are alternatives they cannot hold.
+- `alternative_group` ids are scoped to one row: group 1 of one PSM has nothing to do with group 1 of another.
 
-In the PSM view the probabilities are given this one identification. In the feature view they are combined over the feature's identifications, as the producer states in [provenance](provenance.md). The [site view](site.md) combines them at the protein level. A substitution that spans more than one residue cannot be a candidate at one position; it is a [sequence edit](sequence-edits.md).
+In the PSM view the probabilities are given this one identification. In the feature view they are combined over the feature's identifications. The recommended rule is a mixture: the probability of a candidate is the average of its probabilities in the feature's PSMs, weighted by the confidence of each identification (1 − PEP where PEP is available, equal weights otherwise). A mixture of marginals is a marginal, so the sums within an alternative group stay at most 1; summing over PSMs does not. A producer that combines differently (best PSM, maximum) records its rule in [provenance](provenance.md), so the psm → feature → [site](site.md) chain can be reproduced. The site view combines the feature values at the protein level. A substitution that spans more than one residue cannot be a candidate at one position; it is a [sequence edit](sequence-edits.md).
 
 !!! note "Validation"
     Under `qpxc validate` (strict), candidate probabilities are finite and in [0, 1], and those of one alternative group sum to at most 1. A candidate field of the wrong type is reported as a type mismatch and the probability checks are skipped.
+
+### Substitution candidates
+
+A substitution competes with a modification of the same mass at one position (D→E and methyl on D, +14.0157 Da). The conventions:
+
+- `position` and `amino_acid` are in the coordinates of the **observed** peptide sequence, like every other candidate; a [sequence edit](sequence-edits.md) is in the reference protein's coordinates. For `Asp->Glu` at position 4 the `amino_acid` is `E`, the residue that was observed.
+- The target residue of a modification candidate is implied by its Unimod entry, not by `amino_acid`. When methylation of D competes with D→E at position 4, both candidates are at position 4 and the observed residue is `E`; the methylation candidate says that the residue would be a methylated D, not that E is methylated. Readers must not take `amino_acid` as the modification site residue for a candidate that competes with a substitution.
+- `name` and `accession` are the Unimod amino-acid substitution entry (`Asp->Glu`), and `mass_delta` is observed minus reference (`Asp->Glu` = +14.0157).
+- `assigned` is true when the peptidoform's sequence is the substituted one, so the observed residue is the substituted residue. A peptidoform cannot place a substitution as it does a modification, so a producer that reports the unsubstituted reading (the reference residue with a modification) sets `assigned` false on the substitution candidate and true on the modification.
 
 ## Complete example
 

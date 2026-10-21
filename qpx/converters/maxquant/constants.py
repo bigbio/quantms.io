@@ -200,8 +200,10 @@ def phospho_candidates(
     is ``assigned`` when the peptidoform places the phosphorylation there; the
     others are the residues it competes with, which ``modifications`` cannot hold.
     With one phosphate, the candidates are one alternative group (their
-    probabilities sum to 1); with several, MaxQuant's probabilities sum to the
-    number of phosphates and no single group applies.
+    probabilities sum to 1); with several, MaxQuant's probabilities are
+    reported per site and expected to sum to the number of phosphates, which
+    no single group can express, so the candidates are left ungrouped. That
+    sum has not been checked against real multiply-phosphorylated evidence.
     """
     if not site_scores:
         return None
