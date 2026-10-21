@@ -532,6 +532,15 @@ class TestDesignMatrix:
 class TestSaveStructure:
     """Tests for Dataset.save_structure()."""
 
+    def test_every_registered_structure_has_a_writer(self):
+        """A structure the Dataset reads must also be writable through save_structure."""
+        import qpx.writers as writers_mod
+
+        assert set(Dataset._WRITER_REGISTRY) == set(Dataset._STRUCTURE_REGISTRY)
+        for name, (writer_name, suffix) in Dataset._WRITER_REGISTRY.items():
+            assert hasattr(writers_mod, writer_name)
+            assert suffix == Dataset._STRUCTURE_REGISTRY[name][1]
+
     def test_save_feature_records(self, dataset_dir):
         """Save a list of dicts as feature parquet."""
         import pyarrow.parquet as pq

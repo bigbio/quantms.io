@@ -19,9 +19,11 @@ from qpx.core.data import (
     MzSpectra,
     Ontology,
     PepMap,
+    Proteoform,
     Provenance,
     Run,
     Sample,
+    Site,
 )
 from qpx.core.data.schema import ValidationIssue, ValidationResult
 from qpx.core.engine import DuckDBEngine
@@ -111,6 +113,44 @@ def _row_count(path: Path) -> int | None:
         return None
 
 
+# Link checks of the site and proteoform views, as constant queries.
+_LINK_SQL = {
+    "site": {
+        "dangling_pg": (
+            'SELECT count(*) FROM "site" v WHERE v.pg_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM pg p WHERE p.pg_id = v.pg_id)'
+        ),
+        "pg_context": (
+            'SELECT count(*) FROM "site" v JOIN pg p ON p.pg_id = v.pg_id '
+            "WHERE p.label IS NOT NULL "
+            "OR list_sort(list_distinct(v.grouped_runs)) <> list_sort(list_distinct(p.grouped_runs))"
+        ),
+        "dangling_psm": (
+            'SELECT count(*) FROM "site" v WHERE v.best_psm_id IS NOT NULL '
+            "AND NOT EXISTS (SELECT 1 FROM psm s WHERE s.psm_id = v.best_psm_id)"
+        ),
+    },
+    "proteoform": {
+        "dangling_pg": (
+            'SELECT count(*) FROM "proteoform" v WHERE v.pg_id IS NOT NULL '
+            "AND NOT EXISTS (SELECT 1 FROM pg p WHERE p.pg_id = v.pg_id)"
+        ),
+        "pg_context": (
+            'SELECT count(*) FROM "proteoform" v JOIN pg p ON p.pg_id = v.pg_id '
+            "WHERE NOT (v.label IS NOT DISTINCT FROM p.label) "
+            "OR list_sort(list_distinct(v.grouped_runs)) <> list_sort(list_distinct(p.grouped_runs))"
+        ),
+        "dangling_psm": (
+            'SELECT count(*) FROM "proteoform" v WHERE v.best_psm_id IS NOT NULL '
+            "AND NOT EXISTS (SELECT 1 FROM psm s WHERE s.psm_id = v.best_psm_id)"
+        ),
+    },
+}
+_LINK_CONTEXT_MESSAGE = {
+    "site": "link to a pg row that has a label or other grouped_runs (a site links to the null-label row of its runs)",
+    "proteoform": "link to a pg row whose label or grouped_runs differ from the row's",
+}
+
+
 def _skipped_check_reason(exc: duckdb.Error) -> str:
     """Why a cross-structure check could not run, for its skipped issue.
 
@@ -148,6 +188,8 @@ class Dataset:
         "ontology": (Ontology, ".ontology.parquet"),
         "provenance": (Provenance, ".provenance.parquet"),
         "pepmap": (PepMap, ".pepmap.parquet"),
+        "site": (Site, ".site.parquet"),
+        "proteoform": (Proteoform, ".proteoform.parquet"),
     }
 
     @classmethod
@@ -328,6 +370,16 @@ class Dataset:
     @property
     def pepmap(self) -> PepMap | None:
         return self._structures.get("pepmap")
+
+    @property
+    def site(self) -> Site | None:
+        """The site view, or None when the dataset has no site.parquet."""
+        return self._structures.get("site")
+
+    @property
+    def proteoform(self) -> Proteoform | None:
+        """The proteoform view, or None when the dataset has no proteoform.parquet."""
+        return self._structures.get("proteoform")
 
     # --- View accessors (cached) ---
     @property
@@ -838,7 +890,60 @@ class Dataset:
         if "feature" in results and "pg" in results and self.feature is not None and self.pg is not None:
             self._check_feature_pg_referential(results["feature"], strict=strict)
 
+        # site/proteoform links: pg_id names one pg row of the row's run (and, for a
+        # proteoform, label) context; best_psm_id names a psm row.
+        for view in ("site", "proteoform"):
+            if view in results and self._structures.get(view) is not None:
+                self._check_pg_link(view, results[view], strict=strict)
+
         return results
+
+    def _check_pg_link(self, view: str, result: ValidationResult, *, strict: bool = False) -> None:
+        """Flag site/proteoform links that do not resolve, or resolve to another context.
+
+        ``pg_id`` must name a pg row: for a proteoform the row of its own label and
+        grouped runs, for a site (no label) the identification row (null label) of
+        its grouped runs. ``best_psm_id`` must name a psm row when the psm view is
+        present.
+        """
+        severity = "error" if strict else "warning"
+        checks = []
+        if self.pg is not None:
+            checks.append(
+                ("dangling_pg_id", "pg_id", _LINK_SQL[view]["dangling_pg"], "have a pg_id that does not resolve to a pg.pg_id")
+            )
+            checks.append(("pg_link_context", "pg_id", _LINK_SQL[view]["pg_context"], _LINK_CONTEXT_MESSAGE[view]))
+        if self.psm is not None:
+            checks.append(
+                (
+                    "dangling_psm_id",
+                    "best_psm_id",
+                    _LINK_SQL[view]["dangling_psm"],
+                    "have a best_psm_id that does not resolve to a psm.psm_id",
+                )
+            )
+        for check, column, sql, what in checks:
+            try:
+                count = self._engine.execute(sql).fetchone()[0]
+            except duckdb.Error as exc:
+                reason = _skipped_check_reason(exc)
+                _log.warning("%s link check could not run (%s): %s", view, reason, exc)
+                result.issues.append(
+                    ValidationIssue(
+                        structure=view,
+                        check="referential_check_skipped",
+                        severity=severity,
+                        column=column,
+                        message=f"{view} link check could not run ({reason}): {exc}",
+                    )
+                )
+                return
+            if count:
+                result.issues.append(
+                    ValidationIssue(
+                        structure=view, check=check, severity=severity, column=column, message=f"{count} {view} row(s) {what}"
+                    )
+                )
 
     def _check_feature_pg_referential(self, feature_result: ValidationResult, *, strict: bool = False) -> None:
         """Flag feature.pg_ids elements that do not resolve to pg.pg_id."""
@@ -1386,6 +1491,8 @@ class Dataset:
         "ontology": ("OntologyWriter", ".ontology.parquet"),
         "provenance": ("ProvenanceWriter", ".provenance.parquet"),
         "pepmap": ("PepMapWriter", ".pepmap.parquet"),
+        "site": ("SiteWriter", ".site.parquet"),
+        "proteoform": ("ProteoformWriter", ".proteoform.parquet"),
     }
 
     def save_structure(

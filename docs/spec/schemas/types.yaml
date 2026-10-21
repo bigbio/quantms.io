@@ -79,6 +79,13 @@ modification_param:
     position: {type: string, nullable: true}
     target_amino_acid: {type: string, nullable: true}
 
+site_alternative:
+  fields:
+    name: {type: string}
+    accession: {type: string, nullable: true}
+    mass_delta: {type: float64}
+    evidence_fraction: {type: float64}
+
 peptide_per_protein:
   fields:
     protein_name: {type: string}

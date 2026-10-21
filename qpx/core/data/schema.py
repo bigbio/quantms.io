@@ -287,6 +287,116 @@ def pg_referential_issues_from_parquet(
         con.close()
 
 
+# Unit-interval columns of the site and proteoform views: q-values,
+# probabilities and evidence fractions.
+_UNIT_INTERVAL_COLUMNS = {
+    "site": ("site_qvalue", "modified_probability", "evidence_fraction"),
+    "proteoform": ("proteoform_qvalue",),
+}
+# Tolerance for a residue's evidence fractions summing to 1.
+_FRACTION_SUM_TOLERANCE = 1e-6
+# Closed vocabularies of the site and proteoform views. ``prior_evidence`` and
+# ``source`` are open: producers name their own evidence classes and sources.
+_VOCABULARIES = {
+    "proteoform": {"kind": ("canonical", "isoform", "variant", "chain"), "evidence": ("specific", "shared")},
+}
+
+
+def _out_of_range_count(values: pa.ChunkedArray | pa.Array) -> int:
+    """Non-null values that are not finite numbers in [0, 1]; 0 for non-float input."""
+    if not pa.types.is_floating(values.type):
+        return 0
+    bad = pc.or_(
+        pc.or_(pc.less(values, 0.0), pc.greater(values, 1.0)),
+        pc.invert(pc.is_finite(values)),
+    )
+    return pc.sum(pc.cast(pc.fill_null(bad, False), pa.int64())).as_py() or 0
+
+
+def _issue(structure: str, check: str, severity: str, column: str, message: str) -> ValidationIssue:
+    return ValidationIssue(structure=structure, check=check, severity=severity, column=column, message=message)
+
+
+def _unit_interval_issues(table: pa.Table, structure: str, severity: str) -> list[ValidationIssue]:
+    """Flag q-values, probabilities and evidence fractions outside [0, 1] or not finite."""
+    issues = []
+    for name in _UNIT_INTERVAL_COLUMNS.get(structure, ()):
+        if name not in table.schema.names:
+            continue
+        bad = _out_of_range_count(table.column(name))
+        if bad:
+            message = f"{bad} value(s) of {name} are not finite numbers in [0, 1]"
+            issues.append(_issue(structure, "value_out_of_range", severity, name, message))
+    if structure == "site":
+        issues.extend(_evidence_fraction_issues(table, structure, severity))
+    return issues
+
+
+def _alternative_fractions(table: pa.Table) -> list[list | None] | None:
+    """Each site row's alternative evidence fractions, or None when the column is absent or malformed."""
+    if "alternatives" not in table.schema.names:
+        return None
+    alternatives = table.column("alternatives")
+    if not (pa.types.is_list(alternatives.type) and pa.types.is_struct(alternatives.type.value_type)):
+        return None
+    index = alternatives.type.value_type.get_field_index("evidence_fraction")
+    if index < 0 or not pa.types.is_floating(alternatives.type.value_type.field(index).type):
+        return None
+    return [None if alts is None else [a.get("evidence_fraction") for a in alts] for alts in alternatives.to_pylist()]
+
+
+def _evidence_fraction_issues(table: pa.Table, structure: str, severity: str) -> list[ValidationIssue]:
+    """A residue's evidence is one pool: a row's fraction and its alternatives' sum to 1.
+
+    Without alternatives, the row holds the whole pool, so its fraction must be 1
+    (or null). Alternatives are listed largest first and are each in [0, 1].
+    """
+    fractions = _alternative_fractions(table)
+    if fractions is None or "evidence_fraction" not in table.schema.names:
+        return []
+    if not pa.types.is_floating(table.column("evidence_fraction").type):
+        return []
+    own = table.column("evidence_fraction").to_pylist()
+    out_of_range = unsummed = unordered = 0
+    for row_own, alts in zip(own, fractions):
+        alts = [a for a in (alts or []) if a is not None]
+        out_of_range += sum(not (0.0 <= a <= 1.0) for a in alts)
+        unordered += any(x < y for x, y in zip(alts, alts[1:]))
+        if row_own is not None and abs(row_own + sum(alts) - 1.0) > _FRACTION_SUM_TOLERANCE:
+            unsummed += 1
+    issues = []
+    if out_of_range:
+        message = f"{out_of_range} alternative evidence fraction(s) are not finite numbers in [0, 1]"
+        issues.append(_issue(structure, "value_out_of_range", severity, "alternatives", message))
+    if unsummed:
+        message = (
+            f"{unsummed} row(s) have an evidence fraction and alternatives that do not sum to 1 "
+            "(a row without alternatives holds the whole residue's evidence: fraction 1)"
+        )
+        issues.append(_issue(structure, "evidence_fraction_sum", severity, "evidence_fraction", message))
+    if unordered:
+        message = f"{unordered} row(s) list alternatives that are not in decreasing evidence fraction"
+        issues.append(_issue(structure, "alternatives_order", severity, "alternatives", message))
+    return issues
+
+
+def _vocabulary_issues(table: pa.Table, structure: str, severity: str) -> list[ValidationIssue]:
+    """Flag values outside a closed vocabulary (null is allowed)."""
+    issues = []
+    for name, allowed in _VOCABULARIES.get(structure, {}).items():
+        if name not in table.schema.names:
+            continue
+        values = table.column(name)
+        if not (pa.types.is_string(values.type) or pa.types.is_large_string(values.type)):
+            continue
+        outside = pc.invert(pc.is_in(values, value_set=pa.array(allowed)))
+        bad = pc.sum(pc.cast(pc.and_(outside, pc.is_valid(values)), pa.int64())).as_py() or 0
+        if bad:
+            message = f"{bad} value(s) of {name} are not one of {', '.join(allowed)}"
+            issues.append(_issue(structure, "value_not_in_vocabulary", severity, name, message))
+    return issues
+
+
 def _anchor_membership_issues(table: pa.Table, structure: str, severity: str) -> list[ValidationIssue]:
     """Flag rows that carry an ``anchor_protein`` but no ``pg_accessions`` membership.
 
@@ -536,6 +646,8 @@ class ViewSchema:
             result.issues.extend(_pg_referential_issues(table, self._view_name, gated_severity))
 
         result.issues.extend(_anchor_membership_issues(table, self._view_name, gated_severity))
+        result.issues.extend(_unit_interval_issues(table, self._view_name, gated_severity))
+        result.issues.extend(_vocabulary_issues(table, self._view_name, gated_severity))
         result.issues.extend(_scan_format_issues(table, self._view_name, gated_severity))
 
         return result

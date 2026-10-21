@@ -14,12 +14,14 @@ from qpx.core.data.feature import Feature
 from qpx.core.data.mz import MzSpectra
 from qpx.core.data.pepmap import PepMap
 from qpx.core.data.pg import PG
+from qpx.core.data.proteoform import Proteoform
 from qpx.core.data.psm import PSM
 from qpx.core.data.run import Run
 from qpx.core.data.sample import Sample
 
 # --- Validation ---
 from qpx.core.data.schema import ValidationIssue, ValidationResult
+from qpx.core.data.site import Site
 from qpx.dataset import Dataset
 from qpx.writers.dataset import DatasetWriter
 
@@ -29,10 +31,12 @@ from qpx.writers.mz import MzWriter
 from qpx.writers.ontology import OntologyWriter
 from qpx.writers.pepmap import PepMapWriter
 from qpx.writers.pg import PgWriter
+from qpx.writers.proteoform import ProteoformWriter
 from qpx.writers.provenance import ProvenanceWriter
 from qpx.writers.psm import PsmWriter
 from qpx.writers.run import RunWriter
 from qpx.writers.sample import SampleWriter
+from qpx.writers.site import SiteWriter
 
 __all__ = [
     "views",
@@ -42,9 +46,11 @@ __all__ = [
     "MzSpectra",
     "PepMap",
     "PG",
+    "Proteoform",
     "PSM",
     "Run",
     "Sample",
+    "Site",
     "ValidationIssue",
     "ValidationResult",
     "Dataset",
@@ -54,10 +60,12 @@ __all__ = [
     "OntologyWriter",
     "PepMapWriter",
     "PgWriter",
+    "ProteoformWriter",
     "ProvenanceWriter",
     "PsmWriter",
     "RunWriter",
     "SampleWriter",
+    "SiteWriter",
     "open_dataset",
     "open",
     "read_feature",
@@ -67,6 +75,8 @@ __all__ = [
     "read_sample",
     "read_run",
     "read_pepmap",
+    "read_site",
+    "read_proteoform",
 ]
 
 # --- Reading (data structures) ---
@@ -127,3 +137,13 @@ def read_run(path: str, **kwargs):
 def read_pepmap(path: str, **kwargs):
     """Open a single pepmap.parquet file."""
     return PepMap.from_file(path, **kwargs)
+
+
+def read_site(path: str, **kwargs):
+    """Open a single site.parquet file."""
+    return Site.from_file(path, **kwargs)
+
+
+def read_proteoform(path: str, **kwargs):
+    """Open a single proteoform.parquet file."""
+    return Proteoform.from_file(path, **kwargs)
