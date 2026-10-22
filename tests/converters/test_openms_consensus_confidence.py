@@ -256,7 +256,7 @@ def test_feature_carries_its_protein_groups_qvalue_and_genes(tmp_path, streaming
         """
         SELECT count(*) FROM read_parquet($1) f
         JOIN read_parquet($2) p
-          ON list_sort(list_transform(f.pg_accessions, x -> x.accession)) = list_sort(p.pg_accessions)
+          ON list_sort(list_transform(f.pg_accessions, lambda x: x.accession)) = list_sort(p.pg_accessions)
         WHERE f.pg_global_qvalue IS DISTINCT FROM p.global_qvalue
            OR list_sort(f.gg_names) IS DISTINCT FROM list_sort(p.gg_names)
         """,

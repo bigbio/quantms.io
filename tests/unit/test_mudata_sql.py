@@ -19,7 +19,7 @@ from qpx.mudata import _is_multiplexed
 def test_is_multiplexed_uses_static_query_whitelist(table, label_field):
     """Supported identifier pairs select a fixed SQL statement."""
     engine = Mock()
-    engine.execute.return_value.fetchone.return_value = (2,)
+    engine.execute.return_value.fetchall.return_value = [(2,)]
 
     assert _is_multiplexed(engine, table, label_field)
     engine.execute.assert_called_once()

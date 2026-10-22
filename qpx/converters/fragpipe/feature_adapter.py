@@ -163,7 +163,7 @@ class FragPipeFeatureAdapter(BaseConverter):
                 path=escape_path(path),
             )
         )
-        count = self._conn.execute("SELECT COUNT(*) FROM fragpipe_features").fetchone()[0]
+        count = self._conn.execute("SELECT COUNT(*) FROM fragpipe_features").fetchall()[0][0]
         self.logger.info(f"Loaded {count:,} FragPipe feature rows")
 
     def _require_ion_format(self) -> None:
@@ -262,7 +262,7 @@ class FragPipeFeatureAdapter(BaseConverter):
                 path=escape_path(psm_path),
             )
         )
-        count = self._conn.execute("SELECT COUNT(*) FROM _fp_psm_lookup").fetchone()[0]
+        count = self._conn.execute("SELECT COUNT(*) FROM _fp_psm_lookup").fetchall()[0][0]
         self.logger.info(f"PSM lookup: loaded {count:,} PSM rows from {psm_path}")
 
         # Detect columns

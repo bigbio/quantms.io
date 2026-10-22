@@ -114,7 +114,7 @@ class MaxQuantPsmAdapter(MaxQuantBaseAdapter):
             "CREATE TABLE msms AS SELECT * FROM read_csv_auto($1, header=true, auto_detect=true, delim='\t', null_padding=true)",
             [path],
         )
-        count = self._conn.execute("SELECT COUNT(*) FROM msms").fetchone()[0]
+        count = self._conn.execute("SELECT COUNT(*) FROM msms").fetchall()[0][0]
         self.logger.info(f"Loaded {count:,} MaxQuant PSM rows from msms.txt")
 
     # ------------------------------------------------------------------

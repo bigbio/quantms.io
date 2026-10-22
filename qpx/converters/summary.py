@@ -35,7 +35,7 @@ def _scalar(dataset: Dataset, sql: str) -> int | None:
     file) degrades that one metric to ``None`` instead of aborting the summary.
     """
     try:
-        row = dataset.sql(sql).fetchone()
+        row = dataset.sql(sql).fetchall()[0]
     except Exception as exc:  # noqa: BLE001 - a summary must never raise  # pylint: disable=broad-exception-caught
         _log.debug("conversion summary metric failed for %r: %s", sql, exc)
         return None
@@ -98,13 +98,13 @@ def _collect(ds: Dataset) -> dict:
     }
 
     if ds.dataset_meta is not None:
-        row = None
+        rows = []
         try:
-            row = ds.sql("SELECT project_accession FROM dataset LIMIT 1").fetchone()
+            rows = ds.sql("SELECT project_accession FROM dataset LIMIT 1").fetchall()
         except Exception as exc:  # noqa: BLE001  # pylint: disable=broad-exception-caught
             _log.debug("could not read project_accession: %s", exc)
-        if row and row[0]:
-            summary["accession"] = str(row[0])
+        if rows and rows[0][0]:
+            summary["accession"] = str(rows[0][0])
 
     if ds.psm is not None:
         summary["n_psms"] = _scalar(ds, "SELECT COUNT(*) FROM psm")

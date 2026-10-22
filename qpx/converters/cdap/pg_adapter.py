@@ -64,7 +64,7 @@ class CdapPgAdapter(CdapBaseAdapter):
             "        *,\n"
             "        COALESCE(\n"
             "            array_to_string(\n"
-            "                list_sort(list_distinct(list_transform(pg_accessions, x -> x.accession))), ';'\n"
+            "                list_sort(list_distinct(list_transform(pg_accessions, lambda x: x.accession))), ';'\n"
             "            ),\n"
             "            anchor_protein\n"
             "        ) AS pg_membership_key\n"

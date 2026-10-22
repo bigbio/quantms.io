@@ -143,7 +143,7 @@ class MaxQuantPgAdapter(MaxQuantBaseAdapter):
             " delim='\\t', header=true, auto_detect=true, null_padding=true)",
             [path],
         )
-        count = self._conn.execute("SELECT COUNT(*) FROM protein_groups").fetchone()[0]
+        count = self._conn.execute("SELECT COUNT(*) FROM protein_groups").fetchall()[0][0]
         self.logger.info("Loaded %s MaxQuant protein groups", f"{count:,}")
 
     def _build_experiment_to_runs(self, evidence_path: Optional[str]) -> dict[str, list[str]]:

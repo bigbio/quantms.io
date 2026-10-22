@@ -82,7 +82,7 @@ class SpectronautBaseAdapter(BaseConverter):
                     dec=dec_sep,
                 )
             )
-        count = self._conn.execute("SELECT COUNT(*) FROM report").fetchone()[0]
+        count = self._conn.execute("SELECT COUNT(*) FROM report").fetchall()[0][0]
         self.logger.info("Spectronaut report view created (%d rows)", count)
 
     def _get_report_columns(self) -> set[str]:

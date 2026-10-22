@@ -20,7 +20,7 @@ class QueryResult:
 
     def to_arrow(self) -> pa.Table:
         """Materialize as an Arrow Table."""
-        return self._raw.fetch_arrow_table()
+        return self._raw.to_arrow_table()
 
     def to_polars(self):
         """Materialize as a Polars DataFrame."""

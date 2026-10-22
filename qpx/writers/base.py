@@ -610,7 +610,7 @@ class BaseWriter:
         )
         connection = duckdb.connect()
         try:
-            total_count, unique_count, null_count = connection.execute(query, [str(self._validation_path)]).fetchone()
+            total_count, unique_count, null_count = connection.execute(query, [str(self._validation_path)]).fetchall()[0]
         finally:
             connection.close()
 

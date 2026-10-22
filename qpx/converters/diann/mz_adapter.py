@@ -94,13 +94,13 @@ def _matched_spectra(con: duckdb.DuckDBPyConnection, ms2_file: Path, matched_sca
         keep = keep[keep["scan"].isin(matched_scans)]
     con.register("keep_scans", keep.drop_duplicates("scan"))
     try:
-        reader = con.execute(
+        reader = con.sql(
             sql_build(
                 "SELECT k.scan, m.ms_level, m.mz_array, m.intensity_array "
                 "FROM parquet_scan('$path') m JOIN keep_scans k ON m.scan = k.raw",
                 path=escape_path(str(ms2_file)),
             )
-        ).fetch_record_batch(_FETCH_ROWS)
+        ).to_arrow_reader(_FETCH_ROWS)
         seen: set[int] = set()
         for batch in reader:
             mz, mz_offsets = _float32_peaks(batch.column("mz_array"))

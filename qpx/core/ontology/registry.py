@@ -330,10 +330,10 @@ class PublicOntology:
         """Execute a query and return the first row as a dict, or None."""
         result = self._conn.execute(sql, params)
         columns = [desc[0] for desc in result.description]
-        row = result.fetchone()
-        if row is None:
+        rows = result.fetchall()
+        if not rows:
             return None
-        return dict(zip(columns, row))
+        return dict(zip(columns, rows[0]))
 
     def validate(self, names: list[str], field: str = "normalized_name") -> pd.Series:
         """Check which names exist in the ontology.
@@ -518,4 +518,4 @@ class PublicOntology:
             "SELECT COUNT(*) FROM $view WHERE is_obsolete = false",
             view=validate_table(self._view_name),
         )
-        return self._conn.execute(stmt).fetchone()[0]
+        return self._conn.execute(stmt).fetchall()[0][0]

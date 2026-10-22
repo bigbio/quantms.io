@@ -113,7 +113,7 @@ class FragPipePsmAdapter(BaseConverter):
                 path=escape_path(path),
             )
         )
-        count = self._conn.execute("SELECT COUNT(*) FROM fragpipe_psms").fetchone()[0]
+        count = self._conn.execute("SELECT COUNT(*) FROM fragpipe_psms").fetchall()[0][0]
         self.logger.info(f"Loaded {count:,} FragPipe PSM rows")
 
     # ------------------------------------------------------------------

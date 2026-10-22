@@ -15,7 +15,7 @@ class PepMap(BaseStructure):
     def by_protein(self, protein: str) -> "PepMap":
         """Filter mappings that include a given protein accession."""
         escaped = _escape_sql_string(protein)
-        return self.filter(f"len(list_filter(pg_accessions, x -> x.accession = '{escaped}')) > 0")
+        return self.filter(f"len(list_filter(pg_accessions, lambda x: x.accession = '{escaped}')) > 0")
 
     def by_peptide(self, sequence: str) -> "PepMap":
         """Filter mappings by peptide sequence."""

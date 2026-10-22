@@ -111,7 +111,7 @@ class BaseStructure:
 
     def to_arrow(self) -> pa.Table:
         """Execute query and return Arrow Table."""
-        return QueryResult(self._query.execute()).to_arrow()
+        return self._engine.connection.sql(self._query.build_sql()).to_arrow_table()
 
     def to_polars(self):
         """Execute query and return Polars DataFrame."""

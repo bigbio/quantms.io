@@ -474,8 +474,8 @@ class Dataset:
             SELECT
                 f.feature_id AS feature_id,
                 f.run_file_name AS run_file_name,
-                list_sort(list_transform(f.pg_accessions, x -> x.accession)) AS membership,
-                UNNEST(list_transform(f.intensities, i -> i.label)) AS feature_label
+                list_sort(list_transform(f.pg_accessions, lambda x: x.accession)) AS membership,
+                UNNEST(list_transform(f.intensities, lambda i: i.label)) AS feature_label
             FROM feature f
         )
         SELECT DISTINCT
@@ -607,7 +607,7 @@ class Dataset:
 
     def _link_scalar(self, sql: str) -> int | None:
         """Run a constant-literal scalar COUNT, returning ``None`` on failure."""
-        row = self._engine.execute(sql).fetchone()
+        row = self._engine.execute(sql).fetchall()[0]
         if not row or row[0] is None:
             return 0
         return int(row[0])
@@ -924,7 +924,7 @@ class Dataset:
             )
         for check, column, sql, what in checks:
             try:
-                count = self._engine.execute(sql).fetchone()[0]
+                count = self._engine.execute(sql).fetchall()[0][0]
             except duckdb.Error as exc:
                 reason = _skipped_check_reason(exc)
                 _log.warning("%s link check could not run (%s): %s", view, reason, exc)
@@ -1022,7 +1022,7 @@ class Dataset:
             if has_feature_psm_ids:
                 (feature_psm_ids_populated,) = self._engine.execute(
                     "SELECT EXISTS (SELECT 1 FROM feature WHERE psm_ids IS NOT NULL AND len(psm_ids) > 0)"
-                ).fetchone()
+                ).fetchall()[0]
 
             dangling_feature_ids = []
             if has_psm_feature_id:

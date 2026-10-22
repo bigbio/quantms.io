@@ -220,7 +220,7 @@ class MaxQuantFeatureAdapter(MaxQuantBaseAdapter):
             "CREATE TABLE evidence AS SELECT * FROM read_csv_auto($1, delim='\t', header=true, auto_detect=true, null_padding=true)",
             [path],
         )
-        count = self._conn.execute("SELECT COUNT(*) FROM evidence").fetchone()[0]
+        count = self._conn.execute("SELECT COUNT(*) FROM evidence").fetchall()[0][0]
         self.logger.info(f"Loaded {count:,} MaxQuant evidence rows")
 
     # ------------------------------------------------------------------

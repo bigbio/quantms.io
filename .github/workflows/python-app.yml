@@ -58,10 +58,10 @@ jobs:
         run: uv run pytest -vv -n auto -m "not integration and not large_data"
 
   unit-tests-duckdb-floor:
-    # Exercise the declared DuckDB floor (pyproject: duckdb>=1.3.0) so the floor is
+    # Exercise the declared DuckDB floor (pyproject: duckdb>=1.5.0) so the floor is
     # a real, tested contract — not just the latest resolved DuckDB. (The floor is
-    # 1.3.0 because older DuckDB, e.g. 1.1.3, emits Arrow map columns with
-    # non-required keys that pyarrow>=14 rejects — surfaced by this job.) The
+    # 1.5.0 because it is the first release with to_arrow_table()/to_arrow_reader()
+    # on both connections and relations; DuckDB 2.0 removed the fetch_* names.) The
     # numbered_pg row-id join also uses AS MATERIALIZED so a plain CTE cannot inline.
     runs-on: ubuntu-latest
     needs: pre-commit
@@ -80,7 +80,7 @@ jobs:
       - name: Sync workspace
         run: uv sync --extra dev
       - name: Pin DuckDB to the declared floor
-        run: uv pip install "duckdb==1.3.0"
+        run: uv pip install "duckdb==1.5.0"
       - name: Show DuckDB version
         run: uv run --no-sync python -c "import duckdb; print('duckdb', duckdb.__version__)"
       - name: Run unit tests on the DuckDB floor

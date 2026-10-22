@@ -152,7 +152,7 @@ class QuantmsMsstatsFeatureAdapter(BaseConverter):
                 path=safe_path,
             )
         )
-        count = self._conn.execute("SELECT count(*) FROM _msstats_input").fetchone()[0]
+        count = self._conn.execute("SELECT count(*) FROM _msstats_input").fetchall()[0][0]
         if count == 0:
             raise ValueError("QuantMS MSstats input contains no data rows")
         self.logger.info("Loaded %d QuantMS MSstats rows from %s", count, path)
@@ -419,7 +419,7 @@ class QuantmsMsstatsFeatureAdapter(BaseConverter):
                    )
             FROM _normalized
             """
-        ).fetchone()
+        ).fetchall()[0]
         if invalid:
             raise ValueError(f"{invalid} of {total} QuantMS MSstats rows contain invalid required values")
         if unresolved:
@@ -436,7 +436,7 @@ class QuantmsMsstatsFeatureAdapter(BaseConverter):
               ON v.run_file_name = n.run_file_name AND v.label = n.intensity_label
             WHERE v.run_file_name IS NULL
             """
-        ).fetchone()
+        ).fetchall()[0]
         if count:
             raise ValueError(f"{count} QuantMS MSstats rows have no SDRF sample for run {run_file_name!r} and label {label!r}")
 
@@ -450,7 +450,7 @@ class QuantmsMsstatsFeatureAdapter(BaseConverter):
                 HAVING count(DISTINCT intensity) > 1
             )
             """
-        ).fetchone()[0]
+        ).fetchall()[0][0]
         if conflict_count:
             raise ValueError(f"{conflict_count} Feature/channel group(s) contain conflicting intensity values")
 
@@ -463,7 +463,7 @@ class QuantmsMsstatsFeatureAdapter(BaseConverter):
                 HAVING count(DISTINCT reference_raw) FILTER (WHERE reference_raw IS NOT NULL) > 1
             )
             """
-        ).fetchone()[0]
+        ).fetchall()[0][0]
         if location_count:
             raise ValueError(
                 f"{location_count} Feature group(s) collapse distinct Reference values; "

@@ -277,9 +277,9 @@ _TYPEOF_QUERIES: dict[str, str] = {
 def _detect_label_field(engine: DuckDBEngine, table: str = "feature") -> str:
     """Return ``"channel"`` or ``"label"`` by inspecting the intensities struct type."""
     try:
-        row = engine.execute(_TYPEOF_QUERIES[table]).fetchone()
-        if row:
-            type_str = row[0].lower()
+        rows = engine.execute(_TYPEOF_QUERIES[table]).fetchall()
+        if rows:
+            type_str = rows[0][0].lower()
             if "channel" in type_str and "label" not in type_str:
                 return "channel"
         return "label"
@@ -296,12 +296,12 @@ def _detect_intensity_label(engine: DuckDBEngine, table: str = "feature") -> str
     if query is None:
         raise ValueError(f"Invalid label_field={label_field!r} or table={table!r}")
     try:
-        row = engine.execute(query).fetchone()
+        rows = engine.execute(query).fetchall()
     except Exception as exc:
         raise ValueError(f"Failed to read intensity labels from {table}: {exc}") from exc
-    if row is None:
+    if not rows:
         raise ValueError(f"No intensity labels found in {table}")
-    return row[0]
+    return rows[0][0]
 
 
 def _prepare_observations_arrow(
@@ -480,9 +480,9 @@ def _build_precursor_adata(
     import anndata as ad
 
     if intensity_label is None:
-        table = engine.execute(_PRECURSOR_ALL_QUERIES[label_field]).fetch_arrow_table()
+        table = engine.connection.sql(_PRECURSOR_ALL_QUERIES[label_field]).to_arrow_table()
     else:
-        table = engine.execute(_PRECURSOR_QUERIES[label_field], [intensity_label]).fetch_arrow_table()
+        table = engine.connection.sql(_PRECURSOR_QUERIES[label_field], params=[intensity_label]).to_arrow_table()
 
     if table.num_rows == 0:
         return ad.AnnData()
@@ -512,9 +512,9 @@ def _build_protein_adata(
     import anndata as ad
 
     if intensity_label is None:
-        table = engine.execute(_PROTEIN_ALL_QUERIES[label_field]).fetch_arrow_table()
+        table = engine.connection.sql(_PROTEIN_ALL_QUERIES[label_field]).to_arrow_table()
     else:
-        table = engine.execute(_PROTEIN_QUERIES[label_field], [intensity_label]).fetch_arrow_table()
+        table = engine.connection.sql(_PROTEIN_QUERIES[label_field], params=[intensity_label]).to_arrow_table()
 
     if table.num_rows == 0:
         return ad.AnnData()
@@ -733,7 +733,7 @@ def _is_multiplexed(engine: DuckDBEngine, table: str, label_field: str) -> bool:
     if query is None:
         return False
     try:
-        row = engine.execute(query).fetchone()
+        row = engine.execute(query).fetchall()[0]
     except Exception:
         return False
     return bool(row) and row[0] is not None and row[0] > 1

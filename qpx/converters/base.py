@@ -134,17 +134,16 @@ class BaseConverter(ABC):
                 path=safe,
             )
         )
-        count = self._conn.execute(sql_build("SELECT COUNT(*) FROM $tbl", tbl=tbl)).fetchone()[0]
+        count = self._conn.execute(sql_build("SELECT COUNT(*) FROM $tbl", tbl=tbl)).fetchall()[0][0]
         self.logger.info(f"Loaded {count:,} rows into '{table_name}' from {path}")
 
     def _query_batched(self, sql: str, batch_size: int = 500_000):
         """Execute *sql* and yield result batches as Arrow record batches.
 
-        DuckDB >= 1.0 ``fetch_record_batch()`` returns a
-        ``RecordBatchReader`` (iterable of ``RecordBatch``).
+        ``to_arrow_reader()`` returns a ``RecordBatchReader`` (iterable of
+        ``RecordBatch``) that streams the query instead of materializing it.
         """
-        result = self._conn.execute(sql)
-        reader = result.fetch_record_batch(batch_size)
+        reader = self._conn.sql(sql).to_arrow_reader(batch_size)
         for batch in reader:
             if batch.num_rows > 0:
                 yield batch

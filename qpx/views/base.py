@@ -56,8 +56,7 @@ class BaseView:
         if key in self._cache:
             self._cache.move_to_end(key)
             return self._cache[key]
-        result = self._engine.execute(sql)
-        table = result.fetch_arrow_table()
+        table = self._engine.connection.sql(sql).to_arrow_table()
         self._cache[key] = CachedQueryResult(table)
         if len(self._cache) > _MAX_CACHE_ENTRIES:
             self._cache.popitem(last=False)
