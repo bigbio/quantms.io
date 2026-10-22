@@ -7,11 +7,10 @@ import pyarrow as pa
 class QueryResult:
     """Read Arrow and pandas output through a relation, and rows through a cursor."""
 
-    def __init__(self, connection, sql: str, params=None):
+    def __init__(self, connection, sql: str):
         self._connection = connection
         self._sql = sql
-        self._params = params
-        self._relation = connection.sql(sql, params=params)
+        self._relation = connection.sql(sql)
         self._cursor = None
 
     def to_df(self) -> pd.DataFrame:
@@ -31,7 +30,7 @@ class QueryResult:
     def _get_cursor(self):
         # DuckDB 2.0 relations have no fetchone().
         if self._cursor is None:
-            self._cursor = self._connection.execute(self._sql, self._params)
+            self._cursor = self._connection.execute(self._sql)
         return self._cursor
 
     def fetchone(self):

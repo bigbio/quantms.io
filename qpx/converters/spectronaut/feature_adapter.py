@@ -25,6 +25,7 @@ from qpx.converters.spectronaut.constants import to_modifications, to_proforma
 from qpx.converters.utils import pg_accessions_array
 from qpx.core.cleavage import count_missed_cleavages
 from qpx.core.data import FeatureSchema
+from qpx.core.query import _escape_sql_string
 from qpx.core.sql import sql_build, validate_identifier
 from qpx.writers.feature import FeatureWriter
 
@@ -525,10 +526,10 @@ class SpectronautFeatureAdapter(SpectronautBaseAdapter):
         target_schema: pa.Schema,
     ) -> Optional[pa.Table]:
         """Execute SQL batch, add Python-only columns, cast to schema."""
-        placeholders = ", ".join(["?" for _ in runs])
+        placeholders = ", ".join(f"'{_escape_sql_string(r)}'" for r in runs)
         sql = sql_template.replace("{run_placeholders}", placeholders)
 
-        table = self._conn.sql(sql, params=runs).to_arrow_table()
+        table = self._conn.sql(sql).to_arrow_table()
         if len(table) == 0:
             return None
 

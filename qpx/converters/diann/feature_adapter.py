@@ -27,6 +27,7 @@ from qpx.converters.mappings import get_field_mappings
 from qpx.converters.ptm import compute_precursor_mz
 from qpx.converters.utils import pg_accessions_array
 from qpx.core.cleavage import count_missed_cleavages
+from qpx.core.query import _escape_sql_string
 from qpx.core.scan import scan_from_native_id
 from qpx.core.sql import sql_build, validate_identifier
 from qpx.writers.feature import FeatureWriter
@@ -765,11 +766,11 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
         mzml_info_folder: Optional[str],
     ) -> Optional[pa.Table]:
         """Execute SQL batch, add Python-only columns, cast to target schema."""
-        placeholders = ", ".join(["?" for _ in runs])
+        placeholders = ", ".join(f"'{_escape_sql_string(r)}'" for r in runs)
         sql = sql_template.replace("{run_placeholders}", placeholders)
 
         # Execute SQL — DuckDB pushes predicates to parquet, only reads needed data
-        table = self._conn.sql(sql, params=runs).to_arrow_table()
+        table = self._conn.sql(sql).to_arrow_table()
 
         if len(table) == 0:
             return None

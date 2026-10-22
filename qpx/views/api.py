@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from qpx.core.convert import QueryResult
+from qpx.core.sql import sql_build
 from qpx.views.base import BaseView
 
 if TYPE_CHECKING:
@@ -38,9 +39,10 @@ class ProteinView(BaseView):
         FROM numbered_pg p
         JOIN pg_samples ps USING (pg_row_id)
         WHERE p.label = ps.label
-          AND (p.global_qvalue IS NULL OR p.global_qvalue <= $1)
+          AND (p.global_qvalue IS NULL OR p.global_qvalue <= $threshold)
         """
-        return QueryResult(self._engine.connection, sql, [q_value_threshold])
+        sql = sql_build(sql, threshold=str(q_value_threshold))
+        return QueryResult(self._engine.connection, sql)
 
 
 class PeptideView(BaseView):
