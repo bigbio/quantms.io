@@ -40,7 +40,7 @@ class ProteinView(BaseView):
         WHERE p.label = ps.label
           AND (p.global_qvalue IS NULL OR p.global_qvalue <= $1)
         """
-        return QueryResult(self._engine.execute(sql, [q_value_threshold]))
+        return QueryResult(self._engine.connection, sql, [q_value_threshold])
 
 
 class PeptideView(BaseView):
@@ -64,7 +64,7 @@ class PeptideView(BaseView):
              UNNEST(f.intensities) AS _t2(i)
         WHERE (i.label = rs.label OR len(r.samples) = 1)
         """
-        return QueryResult(self._engine.execute(sql))
+        return QueryResult(self._engine.connection, sql)
 
 
 class IdentificationSummaryView(BaseView):
@@ -79,7 +79,7 @@ class IdentificationSummaryView(BaseView):
         FROM feature f
         GROUP BY f.run_file_name
         """
-        return QueryResult(self._engine.execute(sql))
+        return QueryResult(self._engine.connection, sql)
 
     def plot(self):
         """Bar chart of identifications per run."""

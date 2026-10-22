@@ -19,8 +19,7 @@ _MAX_CACHE_ENTRIES = 16
 class CachedQueryResult:
     """A pre-materialized query result that supports repeated access.
 
-    Unlike QueryResult (which wraps a one-shot DuckDB cursor), this stores
-    the Arrow table in memory and can be materialized multiple times.
+    QueryResult reruns its query on each materialization; this class keeps the Arrow table in memory.
     """
 
     def __init__(self, arrow_table: pa.Table):

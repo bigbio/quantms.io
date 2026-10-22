@@ -107,7 +107,7 @@ class BaseStructure:
     # --- Materialization (delegates to core.convert.QueryResult) ---
     def to_df(self) -> pd.DataFrame:
         """Execute query and return pandas DataFrame."""
-        return QueryResult(self._query.execute()).to_df()
+        return QueryResult(self._engine.connection, self._query.build_sql()).to_df()
 
     def to_arrow(self) -> pa.Table:
         """Execute query and return Arrow Table."""
@@ -115,7 +115,7 @@ class BaseStructure:
 
     def to_polars(self):
         """Execute query and return Polars DataFrame."""
-        return QueryResult(self._query.execute()).to_polars()
+        return QueryResult(self._engine.connection, self._query.build_sql()).to_polars()
 
     def count(self) -> int:
         return self._query.count()
@@ -138,7 +138,7 @@ class BaseStructure:
             batch_values = all_values[i : i + batch_size]
             placeholders = ", ".join(f"'{_escape_sql_string(str(v))}'" for v in batch_values)
             filtered = self._query.filter(f"{partition_by} IN ({placeholders})")
-            df = QueryResult(filtered.execute()).to_df()
+            df = QueryResult(self._engine.connection, filtered.build_sql()).to_df()
             yield batch_values, df
 
     # --- Validation ---

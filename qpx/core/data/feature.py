@@ -52,7 +52,7 @@ class Feature(BaseStructure):
             ilf=ilf,
             src=self._query.source,
         )
-        return QueryResult(self._engine.execute(stmt))
+        return QueryResult(self._engine.connection, stmt)
 
     def _intensity_label_field(self) -> str:
         """Detect whether the intensities struct uses 'label' (new) or 'channel' (old)."""
@@ -100,4 +100,4 @@ class Feature(BaseStructure):
             join_cond=join_cond,
             label_expr=label_expr,
         )
-        return QueryResult(self._engine.execute(stmt))
+        return QueryResult(self._engine.connection, stmt)
