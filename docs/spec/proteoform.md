@@ -33,6 +33,7 @@ A PSM-level q-value does not control error over members, even the q-value of a m
 | `accession` | This member's accession | string | yes |
 | `kind` | `canonical`, `isoform`, `variant` or `chain` | string | yes |
 | `description` | What distinguishes the member (e.g. `p.Arg175His`, an isoform identifier, a chain range) | string, null | no |
+| `edits` | For a variant, the changes from the canonical sequence (see [Sequence Edits](sequence-edits.md)); optional column | list\<sequence_edit\>, null | no |
 | `pg_id` | Protein group row holding the family, for this row's label and runs (see below) | int64, null | no |
 | `grouped_runs` | Runs grouped into this quantification unit | list\<string\> | yes |
 | `source` | Database or annotation the member comes from | string, null | no |

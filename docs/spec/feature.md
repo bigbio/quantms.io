@@ -51,6 +51,7 @@ These fields are shared with the PSM view and describe the peptide identificatio
 | `sequence` | Unmodified peptide amino acid sequence | string | yes |
 | `peptidoform` | Peptide sequence with modifications in ProForma notation | string | yes |
 | `modifications` | Structured list of modifications with name, accession, position, and localization scores | array[struct], null | no |
+| `modification_candidates` | Competing modification interpretations per position, combined over the feature's identifications by the producer (see [Competing interpretations](modifications.md#competing-interpretations)); optional column | array[struct], null | no |
 | `charge` | Charge of the quantified analyte | int16 | yes |
 | `posterior_error_probability` | Posterior error probability (PEP) for the peptide match | float64, null | no |
 | `peptide_qvalue` | Peptide-level q-value; null when the search engine does not provide one | float64, null | optional |
