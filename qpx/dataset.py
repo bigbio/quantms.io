@@ -937,7 +937,7 @@ class Dataset:
                         message=f"{view} link check could not run ({reason}): {exc}",
                     )
                 )
-                return
+                continue
             if count:
                 result.issues.append(
                     ValidationIssue(
