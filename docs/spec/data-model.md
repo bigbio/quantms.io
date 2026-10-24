@@ -287,7 +287,7 @@ returned once per sample and label.
 - [Sample Metadata](sample.md) — biological samples.
 - [Intensities](intensities.md) — primary vs additional intensity structures.
 - [Peptide-Protein Map](pepmap.md) — deduplicated peptidoform → protein mapping.
-- [Modification Sites](site.md) — protein modification sites with occupancy and identity probabilities.
+- [Modification Sites](site.md) — protein modification-site claims with a q-value, the probability that the residue is modified and the evidence fraction of each candidate modification.
 - [Proteoforms](proteoform.md) — canonical, isoform, variant and chain members of protein families.
 - [API Views](views.md) — on-demand summaries derived by joining these views.
 - [Versioning](versioning.md) — the 1.1 flatten + primary-key changelog.
