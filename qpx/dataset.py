@@ -529,10 +529,11 @@ class Dataset:
     def features_without_pg_link(self) -> QueryResult:
         """Return ``feature_id`` for features that resolve to no pg row.
 
-        Convenience for the identified-but-not-quantified question: the features
-        whose computed softlink (:meth:`link_feature_pg`) is empty — no pg row
-        shares their canonical membership, run and a carried label. Minimal by
-        design; a fuller conversion summary is built on top of the softlink.
+        The features whose computed softlink (:meth:`link_feature_pg`) is
+        empty — no pg row shares their canonical membership, run and a carried
+        label. A linked feature can still lack a quantity, since the matched pg
+        row may have a null ``intensity``. Minimal by design; a fuller
+        conversion summary is built on top of the softlink.
         """
         self._require_feature_pg("features_without_pg_link")
         self._register_feature_pg_link_view()
