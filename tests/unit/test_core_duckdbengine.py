@@ -148,6 +148,17 @@ def test_query_result(feature_parquet):
 
         # iter
         assert len(list(QueryResult(engine.connection, "SELECT sequence FROM feature"))) == 3
+
+        # statements run once
+        QueryResult(engine.connection, "CREATE TABLE t AS SELECT 1 AS x").fetchall()
+        QueryResult(engine.connection, "INSERT INTO t VALUES (2)").to_df()
+        assert QueryResult(engine.connection, "SELECT COUNT(*) FROM t").fetchone()[0] == 2
+
+        # a partly read result does not block later reads
+        partial = QueryResult(engine.connection, "SELECT sequence FROM feature")
+        partial.fetchone()
+        assert QueryResult(engine.connection, "SELECT sequence FROM feature").to_arrow().num_rows == 3
+        assert len(partial.fetchall()) == 2
     finally:
         engine.close()
 
