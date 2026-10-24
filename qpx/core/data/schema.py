@@ -342,7 +342,7 @@ def _alternative_fractions(table: pa.Table) -> list[list | None] | None:
     index = alternatives.type.value_type.get_field_index("evidence_fraction")
     if index < 0 or not pa.types.is_floating(alternatives.type.value_type.field(index).type):
         return None
-    return [None if alts is None else [a.get("evidence_fraction") for a in alts] for alts in alternatives.to_pylist()]
+    return [None if alts is None else [a and a.get("evidence_fraction") for a in alts] for alts in alternatives.to_pylist()]
 
 
 def _evidence_fraction_issues(table: pa.Table, structure: str, severity: str) -> list[ValidationIssue]:

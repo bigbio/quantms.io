@@ -168,6 +168,8 @@ def test_protein_n_terminus_and_residue_1_are_distinct_sites(tmp_path):
             "evidence_fraction": 0.71,
             "alternatives": [{"name": "Trimethyl", "accession": None, "mass_delta": 42.04695, "evidence_fraction": 0.5}],
         },
+        # A null alternative carries no evidence fraction.
+        {"evidence_fraction": 0.71, "alternatives": [None]},
     ],
 )
 def test_site_values_outside_their_range_fail_strict_validation(tmp_path, overrides):
