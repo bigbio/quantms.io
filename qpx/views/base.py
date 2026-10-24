@@ -19,8 +19,7 @@ _MAX_CACHE_ENTRIES = 16
 class CachedQueryResult:
     """A pre-materialized query result that supports repeated access.
 
-    Unlike QueryResult (which wraps a one-shot DuckDB cursor), this stores
-    the Arrow table in memory and can be materialized multiple times.
+    QueryResult reruns its query on each materialization; this class keeps the Arrow table in memory.
     """
 
     def __init__(self, arrow_table: pa.Table):
@@ -56,8 +55,7 @@ class BaseView:
         if key in self._cache:
             self._cache.move_to_end(key)
             return self._cache[key]
-        result = self._engine.execute(sql)
-        table = result.fetch_arrow_table()
+        table = self._engine.connection.sql(sql).to_arrow_table()
         self._cache[key] = CachedQueryResult(table)
         if len(self._cache) > _MAX_CACHE_ENTRIES:
             self._cache.popitem(last=False)

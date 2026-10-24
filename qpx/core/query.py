@@ -133,5 +133,5 @@ class LazyQuery:
 
     def count(self) -> int:
         stmt = sql_build("SELECT COUNT(*) FROM $src", src=self.source)
-        row = self._engine.execute(stmt).fetchone()
+        row = self._engine.execute(stmt).fetchall()[0]
         return row[0]

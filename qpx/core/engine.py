@@ -150,18 +150,21 @@ class DuckDBEngine:
         self._create_view(name, sql_build("read_parquet('$path')", path=escape_path(s3_path)))
 
     def register_view(self, name: str, sql: str) -> None:
-        """Register ``sql`` as a named DuckDB view, without string DDL.
+        """Register ``sql`` as a named DuckDB view.
 
-        The query is turned into a relation via :meth:`connection.sql` and bound
-        to ``name`` through the relation API (``create_view(name, replace=True)``);
-        no ``CREATE VIEW`` text is constructed from ``sql``, so a fixed constant
-        query passed here is not a formatted-SQL construction. ``name`` is
-        validated as a table identifier before use.
+        ``name`` is validated as a table identifier before use. The view is created
+        through ``execute`` rather than the relation API: DuckDB 2.0 refuses a
+        relation while an earlier ``execute`` result on the connection is unread.
         """
         view = validate_table(name)
-        self._conn.sql(sql).create_view(view, replace=True)
+        self._conn.execute(sql_build("CREATE OR REPLACE VIEW $view AS $query", view=view, query=sql))
 
     def execute(self, sql: str, params=None):
+        """Run ``sql`` through the DB-API cursor.
+
+        Read the result to the end: DuckDB 2.0 refuses relation work on the
+        connection while an ``execute`` result is unread.
+        """
         if params:
             return self._conn.execute(sql, params)
         return self._conn.execute(sql)

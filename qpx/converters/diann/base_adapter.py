@@ -75,8 +75,8 @@ def decoy_protein_group_sql(pg_expr: str, decoy_expr: str) -> str:
     target group.
     """
     prefixed = (
-        f"array_to_string(list_transform(list_filter(string_split({pg_expr}, ';'), x -> trim(x) <> ''), "
-        "x -> 'DECOY_' || trim(x)), ';')"
+        f"array_to_string(list_transform(list_filter(string_split({pg_expr}, ';'), lambda x: trim(x) <> ''), "
+        "lambda x: 'DECOY_' || trim(x)), ';')"
     )
     return f"CASE WHEN CAST({decoy_expr} AS BOOLEAN) THEN {prefixed} ELSE {pg_expr} END"
 
@@ -137,7 +137,7 @@ class DiaNNBaseAdapter(BaseConverter):
             self._conn.execute(sql_build("CREATE VIEW report AS SELECT * FROM $reader", reader=reader))
 
         if materialized:
-            count = self._conn.execute("SELECT COUNT(*) FROM report").fetchone()[0]
+            count = self._conn.execute("SELECT COUNT(*) FROM report").fetchall()[0][0]
             self.logger.info("DIA-NN report table created (%s rows)", format(count, ","))
         else:
             self.logger.info("DIA-NN report view created")
@@ -167,7 +167,7 @@ class DiaNNBaseAdapter(BaseConverter):
     def _duckdb_memory_limit_bytes(self) -> int | None:
         """DuckDB's configured ``memory_limit`` in bytes, or ``None`` if unknown."""
         try:
-            raw = self._conn.execute("SELECT current_setting('memory_limit')").fetchone()[0]
+            raw = self._conn.execute("SELECT current_setting('memory_limit')").fetchall()[0][0]
         except duckdb.Error:
             return None
         return _parse_duckdb_size(str(raw))

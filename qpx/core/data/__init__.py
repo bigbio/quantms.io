@@ -10,11 +10,13 @@ from qpx.core.data.mz import MzSchema, MzSpectra
 from qpx.core.data.ontology import Ontology, OntologySchema
 from qpx.core.data.pepmap import PepMap, PepMapSchema
 from qpx.core.data.pg import PG, PgSchema
+from qpx.core.data.proteoform import Proteoform, ProteoformSchema
 from qpx.core.data.provenance import Provenance, ProvenanceSchema
 from qpx.core.data.psm import PSM, PsmSchema
 from qpx.core.data.run import Run, RunSchema
 from qpx.core.data.sample import Sample, SampleSchema
 from qpx.core.data.schema import FieldDef, ValidationIssue, ValidationResult, ViewSchema
+from qpx.core.data.site import Site, SiteSchema
 
 __all__ = [
     # Schema infrastructure
@@ -35,6 +37,8 @@ __all__ = [
     "Ontology",
     "Provenance",
     "PepMap",
+    "Site",
+    "Proteoform",
     # Schemas
     "FeatureSchema",
     "PsmSchema",
@@ -46,4 +50,6 @@ __all__ = [
     "OntologySchema",
     "ProvenanceSchema",
     "PepMapSchema",
+    "SiteSchema",
+    "ProteoformSchema",
 ]

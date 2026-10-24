@@ -60,7 +60,7 @@ class CdapBaseAdapter(BaseConverter):
         count_sql = sql_build("SELECT COUNT(*) FROM $tbl", tbl=tbl)
 
         if self._table_exists(table_name):
-            count = self._conn.execute(count_sql).fetchone()[0]
+            count = self._conn.execute(count_sql).fetchall()[0][0]
             self.logger.info("Reusing %d CDAP PSM rows already in '%s'", count, table_name)
             return count
 
@@ -76,7 +76,7 @@ class CdapBaseAdapter(BaseConverter):
             ),
             [pattern],
         )
-        count = self._conn.execute(count_sql).fetchone()[0]
+        count = self._conn.execute(count_sql).fetchall()[0][0]
         self.logger.info("Loaded %d CDAP PSM rows from %s", count, psm_dir)
         return count
 

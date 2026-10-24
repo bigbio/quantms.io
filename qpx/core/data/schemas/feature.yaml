@@ -24,6 +24,12 @@ fields:
   modifications:
     type: "list<modification>"
     doc: "Structured modifications"
+  # Competing modification interpretations (optional)
+  modification_candidates:
+    type: "list<modification_candidate>"
+    optional: true
+    nullable: true
+    doc: "Every modification the evidence considers, the ones the peptidoform places (assigned) and the ones they compete with, each with its marginal probability given this identification. Candidates that share an alternative_group are mutually exclusive explanations of one event (acetyl or trimethyl on one Lys; one phosphate on S4 or T5) and their probabilities sum to at most 1; a candidate without a group can co-occur with others (a SILAC label and an acetyl on one Lys). Null when the producer reports no alternatives; modifications keeps what the peptidoform says."
   charge:
     type: int16
     required: true

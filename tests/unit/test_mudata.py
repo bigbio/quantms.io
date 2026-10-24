@@ -58,13 +58,14 @@ class _FakeEngine:
 
 
 class _FakeRowResult:
-    """Returns a single-row fetchone() result."""
+    """Returns a single-row fetchall() result."""
 
     def __init__(self, value) -> None:
         self._value = value
 
-    def fetchone(self):
-        return (self._value,) if self._value is not None else None
+    def fetchall(self):
+        """Return the value as one row, or no rows when it is None."""
+        return [(self._value,)] if self._value is not None else []
 
     def fetchdf(self) -> pd.DataFrame:
         return pd.DataFrame()

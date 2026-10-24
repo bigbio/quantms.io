@@ -204,11 +204,11 @@ _EVIDENCE_QUERIES = {
         "WHERE {decoy} sequence IS NOT NULL AND protein_accessions IS NOT NULL GROUP BY ALL"
     ),
     "pg_accessions": (
-        "SELECT sequence, list_distinct(list_transform(pg_accessions, x -> x.accession)) FROM read_parquet($1) "
+        "SELECT sequence, list_distinct(list_transform(pg_accessions, lambda x: x.accession)) FROM read_parquet($1) "
         "WHERE {decoy} sequence IS NOT NULL AND pg_accessions IS NOT NULL GROUP BY ALL"
     ),
     "pg_positions": (
-        "SELECT sequence, list_distinct(list_transform(pg_positions, x -> x.protein_accession)) FROM read_parquet($1) "
+        "SELECT sequence, list_distinct(list_transform(pg_positions, lambda x: x.protein_accession)) FROM read_parquet($1) "
         "WHERE {decoy} sequence IS NOT NULL AND pg_positions IS NOT NULL GROUP BY ALL"
     ),
 }

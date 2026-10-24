@@ -19,6 +19,8 @@ from scipy import sparse
 
 from qpx._version import __version__
 from qpx.core.files import run_file_stem
+from qpx.core.query import _escape_sql_string
+from qpx.core.sql import sql_build
 from qpx.version import QPX_SPEC_VERSION
 
 if TYPE_CHECKING:
@@ -187,14 +189,14 @@ _PRECURSOR_QUERIES: dict[str, str] = {
            f.peptidoform || '|' || CAST(f.charge AS VARCHAR) AS precursor_id,
            i.intensity
     FROM feature f, UNNEST(f.intensities) AS _t(i)
-    WHERE i.channel = $1
+    WHERE i.channel = '$label'
     """,
     "label": """
     SELECT f.run_file_name,
            f.peptidoform || '|' || CAST(f.charge AS VARCHAR) AS precursor_id,
            i.intensity
     FROM feature f, UNNEST(f.intensities) AS _t(i)
-    WHERE i.label = $1
+    WHERE i.label = '$label'
     """,
 }
 
@@ -234,7 +236,7 @@ _PROTEIN_QUERIES: dict[str, str] = {
            pg.intensity AS intensity
     FROM pg,
          UNNEST(list_distinct(pg.grouped_runs)) AS _g(gr)
-    WHERE pg.label = $1
+    WHERE pg.label = '$label'
     """,
     "label": """
     SELECT gr AS run_file_name,
@@ -242,7 +244,7 @@ _PROTEIN_QUERIES: dict[str, str] = {
            pg.intensity AS intensity
     FROM pg,
          UNNEST(list_distinct(pg.grouped_runs)) AS _g(gr)
-    WHERE pg.label = $1
+    WHERE pg.label = '$label'
     """,
 }
 
@@ -277,9 +279,9 @@ _TYPEOF_QUERIES: dict[str, str] = {
 def _detect_label_field(engine: DuckDBEngine, table: str = "feature") -> str:
     """Return ``"channel"`` or ``"label"`` by inspecting the intensities struct type."""
     try:
-        row = engine.execute(_TYPEOF_QUERIES[table]).fetchone()
-        if row:
-            type_str = row[0].lower()
+        rows = engine.execute(_TYPEOF_QUERIES[table]).fetchall()
+        if rows:
+            type_str = rows[0][0].lower()
             if "channel" in type_str and "label" not in type_str:
                 return "channel"
         return "label"
@@ -296,12 +298,12 @@ def _detect_intensity_label(engine: DuckDBEngine, table: str = "feature") -> str
     if query is None:
         raise ValueError(f"Invalid label_field={label_field!r} or table={table!r}")
     try:
-        row = engine.execute(query).fetchone()
+        rows = engine.execute(query).fetchall()
     except Exception as exc:
         raise ValueError(f"Failed to read intensity labels from {table}: {exc}") from exc
-    if row is None:
+    if not rows:
         raise ValueError(f"No intensity labels found in {table}")
-    return row[0]
+    return rows[0][0]
 
 
 def _prepare_observations_arrow(
@@ -480,9 +482,10 @@ def _build_precursor_adata(
     import anndata as ad
 
     if intensity_label is None:
-        table = engine.execute(_PRECURSOR_ALL_QUERIES[label_field]).fetch_arrow_table()
+        table = engine.connection.sql(_PRECURSOR_ALL_QUERIES[label_field]).to_arrow_table()
     else:
-        table = engine.execute(_PRECURSOR_QUERIES[label_field], [intensity_label]).fetch_arrow_table()
+        sql = sql_build(_PRECURSOR_QUERIES[label_field], label=_escape_sql_string(intensity_label))
+        table = engine.connection.sql(sql).to_arrow_table()
 
     if table.num_rows == 0:
         return ad.AnnData()
@@ -512,9 +515,10 @@ def _build_protein_adata(
     import anndata as ad
 
     if intensity_label is None:
-        table = engine.execute(_PROTEIN_ALL_QUERIES[label_field]).fetch_arrow_table()
+        table = engine.connection.sql(_PROTEIN_ALL_QUERIES[label_field]).to_arrow_table()
     else:
-        table = engine.execute(_PROTEIN_QUERIES[label_field], [intensity_label]).fetch_arrow_table()
+        sql = sql_build(_PROTEIN_QUERIES[label_field], label=_escape_sql_string(intensity_label))
+        table = engine.connection.sql(sql).to_arrow_table()
 
     if table.num_rows == 0:
         return ad.AnnData()
@@ -733,7 +737,7 @@ def _is_multiplexed(engine: DuckDBEngine, table: str, label_field: str) -> bool:
     if query is None:
         return False
     try:
-        row = engine.execute(query).fetchone()
+        row = engine.execute(query).fetchall()[0]
     except Exception:
         return False
     return bool(row) and row[0] is not None and row[0] > 1

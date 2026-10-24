@@ -19,9 +19,11 @@ from qpx.core.data import (
     MzSpectra,
     Ontology,
     PepMap,
+    Proteoform,
     Provenance,
     Run,
     Sample,
+    Site,
 )
 from qpx.core.data.schema import ValidationIssue, ValidationResult
 from qpx.core.engine import DuckDBEngine
@@ -111,6 +113,44 @@ def _row_count(path: Path) -> int | None:
         return None
 
 
+# Link checks of the site and proteoform views, as constant queries.
+_LINK_SQL = {
+    "site": {
+        "dangling_pg": (
+            'SELECT count(*) FROM "site" v WHERE v.pg_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM pg p WHERE p.pg_id = v.pg_id)'
+        ),
+        "pg_context": (
+            'SELECT count(*) FROM "site" v JOIN pg p ON p.pg_id = v.pg_id '
+            "WHERE p.label IS NOT NULL "
+            "OR list_sort(list_distinct(v.grouped_runs)) <> list_sort(list_distinct(p.grouped_runs))"
+        ),
+        "dangling_psm": (
+            'SELECT count(*) FROM "site" v WHERE v.best_psm_id IS NOT NULL '
+            "AND NOT EXISTS (SELECT 1 FROM psm s WHERE s.psm_id = v.best_psm_id)"
+        ),
+    },
+    "proteoform": {
+        "dangling_pg": (
+            'SELECT count(*) FROM "proteoform" v WHERE v.pg_id IS NOT NULL '
+            "AND NOT EXISTS (SELECT 1 FROM pg p WHERE p.pg_id = v.pg_id)"
+        ),
+        "pg_context": (
+            'SELECT count(*) FROM "proteoform" v JOIN pg p ON p.pg_id = v.pg_id '
+            "WHERE NOT (v.label IS NOT DISTINCT FROM p.label) "
+            "OR list_sort(list_distinct(v.grouped_runs)) <> list_sort(list_distinct(p.grouped_runs))"
+        ),
+        "dangling_psm": (
+            'SELECT count(*) FROM "proteoform" v WHERE v.best_psm_id IS NOT NULL '
+            "AND NOT EXISTS (SELECT 1 FROM psm s WHERE s.psm_id = v.best_psm_id)"
+        ),
+    },
+}
+_LINK_CONTEXT_MESSAGE = {
+    "site": "link to a pg row that has a label or other grouped_runs (a site links to the null-label row of its runs)",
+    "proteoform": "link to a pg row whose label or grouped_runs differ from the row's",
+}
+
+
 def _skipped_check_reason(exc: duckdb.Error) -> str:
     """Why a cross-structure check could not run, for its skipped issue.
 
@@ -148,6 +188,8 @@ class Dataset:
         "ontology": (Ontology, ".ontology.parquet"),
         "provenance": (Provenance, ".provenance.parquet"),
         "pepmap": (PepMap, ".pepmap.parquet"),
+        "site": (Site, ".site.parquet"),
+        "proteoform": (Proteoform, ".proteoform.parquet"),
     }
 
     @classmethod
@@ -329,6 +371,16 @@ class Dataset:
     def pepmap(self) -> PepMap | None:
         return self._structures.get("pepmap")
 
+    @property
+    def site(self) -> Site | None:
+        """The site view, or None when the dataset has no site.parquet."""
+        return self._structures.get("site")
+
+    @property
+    def proteoform(self) -> Proteoform | None:
+        """The proteoform view, or None when the dataset has no proteoform.parquet."""
+        return self._structures.get("proteoform")
+
     # --- View accessors (cached) ---
     @property
     def protein_view(self):
@@ -397,7 +449,7 @@ class Dataset:
     # --- Cross-structure queries ---
     def sql(self, query: str) -> QueryResult:
         """Execute arbitrary SQL across registered structures."""
-        return QueryResult(self._engine.execute(query))
+        return QueryResult(self._engine.connection, query)
 
     # --- Feature <-> protein-group softlink (bigbio/qpx#269) ---
     #
@@ -422,8 +474,8 @@ class Dataset:
             SELECT
                 f.feature_id AS feature_id,
                 f.run_file_name AS run_file_name,
-                list_sort(list_transform(f.pg_accessions, x -> x.accession)) AS membership,
-                UNNEST(list_transform(f.intensities, i -> i.label)) AS feature_label
+                list_sort(list_transform(f.pg_accessions, lambda x: x.accession)) AS membership,
+                UNNEST(list_transform(f.intensities, lambda i: i.label)) AS feature_label
             FROM feature f
         )
         SELECT DISTINCT
@@ -472,24 +524,24 @@ class Dataset:
             channel/fraction produce no rows (this is correct, not an error).
         """
         self._require_feature_pg("link_feature_pg")
-        return QueryResult(self._engine.execute(self._LINK_FEATURE_PG_SQL))
+        return QueryResult(self._engine.connection, self._LINK_FEATURE_PG_SQL)
 
     def features_without_pg_link(self) -> QueryResult:
         """Return ``feature_id`` for features that resolve to no pg row.
 
-        Convenience for the identified-but-not-quantified question: the features
-        whose computed softlink (:meth:`link_feature_pg`) is empty — no pg row
-        shares their canonical membership, run and a carried label. Minimal by
-        design; a fuller conversion summary is built on top of the softlink.
+        The features whose computed softlink (:meth:`link_feature_pg`) is
+        empty — no pg row shares their canonical membership, run and a carried
+        label. A linked feature can still lack a quantity, since the matched pg
+        row may have a null ``intensity``. Minimal by design; a fuller
+        conversion summary is built on top of the softlink.
         """
         self._require_feature_pg("features_without_pg_link")
         self._register_feature_pg_link_view()
         return QueryResult(
-            self._engine.execute(
-                "SELECT feature_id FROM feature "
-                "WHERE feature_id NOT IN (SELECT feature_id FROM qpx_feature_pg_link) "
-                "ORDER BY feature_id"
-            )
+            self._engine.connection,
+            "SELECT feature_id FROM feature "
+            "WHERE feature_id NOT IN (SELECT feature_id FROM qpx_feature_pg_link) "
+            "ORDER BY feature_id",
         )
 
     def _require_feature_pg(self, operation: str) -> None:
@@ -534,7 +586,7 @@ class Dataset:
             PSMs with no feature assignment (null ``feature_id``) produce no rows.
         """
         self._require_feature_psm("link_feature_psm")
-        return QueryResult(self._engine.execute(self._LINK_FEATURE_PSM_SQL))
+        return QueryResult(self._engine.connection, self._LINK_FEATURE_PSM_SQL)
 
     def psms_without_feature(self) -> QueryResult:
         """Return ``psm_id`` for PSMs not assigned to any feature.
@@ -544,7 +596,7 @@ class Dataset:
         quantified consensus feature.
         """
         self._require_feature_psm("psms_without_feature")
-        return QueryResult(self._engine.execute("SELECT psm_id FROM psm WHERE feature_id IS NULL ORDER BY psm_id"))
+        return QueryResult(self._engine.connection, "SELECT psm_id FROM psm WHERE feature_id IS NULL ORDER BY psm_id")
 
     def _require_feature_psm(self, operation: str) -> None:
         """Raise if the feature or psm view is not available for the softlink."""
@@ -555,7 +607,7 @@ class Dataset:
 
     def _link_scalar(self, sql: str) -> int | None:
         """Run a constant-literal scalar COUNT, returning ``None`` on failure."""
-        row = self._engine.execute(sql).fetchone()
+        row = self._engine.execute(sql).fetchall()[0]
         if not row or row[0] is None:
             return 0
         return int(row[0])
@@ -714,7 +766,7 @@ class Dataset:
             ds.intensity("protein").to_arrow()  # Arrow is more compact than pandas
         """
         sql = self._abundance_sql(level)
-        return QueryResult(self._engine.execute(sql))
+        return QueryResult(self._engine.connection, sql)
 
     def design_matrix(
         self,
@@ -838,7 +890,60 @@ class Dataset:
         if "feature" in results and "pg" in results and self.feature is not None and self.pg is not None:
             self._check_feature_pg_referential(results["feature"], strict=strict)
 
+        # site/proteoform links: pg_id names one pg row of the row's run (and, for a
+        # proteoform, label) context; best_psm_id names a psm row.
+        for view in ("site", "proteoform"):
+            if view in results and self._structures.get(view) is not None:
+                self._check_pg_link(view, results[view], strict=strict)
+
         return results
+
+    def _check_pg_link(self, view: str, result: ValidationResult, *, strict: bool = False) -> None:
+        """Flag site/proteoform links that do not resolve, or resolve to another context.
+
+        ``pg_id`` must name a pg row: for a proteoform the row of its own label and
+        grouped runs, for a site (no label) the identification row (null label) of
+        its grouped runs. ``best_psm_id`` must name a psm row when the psm view is
+        present.
+        """
+        severity = "error" if strict else "warning"
+        checks = []
+        if self.pg is not None:
+            checks.append(
+                ("dangling_pg_id", "pg_id", _LINK_SQL[view]["dangling_pg"], "have a pg_id that does not resolve to a pg.pg_id")
+            )
+            checks.append(("pg_link_context", "pg_id", _LINK_SQL[view]["pg_context"], _LINK_CONTEXT_MESSAGE[view]))
+        if self.psm is not None:
+            checks.append(
+                (
+                    "dangling_psm_id",
+                    "best_psm_id",
+                    _LINK_SQL[view]["dangling_psm"],
+                    "have a best_psm_id that does not resolve to a psm.psm_id",
+                )
+            )
+        for check, column, sql, what in checks:
+            try:
+                count = self._engine.execute(sql).fetchall()[0][0]
+            except duckdb.Error as exc:
+                reason = _skipped_check_reason(exc)
+                _log.warning("%s link check could not run (%s): %s", view, reason, exc)
+                result.issues.append(
+                    ValidationIssue(
+                        structure=view,
+                        check="referential_check_skipped",
+                        severity=severity,
+                        column=column,
+                        message=f"{view} link check could not run ({reason}): {exc}",
+                    )
+                )
+                continue
+            if count:
+                result.issues.append(
+                    ValidationIssue(
+                        structure=view, check=check, severity=severity, column=column, message=f"{count} {view} row(s) {what}"
+                    )
+                )
 
     def _check_feature_pg_referential(self, feature_result: ValidationResult, *, strict: bool = False) -> None:
         """Flag feature.pg_ids elements that do not resolve to pg.pg_id."""
@@ -917,7 +1022,7 @@ class Dataset:
             if has_feature_psm_ids:
                 (feature_psm_ids_populated,) = self._engine.execute(
                     "SELECT EXISTS (SELECT 1 FROM feature WHERE psm_ids IS NOT NULL AND len(psm_ids) > 0)"
-                ).fetchone()
+                ).fetchall()[0]
 
             dangling_feature_ids = []
             if has_psm_feature_id:
@@ -1386,6 +1491,8 @@ class Dataset:
         "ontology": ("OntologyWriter", ".ontology.parquet"),
         "provenance": ("ProvenanceWriter", ".provenance.parquet"),
         "pepmap": ("PepMapWriter", ".pepmap.parquet"),
+        "site": ("SiteWriter", ".site.parquet"),
+        "proteoform": ("ProteoformWriter", ".proteoform.parquet"),
     }
 
     def save_structure(

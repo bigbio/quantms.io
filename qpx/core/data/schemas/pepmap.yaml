@@ -15,6 +15,11 @@ fields:
   pg_accessions:
     type: "list<pg_protein>"
     doc: "Protein accessions with optional peptide positions (start, end, pre, post)"
+  sequence_edits:
+    type: "list<peptide_sequence_edit>"
+    optional: true
+    nullable: true
+    doc: "Sequence changes the peptide carries relative to a reference protein it maps to: substitutions, multi-residue replacements, deletions and insertions, in reference coordinates. Null for a peptide that matches its proteins as they are."
   is_unique:
     type: bool
     doc: "True if peptide maps to exactly one protein"

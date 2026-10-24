@@ -68,7 +68,7 @@ class DatasetCollection:
 
     def sql(self, query: str) -> QueryResult:
         """Execute SQL across all registered datasets."""
-        return QueryResult(self._engine.execute(query))
+        return QueryResult(self._engine.connection, query)
 
     @property
     def structure_names(self) -> dict[int, list[str]]:

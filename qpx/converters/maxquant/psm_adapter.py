@@ -20,7 +20,7 @@ import pandas as pd
 from qpx.converters.base import resolve_columns
 from qpx.converters.mappings import get_field_mappings
 from qpx.converters.maxquant.base_adapter import MaxQuantBaseAdapter
-from qpx.converters.maxquant.constants import PROTON_MASS, parse_phospho_probabilities, to_proforma
+from qpx.converters.maxquant.constants import PROTON_MASS, parse_phospho_probabilities, phospho_candidates, to_proforma
 from qpx.converters.ptm import from_proforma
 from qpx.converters.utils import mq_flag_to_bool, safe_float
 from qpx.writers.psm import PsmWriter
@@ -114,7 +114,7 @@ class MaxQuantPsmAdapter(MaxQuantBaseAdapter):
             "CREATE TABLE msms AS SELECT * FROM read_csv_auto($1, header=true, auto_detect=true, delim='\t', null_padding=true)",
             [path],
         )
-        count = self._conn.execute("SELECT COUNT(*) FROM msms").fetchone()[0]
+        count = self._conn.execute("SELECT COUNT(*) FROM msms").fetchall()[0][0]
         self.logger.info(f"Loaded {count:,} MaxQuant PSM rows from msms.txt")
 
     # ------------------------------------------------------------------
@@ -282,6 +282,7 @@ class MaxQuantPsmAdapter(MaxQuantBaseAdapter):
             "sequence": sequence,
             "peptidoform": peptidoform,
             "modifications": modifications,
+            "modification_candidates": phospho_candidates(site_scores, sequence, modifications),
             "charge": charge,
             "posterior_error_probability": pep,
             "is_decoy": is_decoy,

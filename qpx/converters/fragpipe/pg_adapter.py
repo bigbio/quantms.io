@@ -239,7 +239,7 @@ class FragPipePgAdapter(BaseConverter):
                 path=escape_path(path),
             )
         )
-        count = self._conn.execute("SELECT COUNT(*) FROM fragpipe_proteins").fetchone()[0]
+        count = self._conn.execute("SELECT COUNT(*) FROM fragpipe_proteins").fetchall()[0][0]
         self.logger.info(f"Loaded {count:,} FragPipe protein group rows")
 
     def _detect_experiment_columns(self) -> list[str]:

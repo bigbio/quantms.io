@@ -67,4 +67,4 @@ class PG(BaseStructure):
         WHERE label IS NOT NULL""",
             src=self._query.source,
         )
-        return QueryResult(self._engine.execute(stmt))
+        return QueryResult(self._engine.connection, stmt)

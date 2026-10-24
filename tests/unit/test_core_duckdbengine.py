@@ -123,31 +123,42 @@ def test_query_result(feature_parquet):
     engine.register_parquet("feature", feature_parquet)
     try:
         # to_df
-        raw = engine.execute("SELECT sequence, charge FROM feature")
-        result = QueryResult(raw)
+        result = QueryResult(engine.connection, "SELECT sequence, charge FROM feature")
         df = result.to_df()
         assert isinstance(df, pd.DataFrame)
         assert len(df) == 3
         assert "sequence" in df.columns
 
         # to_arrow
-        raw = engine.execute("SELECT sequence, charge FROM feature")
-        result = QueryResult(raw)
+        result = QueryResult(engine.connection, "SELECT sequence, charge FROM feature")
         table = result.to_arrow()
         assert isinstance(table, pa.Table)
         assert table.num_rows == 3
+        assert result.to_arrow().num_rows == table.num_rows
 
         # fetchone
-        raw = engine.execute("SELECT COUNT(*) FROM feature")
-        assert QueryResult(raw).fetchone()[0] == 3
+        assert QueryResult(engine.connection, "SELECT COUNT(*) FROM feature").fetchone()[0] == 3
 
         # fetchall
-        raw = engine.execute("SELECT sequence FROM feature ORDER BY sequence")
-        assert len(QueryResult(raw).fetchall()) == 3
+        rows = QueryResult(engine.connection, "SELECT sequence FROM feature ORDER BY sequence").fetchall()
+        assert len(rows) == 3
+        result = QueryResult(engine.connection, "SELECT sequence FROM feature ORDER BY sequence")
+        assert result.fetchone() == rows[0]
+        assert result.fetchall() == rows[1:]
 
         # iter
-        raw = engine.execute("SELECT sequence FROM feature")
-        assert len(list(QueryResult(raw))) == 3
+        assert len(list(QueryResult(engine.connection, "SELECT sequence FROM feature"))) == 3
+
+        # statements run once
+        QueryResult(engine.connection, "CREATE TABLE t AS SELECT 1 AS x").fetchall()
+        QueryResult(engine.connection, "INSERT INTO t VALUES (2)").to_df()
+        assert QueryResult(engine.connection, "SELECT COUNT(*) FROM t").fetchone()[0] == 2
+
+        # a partly read result does not block later reads
+        partial = QueryResult(engine.connection, "SELECT sequence FROM feature")
+        partial.fetchone()
+        assert QueryResult(engine.connection, "SELECT sequence FROM feature").to_arrow().num_rows == 3
+        assert len(partial.fetchall()) == 2
     finally:
         engine.close()
 

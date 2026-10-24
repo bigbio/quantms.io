@@ -79,6 +79,44 @@ modification_param:
     position: {type: string, nullable: true}
     target_amino_acid: {type: string, nullable: true}
 
+modification_candidate:
+  fields:
+    position: {type: int32}
+    amino_acid: {type: string, nullable: true}
+    name: {type: string}
+    accession: {type: string, nullable: true}
+    mass_delta: {type: float64, nullable: true}
+    probability: {type: float64, nullable: true}
+    assigned: {type: bool}
+    alternative_group: {type: int32, nullable: true}
+    scores: {type: "list<score>", nullable: true}
+
+sequence_edit:
+  fields:
+    start: {type: int32}
+    end: {type: int32}
+    reference: {type: string}
+    alternative: {type: string}
+    name: {type: string, nullable: true}
+    accession: {type: string, nullable: true}
+
+peptide_sequence_edit:
+  fields:
+    protein_accession: {type: string}
+    start: {type: int32}
+    end: {type: int32}
+    reference: {type: string}
+    alternative: {type: string}
+    name: {type: string, nullable: true}
+    accession: {type: string, nullable: true}
+
+site_alternative:
+  fields:
+    name: {type: string}
+    accession: {type: string, nullable: true}
+    mass_delta: {type: float64}
+    evidence_fraction: {type: float64}
+
 peptide_per_protein:
   fields:
     protein_name: {type: string}

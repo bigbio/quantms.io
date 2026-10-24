@@ -102,6 +102,65 @@ Each position can carry one or more scores that describe the confidence in placi
 
 Multiple scores can be attached to a single position -- for example, both a localization probability and a tool-specific confidence metric.
 
+## Competing interpretations
+
+The `modifications` field records what the peptidoform says: which modification sits where. A spectrum often fits other readings as well, and those are lost there:
+
+- **Localization**: the same modification on another residue (a phosphate on S4 or T5).
+- **Identity**: another modification at the same residue. Near-isobaric modifications such as acetyl (+42.0106 Da) and trimethyl (+42.0470 Da) are often not told apart.
+- **Substitution**: a residue change with the same mass as a modification. D→E and G→A weigh the same as methylation (+14.0157 Da), and N→D the same as deamidation.
+
+The optional `modification_candidates` column of the PSM and feature views lists every interpretation the producer considered, position by position. A position can hold several candidates, and a modification can have several candidate positions. Candidates that are mutually exclusive explanations of one event share an `alternative_group`; candidates that can co-occur (a SILAC label and an acetyl on one lysine) are in different groups or in none.
+
+```text
+modification_candidates: array[struct{
+    position:    int32,          -- same convention as modifications (0 N-term, length + 1 C-term)
+    amino_acid:  string, null,   -- residue at the position; null for a terminus
+    name:        string,         -- modification name, or a substitution ("Asp->Glu")
+    accession:   string, null,   -- e.g. "UNIMOD:1"; substitutions use Unimod's amino-acid substitution entries
+    mass_delta:  float64, null,  -- monoisotopic mass shift (Da)
+    probability: float64, null,  -- P(this modification at this position | this identification)
+    assigned:    bool,           -- true where the peptidoform places it
+    alternative_group: int32, null,  -- candidates with the same group exclude each other
+    scores:      array[score], null  -- tool scores for this candidate
+}]
+```
+
+Example: `PEPS[Phospho]TK[Label:13C(6)15N(2)][Acetyl]R` from a SILAC heavy channel, where the phosphate could also be on T5 and the +42 Da on K6 could be trimethyl. The heavy label on K6 is certain and co-occurs with the +42 Da, so it is in no group:
+
+```json
+[
+  {"position": 4, "amino_acid": "S", "name": "Phospho",   "accession": "UNIMOD:21",  "probability": 0.95, "assigned": true,  "alternative_group": 1},
+  {"position": 5, "amino_acid": "T", "name": "Phospho",   "accession": "UNIMOD:21",  "probability": 0.05, "assigned": false, "alternative_group": 1},
+  {"position": 6, "amino_acid": "K", "name": "Acetyl",    "accession": "UNIMOD:1",   "probability": 0.71, "assigned": true,  "alternative_group": 2},
+  {"position": 6, "amino_acid": "K", "name": "Trimethyl", "accession": "UNIMOD:37",  "probability": 0.29, "assigned": false, "alternative_group": 2},
+  {"position": 6, "amino_acid": "K", "name": "Label:13C(6)15N(2)", "accession": "UNIMOD:259", "probability": 1.0, "assigned": true, "alternative_group": null}
+]
+```
+
+(`mass_delta` and `scores` are left out of the example for space.)
+
+The probabilities are marginals of one posterior over the peptide's interpretations:
+
+- An **alternative group** is one modification event and its mutually exclusive explanations, so its probabilities sum to at most 1. Group 1 is localization (one phosphate, on S4 or T5); group 2 is identity (acetyl or trimethyl on K6). A group can mix both, e.g. one +42 Da on K6 or K9, as acetyl or trimethyl.
+- Probabilities are not summed across groups or over ungrouped candidates: modifications in different groups can occur together, so the sum over all candidates at a position is not the probability that the position is modified.
+- `assigned` rows agree with `modifications` and the peptidoform; the others are alternatives they cannot hold.
+- `alternative_group` ids are scoped to one row: group 1 of one PSM has nothing to do with group 1 of another.
+
+In the PSM view the probabilities are given this one identification. In the feature view they are combined over the feature's identifications. The recommended rule is a mixture: the probability of a candidate is the average of its probabilities in the feature's PSMs, weighted by the confidence of each identification (1 − PEP where PEP is available, equal weights otherwise). A mixture of marginals is a marginal, so the sums within an alternative group stay at most 1; summing over PSMs does not. A producer that combines differently (best PSM, maximum) records its rule in [provenance](provenance.md), so the psm → feature → [site](site.md) chain can be reproduced. The site view combines the feature values at the protein level. A substitution that spans more than one residue cannot be a candidate at one position; it is a [sequence edit](sequence-edits.md).
+
+!!! note "Validation"
+    Under `qpxc validate` (strict), candidate probabilities are finite and in [0, 1], and those of one alternative group sum to at most 1. A candidate field of the wrong type is reported as a type mismatch and the probability checks are skipped.
+
+### Substitution candidates
+
+A substitution competes with a modification of the same mass at one position (D→E and methyl on D, +14.0157 Da). The conventions:
+
+- `position` and `amino_acid` are in the coordinates of the **observed** peptide sequence, like every other candidate; a [sequence edit](sequence-edits.md) is in the reference protein's coordinates. For `Asp->Glu` at position 4 the `amino_acid` is `E`, the residue that was observed.
+- The target residue of a modification candidate is implied by its Unimod entry, not by `amino_acid`. When methylation of D competes with D→E at position 4, both candidates are at position 4 and the observed residue is `E`; the methylation candidate says that the residue would be a methylated D, not that E is methylated. Readers must not take `amino_acid` as the modification site residue for a candidate that competes with a substitution.
+- `name` and `accession` are the Unimod amino-acid substitution entry (`Asp->Glu`), and `mass_delta` is observed minus reference (`Asp->Glu` = +14.0157).
+- `assigned` is true when the peptidoform's sequence is the substituted one, so the observed residue is the substituted residue. A peptidoform cannot place a substitution as it does a modification, so a producer that reports the unsubstituted reading (the reference residue with a modification) sets `assigned` false on the substitution candidate and true on the modification.
+
 ## Complete example
 
 Consider the peptide `PEPTSDMK` with a phosphorylation on Ser at position 5 (high confidence) and an oxidation on Met at position 7.
@@ -200,6 +259,7 @@ The `modifications` field is available in the following QPX views:
 | ------------------------ | ---------------- | --------------------------------------------------- |
 | PSM (`psm_file`)         | `modifications`  | Per-PSM modification detail with localization scores |
 | Feature (`feature_file`) | `modifications`  | Carried forward from best PSM or identification      |
+| PSM, Feature             | `modification_candidates` | Competing interpretations per position, with probabilities (optional) |
 | Peptide (`peptide_file`) | `modifications`  | Summarized at the peptide level                      |
 
 ## Further reading

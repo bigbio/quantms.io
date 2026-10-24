@@ -9,6 +9,8 @@ via ``string.Template`` — which Bandit does **not** flag as B608.
 
 Values (WHERE predicates, LIMIT, OFFSET, IN lists) should still use DuckDB's
 native ``?`` parameter binding via ``conn.execute(sql, params)``.
+Relation reads (``conn.sql``) use escaped literals instead, because DuckDB 1.5
+runs a parameterised ``conn.sql()`` several times slower.
 """
 
 from __future__ import annotations

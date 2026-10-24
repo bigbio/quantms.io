@@ -1401,7 +1401,7 @@ def test_protein_properties_from_fasta_on_bare_diann_accessions(converted_output
     groups = (
         duckdb.connect()
         .execute(
-            "SELECT a, list(DISTINCT sequence) FROM (SELECT sequence, unnest(list_transform(pg_accessions, x -> x.accession)) a "
+            "SELECT a, list(DISTINCT sequence) FROM (SELECT sequence, unnest(list_transform(pg_accessions, lambda x: x.accession)) a "
             "FROM read_parquet($1) WHERE NOT is_decoy) GROUP BY a ORDER BY a",
             [str(feature)],
         )

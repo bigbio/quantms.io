@@ -27,6 +27,7 @@ from qpx.converters.mappings import get_field_mappings
 from qpx.converters.ptm import compute_precursor_mz
 from qpx.converters.utils import pg_accessions_array
 from qpx.core.cleavage import count_missed_cleavages
+from qpx.core.query import _escape_sql_string
 from qpx.core.scan import scan_from_native_id
 from qpx.core.sql import sql_build, validate_identifier
 from qpx.writers.feature import FeatureWriter
@@ -612,6 +613,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
             "psm_ids",
             "pg_ids",
             # Producer-specific optional fields not emitted by DIA-NN.
+            "modification_candidates",
             "quantification_unit_id",
             "compensation_voltage",
             "consensus_rt",
@@ -696,7 +698,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
         return (
             f"CASE WHEN {ai_check} "
             f"THEN [STRUCT_PACK(label := {label_expr}, "
-            f"intensities := LIST_FILTER([{ai_list}], x -> x IS NOT NULL))] "
+            f"intensities := LIST_FILTER([{ai_list}], lambda x: x IS NOT NULL))] "
             f"ELSE NULL END AS additional_intensities"
         )
 
@@ -719,7 +721,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
             return "NULL AS additional_scores"
         sl = ", ".join(entries)
         sc = " OR ".join(checks)
-        return f"CASE WHEN {sc} THEN LIST_FILTER([{sl}], x -> x IS NOT NULL) ELSE NULL END AS additional_scores"
+        return f"CASE WHEN {sc} THEN LIST_FILTER([{sl}], lambda x: x IS NOT NULL) ELSE NULL END AS additional_scores"
 
     @staticmethod
     def _build_cv_params_sql(r: dict, _has) -> str:
@@ -747,7 +749,7 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
             return "NULL AS cv_params"
         cl = ", ".join(entries)
         cc = " OR ".join(checks)
-        return f"CASE WHEN {cc} THEN LIST_FILTER([{cl}], x -> x IS NOT NULL) ELSE NULL END AS cv_params"
+        return f"CASE WHEN {cc} THEN LIST_FILTER([{cl}], lambda x: x IS NOT NULL) ELSE NULL END AS cv_params"
 
     # ------------------------------------------------------------------
     # Batch processing (SQL → Arrow → write)
@@ -764,11 +766,11 @@ class DiannFeatureAdapter(DiaNNBaseAdapter):
         mzml_info_folder: Optional[str],
     ) -> Optional[pa.Table]:
         """Execute SQL batch, add Python-only columns, cast to target schema."""
-        placeholders = ", ".join(["?" for _ in runs])
+        placeholders = ", ".join(f"'{_escape_sql_string(r)}'" for r in runs)
         sql = sql_template.replace("{run_placeholders}", placeholders)
 
         # Execute SQL — DuckDB pushes predicates to parquet, only reads needed data
-        table = self._conn.execute(sql, runs).fetch_arrow_table()
+        table = self._conn.sql(sql).to_arrow_table()
 
         if len(table) == 0:
             return None

@@ -5,22 +5,24 @@ import pyarrow as pa
 
 
 class QueryResult:
-    """Wraps a raw DuckDB execution result and provides materialization methods.
+    """Read pandas, Arrow and row output through one DuckDB relation."""
 
-    Supports conversion to pandas DataFrame, Arrow Table, Polars DataFrame,
-    and row-level iteration via fetchone/fetchall/__iter__.
-    """
-
-    def __init__(self, raw_result):
-        self._raw = raw_result
+    def __init__(self, connection, sql: str):
+        # sql() runs a statement that is not a query at once; DuckDB 1.5 then returns None.
+        self._relation = connection.sql(sql)
+        self._rows = None
 
     def to_df(self) -> pd.DataFrame:
         """Materialize as a pandas DataFrame."""
-        return self._raw.fetchdf()
+        if self._relation is None:
+            return pd.DataFrame()
+        return self._relation.df()
 
     def to_arrow(self) -> pa.Table:
         """Materialize as an Arrow Table."""
-        return self._raw.fetch_arrow_table()
+        if self._relation is None:
+            return pa.table({})
+        return self._relation.to_arrow_table()
 
     def to_polars(self):
         """Materialize as a Polars DataFrame."""
@@ -28,18 +30,20 @@ class QueryResult:
 
         return pl.from_arrow(self.to_arrow())
 
+    def _row_iter(self):
+        # Rows are read in one go: a partly read execute() result blocks relation reads on DuckDB 2.0.
+        if self._rows is None:
+            self._rows = iter([] if self._relation is None else self._relation.fetchall())
+        return self._rows
+
     def fetchone(self):
         """Fetch a single row as a tuple."""
-        return self._raw.fetchone()
+        return next(self._row_iter(), None)
 
     def fetchall(self):
         """Fetch all rows as a list of tuples."""
-        return self._raw.fetchall()
+        return list(self._row_iter())
 
     def __iter__(self):
         """Iterate over rows."""
-        while True:
-            row = self._raw.fetchone()
-            if row is None:
-                break
-            yield row
+        return self._row_iter()

@@ -25,6 +25,7 @@ from qpx.converters.spectronaut.constants import to_modifications, to_proforma
 from qpx.converters.utils import pg_accessions_array
 from qpx.core.cleavage import count_missed_cleavages
 from qpx.core.data import FeatureSchema
+from qpx.core.query import _escape_sql_string
 from qpx.core.sql import sql_build, validate_identifier
 from qpx.writers.feature import FeatureWriter
 
@@ -454,7 +455,7 @@ class SpectronautFeatureAdapter(SpectronautBaseAdapter):
             f"CASE WHEN {ai_check} "
             f"THEN [STRUCT_PACK(label := 'LFQ', "
             f"intensities := LIST_FILTER("
-            f"[{ai_list}], x -> x IS NOT NULL))] "
+            f"[{ai_list}], lambda x: x IS NOT NULL))] "
             f"ELSE NULL END AS additional_intensities"
         )
 
@@ -477,7 +478,7 @@ class SpectronautFeatureAdapter(SpectronautBaseAdapter):
             return "NULL AS additional_scores"
         sl = ", ".join(entries)
         sc = " OR ".join(checks)
-        return f"CASE WHEN {sc} THEN LIST_FILTER([{sl}], x -> x IS NOT NULL) ELSE NULL END AS additional_scores"
+        return f"CASE WHEN {sc} THEN LIST_FILTER([{sl}], lambda x: x IS NOT NULL) ELSE NULL END AS additional_scores"
 
     @staticmethod
     def _build_cv_params_sql(report_cols: set[str]) -> str:
@@ -496,7 +497,7 @@ class SpectronautFeatureAdapter(SpectronautBaseAdapter):
             return "NULL AS cv_params"
         cl = ", ".join(entries)
         cc = " OR ".join(checks)
-        return f"CASE WHEN {cc} THEN LIST_FILTER([{cl}], x -> x IS NOT NULL) ELSE NULL END AS cv_params"
+        return f"CASE WHEN {cc} THEN LIST_FILTER([{cl}], lambda x: x IS NOT NULL) ELSE NULL END AS cv_params"
 
     # ------------------------------------------------------------------
     # Batch processing
@@ -525,10 +526,10 @@ class SpectronautFeatureAdapter(SpectronautBaseAdapter):
         target_schema: pa.Schema,
     ) -> Optional[pa.Table]:
         """Execute SQL batch, add Python-only columns, cast to schema."""
-        placeholders = ", ".join(["?" for _ in runs])
+        placeholders = ", ".join(f"'{_escape_sql_string(r)}'" for r in runs)
         sql = sql_template.replace("{run_placeholders}", placeholders)
 
-        table = self._conn.execute(sql, runs).fetch_arrow_table()
+        table = self._conn.sql(sql).to_arrow_table()
         if len(table) == 0:
             return None
 

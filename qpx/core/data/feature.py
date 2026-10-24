@@ -52,15 +52,15 @@ class Feature(BaseStructure):
             ilf=ilf,
             src=self._query.source,
         )
-        return QueryResult(self._engine.execute(stmt))
+        return QueryResult(self._engine.connection, stmt)
 
     def _intensity_label_field(self) -> str:
         """Detect whether the intensities struct uses 'label' (new) or 'channel' (old)."""
         try:
             stmt = sql_build("SELECT typeof(intensities) FROM $src LIMIT 1", src=self._query.source)
-            row = self._engine.execute(stmt).fetchone()
-            if row:
-                type_str = row[0].lower()
+            rows = self._engine.execute(stmt).fetchall()
+            if rows:
+                type_str = rows[0][0].lower()
                 if "channel" in type_str and "label" not in type_str:
                     return "channel"
         except Exception:
@@ -100,4 +100,4 @@ class Feature(BaseStructure):
             join_cond=join_cond,
             label_expr=label_expr,
         )
-        return QueryResult(self._engine.execute(stmt))
+        return QueryResult(self._engine.connection, stmt)

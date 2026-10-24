@@ -21,6 +21,10 @@ graph LR
     PG --> AE[ae<br/>Absolute Expression]
     PG --> DE[de<br/>Differential Expression]
     PSM -.-> PPM[pepmap<br/>Peptide-Protein Map]
+    PSM --> SITE[site<br/>Modification Sites]
+    PG -.-> SITE
+    PSM --> PF[proteoform<br/>Proteoforms]
+    PG -.-> PF
     FEAT -.-> PPM
     SAMPLE[sample<br/>Sample Metadata] -.-> FEAT
     SAMPLE -.-> PG
@@ -37,6 +41,8 @@ graph LR
     style FEAT fill:#e8f5e9
     style PG fill:#fff3e0
     style PPM fill:#e8f5e9
+    style SITE fill:#fff3e0
+    style PF fill:#fff3e0
     style API fill:#e8f5e9,stroke-dasharray: 5 5
     style AE fill:#fce4ec
     style DE fill:#fce4ec
@@ -56,6 +62,8 @@ graph LR
 | `feature`      | `{PREFIX}.feature.parquet`      | Parquet   | Quantified peptide features per MS run, with sample and channel intensities |
 | `pg`           | `{PREFIX}.pg.parquet`           | Parquet   | Protein groups with quantification across runs and channels                 |
 | `pepmap` | `{PREFIX}.pepmap.parquet` | Parquet | Deduplicated peptide-to-protein mapping with gene names and uniqueness flags |
+| `site` | `{PREFIX}.site.parquet` | Parquet | Protein modification-site claims with a q-value over the claims, the probability that the residue is modified and the evidence fraction of each candidate modification |
+| `proteoform` | `{PREFIX}.proteoform.parquet` | Parquet | Canonical, isoform, variant and chain members of protein families with member-level q-values (sequence entries, not modification combinations) |
 
 ### API Views
 

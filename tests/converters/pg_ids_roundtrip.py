@@ -25,8 +25,8 @@ def feature_rows(ds):
     """``(feature_id, sequence, run_file_name, canonical membership, [labels])``."""
     return ds.sql(
         "SELECT feature_id, sequence, run_file_name, "
-        "list_sort(list_transform(pg_accessions, x -> x.accession)) AS membership, "
-        "list_transform(intensities, i -> i.label) AS labels "
+        "list_sort(list_transform(pg_accessions, lambda x: x.accession)) AS membership, "
+        "list_transform(intensities, lambda i: i.label) AS labels "
         "FROM feature ORDER BY feature_id"
     ).fetchall()
 
