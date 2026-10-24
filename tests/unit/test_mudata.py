@@ -64,6 +64,7 @@ class _FakeRowResult:
         self._value = value
 
     def fetchall(self):
+        """Return the value as one row, or no rows when it is None."""
         return [(self._value,)] if self._value is not None else []
 
     def fetchdf(self) -> pd.DataFrame:

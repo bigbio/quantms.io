@@ -5,6 +5,7 @@ import pytest
 
 
 def make_site_record(**overrides):
+    """A valid site row; keyword arguments override its fields."""
     defaults = {
         "protein_accession": "P04637",
         "family": "P04637",
@@ -31,6 +32,7 @@ def make_site_record(**overrides):
 
 
 def make_proteoform_record(**overrides):
+    """A valid proteoform row; keyword arguments override its fields."""
     defaults = {
         "family": "P04637",
         "accession": "P04637-VAR_005932",
@@ -173,6 +175,7 @@ def test_protein_n_terminus_and_residue_1_are_distinct_sites(tmp_path):
     ],
 )
 def test_site_values_outside_their_range_fail_strict_validation(tmp_path, overrides):
+    """Out-of-range values, and evidence fractions that do not form one pool, fail strict validation."""
     from qpx.writers import SiteWriter
 
     with SiteWriter(tmp_path / "exp.site.parquet") as w:
@@ -183,6 +186,7 @@ def test_site_values_outside_their_range_fail_strict_validation(tmp_path, overri
 
 
 def test_proteoform_qvalue_outside_its_range_fails_strict_validation(tmp_path):
+    """A proteoform_qvalue above 1 fails strict validation."""
     from qpx.writers import ProteoformWriter
 
     with ProteoformWriter(tmp_path / "exp.proteoform.parquet") as w:
@@ -252,6 +256,7 @@ def test_proteoform_links_each_label_to_its_own_pg_row(tmp_path):
 
 
 def test_a_record_level_pg_id_for_several_labels_is_refused(tmp_path):
+    """One pg_id cannot cover a record whose intensities carry several labels."""
     from qpx.writers import ProteoformWriter
 
     pg_ids = _two_channel_pg(tmp_path)
@@ -280,6 +285,7 @@ def test_a_cross_label_pg_link_fails_strict_validation(tmp_path):
 
 @pytest.mark.parametrize("overrides", [{"kind": "gene"}, {"evidence": "maybe"}])
 def test_proteoform_values_outside_the_vocabulary_fail_strict_validation(tmp_path, overrides):
+    """A kind or evidence value outside its vocabulary fails strict validation."""
     from qpx.writers import ProteoformWriter
 
     with ProteoformWriter(tmp_path / "exp.proteoform.parquet") as w:
@@ -319,6 +325,7 @@ def test_a_site_links_to_the_identification_pg_row(tmp_path):
 
 
 def test_best_psm_id_must_resolve_when_the_psm_view_is_present(tmp_path):
+    """A best_psm_id must name a psm row when the psm view is present."""
     from qpx.writers import ProteoformWriter, PsmWriter, SiteWriter
     from tests.conftest import make_psm_record
 
